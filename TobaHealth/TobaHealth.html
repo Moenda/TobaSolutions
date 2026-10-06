@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toba Health 🥗</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        body {
+            background-color: #0d1117;
+            color: #f0f6fc;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .container {
+            background: #161b22;
+            padding: 1.25rem;
+            border-radius: 20px;
+            border: 1px solid #30363d;
+            width: 100%;
+            max-width: 460px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.2rem;
+        }
+        .brand-title {
+            color: #3fb950;
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .back-nav-btn {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #f0f6fc;
+            font-size: 0.85rem;
+            padding: 0.45rem 0.75rem;
+            border-radius: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .card {
+            background: #0d1117;
+            border: 1px solid #21262d;
+            border-radius: 14px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .card-title {
+            font-size: 0.75rem;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .card-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 0.6rem;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            color: #f0f6fc;
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+        .btn {
+            width: 100%;
+            padding: 0.65rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #238636;
+            color: #fff;
+            margin-top: 8px;
+        }
+        .btn:hover { background: #2ea043; }
+        .water-bar {
+            background: #21262d;
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .water-fill {
+            background: #58a6ff;
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="top-header">
+            <div class="brand-title">🥗 Toba Health</div>
+            <a href="../index.html" class="back-nav-btn">‹ Portal</a>
+        </div>
+
+        <!-- CARD PESO ATUAL -->
+        <div class="card">
+            <div class="card-title">Acompanhamento de Peso</div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                <span class="card-value" id="currentWeightDisplay">92.0 kg</span>
+                <span style="font-size: 0.85rem; color: #8b949e;">Meta: <b style="color: #3fb950;">82.0 kg</b></span>
+            </div>
+            <div style="margin-top: 10px; display: flex; gap: 8px;">
+                <input type="number" step="0.1" id="weightInput" class="form-control" placeholder="Peso hoje (ex: 91.5)">
+                <button class="btn" onclick="saveWeight()" style="width: auto; padding: 0.6rem 1rem;">Salvar</button>
+            </div>
+        </div>
+
+        <!-- METAS DIÁRIAS -->
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">Proteína Diária</div>
+                <div class="card-value" style="color: #58a6ff;">170g</div>
+                <span style="font-size: 0.72rem; color: #8b949e;">~1.8g/kg para reter massa</span>
+            </div>
+            <div class="card">
+                <div class="card-title">Déficit Calórico</div>
+                <div class="card-value" style="color: #d29922;">~2.100 kcal</div>
+                <span style="font-size: 0.72rem; color: #8b949e;">Meta de queima limpa</span>
+            </div>
+        </div>
+
+        <!-- HIDRATAÇÃO -->
+        <div class="card">
+            <div class="card-title">Hidratação (Água)</div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                <span style="font-size: 1.1rem; font-weight: 700;" id="waterText">0 / 3.5 Litros</span>
+                <button onclick="addWater(0.5)" style="background: #21262d; border: 1px solid #30363d; color: #58a6ff; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;">+500ml 💧</button>
+            </div>
+            <div class="water-bar">
+                <div class="water-fill" id="waterFill"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const HEALTH_KEY = 'TOBA_HEALTH_DB';
+        let healthDb = JSON.parse(localStorage.getItem(HEALTH_KEY)) || {
+            currentWeight: 92.0,
+            waterMl: 0
+        };
+
+        function updateUI() {
+            document.getElementById('currentWeightDisplay').innerText = `${healthDb.currentWeight.toFixed(1)} kg`;
+            document.getElementById('waterText').innerText = `${(healthDb.waterMl / 1000).toFixed(1)} / 3.5 Litros`;
+            const pct = Math.min((healthDb.waterMl / 3500) * 100, 100);
+            document.getElementById('waterFill').style.width = `${pct}%`;
+        }
+
+        function saveWeight() {
+            const val = parseFloat(document.getElementById('weightInput').value);
+            if (val > 0) {
+                healthDb.currentWeight = val;
+                localStorage.setItem(HEALTH_KEY, JSON.stringify(healthDb));
+                document.getElementById('weightInput').value = '';
+                updateUI();
+            }
+        }
+
+        function addWater(liters) {
+            healthDb.waterMl += (liters * 1000);
+            localStorage.setItem(HEALTH_KEY, JSON.stringify(healthDb));
+            updateUI();
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
