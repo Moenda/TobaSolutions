@@ -18,51 +18,51 @@
             justify-content: center;
             align-items: flex-start;
             min-height: 100vh;
-            padding: 1.5rem 1rem;
+            padding: 1.25rem 0.85rem;
         }
         .container {
             background: #161b22;
-            padding: 1.5rem;
+            padding: 1.25rem;
             border-radius: 20px;
             border: 1px solid #30363d;
             width: 100%;
-            max-width: 480px;
+            max-width: 440px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         .header {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
         .logo {
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: 800;
             color: #58a6ff;
-            letter-spacing: -1px;
+            letter-spacing: -0.5px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
         }
         .subtitle {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #8b949e;
-            margin-top: 6px;
+            margin-top: 4px;
         }
         .grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
         .app-card {
             background: #0d1117;
             border: 1px solid #21262d;
             border-radius: 16px;
-            padding: 1.1rem;
+            padding: 1rem 1.1rem;
             text-decoration: none;
             color: inherit;
             display: flex;
-            align-items: center;
-            justify-content: space-between;
+            flex-direction: column;
+            gap: 8px;
             transition: all 0.2s ease;
         }
         .app-card:hover {
@@ -70,17 +70,23 @@
             transform: translateY(-2px);
             background: #12161f;
         }
+        .app-card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
         .app-info {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 10px;
         }
         .app-icon {
-            font-size: 1.8rem;
+            font-size: 1.3rem;
             background: #161b22;
-            width: 50px;
-            height: 50px;
-            border-radius: 14px;
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
             border: 1px solid #30363d;
             display: flex;
             align-items: center;
@@ -92,12 +98,17 @@
             color: #f0f6fc;
         }
         .app-desc {
-            font-size: 0.78rem;
+            font-size: 0.81rem;
             color: #8b949e;
-            margin-top: 3px;
+            line-height: 1.4;
+        }
+        .app-desc b {
+            color: #58a6ff;
+            font-weight: 800;
+            font-size: 0.88rem;
         }
         .badge {
-            font-size: 0.7rem;
+            font-size: 0.68rem;
             padding: 4px 8px;
             border-radius: 8px;
             font-weight: 700;
@@ -117,60 +128,77 @@
         </div>
 
         <div class="grid">
+            <!-- TOBA BANK -->
             <a href="./TobaBank/TobaBank.html" class="app-card">
-                <div class="app-info">
-                    <div class="app-icon">🏦</div>
-                    <div>
+                <div class="app-card-top">
+                    <div class="app-info">
+                        <div class="app-icon">🏦</div>
                         <div class="app-title">Toba Bank</div>
-                        <div class="app-desc">Rendimento pro-rata diário, blindagem do cofre e fuga do aperto (⁠$⁠_⁠$⁠)⁠و</div>
                     </div>
+                    <span class="badge badge-active">✨ Ativo</span>
                 </div>
-                <span class="badge badge-active">✨ Ativo</span>
+                <div class="app-desc">Rendimento pro-rata diário, blindagem do cofre e fuga do aperto <b>($_$)⁠و</b></div>
             </a>
 
+            <!-- TOBA HEALTH -->
             <a href="./TobaHealth/TobaHealth.html" class="app-card">
-                <div class="app-info">
-                    <div class="app-icon">🥗</div>
-                    <div>
+                <div class="app-card-top">
+                    <div class="app-info">
+                        <div class="app-icon">🥗</div>
                         <div class="app-title">Toba Health</div>
-                        <div class="app-desc">Shape de respeito, proteína no teto e água na guela sem choro (⁠•⁠̀⁠_⁠•⁠́⁠)⁠و</div>
                     </div>
+                    <span class="badge badge-beta">🔥 Beta v1.0</span>
                 </div>
-                <span class="badge badge-beta">🔥 Beta v1.0</span>
+                <div class="app-desc">Shape de respeito, proteína no teto e água na guela sem choro <b>(•̀_•́)⁠و</b></div>
             </a>
 
+            <!-- TOBA KITCHEN -->
             <a href="#" class="app-card" onclick="alert('👨‍🍳 Culinária de respeito vindo aí!')">
-                <div class="app-info">
-                    <div class="app-icon">🍳</div>
-                    <div>
+                <div class="app-card-top">
+                    <div class="app-info">
+                        <div class="app-icon">🍳</div>
                         <div class="app-title">Toba Kitchen</div>
-                        <div class="app-desc">Laricas lendárias e gastronomia de rua sem incendiar a casa (⁠ ͡⁠°⁠ ⁠͜⁠ʖ⁠⁠ ⁠͡⁠°⁠)</div>                    </div>
+                    </div>
+                    <span class="badge badge-dev">👨‍🍳 Em Breve</span>
                 </div>
-                <span class="badge badge-dev">👨‍🍳 Em Breve</span>
+                <div class="app-desc">Laricas lendárias e gastronomia de rua sem incendiar a casa <b>(˶ڡ˶)⁠و</b></div>
             </a>
 
+            <!-- TOBA TASKS -->
             <a href="#" class="app-card" onclick="alert('🎯 Toba Tasks tá em forno baixo!')">
-                <div class="app-info">
-                    <div class="app-icon">🎯</div>
-                    <div>
+                <div class="app-card-top">
+                    <div class="app-info">
+                        <div class="app-icon">🎯</div>
                         <div class="app-title">Toba Tasks</div>
-                        <div class="app-desc">Checklist lendário pra esmagar as pendências e não dar ruim (⁠▀⁠̿⁠ĺ⁠̯⁠▀⁠̿⁠)</div>
                     </div>
+                    <span class="badge badge-dev">⏳ Em Breve</span>
                 </div>
-                <span class="badge badge-dev">⏳ Em Breve</span>
+                <div class="app-desc">Checklist lendário pra esmagar as pendências e não dar ruim <b>(▀̿ĺ̯▀̿)</b></div>
             </a>
 
+            <!-- TOBA ROUTINE -->
             <a href="#" class="app-card" onclick="alert('⚡ Mandando na rotina antes que ela mande em você!')">
-                <div class="app-info">
-                    <div class="app-icon">⚡</div>
-                    <div>
+                <div class="app-card-top">
+                    <div class="app-info">
+                        <div class="app-icon">⚡</div>
                         <div class="app-title">Toba Routine</div>
-                        <div class="app-desc">Mandar no seu dia no puro suco da disciplina Toberson (⁠⌐⁠■⁠-⁠■⁠)</div>
                     </div>
+                    <span class="badge badge-dev">⏳ Em Breve</span>
                 </div>
-                <span class="badge badge-dev">⏳ Em Breve</span>
+                <div class="app-desc">Mandar no seu dia no puro suco da disciplina Toberson <b>(⌐■-■)</b></div>
             </a>
 
+            <!-- TOBA GAMES -->
+            <a href="#" class="app-card" onclick="alert('🎮 Gerenciador de backlog e troféus em breve!')">
+                <div class="app-card-top">
+                    <div class="app-info">
+                        <div class="app-icon">🎮</div>
+                        <div class="app-title">Toba Games</div>
+                    </div>
+                    <span class="badge badge-dev">🕹️ Em Breve</span>
+                </div>
+                <div class="app-desc">Zerar o backlog de respeitabilidade sem deixar a vida dar gatilho <b>(⊙_⊙)</b></div>
+            </a>
         </div>
     </div>
 
