@@ -1,200 +1,1438 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Toba Health 🥗</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: system-ui, -apple-system, sans-serif;
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      body {
+        background-color: #0d1117;
+        color: #f0f6fc;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
+        padding: 1rem;
+      }
+      .container {
+        background: #161b22;
+        padding: 1.25rem;
+        border-radius: 20px;
+        border: 1px solid #30363d;
+        width: 100%;
+        max-width: 480px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+        position: relative;
+      }
+
+      .top-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.2rem;
+      }
+      .brand-title {
+        color: #3fb950;
+        font-size: 1.35rem;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        letter-spacing: -0.5px;
+      }
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .back-nav-btn,
+      .gear-btn {
+        background: #21262d;
+        border: 1px solid #30363d;
+        color: #f0f6fc;
+        font-size: 0.85rem;
+        padding: 0.45rem 0.75rem;
+        border-radius: 10px;
+        cursor: pointer;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        font-weight: 600;
+      }
+      .gear-btn {
+        padding: 0.45rem 0.65rem;
+        font-size: 1.1rem;
+      }
+      .back-nav-btn:hover,
+      .gear-btn:hover {
+        background: #30363d;
+        border-color: #8b949e;
+      }
+
+      .hub-title {
+        font-size: 0.85rem;
+        color: #8b949e;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 700;
+        margin-bottom: 0.8rem;
+      }
+      .module-card {
+        background: #0d1117;
+        border: 1px solid #21262d;
+        border-radius: 16px;
+        padding: 1.2rem;
+        margin-bottom: 0.9rem;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+      }
+      .module-card:hover {
+        border-color: #3fb950;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(63, 185, 80, 0.12);
+      }
+      .module-card.disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+      }
+      .module-card.disabled:hover {
+        border-color: #21262d;
+        transform: none;
+        box-shadow: none;
+      }
+      .module-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+      .module-name {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #f0f6fc;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .badge {
+        font-size: 0.65rem;
+        font-weight: 800;
+        padding: 3px 8px;
+        border-radius: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .badge-soon {
+        background: rgba(210, 153, 34, 0.15);
+        color: #d29922;
+        border: 1px solid rgba(210, 153, 34, 0.4);
+      }
+      .module-desc {
+        font-size: 0.82rem;
+        color: #8b949e;
+        line-height: 1.35;
+      }
+
+      .view-section {
+        display: none;
+      }
+      .view-section.active {
+        display: block;
+        animation: fadeIn 0.25s ease;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
         }
-        body {
-            background-color: #0d1117;
-            color: #f0f6fc;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            padding: 1rem;
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
-        .container {
-            background: #161b22;
-            padding: 1.25rem;
-            border-radius: 20px;
-            border: 1px solid #30363d;
-            width: 100%;
-            max-width: 460px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        .top-header {
+      }
+
+      .card {
+        background: #0d1117;
+        border: 1px solid #21262d;
+        border-radius: 16px;
+        padding: 1.2rem;
+        margin-bottom: 1rem;
+      }
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.8rem;
+      }
+      .card-title {
+        font-size: 0.8rem;
+        color: #8b949e;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 700;
+      }
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
+      }
+
+      .metric-box {
+        background: #161b22;
+        border: 1px solid #21262d;
+        border-radius: 12px;
+        padding: 0.75rem 0.5rem;
+        text-align: center;
+        transition: all 0.2s ease;
+      }
+      .metric-box.clickable {
+        cursor: pointer;
+      }
+      .metric-box.clickable:hover {
+        border-color: #3fb950;
+        background: #1c2128;
+        transform: translateY(-2px);
+      }
+      .metric-label {
+        font-size: 0.68rem;
+        color: #8b949e;
+        margin-bottom: 4px;
+        display: block;
+      }
+      .metric-val {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #f0f6fc;
+      }
+
+      .latest-weight-box {
+        text-align: center;
+        padding: 0.8rem 0;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .latest-weight-box:hover {
+        background: rgba(63, 185, 80, 0.05);
+      }
+
+      .history-item {
+        background: #161b22;
+        border: 1px solid #21262d;
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+        margin-top: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .history-item:hover {
+        border-color: #3fb950;
+        background: #1c2128;
+        transform: translateX(2px);
+      }
+      .history-date {
+        font-size: 0.75rem;
+        color: #8b949e;
+      }
+      .history-weight {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #3fb950;
+      }
+
+      .form-control {
+        width: 100%;
+        padding: 0.65rem;
+        background: #0d1117;
+        border: 1px solid #30363d;
+        border-radius: 10px;
+        color: #f0f6fc;
+        font-size: 0.95rem;
+        margin-top: 4px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .form-control:focus {
+        border-color: #3fb950;
+      }
+      .btn {
+        width: 100%;
+        padding: 0.7rem;
+        border: none;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        background: #238636;
+        color: #fff;
+        margin-top: 8px;
+        transition: background 0.2s;
+      }
+      .btn:hover {
+        background: #2ea043;
+      }
+      .btn-secondary {
+        background: #21262d;
+        border: 1px solid #30363d;
+        color: #c9d1d9;
+      }
+      .btn-secondary:hover {
+        background: #30363d;
+      }
+      .btn-danger {
+        background: #da3633;
+        color: #ffffff;
+      }
+      .btn-danger:hover {
+        background: #f85149;
+      }
+      .btn-sm {
+        padding: 0.4rem 0.7rem;
+        font-size: 0.78rem;
+        width: auto;
+        margin-top: 0;
+        border-radius: 8px;
+      }
+      .btn-icon {
+        padding: 0.25rem 0.45rem;
+        font-size: 0.75rem;
+        background: #21262d;
+        border: 1px solid #30363d;
+        color: #f0f6fc;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .btn-icon:hover {
+        background: #30363d;
+      }
+
+      .order-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #0d1117;
+        border: 1px solid #21262d;
+        padding: 0.65rem 0.8rem;
+        border-radius: 10px;
+        margin-bottom: 6px;
+      }
+      .order-item-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .order-item label {
+        font-size: 0.85rem;
+        color: #c9d1d9;
+        cursor: pointer;
+      }
+      .order-item input[type="checkbox"] {
+        accent-color: #3fb950;
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+      }
+
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(4px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+        padding: 1rem;
+      }
+      .modal-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .modal-body {
+        background: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 20px;
+        padding: 1.25rem;
+        width: 100%;
+        max-width: 440px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.2rem;
+        border-bottom: 1px solid #21262d;
+        padding-bottom: 0.8rem;
+      }
+      .modal-title {
+        font-weight: 700;
+        color: #f0f6fc;
+        font-size: 1.1rem;
+      }
+      .close-btn {
+        background: transparent;
+        border: none;
+        color: #8b949e;
+        font-size: 1.2rem;
+        cursor: pointer;
+      }
+      .close-btn:hover {
+        color: #f0f6fc;
+      }
+      .section-divider {
+        height: 1px;
+        background: #21262d;
+        margin: 1.2rem 0;
+      }
+      .form-group {
+        margin-bottom: 0.9rem;
+      }
+      .form-group label {
+        font-size: 0.8rem;
+        color: #8b949e;
+        display: block;
+        margin-bottom: 2px;
+      }
+
+      .comp-list-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.6rem 0.8rem;
+        background: #0d1117;
+        border: 1px solid #21262d;
+        border-radius: 8px;
+        margin-bottom: 6px;
+        font-size: 0.85rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="top-header">
+        <div class="brand-title">🥗 Toba Health</div>
+        <div class="header-actions">
+          <button
+            class="gear-btn"
+            onclick="openSettingsModal()"
+            title="Configurações (Roldana)"
+          >
+            ⚙️
+          </button>
+          <a href="../index.html" class="back-nav-btn">Portal ›</a>
+        </div>
+      </div>
+
+      <div id="viewHub" class="view-section active">
+        <div class="hub-title">Módulos de Saúde & Performance</div>
+
+        <div class="module-card" onclick="openModule('viewPesagem')">
+          <div class="module-header">
+            <div class="module-name">⚖️ Pesagem & Bioimpedância</div>
+          </div>
+          <div class="module-desc">
+            Acompanhamento de peso, métricas da balança e evolução das banhas no
+            padrão Toberson (⁠⌐⁠■⁠-⁠■⁠).
+          </div>
+        </div>
+
+        <div class="module-card disabled">
+          <div class="module-header">
+            <div class="module-name">🥗 Dieta & Macros</div>
+            <span class="badge badge-soon">Em Breve</span>
+          </div>
+          <div class="module-desc">
+            Esqueminha Toba de qualidade pra dietinha semanal e bater os macros
+            do monstro.
+          </div>
+        </div>
+
+        <div class="module-card disabled">
+          <div class="module-header">
+            <div class="module-name">🏋️‍♂️ Treinos & Cargas</div>
+            <span class="badge badge-soon">Em Breve</span>
+          </div>
+          <div class="module-desc">
+            Ficar grandão biiirl, anotar suas séries e moer na academia sem
+            frescura.
+          </div>
+        </div>
+      </div>
+
+      <div id="viewPesagem" class="view-section">
+        <div
+          style="
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.2rem;
-        }
-        .brand-title {
-            color: #3fb950;
-            font-size: 1.3rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .back-nav-btn {
-            background: #21262d;
-            border: 1px solid #30363d;
-            color: #f0f6fc;
-            font-size: 0.85rem;
-            padding: 0.45rem 0.75rem;
-            border-radius: 10px;
-            cursor: pointer;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .card {
+            margin-bottom: 1rem;
+          "
+        >
+          <button class="back-nav-btn" onclick="openModule('viewHub')">
+            ‹ Módulos
+          </button>
+          <button
+            class="btn btn-secondary btn-sm"
+            onclick="openScaleConfigModal()"
+          >
+            ⚙️ Métricas da Balança
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">⚖️ Acompanhamento de Peso</span>
+            <button class="btn btn-sm" onclick="openAddWeighModal()">
+              + Nova Pesagem
+            </button>
+          </div>
+
+          <div
+            id="latestWeightDisplay"
+            class="latest-weight-box"
+            onclick="
+              openMetricCompareModal('weight', 'Peso (kg)', 'dec2', 'kg')
+            "
+          >
+            <span style="font-size: 0.85rem; color: #8b949e"
+              >Nenhuma pesagem cadastrada</span
+            >
+          </div>
+
+          <div
+            class="grid-3"
+            id="metricsGrid"
+            style="display: none; margin-top: 10px"
+          ></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="margin-bottom: 0.5rem">
+            📜 Histórico de Registros
+          </div>
+          <div id="historyList">
+            <span style="font-size: 0.8rem; color: #8b949e"
+              >Nenhum registro no histórico.</span
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="metricCompareModal">
+      <div class="modal-body">
+        <div class="modal-header">
+          <div class="modal-title" id="compModalTitle">📊 Comparativo</div>
+          <button class="close-btn" onclick="closeMetricCompareModal()">
+            ✖
+          </button>
+        </div>
+
+        <div class="grid-2" style="margin-bottom: 1rem">
+          <div class="metric-box">
+            <span class="metric-label">Média (Últimas 5)</span>
+            <div class="metric-val" id="compAvgVal" style="color: #58a6ff">
+              --
+            </div>
+          </div>
+          <div class="metric-box">
+            <span class="metric-label">vs. Pesagem Anterior</span>
+            <div class="metric-val" id="compDiffVal">--</div>
+          </div>
+        </div>
+
+        <div
+          style="
             background: #0d1117;
             border: 1px solid #21262d;
             border-radius: 14px;
-            padding: 1rem;
+            padding: 1.2rem 0.8rem 0.8rem 0.8rem;
             margin-bottom: 1rem;
-        }
-        .card-title {
+          "
+        >
+          <div
+            style="
+              font-size: 0.72rem;
+              color: #8b949e;
+              text-transform: uppercase;
+              font-weight: 700;
+              text-align: center;
+              margin-bottom: 1rem;
+              letter-spacing: 0.5px;
+            "
+          >
+            📈 Evolução das Últimas 5 Pesagens
+          </div>
+          <div id="svgChartContainer"></div>
+        </div>
+
+        <div
+          style="
             font-size: 0.75rem;
             color: #8b949e;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
             margin-bottom: 6px;
-        }
-        .card-value {
-            font-size: 1.4rem;
             font-weight: 700;
-        }
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-        .form-control {
-            width: 100%;
-            padding: 0.6rem;
-            background: #0d1117;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            color: #f0f6fc;
-            font-size: 0.9rem;
-            margin-top: 4px;
-        }
-        .btn {
-            width: 100%;
-            padding: 0.65rem;
-            border: none;
-            border-radius: 8px;
+            text-transform: uppercase;
+          "
+        >
+          Últimos Registros
+        </div>
+        <div id="compHistoryList"></div>
+
+        <button
+          class="btn btn-secondary"
+          onclick="closeMetricCompareModal()"
+          style="margin-top: 0.8rem"
+        >
+          Fechar
+        </button>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="addWeighModal">
+      <div class="modal-body">
+        <div class="modal-header">
+          <div class="modal-title" id="weighModalTitle">
+            ⚖️ Registrar Pesagem
+          </div>
+          <button class="close-btn" onclick="closeAddWeighModal()">✖</button>
+        </div>
+
+        <form onsubmit="saveWeighIn(event)">
+          <input type="hidden" id="editingWeighId" value="" />
+
+          <div class="form-group">
+            <label for="wDate">Data e Hora da Pesagem</label>
+            <input
+              type="datetime-local"
+              id="wDate"
+              class="form-control"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="wWeight">Peso (kg) *</label>
+            <input
+              type="text"
+              id="wWeight"
+              class="form-control toba-mask-dec2"
+              placeholder="Ex: 82,50"
+              required
+            />
+          </div>
+
+          <div id="dynamicFormFields" class="grid-2"></div>
+
+          <button
+            type="submit"
+            class="btn"
+            style="margin-top: 1rem"
+            id="btnSaveWeigh"
+          >
+            Salvar Pesagem 🚀
+          </button>
+          <button
+            type="button"
+            class="btn btn-danger"
+            id="btnDeleteWeigh"
+            style="display: none; margin-top: 8px"
+            onclick="deleteCurrentWeighIn()"
+          >
+            🗑️ Apagar Registro
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="scaleConfigModal">
+      <div class="modal-body">
+        <div class="modal-header">
+          <div class="modal-title">⚙️ Métricas da sua Balança</div>
+          <button class="close-btn" onclick="closeScaleConfigModal()">✖</button>
+        </div>
+
+        <p style="font-size: 0.8rem; color: #8b949e; margin-bottom: 1rem">
+          Marque quais métricas sua balança possui e ordene com as setas ⬆️ ⬇️
+          para bater com a tela da sua balança!
+        </p>
+
+        <div id="scaleMetricsOrderList"></div>
+
+        <button
+          class="btn"
+          onclick="closeScaleConfigModal()"
+          style="margin-top: 1rem"
+        >
+          Concluído 👍
+        </button>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="settingsModal">
+      <div class="modal-body">
+        <div class="modal-header">
+          <div class="modal-title">⚙️ Configurações Gerais</div>
+          <button class="close-btn" onclick="closeSettingsModal()">✖</button>
+        </div>
+
+        <div class="form-group">
+          <label for="cfgAge">Idade (anos)</label>
+          <input
+            type="number"
+            id="cfgAge"
+            class="form-control"
+            placeholder="Ex: 30"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="cfgHeight">Altura (cm)</label>
+          <input
+            type="number"
+            id="cfgHeight"
+            class="form-control"
+            placeholder="Ex: 178"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="cfgGender">Sexo Biológico</label>
+          <select id="cfgGender" class="form-control">
+            <option value="">Selecione...</option>
+            <option value="Masculino">Masculino</option>
+            <option value="Feminino">Feminino</option>
+          </select>
+        </div>
+
+        <button class="btn" onclick="saveSettings()">Salvar Perfil 💾</button>
+
+        <div class="section-divider"></div>
+
+        <div
+          style="
+            font-size: 0.8rem;
+            color: #8b949e;
+            margin-bottom: 8px;
             font-weight: 600;
-            cursor: pointer;
-            background: #238636;
-            color: #fff;
-            margin-top: 8px;
-        }
-        .btn:hover { background: #2ea043; }
-        .water-bar {
-            background: #21262d;
-            height: 10px;
-            border-radius: 5px;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-        .water-fill {
-            background: #58a6ff;
-            height: 100%;
-            width: 0%;
-            transition: width 0.3s;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <div class="top-header">
-            <div class="brand-title">🥗 Toba Health</div>
-            <a href="../index.html" class="back-nav-btn">‹ Portal</a>
+            text-transform: uppercase;
+          "
+        >
+          Dados & Backup
         </div>
 
-        <!-- CARD PESO ATUAL -->
-        <div class="card">
-            <div class="card-title">Acompanhamento de Peso</div>
-            <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                <span class="card-value" id="currentWeightDisplay">92.0 kg</span>
-                <span style="font-size: 0.85rem; color: #8b949e;">Meta: <b style="color: #3fb950;">82.0 kg</b></span>
-            </div>
-            <div style="margin-top: 10px; display: flex; gap: 8px;">
-                <input type="number" step="0.1" id="weightInput" class="form-control" placeholder="Peso hoje (ex: 91.5)">
-                <button class="btn" onclick="saveWeight()" style="width: auto; padding: 0.6rem 1rem;">Salvar</button>
-            </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 10px">
+          <button class="btn btn-secondary" onclick="exportBackup()">
+            Exportar Backup 📥
+          </button>
+          <button
+            class="btn btn-secondary"
+            onclick="document.getElementById('importFileInput').click()"
+          >
+            Importar 📤
+          </button>
+          <input
+            type="file"
+            id="importFileInput"
+            style="display: none"
+            accept=".json"
+            onchange="importBackup(event)"
+          />
         </div>
 
-        <!-- METAS DIÁRIAS -->
-        <div class="grid-2">
-            <div class="card">
-                <div class="card-title">Proteína Diária</div>
-                <div class="card-value" style="color: #58a6ff;">170g</div>
-                <span style="font-size: 0.72rem; color: #8b949e;">~1.8g/kg para reter massa</span>
-            </div>
-            <div class="card">
-                <div class="card-title">Déficit Calórico</div>
-                <div class="card-value" style="color: #d29922;">~2.100 kcal</div>
-                <span style="font-size: 0.72rem; color: #8b949e;">Meta de queima limpa</span>
-            </div>
-        </div>
-
-        <!-- HIDRATAÇÃO -->
-        <div class="card">
-            <div class="card-title">Hidratação (Água)</div>
-            <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                <span style="font-size: 1.1rem; font-weight: 700;" id="waterText">0 / 3.5 Litros</span>
-                <button onclick="addWater(0.5)" style="background: #21262d; border: 1px solid #30363d; color: #58a6ff; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;">+500ml 💧</button>
-            </div>
-            <div class="water-bar">
-                <div class="water-fill" id="waterFill"></div>
-            </div>
-        </div>
+        <button class="btn btn-danger" onclick="clearAllData()">
+          ⚠️ Apagar Tudo (Reset Total)
+        </button>
+      </div>
     </div>
 
     <script>
-        const HEALTH_KEY = 'TOBA_HEALTH_DB';
-        let healthDb = JSON.parse(localStorage.getItem(HEALTH_KEY)) || {
-            currentWeight: 92.0,
-            waterMl: 0
+      const HEALTH_KEY = "TOBA_HEALTH_DB";
+
+      const DEFAULT_METRICS_ORDER = [
+        {
+          key: "score",
+          label: "Pontuação Corporal",
+          type: "int",
+          active: true,
+          placeholder: "Ex: 85",
+          unit: "",
+        },
+        {
+          key: "fat",
+          label: "Gordura Corporal (%)",
+          type: "dec1",
+          active: true,
+          color: "#f85149",
+          placeholder: "Ex: 18,5",
+          unit: "%",
+        },
+        {
+          key: "muscle",
+          label: "Massa Muscular (kg)",
+          type: "dec2",
+          active: true,
+          color: "#3fb950",
+          placeholder: "Ex: 65,20",
+          unit: "kg",
+        },
+        {
+          key: "water",
+          label: "Água (%)",
+          type: "dec1",
+          active: true,
+          color: "#58a6ff",
+          placeholder: "Ex: 58,0",
+          unit: "%",
+        },
+        {
+          key: "bmr",
+          label: "Metabolismo Basal (kcal)",
+          type: "int",
+          active: true,
+          color: "#d29922",
+          placeholder: "Ex: 1750",
+          unit: " kcal",
+        },
+        {
+          key: "visceral",
+          label: "Gordura Visceral",
+          type: "int",
+          active: true,
+          placeholder: "Ex: 6",
+          unit: "",
+        },
+        {
+          key: "protein",
+          label: "Proteína (%)",
+          type: "dec1",
+          active: true,
+          placeholder: "Ex: 18,0",
+          unit: "%",
+        },
+        {
+          key: "bone",
+          label: "Massa Óssea (kg)",
+          type: "dec2",
+          active: true,
+          placeholder: "Ex: 3,20",
+          unit: "kg",
+        },
+        {
+          key: "bodyAge",
+          label: "Idade Corporal (anos)",
+          type: "int",
+          active: true,
+          placeholder: "Ex: 30",
+          unit: "a",
+        },
+      ];
+
+      let healthDb = JSON.parse(localStorage.getItem(HEALTH_KEY)) || {
+        age: null,
+        height: null,
+        gender: null,
+        weighIns: [],
+        metricsOrder: DEFAULT_METRICS_ORDER,
+      };
+
+      if (!healthDb.weighIns) healthDb.weighIns = [];
+      if (!healthDb.metricsOrder) healthDb.metricsOrder = DEFAULT_METRICS_ORDER;
+      healthDb.metricsOrder = healthDb.metricsOrder.filter(
+        (m) => m.key !== "bmi",
+      );
+
+      function openModule(viewId) {
+        document
+          .querySelectorAll(".view-section")
+          .forEach((v) => v.classList.remove("active"));
+        document.getElementById(viewId).classList.add("active");
+      }
+
+      function initTobaDecimalMasks() {
+        document.querySelectorAll(".toba-mask-dec1").forEach((input) => {
+          input.addEventListener("input", (e) => {
+            let digits = e.target.value.replace(/\D/g, "");
+            if (!digits) {
+              e.target.value = "";
+              return;
+            }
+            let val = (parseInt(digits, 10) / 10).toFixed(1);
+            e.target.value = val.replace(".", ",");
+          });
+        });
+
+        document.querySelectorAll(".toba-mask-dec2").forEach((input) => {
+          input.addEventListener("input", (e) => {
+            let digits = e.target.value.replace(/\D/g, "");
+            if (!digits) {
+              e.target.value = "";
+              return;
+            }
+            let val = (parseInt(digits, 10) / 100).toFixed(2);
+            e.target.value = val.replace(".", ",");
+          });
+        });
+      }
+
+      function parseTobaDecimal(valStr) {
+        if (!valStr) return null;
+        let clean = valStr.toString().replace(",", ".");
+        let parsed = parseFloat(clean);
+        return isNaN(parsed) ? null : parsed;
+      }
+
+      function formatDec1(num) {
+        if (num === null || num === undefined) return "--";
+        return num.toFixed(1).replace(".", ",");
+      }
+
+      function formatDec2(num) {
+        if (num === null || num === undefined) return "--";
+        return num.toFixed(2).replace(".", ",");
+      }
+
+      function openMetricCompareModal(metricKey, label, type, unit = "") {
+        if (healthDb.weighIns.length === 0) return;
+
+        document.getElementById("compModalTitle").innerText = `📊 ${label}`;
+
+        const sorted = [...healthDb.weighIns].sort(
+          (a, b) => new Date(b.date) - new Date(a.date),
+        );
+
+        const dataPoints = [];
+        sorted.forEach((w) => {
+          let val = null;
+          if (metricKey === "weight") {
+            val = w.weight;
+          } else if (metricKey === "bmi") {
+            if (healthDb.height && healthDb.height > 0) {
+              const heightM = healthDb.height / 100;
+              val = parseFloat((w.weight / (heightM * heightM)).toFixed(1));
+            }
+          } else {
+            val = w[metricKey];
+          }
+
+          if (val !== null && val !== undefined) {
+            dataPoints.push({
+              date: new Date(w.date),
+              val: val,
+            });
+          }
+        });
+
+        const last5 = dataPoints.slice(0, 5);
+
+        if (last5.length === 0) {
+          alert("Nenhum dado registrado para essa métrica ainda!");
+          return;
+        }
+
+        const sum = last5.reduce((acc, curr) => acc + curr.val, 0);
+        const avg = sum / last5.length;
+        document.getElementById("compAvgVal").innerText =
+          `${type === "dec2" ? formatDec2(avg) : formatDec1(avg)}${unit}`;
+
+        const compDiffEl = document.getElementById("compDiffVal");
+        if (last5.length >= 2) {
+          const diff = last5[0].val - last5[1].val;
+          const formattedDiff =
+            (type === "dec2"
+              ? formatDec2(Math.abs(diff))
+              : formatDec1(Math.abs(diff))) + unit;
+          if (diff > 0) {
+            compDiffEl.innerHTML = `<span style="color: #f85149;">+${formattedDiff}</span>`;
+          } else if (diff < 0) {
+            compDiffEl.innerHTML = `<span style="color: #3fb950;">-${formattedDiff}</span>`;
+          } else {
+            compDiffEl.innerHTML = `<span style="color: #8b949e;">0,0${unit}</span>`;
+          }
+        } else {
+          compDiffEl.innerText = "--";
+        }
+
+        const chrono5 = [...last5].reverse();
+        document.getElementById("svgChartContainer").innerHTML = renderSvgChart(
+          chrono5,
+          type,
+          unit,
+        );
+
+        const compHistoryList = document.getElementById("compHistoryList");
+        compHistoryList.innerHTML = last5
+          .map((item) => {
+            const dt = item.date.toLocaleString("pt-BR", {
+              dateStyle: "short",
+              timeStyle: "short",
+            });
+            const valStr =
+              type === "dec2" ? formatDec2(item.val) : formatDec1(item.val);
+            return `
+                    <div class="comp-list-item">
+                        <span style="color: #8b949e;">${dt}</span>
+                        <span style="font-weight: 700; color: #3fb950;">${valStr}${unit}</span>
+                    </div>
+                `;
+          })
+          .join("");
+
+        document.getElementById("metricCompareModal").classList.add("active");
+      }
+
+      function closeMetricCompareModal() {
+        document
+          .getElementById("metricCompareModal")
+          .classList.remove("active");
+      }
+
+      function renderSvgChart(points, type, unit) {
+        if (points.length < 2) {
+          return `<div style="padding: 1rem 0; font-size: 0.8rem; color: #8b949e; text-align: center;">Mínimo de 2 pesagens para gerar o gráfico de evolução.</div>`;
+        }
+
+        const w = 320,
+          h = 100,
+          pad = 25;
+        const vals = points.map((p) => p.val);
+        let min = Math.min(...vals);
+        let max = Math.max(...vals);
+
+        if (min === max) {
+          min -= 1;
+          max += 1;
+        } else {
+          const margin = (max - min) * 0.25;
+          min -= margin;
+          max += margin;
+        }
+
+        const coords = points.map((p, idx) => {
+          const x = pad + (idx / (points.length - 1)) * (w - 2 * pad);
+          const y = h - pad - ((p.val - min) / (max - min)) * (h - 2 * pad);
+          return { x, y, val: p.val };
+        });
+
+        const pointsStr = coords.map((c) => `${c.x},${c.y}`).join(" ");
+
+        let svg = `<svg viewBox="0 0 ${w} ${h}" style="width: 100%; height: auto; overflow: visible;">`;
+
+        svg += `
+                <defs>
+                    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#3fb950" flood-opacity="0.5"/>
+                    </filter>
+                </defs>
+            `;
+
+        svg += `<polyline fill="none" stroke="#3fb950" stroke-width="3" points="${pointsStr}" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>`;
+
+        coords.forEach((c) => {
+          const valFormatted =
+            type === "dec2" ? formatDec2(c.val) : formatDec1(c.val);
+          svg += `
+                    <circle cx="${c.x}" cy="${c.y}" r="4" fill="#3fb950" stroke="#161b22" stroke-width="2"/>
+                    <text x="${c.x}" y="${c.y - 8}" fill="#f0f6fc" font-size="10" font-weight="800" text-anchor="middle">${valFormatted}${unit}</text>
+                `;
+        });
+
+        svg += `</svg>`;
+        return svg;
+      }
+
+      function openScaleConfigModal() {
+        renderScaleConfigList();
+        document.getElementById("scaleConfigModal").classList.add("active");
+      }
+
+      function closeScaleConfigModal() {
+        document.getElementById("scaleConfigModal").classList.remove("active");
+        updateUI();
+      }
+
+      function renderScaleConfigList() {
+        const container = document.getElementById("scaleMetricsOrderList");
+        container.innerHTML = healthDb.metricsOrder
+          .map(
+            (m, idx) => `
+                <div class="order-item">
+                    <div class="order-item-left">
+                        <input type="checkbox" id="chk_${m.key}" ${m.active ? "checked" : ""} onchange="toggleMetricActive(${idx}, this.checked)">
+                        <label for="chk_${m.key}">${m.label}</label>
+                    </div>
+                    <div class="order-btns">
+                        <button class="btn-icon" onclick="moveMetric(${idx}, -1)" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ""}>⬆️</button>
+                        <button class="btn-icon" onclick="moveMetric(${idx}, 1)" ${idx === healthDb.metricsOrder.length - 1 ? 'disabled style="opacity:0.3;"' : ""}>⬇️</button>
+                    </div>
+                </div>
+            `,
+          )
+          .join("");
+      }
+
+      function toggleMetricActive(index, isActive) {
+        healthDb.metricsOrder[index].active = isActive;
+        localStorage.setItem(HEALTH_KEY, JSON.stringify(healthDb));
+      }
+
+      function moveMetric(index, direction) {
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= healthDb.metricsOrder.length) return;
+
+        const temp = healthDb.metricsOrder[index];
+        healthDb.metricsOrder[index] = healthDb.metricsOrder[newIndex];
+        healthDb.metricsOrder[newIndex] = temp;
+
+        localStorage.setItem(HEALTH_KEY, JSON.stringify(healthDb));
+        renderScaleConfigList();
+      }
+
+      function updateUI() {
+        renderWeighIns();
+      }
+
+      function renderWeighIns() {
+        const historyList = document.getElementById("historyList");
+        const latestDisplay = document.getElementById("latestWeightDisplay");
+        const metricsGrid = document.getElementById("metricsGrid");
+
+        if (healthDb.weighIns.length === 0) {
+          latestDisplay.innerHTML = `<span style="font-size: 0.85rem; color: #8b949e;">Nenhuma pesagem cadastrada ainda.</span>`;
+          metricsGrid.style.display = "none";
+          historyList.innerHTML = `<span style="font-size: 0.8rem; color: #8b949e;">Nenhum registro no histórico.</span>`;
+          return;
+        }
+
+        healthDb.weighIns.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        const latest = healthDb.weighIns[0];
+        const dateFormatted = new Date(latest.date).toLocaleString("pt-BR", {
+          dateStyle: "short",
+          timeStyle: "short",
+        });
+
+        latestDisplay.innerHTML = `
+                <div style="font-size: 2.2rem; font-weight: 800; color: #3fb950; letter-spacing: -1px;">${formatDec2(latest.weight)} <span style="font-size: 1rem;">kg</span></div>
+                <div style="font-size: 0.75rem; color: #8b949e;">Registrado em: ${dateFormatted} • <b style="color: #58a6ff;">Ver gráfico ›</b></div>
+            `;
+
+        let bmiVal = null;
+        if (healthDb.height && healthDb.height > 0) {
+          const heightM = healthDb.height / 100;
+          bmiVal = (latest.weight / (heightM * heightM))
+            .toFixed(1)
+            .replace(".", ",");
+        }
+
+        let activeGridHtml = "";
+
+        if (bmiVal) {
+          activeGridHtml += `
+                    <div class="metric-box clickable" onclick="openMetricCompareModal('bmi', 'IMC Auto', 'dec1', '')">
+                        <span class="metric-label">IMC Auto</span>
+                        <div class="metric-val" style="color: #c9d1d9;">${bmiVal}</div>
+                    </div>
+                `;
+        }
+
+        healthDb.metricsOrder.forEach((m) => {
+          if (m.active) {
+            let valDisplay = "--";
+            if (latest[m.key] !== null && latest[m.key] !== undefined) {
+              if (m.type === "dec1") valDisplay = formatDec1(latest[m.key]);
+              else if (m.type === "dec2")
+                valDisplay = formatDec2(latest[m.key]);
+              else valDisplay = latest[m.key];
+
+              valDisplay += m.unit || "";
+            }
+
+            activeGridHtml += `
+                        <div class="metric-box clickable" onclick="openMetricCompareModal('${m.key}', '${m.label.split(" (")[0]}', '${m.type}', '${m.unit || ""}')">
+                            <span class="metric-label">${m.label.split(" (")[0]}</span>
+                            <div class="metric-val" style="color: ${m.color || "#f0f6fc"};">${valDisplay}</div>
+                        </div>
+                    `;
+          }
+        });
+
+        if (activeGridHtml) {
+          metricsGrid.innerHTML = activeGridHtml;
+          metricsGrid.style.display = "grid";
+        } else {
+          metricsGrid.style.display = "none";
+        }
+
+        historyList.innerHTML = healthDb.weighIns
+          .map((w) => {
+            const dt = new Date(w.date).toLocaleString("pt-BR", {
+              dateStyle: "short",
+              timeStyle: "short",
+            });
+            const fatMetric = healthDb.metricsOrder.find(
+              (m) => m.key === "fat",
+            );
+            return `
+                    <div class="history-item" onclick="openEditWeighModal(${w.id})">
+                        <div>
+                            <div class="history-weight">${formatDec2(w.weight)} kg</div>
+                            <div class="history-date">${dt} ${w.fat && fatMetric && fatMetric.active ? `• ${formatDec1(w.fat)}% gordura` : ""}</div>
+                        </div>
+                    </div>
+                `;
+          })
+          .join("");
+      }
+
+      function openAddWeighModal() {
+        document.getElementById("weighModalTitle").innerText =
+          "⚖️ Registrar Pesagem";
+        document.getElementById("editingWeighId").value = "";
+        document.getElementById("btnSaveWeigh").innerText = "Salvar Pesagem 🚀";
+        document.getElementById("btnDeleteWeigh").style.display = "none";
+
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById("wDate").value = now.toISOString().slice(0, 16);
+        document.getElementById("wWeight").value = "";
+
+        renderDynamicFields({});
+        document.getElementById("addWeighModal").classList.add("active");
+      }
+
+      function openEditWeighModal(weighId) {
+        const entry = healthDb.weighIns.find((w) => w.id === weighId);
+        if (!entry) return;
+
+        document.getElementById("weighModalTitle").innerText =
+          "✏️ Editar Pesagem";
+        document.getElementById("editingWeighId").value = entry.id;
+        document.getElementById("btnSaveWeigh").innerText =
+          "Salvar Alterações 💾";
+        document.getElementById("btnDeleteWeigh").style.display = "block";
+
+        document.getElementById("wDate").value = entry.date;
+        document.getElementById("wWeight").value = formatDec2(entry.weight);
+
+        renderDynamicFields(entry);
+        document.getElementById("addWeighModal").classList.add("active");
+      }
+
+      function renderDynamicFields(entryData) {
+        const dynamicContainer = document.getElementById("dynamicFormFields");
+        let html = "";
+
+        healthDb.metricsOrder.forEach((m) => {
+          if (m.active) {
+            let val = "";
+            if (entryData[m.key] !== undefined && entryData[m.key] !== null) {
+              if (m.type === "dec1") val = formatDec1(entryData[m.key]);
+              else if (m.type === "dec2") val = formatDec2(entryData[m.key]);
+              else val = entryData[m.key];
+            }
+
+            const maskClass =
+              m.type === "dec1"
+                ? "toba-mask-dec1"
+                : m.type === "dec2"
+                  ? "toba-mask-dec2"
+                  : "";
+            const inputType = m.type === "int" ? "number" : "text";
+
+            html += `
+                        <div class="form-group">
+                            <label for="w_${m.key}">${m.label}</label>
+                            <input type="${inputType}" id="w_${m.key}" class="form-control ${maskClass}" placeholder="${m.placeholder || ""}" value="${val}">
+                        </div>
+                    `;
+          }
+        });
+
+        dynamicContainer.innerHTML = html;
+        initTobaDecimalMasks();
+      }
+
+      function closeAddWeighModal() {
+        document.getElementById("addWeighModal").classList.remove("active");
+      }
+
+      function saveWeighIn(e) {
+        e.preventDefault();
+
+        const editingId = document.getElementById("editingWeighId").value;
+        const weightVal = parseTobaDecimal(
+          document.getElementById("wWeight").value,
+        );
+
+        if (!weightVal) {
+          alert("Preencha pelo menos o peso, meu consagrado!");
+          return;
+        }
+
+        const entry = {
+          id: editingId ? parseInt(editingId, 10) : Date.now(),
+          date: document.getElementById("wDate").value,
+          weight: weightVal,
         };
 
-        function updateUI() {
-            document.getElementById('currentWeightDisplay').innerText = `${healthDb.currentWeight.toFixed(1)} kg`;
-            document.getElementById('waterText').innerText = `${(healthDb.waterMl / 1000).toFixed(1)} / 3.5 Litros`;
-            const pct = Math.min((healthDb.waterMl / 3500) * 100, 100);
-            document.getElementById('waterFill').style.width = `${pct}%`;
+        healthDb.metricsOrder.forEach((m) => {
+          const el = document.getElementById(`w_${m.key}`);
+          if (el && el.value.trim() !== "") {
+            entry[m.key] =
+              m.type === "dec1" || m.type === "dec2"
+                ? parseTobaDecimal(el.value)
+                : parseInt(el.value, 10) || null;
+          } else {
+            entry[m.key] = null;
+          }
+        });
+
+        if (editingId) {
+          const idx = healthDb.weighIns.findIndex(
+            (w) => w.id === parseInt(editingId, 10),
+          );
+          if (idx !== -1) healthDb.weighIns[idx] = entry;
+        } else {
+          healthDb.weighIns.push(entry);
         }
 
-        function saveWeight() {
-            const val = parseFloat(document.getElementById('weightInput').value);
-            if (val > 0) {
-                healthDb.currentWeight = val;
-                localStorage.setItem(HEALTH_KEY, JSON.stringify(healthDb));
-                document.getElementById('weightInput').value = '';
-                updateUI();
-            }
-        }
-
-        function addWater(liters) {
-            healthDb.waterMl += (liters * 1000);
-            localStorage.setItem(HEALTH_KEY, JSON.stringify(healthDb));
-            updateUI();
-        }
-
+        localStorage.setItem(HEALTH_KEY, JSON.stringify(healthDb));
+        closeAddWeighModal();
         updateUI();
+      }
+
+      function deleteCurrentWeighIn() {
+        const editingId = document.getElementById("editingWeighId").value;
+        if (!editingId) return;
+
+        if (
+          confirm("Tem certeza que deseja apagar este registro de pesagem?")
+        ) {
+          healthDb.weighIns = healthDb.weighIns.filter(
+            (w) => w.id !== parseInt(editingId, 10),
+          );
+          localStorage.setItem(HEALTH_KEY, JSON.stringify(healthDb));
+          closeAddWeighModal();
+          updateUI();
+        }
+      }
+
+      function openSettingsModal() {
+        document.getElementById("cfgAge").value = healthDb.age || "";
+        document.getElementById("cfgHeight").value = healthDb.height || "";
+        document.getElementById("cfgGender").value = healthDb.gender || "";
+        document.getElementById("settingsModal").classList.add("active");
+      }
+
+      function closeSettingsModal() {
+        document.getElementById("settingsModal").classList.remove("active");
+      }
+
+      function saveSettings() {
+        healthDb.age =
+          parseInt(document.getElementById("cfgAge").value) || null;
+        healthDb.height =
+          parseInt(document.getElementById("cfgHeight").value) || null;
+        healthDb.gender = document.getElementById("cfgGender").value || null;
+
+        localStorage.setItem(HEALTH_KEY, JSON.stringify(healthDb));
+        closeSettingsModal();
+        updateUI();
+        alert("Perfil salvo com sucesso! (⁠⁠👍⁠￣⁠🏽⁠￣⁠)⁠👍");
+      }
+
+      function exportBackup() {
+        const dataStr =
+          "data:text/json;charset=utf-8," +
+          encodeURIComponent(JSON.stringify(healthDb, null, 2));
+        const downloadAnchor = document.createElement("a");
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute(
+          "download",
+          `toba_health_backup_${new Date().toISOString().slice(0, 10)}.json`,
+        );
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+      }
+
+      function importBackup(e) {
+        const fileReader = new FileReader();
+        fileReader.onload = function (event) {
+          try {
+            healthDb = JSON.parse(event.target.result);
+            if (!healthDb.weighIns) healthDb.weighIns = [];
+            if (!healthDb.metricsOrder)
+              healthDb.metricsOrder = DEFAULT_METRICS_ORDER;
+            healthDb.metricsOrder = healthDb.metricsOrder.filter(
+              (m) => m.key !== "bmi",
+            );
+            localStorage.setItem(HEALTH_KEY, JSON.stringify(healthDb));
+            closeSettingsModal();
+            updateUI();
+            alert("Backup restaurado com sucesso! (⁠⌐⁠■⁠-⁠■⁠)");
+          } catch (err) {
+            alert("Erro ao carregar o arquivo JSON!");
+          }
+        };
+        if (e.target.files[0]) {
+          fileReader.readAsText(e.target.files[0]);
+        }
+      }
+
+      function clearAllData() {
+        if (
+          confirm(
+            "Tem certeza que deseja APAGAR TUDO do Toba Health? Essa ação não pode ser desfeita!",
+          )
+        ) {
+          localStorage.removeItem(HEALTH_KEY);
+          healthDb = {
+            age: null,
+            height: null,
+            gender: null,
+            weighIns: [],
+            metricsOrder: DEFAULT_METRICS_ORDER,
+          };
+          closeSettingsModal();
+          updateUI();
+          alert("Tudo limpo e zerado! ( ͡° 开启 ͡°)");
+        }
+      }
+
+      initTobaDecimalMasks();
+      updateUI();
     </script>
-</body>
+  </body>
 </html>
