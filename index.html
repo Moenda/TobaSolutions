@@ -160,7 +160,7 @@
         }
         .card-metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 8px;
         }
         .metric-item {
@@ -779,18 +779,18 @@
                 </div>
 
                 <div class="card-type-selector">
-                    <label class="radio-card active" id="radioSimplesLabel">
-                        <input type="radio" name="tbCardType" value="simples" id="radioSimples" checked>
+                    <label class="radio-card" id="radioSimplesLabel">
+                        <input type="radio" name="tbCardType" value="simples" id="radioSimples">
                         <div class="radio-label">1. Card Simples (Nome & Descrição)</div>
                     </label>
 
-                    <label class="radio-card" id="radioPersonalizadoLabel">
-                        <input type="radio" name="tbCardType" value="personalizado" id="radioPersonalizado">
+                    <label class="radio-card active" id="radioPersonalizadoLabel">
+                        <input type="radio" name="tbCardType" value="personalizado" id="radioPersonalizado" checked>
                         <div class="radio-label">2. Card Personalizado</div>
                     </label>
                 </div>
 
-                <div class="custom-options-drawer" id="tbCustomDrawer" style="display: none;">
+                <div class="custom-options-drawer" id="tbCustomDrawer" style="display: flex;">
                     <div style="font-weight: 800; font-size: 0.8rem; color: #58a6ff; margin-bottom: 4px;">
                         ⚙️ Selecione as informações no card:
                     </div>
@@ -805,6 +805,10 @@
                     <label class="checkbox-item">
                         <span>📊 Gastos do Mês</span>
                         <input type="checkbox" id="chkGastos" checked>
+                    </label>
+                    <label class="checkbox-item">
+                        <span>🎯 Sobra Prevista</span>
+                        <input type="checkbox" id="chkSobra" checked>
                     </label>
                     <label class="checkbox-item">
                         <span>➕ Adicionar Gasto Rápido</span>
@@ -888,6 +892,7 @@
             const chkOrcamento = document.getElementById('chkOrcamento');
             const chkCofre = document.getElementById('chkCofre');
             const chkGastos = document.getElementById('chkGastos');
+            const chkSobra = document.getElementById('chkSobra');
             const chkAddGasto = document.getElementById('chkAddGasto');
             const chkPrivacy = document.getElementById('chkPrivacy');
 
@@ -956,10 +961,11 @@
 
             function getTobaBankCardConfig() {
                 const defaultConfig = {
-                    type: 'simples',
+                    type: 'personalizado',
                     orcamento: true,
                     cofre: true,
                     gastos: true,
+                    sobra: true,
                     addGasto: true,
                     privacy: false
                 };
@@ -978,73 +984,106 @@
             function loadTobaBankCardConfig() {
                 const cfg = getTobaBankCardConfig();
                 
-                if (cfg.type === 'personalizado') {
-                    radioPersonalizado.checked = true;
-                    radioPersonalizadoLabel.classList.add('active');
-                    radioSimplesLabel.classList.remove('active');
-                    tbCustomDrawer.style.display = 'flex';
-                } else {
+                if (cfg.type === 'simples') {
                     radioSimples.checked = true;
                     radioSimplesLabel.classList.add('active');
                     radioPersonalizadoLabel.classList.remove('active');
                     tbCustomDrawer.style.display = 'none';
+                } else {
+                    radioPersonalizado.checked = true;
+                    radioPersonalizadoLabel.classList.add('active');
+                    radioSimplesLabel.classList.remove('active');
+                    tbCustomDrawer.style.display = 'flex';
                 }
 
                 chkOrcamento.checked = cfg.orcamento;
                 chkCofre.checked = cfg.cofre;
                 chkGastos.checked = cfg.gastos;
+                chkSobra.checked = cfg.sobra;
                 chkAddGasto.checked = cfg.addGasto;
                 chkPrivacy.checked = cfg.privacy;
 
                 renderTobaBankCard(cfg);
             }
 
-            // FUNÇÃO PARA CALCULAR NÚMEROS REAIS DO TOBA BANK
             function obterMetricasReaisTobaBank() {
-                const rawData = localStorage.getItem('tobabank_db') || localStorage.getItem('toba_bank_data');
-                const bankData = rawData ? JSON.parse(rawData) : null;
+                const rawData = localStorage.getItem('TOBA_BANK_DB');
+                if (!rawData) return { patrimonio: 0, disponivel: 0, saidas: 0, sobra: 0 };
 
-                if (!bankData) {
-                    return { patrimonio: 0, disponivel: 0, saidas: 0 };
+                let db;
+                try {
+                    db = JSON.parse(rawData);
+                } catch(e) {
+                    return { patrimonio: 0, disponivel: 0, saidas: 0, sobra: 0 };
                 }
 
-                const saldoConta = Number(bankData.saldoAtual || 0);
-                const totalCaixinhas = (bankData.caixinhas || []).reduce((acc, c) => acc + Number(c.valor || 0), 0);
-                const totalInvestimentos = (bankData.investimentos || []).reduce((acc, i) => acc + Number(i.valorAtual || 0), 0);
-                const faturasAbertas = (bankData.cartoes || []).reduce((acc, c) => acc + Number(c.faturaAtual || 0), 0);
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = now.getMonth();
+                const currentMonthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+                const todayIso = `${year}-${String(month + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-                const patrimonioTotal = (saldoConta + totalCaixinhas + totalInvestimentos) - faturasAbertas;
+                const getDaysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
+                const totalDaysInMonth = getDaysInMonth(year, month);
 
-                const agora = new Date();
-                const mesAtual = agora.getMonth();
-                const anoAtual = agora.getFullYear();
+                let effectiveDays = totalDaysInMonth;
+                const startDateIso = db.config?.startDate;
+                if (startDateIso) {
+                    const [sY, sM, sD] = startDateIso.split('-').map(Number);
+                    if (year === sY && month + 1 === sM) {
+                        effectiveDays = Math.max(totalDaysInMonth - sD + 1, 0);
+                    } else if (year < sY || (year === sY && month + 1 < sM)) {
+                        effectiveDays = 0;
+                    }
+                }
 
-                let saidasMes = 0;
-                (bankData.transacoes || []).forEach(t => {
-                    const dataTransacao = new Date(t.data);
-                    if (dataTransacao.getMonth() === mesAtual && dataTransacao.getFullYear() === anoAtual) {
-                        const valor = Number(t.valor || 0);
-                        if (t.tipo === 'saida' || valor < 0) {
-                            saidasMes += Math.abs(valor);
-                        }
+                const dailyBudget = db.months?.[currentMonthKey]?.dailyBudget || 0;
+                const grossMonthlyBudget = dailyBudget * effectiveDays;
+
+                let fixedExpenses = db.months?.[currentMonthKey]?.fixedExpensesSnapshot || db.config?.fixedExpenses || [];
+                const fixedTotal = fixedExpenses.reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
+
+                let monthInstallmentsTotal = 0;
+                (db.installments || []).forEach(inst => {
+                    if (!inst.startDate) return;
+                    const [sY, sM] = inst.startDate.split('-').map(Number);
+                    const monthDiff = (year - sY) * 12 + ((month + 1) - sM);
+                    if (monthDiff >= 0 && monthDiff < inst.totalInstallments) {
+                        monthInstallmentsTotal += (Number(inst.totalAmount) || 0) / (Number(inst.totalInstallments) || 1);
                     }
                 });
 
-                const diasNoMes = new Date(anoAtual, mesAtual + 1, 0).getDate();
-                const diaHoje = agora.getDate();
-                const diasRestantes = (diasNoMes - diaHoje) + 1;
+                const dailyFixedDeduction = totalDaysInMonth > 0 ? (fixedTotal / totalDaysInMonth) : 0;
+                const dailyInstallmentDeduction = totalDaysInMonth > 0 ? (monthInstallmentsTotal / totalDaysInMonth) : 0;
+                const netDailyBudget = Math.max(dailyBudget - dailyInstallmentDeduction - dailyFixedDeduction, 0);
 
-                const fixosRestantes = (bankData.despesasFixas || [])
-                    .filter(d => !d.pago)
-                    .reduce((acc, d) => acc + Number(d.valor || 0), 0);
+                const currentMonthTransactions = (db.transactions || []).filter(t => t.date && t.date.startsWith(currentMonthKey));
+                const monthlySpentVista = currentMonthTransactions.reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+                const todaySpent = (db.transactions || []).filter(t => t.date === todayIso).reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
 
-                const orcamentoLivre = saldoConta - fixosRestantes;
-                const disponivelHoje = orcamentoLivre > 0 ? (orcamentoLivre / diasRestantes) : 0;
+                let daysElapsedUntilToday = 0;
+                const sIso = startDateIso || todayIso;
+                if (sIso.startsWith(currentMonthKey)) {
+                    const sDay = parseInt(sIso.split('-')[2], 10);
+                    daysElapsedUntilToday = Math.max(now.getDate() - sDay + 1, 1);
+                } else if (sIso < currentMonthKey) {
+                    daysElapsedUntilToday = now.getDate();
+                } else {
+                    daysElapsedUntilToday = 0;
+                }
+
+                const totalAccumulatedBudgetToday = netDailyBudget * daysElapsedUntilToday;
+                
+                const disponivel = netDailyBudget - todaySpent;
+                const cofre = totalAccumulatedBudgetToday - monthlySpentVista;
+                const gastosMes = monthlySpentVista + monthInstallmentsTotal + fixedTotal;
+                const sobra = grossMonthlyBudget - gastosMes;
 
                 return {
-                    patrimonio: patrimonioTotal,
-                    disponivel: disponivelHoje,
-                    saidas: saidasMes
+                    disponivel: disponivel,
+                    patrimonio: cofre,
+                    saidas: gastosMes,
+                    sobra: sobra
                 };
             }
 
@@ -1065,7 +1104,11 @@
                         </button>
                     `;
 
-                    document.getElementById('cardEyeBtn').addEventListener('click', (e) => {
+                    const eyeBtn = document.getElementById('cardEyeBtn');
+                    const novoEyeBtn = eyeBtn.cloneNode(true);
+                    eyeBtn.parentNode.replaceChild(novoEyeBtn, eyeBtn);
+                    
+                    novoEyeBtn.addEventListener('click', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         cfg.privacy = !cfg.privacy;
@@ -1073,7 +1116,6 @@
                         saveTobaBankCardConfig(cfg);
                     });
 
-                    // Puxa as métricas reais
                     const metricas = obterMetricasReaisTobaBank();
 
                     const formatar = (val) => {
@@ -1085,24 +1127,33 @@
                     if (cfg.orcamento) {
                         html += `
                             <div class="metric-item">
-                                <span class="metric-label">Orçamento/Dia</span>
-                                <span class="metric-value">${formatar(metricas.disponivel)}</span>
+                                <span class="metric-label">📅 Orçamento/Dia</span>
+                                <span class="metric-value ${metricas.disponivel < 0 ? 'expense' : ''}">${formatar(metricas.disponivel)}</span>
                             </div>
                         `;
                     }
                     if (cfg.cofre) {
                         html += `
                             <div class="metric-item">
-                                <span class="metric-label">Cofre</span>
-                                <span class="metric-value">${formatar(metricas.patrimonio)}</span>
+                                <span class="metric-label">💎 Cofre</span>
+                                <span class="metric-value ${metricas.patrimonio < 0 ? 'expense' : ''}">${formatar(metricas.patrimonio)}</span>
                             </div>
                         `;
                     }
                     if (cfg.gastos) {
                         html += `
                             <div class="metric-item">
-                                <span class="metric-label">Gastos Mês</span>
+                                <span class="metric-label">🔥 Gastos Mês</span>
                                 <span class="metric-value expense">${formatar(metricas.saidas)}</span>
+                            </div>
+                        `;
+                    }
+                    if (cfg.sobra) {
+                        const isNegativo = metricas.sobra < 0;
+                        html += `
+                            <div class="metric-item">
+                                <span class="metric-label">🎯 Sobra Prevista</span>
+                                <span class="metric-value ${isNegativo ? 'expense' : ''}">${formatar(metricas.sobra)}</span>
                             </div>
                         `;
                     }
@@ -1119,6 +1170,7 @@
                     orcamento: chkOrcamento.checked,
                     cofre: chkCofre.checked,
                     gastos: chkGastos.checked,
+                    sobra: chkSobra.checked,
                     addGasto: chkAddGasto.checked,
                     privacy: chkPrivacy.checked
                 };
@@ -1141,6 +1193,7 @@
             chkOrcamento.addEventListener('change', updateTobaBankConfigFromUI);
             chkCofre.addEventListener('change', updateTobaBankConfigFromUI);
             chkGastos.addEventListener('change', updateTobaBankConfigFromUI);
+            chkSobra.addEventListener('change', updateTobaBankConfigFromUI);
             chkAddGasto.addEventListener('change', updateTobaBankConfigFromUI);
             chkPrivacy.addEventListener('change', updateTobaBankConfigFromUI);
 
