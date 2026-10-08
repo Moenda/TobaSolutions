@@ -1119,7 +1119,11 @@
 
       <div class="tab-content active" id="tabCurrent">
         <div class="month-header-row">
-          <span class="month-badge" id="dashMonthBadge">Carregando...</span>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="month-badge" id="dashMonthBadge">Carregando...</span>
+            <span id="dashHeaderRestantes" style="font-size: 0.8rem; color: #8b949e; font-weight: 600;">Restam: --
+              dias</span>
+          </div>
           <button class="history-mini-btn" onclick="switchTab('history')">
             📜 Histórico
           </button>
@@ -1132,53 +1136,77 @@
           </div>
         </div>
 
-        <div class="metrics-grid">
-          <!-- Card 1: Gastos Mês -->
-          <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+        <!-- CARD REI: COMANDO EXECUTIVO -->
+        <div
+          style="background: linear-gradient(145deg, #161b22 0%, #0d1117 100%); border: 1px solid #30363d; border-radius: 20px; padding: 22px; margin-bottom: 20px; position: relative; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.5);">
+
+          <!-- Efeito Glow de Fundo (Muda no JS) -->
+          <div id="heroGlow"
+            style="position: absolute; top: -50px; right: -50px; width: 180px; height: 180px; background: rgba(63, 185, 80, 0.12); filter: blur(45px); border-radius: 50%; pointer-events: none;">
+          </div>
+
+          <!-- Topo: A Métrica Principal -->
+          <div
+            style="display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 2;">
             <div>
-              <div class="card-title">ORÇAMENTO</div>
-              <!-- Envelopamento Flexbox começa aqui 👇 -->
-              <div style="display: flex; align-items: baseline; gap: 8px;">
-                <div class="card-value" id="dashVarSpentBig">R$ 0,00</div>
-                <div class="sub-text" id="dashLimitText">de R$ 0,00</div>
-              </div>
-              <!-- Envelopamento Flexbox termina aqui 👆 -->
+              <div
+                style="font-size: 0.85rem; color: #8b949e; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">
+                Sobra Prevista Estimada</div>
+              <div id="dashSobraHero"
+                style="font-size: 2.6rem; font-weight: 800; color: #3fb950; letter-spacing: -1.5px; line-height: 1.1; margin-top: 4px;">
+                R$ 0,00</div>
+              <div id="dashSobraSubHero" style="font-size: 0.85rem; color: #f85149; margin-top: 6px; font-weight: 700;">
+                Média Gasto Diário: R$ 0,00</div>
+            </div>
+            <button onclick="abrirModalSobra()"
+              style="background: #21262d; border: 1px solid #30363d; color: #58a6ff; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">?</button>
+          </div>
+
+          <!-- Meio: Barra de Progresso do Orçamento -->
+          <div style="margin-top: 24px; position: relative; z-index: 2;">
+            <div
+              style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #c9d1d9; margin-bottom: 8px; font-weight: 600;">
+              <span>Total Gasto: <b id="dashVarSpentHero" style="color: #f0f6fc;">R$ 0,00</b></span>
+              <span id="dashLimitHero" style="color: #8b949e;">Orçamento: R$ 0,00</span>
             </div>
             <div
-              style="font-size: 0.75rem; color: #8b949e; margin-top: 8px; padding-top: 6px; border-top: 1px solid #21262d;">
-              Var: <b id="dashVarSpentMini" style="color: #f0f6fc">R$ 0,00</b> | Fixo: <b id="dashFixSpentMini"
-                style="color: #f0f6fc">R$ 0,00</b>
+              style="width: 100%; height: 8px; background: #21262d; border-radius: 4px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);">
+              <div id="heroProgressBar"
+                style="height: 100%; width: 0%; background: #3fb950; border-radius: 4px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease;">
+              </div>
             </div>
           </div>
 
-          <!-- Card 2: Sobra Prevista -->
-          <div class="card" style="display: flex; flex-direction: column; position: relative;">
-            <div class="card-title" style="margin-bottom: 2px;">SOBRA PREVISTA</div>
-            <div class="card-value text-success" id="dashSobra" style="font-size: 1.4rem;">R$ 0,00</div>
-            <div class="sub-text" id="dashSobraSubText" style="color: #ff5858; margin-top: auto; padding-top: 8px;">
-              Média diária de gastos do mes: R$ 0,00/dia</div>
-            <button onclick="abrirModalSobra()"
-              style="position: absolute; top: 10px; right: 10px; background: #21262d; border: 1px solid #30363d; color: #58a6ff; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s;">?</button>
-          </div>
+          <!-- Base: As 3 Pílulas Táticas -->
+          <div
+            style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 15px; margin-top: 24px; position: relative; z-index: 2; border-top: 1px dashed #30363d; padding-top: 18px; align-items: center;">
 
-          <!-- Card 3: Disponível Hoje -->
-          <div class="card" style="display: flex; flex-direction: column;">
-            <div class="card-title">DISPONÍVEL HOJE</div>
-            <div class="card-value" id="dashDailyAvailable">R$ 0,00</div>
-            <div style="font-size: 0.75rem; margin-top: auto; padding-top: 8px;">
-              <div style="color: #f85149" id="dashDailyFixed">Fixo: -R$ 0,00/dia</div>
-              <div style="color: #f85149" id="dashDailyInstallments">Parcelas: -R$ 0,00/dia</div>
+            <!-- Pílula 1: Disponível Hoje -->
+            <div style="text-align: left;">
+              <div
+                style="font-size: 0.65rem; color: #8b949e; text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">
+                Disponível Hoje</div>
+              <div id="dashAvailableHero" style="font-size: 1.15rem; font-weight: 700; color: #f0f6fc;">R$ 0,00</div>
             </div>
-          </div>
 
-          <!-- Card 4: Cofre do Mês -->
-          <div class="card" style="display: flex; flex-direction: column;">
-            <div class="card-title">COFRE DO MÊS</div>
-            <div class="card-value text-success" id="dashVaultTotal">R$ 0,00</div>
-            <div style="font-size: 0.75rem; margin-top: auto; padding-top: 8px;">
-              <div style="color: #58a6ff" id="dashVaultDaily">Meta líq./dia: R$ 0,00</div>
-              <div style="color: #8b949e" id="dashVaultAcc">Acumulado líq.: R$ 0,00</div>
+            <!-- Pílula 2 (A Facada Diária) -->
+            <div
+              style="text-align: left; border-left: 1px solid #30363d; border-right: 1px solid #30363d; padding: 0 15px;">
+              <div id="dashDailyInstHero"
+                style="font-size: 0.72rem; color: #f85149; font-weight: 600; margin-bottom: 6px;">Parcelas: -R$ 0,00/dia
+              </div>
+              <div id="dashDailyFixedHero" style="font-size: 0.72rem; color: #f85149; font-weight: 600;">Fixo: -R$
+                0,00/dia</div>
             </div>
+
+            <!-- Pílula 3: Cofre do Mês -->
+            <div style="text-align: right;">
+              <div
+                style="font-size: 0.65rem; color: #8b949e; text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">
+                Cofre do Mês</div>
+              <div id="dashVaultHero" style="font-size: 1.15rem; font-weight: 700; color: #3fb950;">R$ 0,00</div>
+            </div>
+
           </div>
         </div>
 
@@ -3562,18 +3590,21 @@
 
       // A projeção variável usa apenas gastos à vista; parcelas e fixos já
       // são descontados separadamente do orçamento mensal.
-      // A média diária é feita SÓ em cima do dinheiro que você gasta no dia a dia (Vista). Parcela não entra aqui.
+      // A média diária é feita em cima do dinheiro que você gasta no dia a dia (Vista)
       const mediaDiariaVista = diasPassados > 0 ? (monthlySpentVista / diasPassados) : 0;
-      const projecaoRestanteVista = mediaDiariaVista * diasRestantes;
 
-      // Projeção Total = O que já gastou à vista + O que vai gastar (Projeção) + Parcelas (Fixo) + Contas Fixas
+      // A VERDADEIRA FACADA DIÁRIA (Variável + Fixo + Parcelas)
+      const mediaDiariaTotal = mediaDiariaVista + dailyInstallmentDeduction + dailyFixedDeduction;
+
+      const projecaoRestanteVista = mediaDiariaVista * diasRestantes;
       const projecaoTotalMes = monthlySpentVista + projecaoRestanteVista + monthInstallmentsTotal + fixedTotal;
       const sobraPrevista = grossMonthlyBudget - projecaoTotalMes;
 
-      // Salvando os dados globais pro Popup puxar a mesma conta e não bugar!
       window.dadosSobra = {
         monthlySpentVista, monthInstallmentsTotal, fixedTotal, grossMonthlyBudget,
-        diasPassados, diasRestantes, mediaDiariaVista, projecaoRestanteVista, projecaoTotalMes, sobraPrevista
+        diasPassados, diasRestantes, mediaDiariaVista, mediaDiariaTotal,
+        dailyFixedDeduction, dailyInstallmentDeduction,
+        projecaoRestanteVista, projecaoTotalMes, sobraPrevista
       };
 
       // O cofre acumula o orçamento diário líquido desde o início do período,
@@ -3584,61 +3615,51 @@
 
       document.getElementById("dashMonthBadge").innerText = monthFormatted;
 
-      document.getElementById("dashVarSpentBig").innerText = formatCurrency(totalMonthlySpent);
-      document.getElementById("dashLimitText").innerText = `de ${formatCurrency(grossMonthlyBudget)}`;
-      document.getElementById("dashVarSpentMini").innerText = formatCurrency(varSpent);
-      document.getElementById("dashFixSpentMini").innerText = formatCurrency(fixedTotal);
+      // ==============================================
+      // INJEÇÃO DE DADOS NO CARD REI (HERO CARD)
+      // ==============================================
 
-      // 2. Card: Sobra Prevista
-      const sobraEl = document.getElementById("dashSobra");
-      sobraEl.innerText = formatCurrency(sobraPrevista);
-      sobraEl.className = `card-value ${sobraPrevista >= 0 ? 'text-green' : 'text-red'}`;
+      // 1. Sobra Prevista Hero (Topo)
+      const sobraHeroEl = document.getElementById("dashSobraHero");
+      sobraHeroEl.innerText = formatCurrency(sobraPrevista);
+      sobraHeroEl.style.color = sobraPrevista >= 0 ? '#3fb950' : '#f85149';
 
-      // 👇 LINHA NOVA DO GEMITOBA PRA CUSPIR A MÉDIA DIÁRIA NO CARD 👇
-      document.getElementById("dashSobraSubText").innerText = `Média Var: ${formatCurrency(mediaDiariaVista)}/dia`;
+      // Efeito Glow Neon no fundo
+      document.getElementById("heroGlow").style.background = sobraPrevista >= 0 ? 'rgba(63, 185, 80, 0.12)' : 'rgba(248, 81, 73, 0.12)';
 
-      const todayEl = document.getElementById("dashDailyAvailable");
-      todayEl.innerText = formatCurrency(todayAvailable);
-      todayEl.className = `card-value ${todayAvailable >= 0 ? "text-neutral" : "text-red"}`;
+      // Subtexto da Sobra e Dias Restantes no Topo
+      document.getElementById("dashSobraSubHero").innerText = `Média Gasto Diário: ${formatCurrency(mediaDiariaTotal)}`;
+      document.getElementById("dashHeaderRestantes").innerText = `Restam: ${diasRestantes} dias`;
 
-      document.getElementById("dashDailyFixed").innerText = `Fixo: -${formatCurrency(dailyFixedDeduction)}/dia`;
-      document.getElementById("dashDailyInstallments").innerText = `Parcelas: -${formatCurrency(dailyInstallmentDeduction)}/dia`;
+      // 2. Barra de Progresso (Orçamento Total)
+      document.getElementById("dashVarSpentHero").innerText = formatCurrency(totalMonthlySpent);
+      document.getElementById("dashLimitHero").innerText = `Orçamento: ${formatCurrency(grossMonthlyBudget)}`;
 
-      const vaultEl = document.getElementById("dashVaultTotal");
-      vaultEl.innerText = formatCurrency(vaultBalance);
-      vaultEl.className = `card-value ${vaultBalance >= 0 ? "text-green" : "text-red"}`;
+      const percentGasto = grossMonthlyBudget > 0 ? (totalMonthlySpent / grossMonthlyBudget) * 100 : 0;
+      const barraEl = document.getElementById("heroProgressBar");
+      barraEl.style.width = `${Math.min(percentGasto, 100)}%`;
 
-      document.getElementById("dashVaultDaily").innerText = `Meta/dia: ${formatCurrency(netDailyBudget)}`;
-      document.getElementById("dashVaultAcc").innerText = `Acumulado: ${formatCurrency(vaultBalance)}`;
-
-      const adviceBanner = document.getElementById("adviceBanner");
-      const adviceText = document.getElementById("adviceText");
-      if (vaultBalance < 0 && netDailyBudget > 0) {
-        const deficit = Math.abs(vaultBalance);
-        const daysToRecover = Math.ceil(deficit / netDailyBudget);
-        adviceText.innerText = `Ficou negativo em ${formatCurrency(deficit)}! Economize cerca de ${daysToRecover} dias para zerar o cofre!`;
-        adviceBanner?.classList.add("active");
+      // Semáforo da Barra (Verde < 65% < Laranja < 85% < Vermelho)
+      if (percentGasto < 65) {
+        barraEl.style.background = '#3fb950';
+      } else if (percentGasto < 85) {
+        barraEl.style.background = '#d29922'; // Laranja alerta
       } else {
-        adviceBanner?.classList.remove("active");
+        barraEl.style.background = '#f85149'; // Sangrando
       }
 
-      const combinedForBars = [...currentMonthTransactions];
-      activeInstallmentsMonth.forEach((p) => {
-        combinedForBars.push({ category: p.category, amount: p.amount });
-      });
-      currentMonthFixed.forEach((f) => {
-        combinedForBars.push({ category: f.category, amount: f.amount });
-      });
+      // 3. Pílulas Inferiores
+      const availableHeroEl = document.getElementById("dashAvailableHero");
+      availableHeroEl.innerText = formatCurrency(todayAvailable);
+      availableHeroEl.style.color = todayAvailable >= 0 ? '#f0f6fc' : '#f85149';
 
-      renderCategoryBars(
-        combinedForBars,
-        totalMonthlySpent,
-        "categoryBarsContainer",
-      );
-      renderExpenseListWithInstallments(
-        currentMonthTransactions,
-        activeInstallmentsMonth,
-      );
+      // A facada diária sangrando no meio do card
+      document.getElementById("dashDailyInstHero").innerText = `Parcelas: -${formatCurrency(dailyInstallmentDeduction)}/dia`;
+      document.getElementById("dashDailyFixedHero").innerText = `Fixo: -${formatCurrency(dailyFixedDeduction)}/dia`;
+
+      const vaultHeroEl = document.getElementById("dashVaultHero");
+      vaultHeroEl.innerText = formatCurrency(vaultBalance);
+      vaultHeroEl.style.color = vaultBalance >= 0 ? '#3fb950' : '#f85149';
     }
 
     function renderCategoryBars(
@@ -6858,23 +6879,28 @@
 
       const htmlConta = `
         <div style="margin-bottom: 12px;">
-          <p style="margin: 4px 0;"><strong>💸 Gastos à Vista (Variável):</strong> ${formatCurrency(d.monthlySpentVista)}</p>
+          <p style="margin: 4px 0;"><strong>💸 Gastos à Vista (Var.):</strong> ${formatCurrency(d.monthlySpentVista)}</p>
           <p style="margin: 4px 0;"><strong>📅 Dias Passados:</strong> ${d.diasPassados} dias</p>
-          <p style="margin: 4px 0; color: #ff7b72;"><strong>📊 Média Diária Real:</strong> ${formatCurrency(d.mediaDiariaVista)}/dia</p>
-          <p style="margin: 4px 0; font-size: 0.72rem; color: #8b949e;">*A média ignora parcelas, pois elas não se repetem todo dia.</p>
+          <p style="margin: 4px 0;"><strong>📊 Média Var. Pura:</strong> ${formatCurrency(d.mediaDiariaVista)}/dia</p>
+        </div>
+
+        <div style="margin-bottom: 12px; padding: 10px; background: rgba(248, 81, 73, 0.1); border-radius: 8px; border: 1px solid rgba(248, 81, 73, 0.3);">
+          <p style="margin: 4px 0; color: #ff7b72; font-size: 0.8rem; text-transform: uppercase; font-weight: 700;">A Verdadeira Facada Diária</p>
+          <p style="margin: 4px 0; font-size: 0.8rem; color: #c9d1d9;">Var: ${formatCurrency(d.mediaDiariaVista)} + Fixo: ${formatCurrency(d.dailyFixedDeduction)} + Parc: ${formatCurrency(d.dailyInstallmentDeduction)}</p>
+          <p style="margin: 6px 0 0 0; font-size: 1.1rem; color: #f85149; font-weight: 700;">Gasto Total: ${formatCurrency(d.mediaDiariaTotal)} / dia</p>
         </div>
         
-        <div style="margin-bottom: 12px; padding: 10px; background: #0d1117; border-radius: 8px; border: 1px solid #21262d;">
+        <div style="margin-bottom: 12px;">
           <p style="margin: 4px 0;"><strong>⏳ Dias Restantes:</strong> ${d.diasRestantes} dias</p>
-          <p style="margin: 4px 0;"><strong>🔮 Projeção dos dias restantes:</strong> ${formatCurrency(d.projecaoRestanteVista)}</p>
+          <p style="margin: 4px 0;"><strong>🔮 Projeção Var. Restante:</strong> ${formatCurrency(d.projecaoRestanteVista)}</p>
         </div>
         
         <hr style="border-color: #30363d; margin: 15px 0;">
         
         <div>
           <p style="margin: 4px 0; color: #58a6ff;"><strong>💰 Orçamento Base:</strong> ${formatCurrency(d.grossMonthlyBudget)}</p>
-          <p style="margin: 4px 0;"><strong>📉 Gasto Variável (Real + Proj.):</strong> -${formatCurrency(d.monthlySpentVista + d.projecaoRestanteVista)}</p>
-          <p style="margin: 4px 0;"><strong>💳 Parcelas deste Mês:</strong> -${formatCurrency(d.monthInstallmentsTotal)}</p>
+          <p style="margin: 4px 0;"><strong>📉 Variável (Real + Proj.):</strong> -${formatCurrency(d.monthlySpentVista + d.projecaoRestanteVista)}</p>
+          <p style="margin: 4px 0;"><strong>💳 Parcelas do Mês:</strong> -${formatCurrency(d.monthInstallmentsTotal)}</p>
           <p style="margin: 4px 0;"><strong>🔒 Contas Fixas:</strong> -${formatCurrency(d.fixedTotal)}</p>
           
           <h4 style="margin: 10px 0 0 0; color: ${d.sobraPrevista >= 0 ? '#3fb950' : '#f85149'}; font-size: 1.2rem; border-top: 1px dashed #30363d; padding-top: 10px;">
