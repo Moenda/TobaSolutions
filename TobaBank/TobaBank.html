@@ -1133,40 +1133,51 @@
         </div>
 
         <div class="metrics-grid">
-          <div class="card">
-            <span class="card-title">GASTOS MÊS VS ORÇAMENTO</span>
-            <span class="card-value" id="dashVarSpentBig">R$ 0,00</span>
-            <span class="sub-text" id="dashLimitText">de R$ 0,00 previstos</span>
-            <div style="font-size: 0.8rem; color: #8b949e; margin-top: 4px;">
+          <!-- Card 1: Gastos Mês -->
+          <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div class="card-title">ORÇAMENTO</div>
+              <!-- Envelopamento Flexbox começa aqui 👇 -->
+              <div style="display: flex; align-items: baseline; gap: 8px;">
+                <div class="card-value" id="dashVarSpentBig">R$ 0,00</div>
+                <div class="sub-text" id="dashLimitText">de R$ 0,00</div>
+              </div>
+              <!-- Envelopamento Flexbox termina aqui 👆 -->
+            </div>
+            <div
+              style="font-size: 0.75rem; color: #8b949e; margin-top: 8px; padding-top: 6px; border-top: 1px solid #21262d;">
               Var: <b id="dashVarSpentMini" style="color: #f0f6fc">R$ 0,00</b> | Fixo: <b id="dashFixSpentMini"
                 style="color: #f0f6fc">R$ 0,00</b>
             </div>
           </div>
 
-          <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span class="card-title">SOBRA PREVISTA</span>
-              <button id="btnSobraInfo" onclick="abrirModalSobra()"
-                style="border-radius: 50%; width: 20px; height: 20px; background: #30363d; color: #8b949e; border: 1px solid #8b949e; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; padding: 0;">?</button>
-            </div>
-            <span class="card-value text-success" id="dashSobra">R$ 0,00</span>
+          <!-- Card 2: Sobra Prevista -->
+          <div class="card" style="display: flex; flex-direction: column; position: relative;">
+            <div class="card-title" style="margin-bottom: 2px;">SOBRA PREVISTA</div>
+            <div class="card-value text-success" id="dashSobra" style="font-size: 1.4rem;">R$ 0,00</div>
+            <div class="sub-text" id="dashSobraSubText" style="color: #ff5858; margin-top: auto; padding-top: 8px;">
+              Média diária de gastos do mes: R$ 0,00/dia</div>
+            <button onclick="abrirModalSobra()"
+              style="position: absolute; top: 10px; right: 10px; background: #21262d; border: 1px solid #30363d; color: #58a6ff; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s;">?</button>
           </div>
 
-          <div class="card">
-            <span class="card-title">DISPONÍVEL HOJE</span>
-            <span class="card-value" id="dashDailyAvailable">R$ 0,00</span>
-            <div style="font-size: 0.85rem; margin-top: 6px;">
-              <div style="color: #f85149">Fixo: <span id="dashDailyFixed"></span></div>
-              <div style="color: #f85149">Parcelas: <span id="dashDailyInstallments"></span></div>
+          <!-- Card 3: Disponível Hoje -->
+          <div class="card" style="display: flex; flex-direction: column;">
+            <div class="card-title">DISPONÍVEL HOJE</div>
+            <div class="card-value" id="dashDailyAvailable">R$ 0,00</div>
+            <div style="font-size: 0.75rem; margin-top: auto; padding-top: 8px;">
+              <div style="color: #f85149" id="dashDailyFixed">Fixo: -R$ 0,00/dia</div>
+              <div style="color: #f85149" id="dashDailyInstallments">Parcelas: -R$ 0,00/dia</div>
             </div>
           </div>
 
-          <div class="card">
-            <span class="card-title">COFRE DO MÊS</span>
-            <span class="card-value text-success" id="dashVaultTotal">R$ 0,00</span>
-            <div style="font-size: 0.85rem; margin-top: 6px;">
-              <div style="color: #58a6ff">Meta líq./dia: <span id="dashVaultDaily"></span></div>
-              <div style="color: #8b949e">Acumulado líq.: <span id="dashVaultAcc"></span></div>
+          <!-- Card 4: Cofre do Mês -->
+          <div class="card" style="display: flex; flex-direction: column;">
+            <div class="card-title">COFRE DO MÊS</div>
+            <div class="card-value text-success" id="dashVaultTotal">R$ 0,00</div>
+            <div style="font-size: 0.75rem; margin-top: auto; padding-top: 8px;">
+              <div style="color: #58a6ff" id="dashVaultDaily">Meta líq./dia: R$ 0,00</div>
+              <div style="color: #8b949e" id="dashVaultAcc">Acumulado líq.: R$ 0,00</div>
             </div>
           </div>
         </div>
@@ -2912,7 +2923,7 @@
     let db = {
       version: 29,
       config: {
-        startDate: new Date().toISOString().split("T")[0],
+        startDate: getTodayIsoDateStr(),
         fixedExpenses: [],
       },
       months: {},
@@ -2958,12 +2969,8 @@
       const data = localStorage.getItem(STORAGE_KEY);
       if (data) {
         try {
-          try {
-            localStorage.setItem(BACKUP_KEY, data);
-          } catch (backupErr) {
-            console.warn("Aviso ao salvar auto-backup inicial:", backupErr);
-          }
-
+          // Só atualiza o auto-backup depois de confirmar que o dado principal
+          // é JSON válido e que a migração conseguiu preparar sua estrutura.
           const parsed = JSON.parse(data);
 
           if (!parsed.transactions) parsed.transactions = [];
@@ -3015,6 +3022,12 @@
 
           parsed.version = 29;
 
+          try {
+            localStorage.setItem(BACKUP_KEY, data);
+          } catch (backupErr) {
+            console.warn("Aviso ao salvar auto-backup inicial:", backupErr);
+          }
+
           db = parsed;
           isDbLoaded = true;
         } catch (e) {
@@ -3037,11 +3050,18 @@
         return;
       }
 
+      // O backup é melhor esforço: se ele falhar (por exemplo, por quota),
+      // ainda tentamos persistir o banco atual em sua chave principal.
       try {
         const currentStored = localStorage.getItem(STORAGE_KEY);
         if (currentStored) {
           localStorage.setItem(BACKUP_KEY, currentStored);
         }
+      } catch (backupErr) {
+        console.warn("Aviso ao atualizar auto-backup:", backupErr);
+      }
+
+      try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
       } catch (err) {
         console.error("Erro ao gravar dados no localStorage:", err);
@@ -3252,6 +3272,8 @@
       (db.installments || []).forEach((inst) => {
         if (!inst.startDate) return;
         const [sYear, sMonth] = inst.startDate.split("-").map(Number);
+        // Trabalhamos em meses civis, não em dias: isso evita erros com
+        // meses de durações diferentes e identifica a parcela do mês certo.
         const monthDiff = (targetYear - sYear) * 12 + (targetMonth - sMonth);
 
         if (monthDiff >= 0 && monthDiff < inst.totalInstallments) {
@@ -3275,6 +3297,8 @@
       if (!deposits || deposits.length === 0)
         return { profitAmount: 0, projectedPct: 0 };
 
+      // A estimativa anualiza a variação entre o primeiro aporte e o saldo
+      // mais recente registrado; é uma projeção, não uma garantia de retorno.
       const totalDeposited = deposits.reduce((acc, d) => acc + d.amount, 0);
       let latestBalance = totalDeposited;
       let latestDate = new Date();
@@ -3504,65 +3528,88 @@
         0,
       );
 
-      const currentMonthTransactions = db.transactions.filter(
-        (t) => t.date && t.date.startsWith(currentMonthKey),
-      );
-      const monthlySpentVista = currentMonthTransactions.reduce(
-        (acc, t) => acc + t.amount,
-        0,
-      );
+      // Uma única passagem reúne os lançamentos do mês e calcula ambos os
+      // totais; a lista mensal continua sendo usada nas categorias e no histórico.
+      const currentMonthTransactions = [];
+      let monthlySpentVista = 0;
+      let todaySpent = 0;
+      db.transactions.forEach((transaction) => {
+        if (!transaction.date) return;
+        if (transaction.date.startsWith(currentMonthKey)) {
+          currentMonthTransactions.push(transaction);
+          monthlySpentVista += transaction.amount;
+        }
+        if (transaction.date === todayIso) {
+          todaySpent += transaction.amount;
+        }
+      });
 
       const varSpent = monthlySpentVista + monthInstallmentsTotal;
       const totalMonthlySpent = varSpent + fixedTotal;
 
-      const todaySpent = db.transactions
-        .filter((t) => t.date === todayIso)
-        .reduce((acc, t) => acc + t.amount, 0);
-
-      let daysElapsedUntilToday = 0;
+      let diasPassados = 1;
       const startDateIso = db.config.startDate || todayIso;
       if (startDateIso.startsWith(currentMonthKey)) {
         const sDay = parseInt(startDateIso.split("-")[2], 10);
-        const tDay = now.getDate();
-        daysElapsedUntilToday = Math.max(tDay - sDay + 1, 1);
+        diasPassados = Math.max(now.getDate() - sDay + 1, 1);
       } else if (startDateIso < currentMonthKey) {
-        daysElapsedUntilToday = now.getDate();
+        diasPassados = now.getDate();
       } else {
-        daysElapsedUntilToday = 0;
+        diasPassados = 0;
       }
 
-      const totalAccumulatedBudgetToday = netDailyBudget * daysElapsedUntilToday;
-      const vaultBalance = totalAccumulatedBudgetToday - monthlySpentVista;
+      const diasRestantes = Math.max(effectiveDays - diasPassados, 0);
 
-      let todayAvailable = netDailyBudget - todaySpent;
+      // A projeção variável usa apenas gastos à vista; parcelas e fixos já
+      // são descontados separadamente do orçamento mensal.
+      // A média diária é feita SÓ em cima do dinheiro que você gasta no dia a dia (Vista). Parcela não entra aqui.
+      const mediaDiariaVista = diasPassados > 0 ? (monthlySpentVista / diasPassados) : 0;
+      const projecaoRestanteVista = mediaDiariaVista * diasRestantes;
 
-      const mediaDiariaVistaAteHoje = daysElapsedUntilToday > 0 ? (monthlySpentVista / daysElapsedUntilToday) : 0;
-      const projecaoGastosVistaFimDoMes = mediaDiariaVistaAteHoje * totalDaysInMonth;
-      const projecaoTotalMes = projecaoGastosVistaFimDoMes + monthInstallmentsTotal + fixedTotal;
+      // Projeção Total = O que já gastou à vista + O que vai gastar (Projeção) + Parcelas (Fixo) + Contas Fixas
+      const projecaoTotalMes = monthlySpentVista + projecaoRestanteVista + monthInstallmentsTotal + fixedTotal;
       const sobraPrevista = grossMonthlyBudget - projecaoTotalMes;
+
+      // Salvando os dados globais pro Popup puxar a mesma conta e não bugar!
+      window.dadosSobra = {
+        monthlySpentVista, monthInstallmentsTotal, fixedTotal, grossMonthlyBudget,
+        diasPassados, diasRestantes, mediaDiariaVista, projecaoRestanteVista, projecaoTotalMes, sobraPrevista
+      };
+
+      // O cofre acumula o orçamento diário líquido desde o início do período,
+      // descontando os gastos variáveis já lançados no mês.
+      const totalAccumulatedBudgetToday = netDailyBudget * diasPassados;
+      const vaultBalance = totalAccumulatedBudgetToday - monthlySpentVista;
+      let todayAvailable = netDailyBudget - todaySpent;
 
       document.getElementById("dashMonthBadge").innerText = monthFormatted;
 
       document.getElementById("dashVarSpentBig").innerText = formatCurrency(totalMonthlySpent);
-      document.getElementById("dashLimitText").innerText = `de ${formatCurrency(grossMonthlyBudget)} previstos`;
+      document.getElementById("dashLimitText").innerText = `de ${formatCurrency(grossMonthlyBudget)}`;
       document.getElementById("dashVarSpentMini").innerText = formatCurrency(varSpent);
       document.getElementById("dashFixSpentMini").innerText = formatCurrency(fixedTotal);
 
+      // 2. Card: Sobra Prevista
       const sobraEl = document.getElementById("dashSobra");
       sobraEl.innerText = formatCurrency(sobraPrevista);
       sobraEl.className = `card-value ${sobraPrevista >= 0 ? 'text-green' : 'text-red'}`;
 
+      // 👇 LINHA NOVA DO GEMITOBA PRA CUSPIR A MÉDIA DIÁRIA NO CARD 👇
+      document.getElementById("dashSobraSubText").innerText = `Média Var: ${formatCurrency(mediaDiariaVista)}/dia`;
+
       const todayEl = document.getElementById("dashDailyAvailable");
       todayEl.innerText = formatCurrency(todayAvailable);
       todayEl.className = `card-value ${todayAvailable >= 0 ? "text-neutral" : "text-red"}`;
-      document.getElementById("dashDailyFixed").innerText = `-${formatCurrency(dailyFixedDeduction)}/dia`;
-      document.getElementById("dashDailyInstallments").innerText = `-${formatCurrency(dailyInstallmentDeduction)}/dia`;
+
+      document.getElementById("dashDailyFixed").innerText = `Fixo: -${formatCurrency(dailyFixedDeduction)}/dia`;
+      document.getElementById("dashDailyInstallments").innerText = `Parcelas: -${formatCurrency(dailyInstallmentDeduction)}/dia`;
 
       const vaultEl = document.getElementById("dashVaultTotal");
       vaultEl.innerText = formatCurrency(vaultBalance);
       vaultEl.className = `card-value ${vaultBalance >= 0 ? "text-green" : "text-red"}`;
-      document.getElementById("dashVaultDaily").innerText = formatCurrency(netDailyBudget);
-      document.getElementById("dashVaultAcc").innerText = formatCurrency(totalAccumulatedBudgetToday);
+
+      document.getElementById("dashVaultDaily").innerText = `Meta/dia: ${formatCurrency(netDailyBudget)}`;
+      document.getElementById("dashVaultAcc").innerText = `Acumulado: ${formatCurrency(vaultBalance)}`;
 
       const adviceBanner = document.getElementById("adviceBanner");
       const adviceText = document.getElementById("adviceText");
@@ -6153,6 +6200,8 @@
 
       const totalSpent = expenses.reduce((acc, e) => acc + e.amount, 0);
 
+      // Compara quanto cada pessoa pagou com a parte que consumiu; saldo
+      // positivo é crédito e saldo negativo é dívida.
       const paidMap = {};
       const consumedMap = {};
       members.forEach((m) => {
@@ -6803,70 +6852,38 @@
     }
 
     function abrirModalSobra() {
-      const now = new Date();
-      const currentMonthKey = getCurrentMonthKey();
-
-      const totalDaysInMonth = getDaysInMonth(now.getFullYear(), now.getMonth());
-      const effectiveDays = getEffectiveDaysInMonth(now.getFullYear(), now.getMonth());
-
-      let diasPassados = 1;
-      const todayIso = getTodayIsoDateStr();
-      const startDateIso = db.config.startDate || todayIso;
-
-      if (startDateIso.startsWith(currentMonthKey)) {
-        const sDay = parseInt(startDateIso.split("-")[2], 10);
-        diasPassados = Math.max(now.getDate() - sDay + 1, 1);
-      } else if (startDateIso < currentMonthKey) {
-        diasPassados = now.getDate();
-      }
-
-      const diasRestantes = Math.max(effectiveDays - diasPassados, 0);
-
-      const baseDailyBudget = (db.months[currentMonthKey] || {}).dailyBudget || 0;
-      const orcamentoTotal = baseDailyBudget * effectiveDays;
-
-      const activeInstallmentsMonth = getActiveInstallmentsForMonth(currentMonthKey);
-      const monthInstallmentsTotal = activeInstallmentsMonth.reduce((acc, p) => acc + p.amount, 0);
-      const fixedTotal = getFixedTotalForMonth(currentMonthKey);
-
-      const currentMonthTransactions = db.transactions.filter(t => t.date && t.date.startsWith(currentMonthKey));
-      const monthlySpentVista = currentMonthTransactions.reduce((acc, t) => acc + t.amount, 0);
-
-      const gastosVariaveis = monthlySpentVista + monthInstallmentsTotal;
-      const gastosFixos = fixedTotal;
-      const mediaDiaria = gastosVariaveis / (diasPassados || 1);
-      const projecaoRestante = mediaDiaria * diasRestantes;
-      const projecaoFinalMes = gastosVariaveis + projecaoRestante;
-      const sobraPrevista = orcamentoTotal - gastosFixos - projecaoFinalMes;
+      // Puxa os dados que o dashboard calculou!
+      if (!window.dadosSobra) return;
+      const d = window.dadosSobra;
 
       const htmlConta = `
         <div style="margin-bottom: 12px;">
-          <p style="margin: 4px 0;"><strong>💸 Gastos Variáveis (Até hoje):</strong> ${formatCurrency(gastosVariaveis)}</p>
-          <p style="margin: 4px 0;"><strong>📅 Dias Passados:</strong> ${diasPassados} dias</p>
-          <p style="margin: 4px 0; color: #ff7b72;"><strong>📊 Média Diária Var.:</strong> ${formatCurrency(mediaDiaria)}/dia</p>
+          <p style="margin: 4px 0;"><strong>💸 Gastos à Vista (Variável):</strong> ${formatCurrency(d.monthlySpentVista)}</p>
+          <p style="margin: 4px 0;"><strong>📅 Dias Passados:</strong> ${d.diasPassados} dias</p>
+          <p style="margin: 4px 0; color: #ff7b72;"><strong>📊 Média Diária Real:</strong> ${formatCurrency(d.mediaDiariaVista)}/dia</p>
+          <p style="margin: 4px 0; font-size: 0.72rem; color: #8b949e;">*A média ignora parcelas, pois elas não se repetem todo dia.</p>
         </div>
         
         <div style="margin-bottom: 12px; padding: 10px; background: #0d1117; border-radius: 8px; border: 1px solid #21262d;">
-          <p style="margin: 4px 0;"><strong>⏳ Dias Restantes:</strong> ${diasRestantes} dias</p>
-          <p style="margin: 4px 0;"><strong>🔮 Projeção (Média x Restantes):</strong> ${formatCurrency(projecaoRestante)}</p>
-          <p style="margin: 4px 0;"><strong>📈 Total Estimado (Var. Fim do Mês):</strong> ${formatCurrency(projecaoFinalMes)}</p>
+          <p style="margin: 4px 0;"><strong>⏳ Dias Restantes:</strong> ${d.diasRestantes} dias</p>
+          <p style="margin: 4px 0;"><strong>🔮 Projeção dos dias restantes:</strong> ${formatCurrency(d.projecaoRestanteVista)}</p>
         </div>
         
         <hr style="border-color: #30363d; margin: 15px 0;">
         
         <div>
-          <p style="margin: 4px 0; color: #58a6ff;"><strong>💰 Orçamento Total:</strong> ${formatCurrency(orcamentoTotal)}</p>
-          <p style="margin: 4px 0;"><strong>🔒 Gastos Fixos:</strong> -${formatCurrency(gastosFixos)}</p>
-          <p style="margin: 4px 0;"><strong>📉 Projeção Variável:</strong> -${formatCurrency(projecaoFinalMes)}</p>
-          <h4 style="margin: 10px 0 0 0; color: ${sobraPrevista >= 0 ? '#3fb950' : '#f85149'}; font-size: 1.2rem;">
-            Sobra Final Estimada: ${formatCurrency(sobraPrevista)}
+          <p style="margin: 4px 0; color: #58a6ff;"><strong>💰 Orçamento Base:</strong> ${formatCurrency(d.grossMonthlyBudget)}</p>
+          <p style="margin: 4px 0;"><strong>📉 Gasto Variável (Real + Proj.):</strong> -${formatCurrency(d.monthlySpentVista + d.projecaoRestanteVista)}</p>
+          <p style="margin: 4px 0;"><strong>💳 Parcelas deste Mês:</strong> -${formatCurrency(d.monthInstallmentsTotal)}</p>
+          <p style="margin: 4px 0;"><strong>🔒 Contas Fixas:</strong> -${formatCurrency(d.fixedTotal)}</p>
+          
+          <h4 style="margin: 10px 0 0 0; color: ${d.sobraPrevista >= 0 ? '#3fb950' : '#f85149'}; font-size: 1.2rem; border-top: 1px dashed #30363d; padding-top: 10px;">
+            Sobra Final Estimada: ${formatCurrency(d.sobraPrevista)}
           </h4>
         </div>
       `;
 
       document.getElementById('detalhesMathSobra').innerHTML = htmlConta;
-      document.getElementById('modalSobra').style.display = 'flex';
-
       const modal = document.getElementById('modalSobra');
       modal.style.display = 'flex';
       modal.style.opacity = '1';

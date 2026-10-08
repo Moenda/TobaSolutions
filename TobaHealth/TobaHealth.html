@@ -85,11 +85,6 @@
     .gear-btn {
       width: 32px;
       /* QUADRADO PERFEITO */
-      padding: 0;
-      font-size: 1.05rem;
-    }
-
-    .gear-btn {
       padding: 0.45rem 0.65rem;
       font-size: 1.1rem;
     }
@@ -629,25 +624,32 @@
         </button>
       </div>
 
-      <!-- CARDS DE MÉDIA E VARIAÇÃO -->
-      <!-- CARDS DE MÉDIA, ÚLTIMA E VARIAÇÃO -->
-      <div class="grid-3" style="margin-bottom: 1rem">
-        <div class="metric-box">
-          <span class="metric-label">Média (5)</span>
-          <div class="metric-val" id="compAvgVal" style="color: #58a6ff">
-            --
-          </div>
+      <!-- CARDS DE MÉDIA, VS MÉDIA E VS ANTERIOR -->
+      <div style="display: flex; gap: 10px; margin-bottom: 1rem; justify-content: space-between;">
+
+        <!-- Quadrado 1: Média (5) -->
+        <div class="card"
+          style="flex: 1; text-align: center; padding: 12px; margin-bottom: 0; background: #0d1117; border: 1px solid #30363d; border-radius: 8px;">
+          <div style="font-size: 0.75rem; color: #8b949e; margin-bottom: 4px;">Média (5)</div>
+          <div id="thMedia5" style="font-size: 1.2rem; font-weight: bold; color: #58a6ff;">--</div>
         </div>
-        <div class="metric-box">
-          <span class="metric-label">Última</span>
-          <div class="metric-val" id="compLatestVal" style="color: #f0f6fc">
-            --
-          </div>
+
+        <!-- Quadrado 2: vs Média -->
+        <div class="card"
+          style="flex: 1; text-align: center; padding: 12px; margin-bottom: 0; background: #0d1117; border: 1px solid #30363d; border-radius: 8px;">
+          <div style="font-size: 0.75rem; color: #8b949e; margin-bottom: 4px;">vs Média</div>
+          <div id="thVsMediaVal" style="font-size: 1.1rem; font-weight: bold;">--</div>
+          <div id="thVsMediaPct" style="font-size: 0.75rem; margin-top: 2px;">--</div>
         </div>
-        <div class="metric-box">
-          <span class="metric-label">vs Anterior</span>
-          <div class="metric-val" id="compDiffVal">--</div>
+
+        <!-- Quadrado 3: vs Anterior -->
+        <div class="card"
+          style="flex: 1; text-align: center; padding: 12px; margin-bottom: 0; background: #0d1117; border: 1px solid #30363d; border-radius: 8px;">
+          <div style="font-size: 0.75rem; color: #8b949e; margin-bottom: 4px;">vs Anterior</div>
+          <div id="thVsAntVal" style="font-size: 1.1rem; font-weight: bold;">--</div>
+          <div id="thVsAntPct" style="font-size: 0.75rem; margin-top: 2px;">--</div>
         </div>
+
       </div>
 
       <!-- GRÁFICO SVG NEON -->
@@ -1083,6 +1085,8 @@
       },
     };
 
+    // O estado em memória espelha o registro único do app no localStorage.
+    // Ao alterar este formato, mantenha importação/exportação compatíveis.
     let healthDb = JSON.parse(localStorage.getItem(HEALTH_KEY)) || {
       age: null,
       height: null,
@@ -1099,6 +1103,7 @@
 
     /* NAVEGAÇÃO DE MÓDULOS */
     function openModule(viewId) {
+      // Esconde todas as telas e ativa apenas a solicitada.
       document
         .querySelectorAll(".view-section")
         .forEach((v) => v.classList.remove("active"));
@@ -1114,6 +1119,8 @@
         input.setAttribute("inputmode", "decimal");
 
         input.addEventListener("input", (e) => {
+          // A máscara trata os dígitos como centavos/décimos e só então
+          // adiciona a vírgula, evitando depender do separador do teclado.
           let digits = e.target.value.replace(/\D/g, "");
           if (!digits) {
             e.target.value = "";
@@ -1180,6 +1187,8 @@
       let prevLimit = rule.min;
 
       segments.forEach((seg) => {
+        // Cada faixa começa onde a faixa anterior terminou; a largura visual
+        // é proporcional ao intervalo numérico da régua.
         let span = seg.l - prevLimit;
         if (span <= 0) span = 1;
         let pct = (span / totalSpan) * 100;
@@ -1229,6 +1238,7 @@
       const sorted = [...healthDb.weighIns].sort(
         (a, b) => new Date(b.date) - new Date(a.date),
       );
+      // Ordena uma cópia para mostrar a evolução sem reordenar o banco em memória.
       const dataPoints = [];
 
       sorted.forEach((w) => {
@@ -1255,39 +1265,67 @@
         return;
       }
 
+      // A janela de comparação usa no máximo os cinco registros mais recentes.
       const sum = last5.reduce((acc, curr) => acc + curr.val, 0);
       const avg = sum / last5.length;
-      document.getElementById("compAvgVal").innerText =
-        `${type === "dec2" ? formatDec2(avg) : formatDec1(avg)}${unit}`;
+      const ultima = last5[0].val;
 
-      document.getElementById("compLatestVal").innerText =
-        `${type === "dec2" ? formatDec2(last5[0].val) : formatDec1(last5[0].val)}${unit}`;
+      // 1. Seta a Média no Quadrado 1
+      document.getElementById("thMedia5").innerText = `${type === "dec2" ? formatDec2(avg) : formatDec1(avg)}${unit}`;
 
-      const compDiffEl = document.getElementById("compDiffVal");
-      if (last5.length >= 2) {
-        const diff = last5[0].val - last5[1].val;
-        const formattedDiff =
-          (type === "dec2"
-            ? formatDec2(Math.abs(diff))
-            : formatDec1(Math.abs(diff))) + unit;
+      // 2. Regra de Cores Toba: O que é bom subir? (O resto, cair é bom)
+      const upIsGood = ["muscle", "water", "protein", "bone", "score"].includes(metricKey);
 
-        const upIsGood = [
-          "muscle",
-          "water",
-          "protein",
-          "bone",
-          "score",
-        ].includes(metricKey);
+      // 3. Função ninja pra calcular e pintar a tela
+      const formataEvolucao = (valorBase, valorComp, idVal, idPct) => {
+        const elVal = document.getElementById(idVal);
+        const elPct = document.getElementById(idPct);
+
+        if (valorComp === null || valorComp === undefined) {
+          elVal.innerHTML = '<span style="color: #8b949e;">--</span>';
+          elPct.innerText = '';
+          return;
+        }
+
+        const diff = valorBase - valorComp;
+        const pct = valorComp !== 0 ? (diff / valorComp) * 100 : 0;
+
+        let cor = "#8b949e";
+        let sinal = "";
 
         if (diff > 0.001) {
-          compDiffEl.innerHTML = `<span style="color: ${upIsGood ? "#3fb950" : "#f85149"};">+${formattedDiff}</span>`;
+          // Subiu: Verde se for músculo/água/score, Vermelho se for gordura/peso/idade
+          cor = upIsGood ? "#3fb950" : "#f85149";
+          sinal = "+";
         } else if (diff < -0.001) {
-          compDiffEl.innerHTML = `<span style="color: ${upIsGood ? "#f85149" : "#3fb950"};">-${formattedDiff}</span>`;
-        } else {
-          compDiffEl.innerHTML = `<span style="color: #8b949e;">0,0${type === "dec1" ? "" : "0"}${unit}</span>`;
+          // Caiu: Vermelho se for músculo/água, Verde se for gordura/peso
+          cor = upIsGood ? "#f85149" : "#3fb950";
+          sinal = "-";
         }
+
+        const formattedDiff = type === "dec2" ? formatDec2(Math.abs(diff)) : formatDec1(Math.abs(diff));
+
+        elVal.innerHTML = `<span style="color: ${cor};">${sinal}${formattedDiff}${unit}</span>`;
+
+        if (diff > -0.001 && diff < 0.001) {
+          elVal.innerHTML = `<span style="color: #8b949e;">0,0${type === "dec1" ? "" : "0"}${unit}</span>`;
+          elPct.innerText = `(0%)`;
+          elPct.style.color = "#8b949e";
+        } else {
+          elPct.innerText = `(${sinal}${Math.abs(pct).toFixed(1).replace('.', ',')}%)`;
+          elPct.style.color = cor;
+        }
+      };
+
+      // 4. Calculando e preenchendo as métricas
+      // Quadrado 2: vs Média
+      formataEvolucao(ultima, avg, 'thVsMediaVal', 'thVsMediaPct');
+
+      // Quadrado 3: vs Anterior
+      if (last5.length >= 2) {
+        formataEvolucao(ultima, last5[1].val, 'thVsAntVal', 'thVsAntPct');
       } else {
-        compDiffEl.innerText = "--";
+        formataEvolucao(ultima, null, 'thVsAntVal', 'thVsAntPct');
       }
 
       const chrono5 = [...last5].reverse();
@@ -1348,6 +1386,8 @@
         max += margin;
       }
 
+      // Converte os valores em coordenadas no viewBox; o SVG escala depois
+      // para a largura disponível sem precisar recalcular em pixels.
       const coords = points.map((p, idx) => ({
         x: pad + (idx / (points.length - 1)) * (w - 2 * pad),
         y: h - pad - ((p.val - min) / (max - min)) * (h - 2 * pad),
@@ -1436,8 +1476,12 @@
         return;
       }
 
-      healthDb.weighIns.sort((a, b) => new Date(b.date) - new Date(a.date));
-      const latest = healthDb.weighIns[0];
+      // A ordenação in-place mantém a lista cronológica usada tanto pelo
+      // registro mais recente quanto pelo histórico, sem ordenar duas vezes.
+      const sortedWeighIns = healthDb.weighIns.sort(
+        (a, b) => new Date(b.date) - new Date(a.date),
+      );
+      const latest = sortedWeighIns[0];
       const dateFormatted = new Date(latest.date).toLocaleString("pt-BR", {
         dateStyle: "short",
         timeStyle: "short",
@@ -1468,6 +1512,7 @@
 
       healthDb.metricsOrder.forEach((m) => {
         if (m.active) {
+          const metricLabel = m.label.split(" (")[0];
           let valDisplay = "--";
           if (latest[m.key] !== null && latest[m.key] !== undefined) {
             if (m.type === "dec1") valDisplay = formatDec1(latest[m.key]);
@@ -1477,8 +1522,8 @@
             valDisplay += m.unit || "";
           }
           activeGridHtml += `
-                        <div class="metric-box clickable" onclick="openMetricCompareModal('${m.key}', '${m.label.split(" (")[0]}', '${m.type}', '${m.unit || ""}')">
-                            <span class="metric-label">${m.label.split(" (")[0]}</span>
+                        <div class="metric-box clickable" onclick="openMetricCompareModal('${m.key}', '${metricLabel}', '${m.type}', '${m.unit || ""}')">
+                            <span class="metric-label">${metricLabel}</span>
                             <div class="metric-val" style="color: ${m.color || "#f0f6fc"};">${valDisplay}</div>
                         </div>
                     `;
@@ -1492,15 +1537,13 @@
         metricsGrid.style.display = "none";
       }
 
-      historyList.innerHTML = healthDb.weighIns
+      const fatMetric = healthDb.metricsOrder.find((m) => m.key === "fat");
+      historyList.innerHTML = sortedWeighIns
         .map((w) => {
           const dt = new Date(w.date).toLocaleString("pt-BR", {
             dateStyle: "short",
             timeStyle: "short",
           });
-          const fatMetric = healthDb.metricsOrder.find(
-            (m) => m.key === "fat",
-          );
           return `
                     <div class="history-item" onclick="openEditWeighModal(${w.id})">
                         <div>
@@ -1593,15 +1636,23 @@
         weight: weightVal,
       };
 
+      // A gravação percorre todas as métricas configuradas; campos que não
+      // existem no formulário (por estarem inativos) acabam salvos como null.
+      // Puxa os dados antigos se estivermos editando pra não perder o que tá oculto!
+      const existingEntry = editingId ? healthDb.weighIns.find(w => w.id === parseInt(editingId, 10)) : null;
+
       healthDb.metricsOrder.forEach((m) => {
         const el = document.getElementById(`w_${m.key}`);
-        if (el && el.value.trim() !== "") {
-          entry[m.key] =
-            m.type === "dec1" || m.type === "dec2"
-              ? parseTobaDecimal(el.value)
-              : parseInt(el.value, 10) || null;
+        if (el) {
+          // O campo tá na tela (métrica ativa)
+          if (el.value.trim() !== "") {
+            entry[m.key] = (m.type === "dec1" || m.type === "dec2") ? parseTobaDecimal(el.value) : parseInt(el.value, 10) || null;
+          } else {
+            entry[m.key] = null;
+          }
         } else {
-          entry[m.key] = null;
+          // O campo NÃO tá na tela. Mantém o valor que já tava no banco (se existir)!
+          entry[m.key] = existingEntry && existingEntry[m.key] !== undefined ? existingEntry[m.key] : null;
         }
       });
 
@@ -1659,6 +1710,8 @@
     }
 
     function exportBackup() {
+      // Exporta o objeto completo, incluindo perfil, pesagens e configuração
+      // da balança, para que a restauração possa reconstruir o estado.
       const dataStr =
         "data:text/json;charset=utf-8," +
         encodeURIComponent(JSON.stringify(healthDb, null, 2));
@@ -1677,6 +1730,8 @@
       const fileReader = new FileReader();
       fileReader.onload = function (event) {
         try {
+          // O parse confirma apenas que o texto é JSON; não garante que as
+          // propriedades importadas tenham os tipos esperados pelo aplicativo.
           healthDb = JSON.parse(event.target.result);
           if (!healthDb.weighIns) healthDb.weighIns = [];
           if (!healthDb.metricsOrder)
@@ -1701,13 +1756,14 @@
           "Tem certeza que deseja APAGAR TUDO do Toba Health? Essa ação não pode ser desfeita!",
         )
       ) {
+        // Limpa somente a chave deste módulo, sem afetar os demais aplicativos.
         localStorage.removeItem(HEALTH_KEY);
         healthDb = {
           age: null,
           height: null,
           gender: null,
           weighIns: [],
-          metricsOrder: DEFAULT_METRICS_ORDER,
+          metricsOrder: JSON.parse(JSON.stringify(DEFAULT_METRICS_ORDER)), // Clone real do padrão!
         };
         closeSettingsModal();
         updateUI();

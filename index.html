@@ -1019,6 +1019,7 @@
   </div>
 
   <script>
+    // Espera o HTML existir antes de buscar elementos e registrar eventos.
     document.addEventListener("DOMContentLoaded", () => {
       const grid = document.getElementById("modulesGrid");
       const modal = document.getElementById("configModal");
@@ -1073,6 +1074,8 @@
       const importAllDataBtn = document.getElementById("importAllDataBtn");
       const importFileInput = document.getElementById("importFileInput");
 
+      // Cada objeto mantém o estado configurável junto da referência ao nó original.
+      // Assim, reordenar os cards não exige recriar o HTML nem perder seus eventos.
       let cards = Array.from(grid.querySelectorAll(".app-card")).map(
         (card) => {
           return {
@@ -1092,6 +1095,8 @@
             const parsed = JSON.parse(saved);
             const newCards = [];
 
+            // Aplica a ordem salva apenas aos módulos que ainda existem no HTML.
+            // Módulos novos são acrescentados ao final, mantendo compatibilidade.
             parsed.forEach((item) => {
               const found = cards.find((c) => c.id === item.id);
               if (found) {
@@ -1127,6 +1132,7 @@
       }
 
       function applySettings() {
+        // appendChild move nós existentes; não cria cópias dos elementos.
         grid.innerHTML = "";
         cards.forEach((cardObj) => {
           grid.appendChild(cardObj.element);
@@ -1148,7 +1154,9 @@
         if (saved) {
           try {
             return { ...defaultConfig, ...JSON.parse(saved) };
-          } catch (e) { }
+          } catch (e) {
+            console.error("Erro ao ler configuração do card Toba Bank", e);
+          }
         }
         return defaultConfig;
       }
@@ -1192,6 +1200,7 @@
         try {
           db = JSON.parse(rawData);
         } catch (e) {
+          console.error("Erro ao ler os dados do Toba Bank", e);
           return { patrimonio: 0, disponivel: 0, saidas: 0, sobra: 0 };
         }
 
@@ -1215,10 +1224,11 @@
           }
         }
 
+        // O orçamento bruto considera os dias válidos desde o início do controle.
         const dailyBudget = db.months?.[currentMonthKey]?.dailyBudget || 0;
         const grossMonthlyBudget = dailyBudget * effectiveDays;
 
-        let fixedExpenses =
+        const fixedExpenses =
           db.months?.[currentMonthKey]?.fixedExpensesSnapshot ||
           db.config?.fixedExpenses ||
           [];
@@ -1231,6 +1241,8 @@
         (db.installments || []).forEach((inst) => {
           if (!inst.startDate) return;
           const [sY, sM] = inst.startDate.split("-").map(Number);
+          // Diferença em meses civis: a parcela entra enquanto o mês atual
+          // estiver dentro do intervalo de parcelas iniciado em startDate.
           const monthDiff = (year - sY) * 12 + (month + 1 - sM);
           if (monthDiff >= 0 && monthDiff < inst.totalInstallments) {
             monthInstallmentsTotal +=
@@ -1250,16 +1262,22 @@
           0,
         );
 
-        const currentMonthTransactions = (db.transactions || []).filter(
-          (t) => t.date && t.date.startsWith(currentMonthKey),
-        );
-        const monthlySpentVista = currentMonthTransactions.reduce(
-          (acc, t) => acc + (Number(t.amount) || 0),
-          0,
-        );
-        const todaySpent = (db.transactions || [])
-          .filter((t) => t.date === todayIso)
-          .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+        // Uma única passagem calcula o total mensal e o gasto de hoje, evitando
+        // criar arrays intermediários para duas chamadas de filter/reduce.
+        let monthlySpentVista = 0;
+        let todaySpent = 0;
+        for (const transaction of db.transactions || []) {
+          const amount = Number(transaction.amount) || 0;
+          if (
+            transaction.date &&
+            transaction.date.startsWith(currentMonthKey)
+          ) {
+            monthlySpentVista += amount;
+          }
+          if (transaction.date === todayIso) {
+            todaySpent += amount;
+          }
+        }
 
         let daysElapsedUntilToday = 0;
         const sIso = startDateIso || todayIso;
@@ -1275,6 +1293,8 @@
         const totalAccumulatedBudgetToday =
           netDailyBudget * daysElapsedUntilToday;
 
+        // "Cofre" é o orçamento líquido acumulado menos o que já foi gasto
+        // no mês; "sobra" projeta o resultado até o fim do mês.
         const disponivel = netDailyBudget - todaySpent;
         const cofre = totalAccumulatedBudgetToday - monthlySpentVista;
         const gastosMes =
@@ -1315,11 +1335,10 @@
                         </button>
                     `;
 
+          // O botão acabou de ser criado pelo innerHTML acima, então recebe
+          // um único listener nesta renderização.
           const eyeBtn = document.getElementById("cardEyeBtn");
-          const novoEyeBtn = eyeBtn.cloneNode(true);
-          eyeBtn.parentNode.replaceChild(novoEyeBtn, eyeBtn);
-
-          novoEyeBtn.addEventListener("click", (e) => {
+          eyeBtn.addEventListener("click", (e) => {
             e.preventDefault();
             e.stopPropagation();
             cfg.privacy = !cfg.privacy;
@@ -1417,6 +1436,7 @@
       function renderConfigModal() {
         configList.innerHTML = "";
 
+        // Os índices passados aos botões referem-se à ordem atual do array cards.
         cards.forEach((cardObj, index) => {
           const item = document.createElement("div");
           item.className = `config-item ${cardObj.visible ? "" : "disabled"}`;
@@ -1469,6 +1489,8 @@
       }
 
       function exportAllData() {
+        // Armazena cada entrada como texto, preservando exatamente os valores
+        // do localStorage, mesmo quando eles próprios contêm JSON.
         const backupData = {};
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
@@ -1499,6 +1521,8 @@
                 "⚠️ Tem certeza que deseja restaurar este backup? Todos os dados atuais do Toba Solutions serão substituídos!",
               )
             ) {
+              // A restauração sobrescreve as chaves presentes no arquivo e
+              // recarrega a página para que todos os módulos releiam os dados.
               Object.keys(importedData).forEach((key) => {
                 localStorage.setItem(key, importedData[key]);
               });
