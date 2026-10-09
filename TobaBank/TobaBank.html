@@ -3474,11 +3474,13 @@
                     `;
         } else if (viewName === "investments") {
           actionsContainer.innerHTML = `
+                    <button class="config-btn" onclick="openConfigModalHandler()" title="Configurações">⚙️</button>
                     <button class="back-nav-btn" onclick="switchView('hub')"><span style="color: #8b949e; font-weight: 900; font-size: 1.1rem; line-height: 1; margin-right: 4px;">‹</span> Hub</button>
                 `;
           renderInvestmentsScreen();
         } else if (viewName === "splitter") {
           actionsContainer.innerHTML = `
+                    <button class="config-btn" onclick="openConfigModalHandler()" title="Configurações">⚙️</button>
                     <button class="back-nav-btn" onclick="switchView('hub')"><span style="color: #8b949e; font-weight: 900; font-size: 1.1rem; line-height: 1; margin-right: 4px;">‹</span> Hub</button>
                 `;
           renderSplitterScreen();

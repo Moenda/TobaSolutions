@@ -172,6 +172,356 @@
       line-height: 1.35;
     }
 
+    .workout-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .workout-summary-item {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 12px;
+      padding: 0.75rem 0.5rem;
+      min-width: 0;
+      width: 100%;
+      color: inherit;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .workout-summary-item-wide {
+      grid-column: 1 / -1;
+    }
+
+    .workout-summary-item:hover,
+    .workout-summary-item:focus-visible {
+      background: #1c2128;
+      border-color: #3fb950;
+      outline: none;
+      transform: translateY(-2px);
+    }
+
+    .workout-summary-label {
+      display: block;
+      color: #8b949e;
+      font-size: 0.68rem;
+      line-height: 1.25;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+
+    .workout-summary-value {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #3fb950;
+      overflow-wrap: anywhere;
+    }
+
+    .workout-summary-duration {
+      font-size: 0.78em;
+      font-weight: 600;
+      color: #c9d1d9;
+    }
+
+    .workout-summary-secondary {
+      display: block;
+      color: #8b949e;
+      font-size: 0.7rem;
+      line-height: 1.4;
+      margin-top: 5px;
+      text-transform: uppercase;
+    }
+
+    .workout-saitama-card {
+      text-align: left;
+    }
+
+    .workout-saitama-title {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #f0f6fc;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .workout-saitama-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 0;
+      border-top: 1px solid #30363d;
+      font-size: 0.72rem;
+    }
+
+    .workout-saitama-row span:first-child {
+      color: #8b949e;
+    }
+
+    .workout-saitama-row strong {
+      color: #3fb950;
+      font-size: 0.78rem;
+    }
+
+    .workout-saitama-row small {
+      color: #8b949e;
+      white-space: nowrap;
+    }
+
+    .workout-saitama-message {
+      display: block;
+      color: #8b949e;
+      font-size: 0.7rem;
+      font-weight: 400;
+      margin-top: 9px;
+    }
+
+    .workout-month-archive {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 12px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .workout-month-archive summary {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 0.85rem;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .workout-month-archive summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .workout-month-title {
+      color: #f0f6fc;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .workout-month-meta {
+      color: #8b949e;
+      font-size: 0.72rem;
+      line-height: 1.45;
+      text-transform: uppercase;
+    }
+
+    .workout-month-records {
+      padding: 0 0.65rem 0.65rem;
+    }
+
+    .workout-legacy-card {
+      border-color: rgba(210, 153, 34, 0.35);
+      background: linear-gradient(145deg, #161b22, #0d1117 70%);
+    }
+
+    .workout-legacy-intro {
+      color: #8b949e;
+      font-size: 0.75rem;
+      margin: -2px 0 12px;
+    }
+
+    .workout-legacy-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .workout-legacy-stat {
+      min-width: 0;
+      padding: 10px;
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 10px;
+    }
+
+    .workout-legacy-stat-wide {
+      grid-column: 1 / -1;
+    }
+
+    .workout-legacy-label {
+      display: block;
+      color: #8b949e;
+      font-size: 0.66rem;
+      line-height: 1.35;
+      text-transform: uppercase;
+    }
+
+    .workout-legacy-value {
+      display: block;
+      color: #e3b341;
+      font-size: 0.95rem;
+      font-weight: 700;
+      line-height: 1.35;
+      margin-top: 4px;
+      overflow-wrap: anywhere;
+    }
+
+    .workout-legacy-detail {
+      display: block;
+      color: #8b949e;
+      font-size: 0.68rem;
+      line-height: 1.4;
+      margin-top: 4px;
+    }
+
+    .workout-legacy-detail-compact {
+      font-size: 0.62rem;
+      white-space: nowrap;
+    }
+
+    .workout-legacy-distance {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(110px, 0.8fr);
+      gap: 12px;
+      align-items: center;
+    }
+
+    .workout-earth-progress-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: #8b949e;
+      font-size: 0.65rem;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .workout-earth-progress-track {
+      height: 10px;
+      overflow: hidden;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 999px;
+    }
+
+    .workout-earth-progress-fill {
+      height: 100%;
+      min-width: 0;
+      background: linear-gradient(90deg, #238636, #3fb950);
+      border-radius: inherit;
+      transition: width 0.3s ease;
+    }
+
+    @media (max-width: 420px) {
+      .workout-legacy-distance {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .workout-record {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 12px;
+      padding: 0.85rem;
+      margin-top: 8px;
+    }
+
+    .workout-record-title {
+      font-weight: 700;
+      font-size: 0.88rem;
+    }
+
+    .workout-record-meta,
+    .workout-record-details {
+      color: #8b949e;
+      font-size: 0.74rem;
+      line-height: 1.5;
+      margin-top: 3px;
+      overflow-wrap: anywhere;
+    }
+
+    .workout-record-details {
+      color: #c9d1d9;
+    }
+
+    .workout-type-option {
+      text-align: left;
+      padding: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .workout-type-option strong,
+    .workout-type-option span {
+      display: block;
+    }
+
+    .workout-type-option span {
+      margin-top: 4px;
+      color: #8b949e;
+      font-size: 0.75rem;
+      font-weight: 400;
+    }
+
+    .workout-chart {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+      align-items: end;
+      min-height: 190px;
+      padding: 1rem 0.2rem 0.3rem;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .workout-chart-day {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      height: 170px;
+    }
+
+    .workout-chart-value {
+      color: #f0f6fc;
+      font-size: 0.62rem;
+      font-weight: 700;
+      text-align: center;
+      min-height: 1em;
+    }
+
+    .workout-chart-bar-area {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      height: 125px;
+      width: 100%;
+    }
+
+    .workout-chart-bar {
+      width: min(24px, 72%);
+      min-height: 0;
+      border-radius: 7px 7px 2px 2px;
+      background: #21262d;
+      box-shadow: 0 0 12px rgba(63, 185, 80, 0.16);
+      transition: height 0.25s ease;
+    }
+
+    .workout-chart-bar.has-value {
+      min-height: 5px;
+      background: linear-gradient(180deg, #3fb950, #238636);
+    }
+
+    .workout-chart-day-label {
+      color: #8b949e;
+      font-size: 0.62rem;
+      font-weight: 600;
+    }
+
     /* VIEWS */
     .view-section {
       display: none;
@@ -519,10 +869,7 @@
       <div class="brand-title" onclick="openModule('viewHub')" style="cursor: pointer" title="Voltar ao Início">
         <span>🥗 Toba Health</span>
       </div>
-      <div class="header-actions">
-        <button class="gear-btn" onclick="openSettingsModal()" title="Configurações">
-          ⚙️
-        </button>
+      <div class="header-actions" id="headerActions">
         <a href="../index.html" class="back-nav-btn">Portal ›</a>
       </div>
     </div>
@@ -555,34 +902,17 @@
       </div>
 
       <!-- CARD TREINOS -->
-      <div class="module-card disabled">
+      <div class="module-card" onclick="openModule('viewTraining')">
         <div class="module-header">
           <div class="module-name">🏋️‍♂️ Treinos & Cargas</div>
-          <span class="badge badge-soon">Em Breve</span>
         </div>
         <div class="module-desc">
-          Ficar grandão biiirl, anotar suas séries e moer na academia sem
-          frescura.
+          Registre seus treinos, caminhadas e evolução no seu ritmo.
         </div>
       </div>
     </div>
 
-    <!-- VIEW 2: MÓDULO PESAGEM -->
     <div id="viewPesagem" class="view-section">
-      <div style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-          ">
-        <button class="back-nav-btn" onclick="openModule('viewHub')">
-          ‹ Módulos
-        </button>
-        <button class="btn btn-secondary btn-sm" onclick="openScaleConfigModal()">
-          ⚙️ Métricas da Balança
-        </button>
-      </div>
-
       <!-- CARD PRINCIPAL PESAGEM -->
       <div class="card">
         <div class="card-header">
@@ -610,6 +940,95 @@
         <div id="historyList">
           <span style="font-size: 0.8rem; color: #8b949e">Nenhum registro no histórico.</span>
         </div>
+      </div>
+    </div>
+
+    <div id="viewTraining" class="view-section">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title" id="workoutMonthTitle">🏋️‍♂️ Treinos</span>
+          <button class="btn btn-sm" onclick="openWorkoutModal()">
+            + Registrar treino
+          </button>
+        </div>
+        <div class="workout-summary-grid" id="workoutSummary"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom: 0.5rem">
+          🏆 Hall dos Heróis
+        </div>
+        <div id="workoutLegacy">
+          <span style="font-size: 0.8rem; color: #8b949e">Seu legado de treinos aparecerá aqui.</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom: 0.5rem">
+          📜 Histórico mensal
+        </div>
+        <div id="workoutHistory">
+          <span style="font-size: 0.8rem; color: #8b949e">Os meses anteriores aparecerão aqui.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE REGISTRO DE TREINO -->
+  <div class="modal-overlay" id="workoutModal">
+    <div class="modal-body">
+      <div class="modal-header">
+        <div class="modal-title" id="workoutModalTitle">🏋️ Registrar treino</div>
+        <button class="close-btn" onclick="closeWorkoutModal()">✖</button>
+      </div>
+
+      <div id="workoutTypePicker">
+        <div class="hub-title">Treinos prontos</div>
+        <button type="button" class="btn btn-secondary workout-type-option" onclick="selectWorkoutType('saitama')">
+          <strong>👊 Treino lendário do Mestre Saitama</strong>
+          <span>O herói do expediente registra o que conseguiu fazer hoje.</span>
+        </button>
+        <button type="button" class="btn btn-secondary workout-type-option" onclick="selectWorkoutType('walking')">
+          <strong>🚶 Caminhada / Corrida</strong>
+          <span>Do passeio contemplativo ao sprint para não perder o ônibus: registra km, tempo e calorias.</span>
+        </button>
+        <button type="button" class="btn btn-secondary workout-type-option" onclick="selectWorkoutType('bike')">
+          <strong>🚴 Bike</strong>
+          <span>Pedalando rumo ao shape — ou só fugindo da esteira. Anote distância, tempo e calorias.</span>
+        </button>
+        <button type="button" class="btn btn-secondary workout-type-option" onclick="selectWorkoutType('elliptical')">
+          <strong>🏃 Elíptico</strong>
+          <span>Corrida sem sair do lugar: o cardio trabalha e a academia continua no mesmo endereço.</span>
+        </button>
+
+        <div class="section-divider"></div>
+        <div class="hub-title">Do seu jeito</div>
+        <button type="button" class="btn btn-secondary workout-type-option" onclick="selectWorkoutType('custom')">
+          <strong>➕ Treino personalizado</strong>
+          <span>Registre outra atividade e escolha os dados para acompanhar.</span>
+        </button>
+      </div>
+
+      <form id="workoutForm" onsubmit="saveWorkout(event)" style="display: none">
+        <button type="button" class="back-nav-btn" onclick="backToWorkoutTypes()" style="margin-bottom: 0.8rem">
+          ‹ Tipos de treino
+        </button>
+        <div id="workoutFormFields"></div>
+        <button type="submit" class="btn">Salvar treino 💪</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- GRÁFICO SEMANAL DO CONSOLIDADO DE TREINOS -->
+  <div class="modal-overlay" id="workoutChartModal">
+    <div class="modal-body">
+      <div class="modal-header">
+        <div class="modal-title" id="workoutChartTitle">📊 Últimos 7 dias</div>
+        <button class="close-btn" onclick="closeWorkoutChart()" aria-label="Fechar gráfico">✖</button>
+      </div>
+      <div id="workoutChartDescription" style="font-size: 0.78rem; color: #8b949e; margin-bottom: 0.5rem"></div>
+      <div class="workout-chart" id="workoutChart" role="img" aria-label="Comparativo dos últimos sete dias"></div>
+      <div id="workoutChartWeek" style="font-size: 0.7rem; color: #8b949e; text-align: center; margin-top: 0.7rem">
       </div>
     </div>
   </div>
@@ -732,6 +1151,23 @@
     </div>
   </div>
 
+  <!-- MENU DE CONFIGURAÇÕES -->
+  <div class="modal-overlay" id="settingsMenuModal">
+    <div class="modal-body">
+      <div class="modal-header">
+        <div class="modal-title">⚙️ Configurações</div>
+        <button class="close-btn" onclick="closeSettingsMenuModal()">✖</button>
+      </div>
+
+      <button class="btn btn-secondary" onclick="openProfileSettingsModal()" style="margin-bottom: 0.6rem">
+        👤 Perfil do Usuário
+      </button>
+      <button class="btn btn-secondary" onclick="openScaleSettingsFromMenu()">
+        ⚖️ Configuração da Balança
+      </button>
+    </div>
+  </div>
+
   <!-- MODAL CONFIGURAÇÃO E REORDENAÇÃO DAS MÉTRICAS DA BALANÇA -->
   <div class="modal-overlay" id="scaleConfigModal">
     <div class="modal-body">
@@ -757,7 +1193,7 @@
   <div class="modal-overlay" id="settingsModal">
     <div class="modal-body">
       <div class="modal-header">
-        <div class="modal-title">⚙️ Configurações Gerais</div>
+        <div class="modal-title">👤 Perfil do Usuário</div>
         <button class="close-btn" onclick="closeSettingsModal()">✖</button>
       </div>
 
@@ -1093,9 +1529,11 @@
       gender: null,
       weighIns: [],
       metricsOrder: DEFAULT_METRICS_ORDER,
+      workouts: [],
     };
 
     if (!healthDb.weighIns) healthDb.weighIns = [];
+    if (!Array.isArray(healthDb.workouts)) healthDb.workouts = [];
     if (!healthDb.metricsOrder) healthDb.metricsOrder = DEFAULT_METRICS_ORDER;
     healthDb.metricsOrder = healthDb.metricsOrder.filter(
       (m) => m.key !== "bmi",
@@ -1108,6 +1546,588 @@
         .querySelectorAll(".view-section")
         .forEach((v) => v.classList.remove("active"));
       document.getElementById(viewId).classList.add("active");
+
+      const headerActions = document.getElementById("headerActions");
+      if (viewId === "viewHub") {
+        headerActions.innerHTML = '<a href="../index.html" class="back-nav-btn">Portal ›</a>';
+      } else {
+        headerActions.innerHTML = `
+          <button class="gear-btn" onclick="openSettingsModal()" title="Configurações" aria-label="Configurações">⚙️</button>
+          <button class="back-nav-btn" onclick="openModule('viewHub')">Hub ›</button>
+        `;
+      }
+
+      if (viewId === "viewTraining") renderWorkoutScreen();
+    }
+
+    function getLocalDateInputValue(date = new Date()) {
+      const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      return localDate.toISOString().slice(0, 10);
+    }
+
+    function getMonday(date) {
+      const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+      return monday;
+    }
+
+    function formatWorkoutDate(dateValue) {
+      const date = new Date(`${dateValue}T12:00:00`);
+      return Number.isNaN(date.getTime())
+        ? "Data inválida"
+        : date.toLocaleDateString("pt-BR");
+    }
+
+    function escapeWorkoutHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (character) => {
+        const entities = {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        };
+        return entities[character];
+      });
+    }
+
+    function formatWorkoutNumber(value, maximumFractionDigits = 1) {
+      return Number(value || 0).toLocaleString("pt-BR", {
+        maximumFractionDigits,
+      });
+    }
+
+    function getWorkoutMonthKey(dateValue) {
+      const match = /^(\d{4})-(\d{2})-\d{2}$/.exec(String(dateValue || ""));
+      return match ? `${match[1]}-${match[2]}` : "";
+    }
+
+    function formatWorkoutMonth(monthKey) {
+      const date = new Date(`${monthKey}-01T12:00:00`);
+      if (Number.isNaN(date.getTime())) return "Mês inválido";
+      const label = date.toLocaleDateString("pt-BR", {
+        month: "long",
+        year: "numeric",
+      });
+      return label.charAt(0).toUpperCase() + label.slice(1);
+    }
+
+    function getWorkoutMonthStats(workouts, monthKey, referenceDate = new Date()) {
+      const [year, month] = monthKey.split("-").map(Number);
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const isCurrentMonth =
+        monthKey === getWorkoutMonthKey(getLocalDateInputValue(referenceDate));
+      const elapsedDays = isCurrentMonth
+        ? referenceDate.getDate()
+        : daysInMonth;
+      const monthWorkouts = workouts.filter(
+        (workout) =>
+          getWorkoutMonthKey(workout.date) === monthKey &&
+          (!isCurrentMonth || workout.date <= getLocalDateInputValue(referenceDate)),
+      );
+      const saitamaWorkouts = monthWorkouts.filter(
+        (workout) => workout.type === "saitama",
+      );
+      const activeDays = new Set(monthWorkouts.map((workout) => workout.date));
+      const total = (field, items = monthWorkouts) =>
+        items.reduce(
+          (sum, workout) => sum + (Number(workout[field]) || 0),
+          0,
+        );
+
+      return {
+        workouts: monthWorkouts,
+        count: monthWorkouts.length,
+        activeDays: activeDays.size,
+        elapsedDays,
+        efficiency: elapsedDays ? (activeDays.size / elapsedDays) * 100 : 0,
+        durationMinutes: total("durationMinutes"),
+        calories: total("calories"),
+        distance: total("distanceKm"),
+        saitama: {
+          pushups: total("pushups", saitamaWorkouts),
+          situps: total("situps", saitamaWorkouts),
+          squats: total("squats", saitamaWorkouts),
+        },
+      };
+    }
+
+    function renderWorkoutRecord(workout) {
+      const metrics = [];
+      if (workout.pushups) metrics.push(`${formatWorkoutNumber(workout.pushups, 0)} flexões`);
+      if (workout.situps) metrics.push(`${formatWorkoutNumber(workout.situps, 0)} abdominais`);
+      if (workout.squats) metrics.push(`${formatWorkoutNumber(workout.squats, 0)} agachamentos`);
+      if (workout.distanceKm) metrics.push(`${formatWorkoutNumber(workout.distanceKm, 2)} km`);
+      if (workout.durationMinutes) metrics.push(`${formatWorkoutNumber(workout.durationMinutes, 0)} min`);
+      if (workout.calories) metrics.push(`${formatWorkoutNumber(workout.calories, 0)} kcal`);
+      if (workout.sets) metrics.push(`${formatWorkoutNumber(workout.sets, 0)} séries`);
+      if (workout.reps) metrics.push(`${formatWorkoutNumber(workout.reps, 0)} repetições`);
+      if (workout.weightKg) metrics.push(`${formatWorkoutNumber(workout.weightKg, 1)} kg`);
+
+      return `
+        <div class="workout-record">
+          <div>
+            <div class="workout-record-title">${escapeWorkoutHtml(workout.title)}</div>
+            <div class="workout-record-meta">${formatWorkoutDate(workout.date)}</div>
+            ${metrics.length ? `<div class="workout-record-details">${metrics.join(" · ")}</div>` : ""}
+            ${workout.notes ? `<div class="workout-record-meta">${escapeWorkoutHtml(workout.notes)}</div>` : ""}
+          </div>
+          <button type="button" class="action-icon-btn" data-workout-delete="${escapeWorkoutHtml(workout.id)}" title="Excluir registro" aria-label="Excluir registro">🗑️</button>
+        </div>
+      `;
+    }
+
+    function renderWorkoutScreen() {
+      const workouts = [...healthDb.workouts].sort((a, b) =>
+        String(b.date).localeCompare(String(a.date)),
+      );
+      const today = new Date();
+      const currentMonthKey = getWorkoutMonthKey(
+        getLocalDateInputValue(today),
+      );
+      const currentMonth = getWorkoutMonthStats(
+        workouts,
+        currentMonthKey,
+        today,
+      );
+      const allTimeStats = workouts.reduce(
+        (totals, workout) => {
+          totals.durationMinutes += Number(workout.durationMinutes) || 0;
+          totals.calories += Number(workout.calories) || 0;
+          totals.distance += Number(workout.distanceKm) || 0;
+          if (workout.type === "saitama") {
+            totals.pushups += Number(workout.pushups) || 0;
+            totals.situps += Number(workout.situps) || 0;
+            totals.squats += Number(workout.squats) || 0;
+          }
+          return totals;
+        },
+        {
+          durationMinutes: 0,
+          calories: 0,
+          distance: 0,
+          pushups: 0,
+          situps: 0,
+          squats: 0,
+        },
+      );
+      const dailyAverage = (value) =>
+        currentMonth.elapsedDays ? value / currentMonth.elapsedDays : 0;
+      const earthCircumferenceKm = 40075;
+      const earthDistancePercentage =
+        (allTimeStats.distance / earthCircumferenceKm) * 100;
+
+      document.getElementById("workoutMonthTitle").innerText =
+        `🏋️‍♂️ Treinos - ${formatWorkoutMonth(currentMonthKey)}`;
+      const summary = document.getElementById("workoutSummary");
+      summary.innerHTML = `
+        <button type="button" class="workout-summary-item workout-summary-item-wide" data-workout-metric="workouts" aria-haspopup="dialog">
+          <span class="workout-summary-label">Treinos neste mês</span>
+          <span class="workout-summary-value">${currentMonth.count} TREINOS <span class="workout-summary-duration">(${formatWorkoutNumber(currentMonth.durationMinutes, 0)} MINUTOS TREINANDO!)</span></span>
+          <span class="workout-summary-secondary">Treinou em ${currentMonth.activeDays} de ${currentMonth.elapsedDays} dias · eficiência de ${formatWorkoutNumber(currentMonth.efficiency)}%</span>
+        </button>
+        <button type="button" class="workout-summary-item" data-workout-metric="calories" aria-haspopup="dialog">
+          <span class="workout-summary-label">Calorias no mês</span>
+          <span class="workout-summary-value">${formatWorkoutNumber(currentMonth.calories, 0)} kcal</span>
+          <span class="workout-summary-secondary">Média: ${formatWorkoutNumber(dailyAverage(currentMonth.calories), 0)} kcal/dia</span>
+        </button>
+        <button type="button" class="workout-summary-item" data-workout-metric="distance" aria-haspopup="dialog">
+          <span class="workout-summary-label">Distância no mês</span>
+          <span class="workout-summary-value">${formatWorkoutNumber(currentMonth.distance, 2)} km</span>
+          <span class="workout-summary-secondary">Média: ${formatWorkoutNumber(dailyAverage(currentMonth.distance), 2)} km/dia</span>
+        </button>
+        <button type="button" class="workout-summary-item workout-summary-item-wide workout-saitama-card" data-workout-metric="saitamaReps" aria-haspopup="dialog">
+          <span class="workout-saitama-title">👊 Mestre Saitama está orgulhoso de você</span>
+          <span class="workout-saitama-row">
+            <span>Abdominais</span>
+            <strong>${formatWorkoutNumber(currentMonth.saitama.situps, 0)}</strong>
+            <small>${formatWorkoutNumber(dailyAverage(currentMonth.saitama.situps), 1)}/dia</small>
+          </span>
+          <span class="workout-saitama-row">
+            <span>Flexões</span>
+            <strong>${formatWorkoutNumber(currentMonth.saitama.pushups, 0)}</strong>
+            <small>${formatWorkoutNumber(dailyAverage(currentMonth.saitama.pushups), 1)}/dia</small>
+          </span>
+          <span class="workout-saitama-row">
+            <span>Agachamentos</span>
+            <strong>${formatWorkoutNumber(currentMonth.saitama.squats, 0)}</strong>
+            <small>${formatWorkoutNumber(dailyAverage(currentMonth.saitama.squats), 1)}/dia</small>
+          </span>
+          <span class="workout-saitama-message">Cada repetição conta. O herói careca reconhece seu esforço.</span>
+        </button>
+      `;
+      summary.onclick = (event) => {
+        const metricCard = event.target.closest("[data-workout-metric]");
+        if (metricCard) openWorkoutChart(metricCard.dataset.workoutMetric);
+      };
+
+      document.getElementById("workoutLegacy").innerHTML = `
+        <p class="workout-legacy-intro">Olha o tamanho do legado que você já construiu:</p>
+        <div class="workout-legacy-grid">
+          <div class="workout-legacy-stat">
+            <span class="workout-legacy-label">⏱️ Tempo de treino</span>
+            <strong class="workout-legacy-value">${formatWorkoutNumber(allTimeStats.durationMinutes, 0)} minutos</strong>
+            <span class="workout-legacy-detail">em ${formatWorkoutNumber(workouts.length, 0)} treinos registrados</span>
+          </div>
+          <div class="workout-legacy-stat">
+            <span class="workout-legacy-label">🔥 Energia queimada</span>
+            <strong class="workout-legacy-value">${formatWorkoutNumber(allTimeStats.calories, 0)} kcal</strong>
+            <span class="workout-legacy-detail workout-legacy-detail-compact">🍕 ≈ ${formatWorkoutNumber(allTimeStats.calories / 275, 1)} fatias de pizza</span>
+          </div>
+          <div class="workout-legacy-stat workout-legacy-stat-wide workout-legacy-distance">
+            <div>
+              <span class="workout-legacy-label">🌍 Distância percorrida</span>
+              <strong class="workout-legacy-value">${formatWorkoutNumber(allTimeStats.distance, 2)} km</strong>
+            </div>
+            <div>
+              <div class="workout-earth-progress-label">
+                <span>Volta na Terra</span>
+                <span>${formatWorkoutNumber(earthDistancePercentage, 2)}%</span>
+              </div>
+              <div
+                class="workout-earth-progress-track"
+                role="progressbar"
+                aria-label="Progresso de uma volta ao redor da Terra"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="${Math.min(100, Math.max(0, earthDistancePercentage))}"
+              >
+                <div class="workout-earth-progress-fill" style="width: ${Math.min(100, Math.max(0, earthDistancePercentage))}%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="workout-legacy-stat workout-legacy-stat-wide">
+            <span class="workout-legacy-label">💪 Repetições do treino Saitama</span>
+            <strong class="workout-legacy-value">${formatWorkoutNumber(allTimeStats.situps, 0)} abdominais · ${formatWorkoutNumber(allTimeStats.pushups, 0)} flexões · ${formatWorkoutNumber(allTimeStats.squats, 0)} agachamentos</strong>
+            <span class="workout-legacy-detail">O careca está ficando preocupado com a concorrência.</span>
+          </div>
+        </div>
+      `;
+
+      const history = document.getElementById("workoutHistory");
+      const archivedMonths = [...new Set(
+        workouts
+          .map((workout) => getWorkoutMonthKey(workout.date))
+          .filter((monthKey) => monthKey && monthKey < currentMonthKey),
+      )].sort((a, b) => b.localeCompare(a));
+      if (!archivedMonths.length) {
+        history.innerHTML =
+          '<span style="font-size: 0.8rem; color: #8b949e">Os meses anteriores aparecerão aqui.</span>';
+      } else {
+        history.innerHTML = archivedMonths
+          .map((monthKey) => {
+            const month = getWorkoutMonthStats(workouts, monthKey, today);
+            const calories = formatWorkoutNumber(month.calories, 0);
+            const distance = formatWorkoutNumber(month.distance, 2);
+            return `
+              <details class="workout-month-archive">
+                <summary>
+                  <span class="workout-month-title">${formatWorkoutMonth(monthKey)}</span>
+                  <span class="workout-month-meta">${month.count} treinos · ${calories} kcal · ${distance} km</span>
+                </summary>
+                <div class="workout-month-records">
+                  ${month.workouts.map(renderWorkoutRecord).join("")}
+                </div>
+              </details>
+            `;
+          })
+          .join("");
+      }
+
+      history.onclick = (event) => {
+        const deleteButton = event.target.closest("[data-workout-delete]");
+        if (deleteButton) deleteWorkout(deleteButton.dataset.workoutDelete);
+      };
+    }
+
+    function openWorkoutChart(metric) {
+      const chartOptions = {
+        workouts: {
+          title: "🏋️ Treinos por dia",
+          description: "Quantidade de treinos registrados em cada dia.",
+          unit: "treinos",
+          value: (workouts) => workouts.length,
+        },
+        calories: {
+          title: "🔥 Calorias por dia",
+          description: "Soma das calorias registradas em cada dia.",
+          unit: "kcal",
+          value: (workouts) =>
+            workouts.reduce(
+              (total, workout) => total + (Number(workout.calories) || 0),
+              0,
+            ),
+        },
+        distance: {
+          title: "📍 Distância por dia",
+          description: "Soma da distância registrada em cada dia.",
+          unit: "km",
+          value: (workouts) =>
+            workouts.reduce(
+              (total, workout) => total + (Number(workout.distanceKm) || 0),
+              0,
+            ),
+        },
+        saitamaReps: {
+          title: "👊 Repetições do Saitama por dia",
+          description: "Flexões, abdominais e agachamentos somados por dia.",
+          unit: "reps",
+          value: (workouts) =>
+            workouts.reduce(
+              (total, workout) =>
+                total +
+                (workout.type === "saitama"
+                  ? (Number(workout.pushups) || 0) +
+                  (Number(workout.situps) || 0) +
+                  (Number(workout.squats) || 0)
+                  : 0),
+              0,
+            ),
+        },
+      };
+      const selectedMetric = chartOptions[metric];
+      if (!selectedMetric) return;
+
+      const today = new Date();
+      const todayStart = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate(),
+      );
+      const monday = getMonday(todayStart);
+      const days = Array.from({ length: 7 }, (_, index) => {
+        const date = new Date(monday);
+        date.setDate(monday.getDate() + index);
+        const dateKey = getLocalDateInputValue(date);
+        const dayWorkouts = healthDb.workouts.filter(
+          (workout) => workout.date === dateKey,
+        );
+        return {
+          label: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"][
+            date.getDay()
+          ],
+          date,
+          value: selectedMetric.value(dayWorkouts),
+        };
+      });
+      const maximum = Math.max(...days.map((day) => day.value), 0);
+
+      document.getElementById("workoutChartTitle").innerText =
+        selectedMetric.title;
+      document.getElementById("workoutChartDescription").innerText =
+        selectedMetric.description;
+      document.getElementById("workoutChart").innerHTML = days
+        .map((day) => {
+          const isFuture = day.date > todayStart;
+          const height =
+            day.value > 0 && maximum > 0
+              ? Math.max((day.value / maximum) * 100, 5)
+              : 0;
+          const valueLabel =
+            metric === "distance"
+              ? formatWorkoutNumber(day.value, 2)
+              : formatWorkoutNumber(day.value, 0);
+          return `
+            <div class="workout-chart-day" aria-label="${day.label}: ${valueLabel} ${selectedMetric.unit}${isFuture ? ", dia futuro" : ""}">
+              <span class="workout-chart-value">${isFuture ? "·" : valueLabel}</span>
+              <div class="workout-chart-bar-area">
+                <div class="workout-chart-bar${day.value > 0 ? " has-value" : ""}" style="height: ${day.value > 0 ? height : 4}%"></div>
+              </div>
+              <span class="workout-chart-day-label">${day.label}</span>
+            </div>
+          `;
+        })
+        .join("");
+      document.getElementById("workoutChartWeek").innerText =
+        `Semana de ${formatWorkoutDate(getLocalDateInputValue(days[0].date))} a ${formatWorkoutDate(getLocalDateInputValue(days[6].date))} · unidade: ${selectedMetric.unit}`;
+      document.getElementById("workoutChartModal").classList.add("active");
+    }
+
+    function closeWorkoutChart() {
+      document.getElementById("workoutChartModal").classList.remove("active");
+    }
+
+    let selectedWorkoutType = "";
+
+    function openWorkoutModal() {
+      selectedWorkoutType = "";
+      document.getElementById("workoutModalTitle").innerText =
+        "🏋️ Registrar treino";
+      document.getElementById("workoutTypePicker").style.display = "block";
+      document.getElementById("workoutForm").style.display = "none";
+      document.getElementById("workoutModal").classList.add("active");
+    }
+
+    function closeWorkoutModal() {
+      document.getElementById("workoutModal").classList.remove("active");
+    }
+
+    function backToWorkoutTypes() {
+      selectedWorkoutType = "";
+      document.getElementById("workoutTypePicker").style.display = "block";
+      document.getElementById("workoutForm").style.display = "none";
+    }
+
+    function workoutNumberField(id, label, step = "1", placeholder = "") {
+      return `
+        <div class="form-group">
+          <label for="workout-${id}">${label}</label>
+          <input id="workout-${id}" class="form-control" type="number" min="0" step="${step}" placeholder="${placeholder}" />
+        </div>
+      `;
+    }
+
+    function selectWorkoutType(type) {
+      const cardioFields = (dateLabel) => `
+        <div class="form-group">
+          <label for="workout-date">${dateLabel}</label>
+          <input id="workout-date" class="form-control" type="date" required value="${getLocalDateInputValue()}" />
+        </div>
+        <div class="grid-2">
+          ${workoutNumberField("distanceKm", "Distância (km)", "0.01")}
+          ${workoutNumberField("durationMinutes", "Tempo (min)", "1")}
+          ${workoutNumberField("calories", "Calorias (kcal)", "1")}
+        </div>
+      `;
+      const forms = {
+        saitama: {
+          title: "👊 Treino lendário do Mestre Saitama",
+          fields: `
+            <div class="form-group">
+              <label for="workout-date">Data do treino</label>
+              <input id="workout-date" class="form-control" type="date" required value="${getLocalDateInputValue()}" />
+            </div>
+            <div class="grid-2">
+              ${workoutNumberField("pushups", "Flexões feitas", "1")}
+              ${workoutNumberField("situps", "Abdominais feitos", "1")}
+              ${workoutNumberField("squats", "Agachamentos feitos", "1")}
+              ${workoutNumberField("distanceKm", "Caminhada / corrida (km)", "0.01")}
+              ${workoutNumberField("durationMinutes", "Duração (min)", "1")}
+              ${workoutNumberField("calories", "Calorias (kcal)", "1")}
+            </div>
+            <p style="font-size: 0.75rem; color: #8b949e; margin-bottom: 0.8rem">
+              Registre só o que deu para fazer hoje. Não precisa completar o treino inteiro.
+            </p>
+          `,
+        },
+        walking: {
+          title: "🚶 Caminhada / Corrida",
+          fields: cardioFields("Data da caminhada / corrida"),
+        },
+        bike: {
+          title: "🚴 Bike",
+          fields: cardioFields("Data do pedal"),
+        },
+        elliptical: {
+          title: "🏃 Elíptico",
+          fields: cardioFields("Data do treino no elíptico"),
+        },
+        custom: {
+          title: "➕ Treino personalizado",
+          fields: `
+            <div class="form-group">
+              <label for="workout-title">Nome da atividade</label>
+              <input id="workout-title" class="form-control" type="text" maxlength="60" placeholder="Ex: Musculação, bicicleta..." required />
+            </div>
+            <div class="form-group">
+              <label for="workout-date">Data do treino</label>
+              <input id="workout-date" class="form-control" type="date" required value="${getLocalDateInputValue()}" />
+            </div>
+            <div class="grid-2">
+              ${workoutNumberField("durationMinutes", "Duração (min)", "1")}
+              ${workoutNumberField("calories", "Calorias (kcal)", "1")}
+              ${workoutNumberField("distanceKm", "Distância (km)", "0.01")}
+              ${workoutNumberField("sets", "Séries", "1")}
+              ${workoutNumberField("reps", "Repetições", "1")}
+              ${workoutNumberField("weightKg", "Carga (kg)", "0.5")}
+            </div>
+            <div class="form-group">
+              <label for="workout-notes">Observações (opcional)</label>
+              <input id="workout-notes" class="form-control" type="text" maxlength="160" placeholder="Como foi o treino?" />
+            </div>
+          `,
+        },
+      };
+      const form = forms[type];
+      if (!form) return;
+
+      selectedWorkoutType = type;
+      document.getElementById("workoutModalTitle").innerText = form.title;
+      document.getElementById("workoutTypePicker").style.display = "none";
+      document.getElementById("workoutFormFields").innerHTML = form.fields;
+      document.getElementById("workoutForm").style.display = "block";
+    }
+
+    function readWorkoutNumber(id) {
+      const value = document.getElementById(`workout-${id}`)?.value;
+      if (value === undefined || value === "") return null;
+      const number = Number(value);
+      return Number.isFinite(number) && number >= 0 ? number : null;
+    }
+
+    function saveWorkout(event) {
+      event.preventDefault();
+      if (!selectedWorkoutType) return;
+
+      const workout = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        type: selectedWorkoutType,
+        title:
+          selectedWorkoutType === "saitama"
+            ? "Treino lendário do Mestre Saitama"
+            : selectedWorkoutType === "walking"
+              ? "Caminhada / Corrida"
+              : selectedWorkoutType === "bike"
+                ? "Bike"
+                : selectedWorkoutType === "elliptical"
+                  ? "Elíptico"
+                  : document.getElementById("workout-title").value.trim(),
+        date: document.getElementById("workout-date").value,
+        durationMinutes: readWorkoutNumber("durationMinutes"),
+        calories: readWorkoutNumber("calories"),
+        distanceKm: readWorkoutNumber("distanceKm"),
+        pushups: readWorkoutNumber("pushups"),
+        situps: readWorkoutNumber("situps"),
+        squats: readWorkoutNumber("squats"),
+        sets: readWorkoutNumber("sets"),
+        reps: readWorkoutNumber("reps"),
+        weightKg: readWorkoutNumber("weightKg"),
+        notes: document.getElementById("workout-notes")?.value.trim() || "",
+      };
+      const measurements = [
+        workout.durationMinutes,
+        workout.calories,
+        workout.distanceKm,
+        workout.pushups,
+        workout.situps,
+        workout.squats,
+        workout.sets,
+        workout.reps,
+        workout.weightKg,
+      ];
+
+      if (!workout.date || (selectedWorkoutType === "custom" && !workout.title)) {
+        alert("Preencha o nome da atividade e a data do treino.");
+        return;
+      }
+      if (!measurements.some((value) => value !== null && value > 0)) {
+        alert("Informe pelo menos uma quantidade maior que zero para registrar o treino.");
+        return;
+      }
+
+      healthDb.workouts.push(workout);
+      localStorage.setItem(HEALTH_KEY, JSON.stringify(healthDb));
+      closeWorkoutModal();
+      renderWorkoutScreen();
+    }
+
+    function deleteWorkout(workoutId) {
+      if (!confirm("Deseja excluir este registro de treino?")) return;
+      healthDb.workouts = healthDb.workouts.filter(
+        (workout) => String(workout.id) !== String(workoutId),
+      );
+      localStorage.setItem(HEALTH_KEY, JSON.stringify(healthDb));
+      renderWorkoutScreen();
     }
 
     /* MÁSCARAS TOBA BANK */
@@ -1687,10 +2707,24 @@
 
     /* ROLDANA & CONFIGS GERAIS */
     function openSettingsModal() {
+      document.getElementById("settingsMenuModal").classList.add("active");
+    }
+
+    function closeSettingsMenuModal() {
+      document.getElementById("settingsMenuModal").classList.remove("active");
+    }
+
+    function openProfileSettingsModal() {
+      closeSettingsMenuModal();
       document.getElementById("cfgAge").value = healthDb.age || "";
       document.getElementById("cfgHeight").value = healthDb.height || "";
       document.getElementById("cfgGender").value = healthDb.gender || "";
       document.getElementById("settingsModal").classList.add("active");
+    }
+
+    function openScaleSettingsFromMenu() {
+      closeSettingsMenuModal();
+      openScaleConfigModal();
     }
 
     function closeSettingsModal() {
@@ -1734,6 +2768,7 @@
           // propriedades importadas tenham os tipos esperados pelo aplicativo.
           healthDb = JSON.parse(event.target.result);
           if (!healthDb.weighIns) healthDb.weighIns = [];
+          if (!Array.isArray(healthDb.workouts)) healthDb.workouts = [];
           if (!healthDb.metricsOrder)
             healthDb.metricsOrder = DEFAULT_METRICS_ORDER;
           healthDb.metricsOrder = healthDb.metricsOrder.filter(
@@ -1764,6 +2799,7 @@
           gender: null,
           weighIns: [],
           metricsOrder: JSON.parse(JSON.stringify(DEFAULT_METRICS_ORDER)), // Clone real do padrão!
+          workouts: [],
         };
         closeSettingsModal();
         updateUI();
