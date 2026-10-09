@@ -11,10 +11,76 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family:
-        system-ui,
-        -apple-system,
-        sans-serif;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    /* Trava de segurança para impedir scroll horizontal */
+    html,
+    body {
+      overflow-x: hidden !important;
+      max-width: 100vw !important;
+      width: 100% !important;
+    }
+
+    .container {
+      overflow-x: hidden !important;
+      width: 100%;
+      max-width: 460px;
+    }
+
+    .app-view {
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+    }
+
+    /* Pílulas Responsivas do Card Rei (iPhone SE / Telas pequenas) */
+    .hero-pills-container {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 4px;
+      margin-top: 20px;
+      position: relative;
+      z-index: 2;
+      border-top: 1px dashed #30363d;
+      padding-top: 14px;
+      align-items: center;
+      width: 100%;
+    }
+
+    .pill-title {
+      font-size: 0.58rem;
+      color: #8b949e;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 2px;
+      white-space: nowrap;
+    }
+
+    .pill-value {
+      font-size: 0.88rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .pill-facada {
+      font-size: 0.62rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 360px) {
+      .pill-title {
+        font-size: 0.5rem;
+      }
+
+      .pill-value {
+        font-size: 0.75rem;
+      }
+
+      .pill-facada {
+        font-size: 0.55rem;
+      }
     }
 
     body {
@@ -111,25 +177,28 @@
       transform: rotate(180deg);
     }
 
+    /* CORREÇÃO DO TOPO FLEXÍVEL E SEM QUEBRA */
     .top-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 4px;
+      gap: 8px;
       margin-bottom: 1rem;
       width: 100%;
+      overflow: hidden;
     }
 
     .brand-title {
-      font-size: 1.1rem !important;
+      font-size: 1rem !important;
       font-weight: 800 !important;
       color: #58a6ff !important;
       white-space: nowrap !important;
-      /* MANTÉM EM 1 LINHA SEMPRE */
       display: flex;
       align-items: center;
       gap: 4px;
-      flex-shrink: 0;
+      flex-shrink: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
       cursor: pointer;
     }
 
@@ -141,6 +210,7 @@
       display: flex;
       gap: 4px;
       align-items: center;
+      flex-shrink: 0;
     }
 
     .actions-container {
@@ -1178,38 +1248,31 @@
           </div>
 
           <!-- Base: As 3 Pílulas Táticas -->
-          <div
-            style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; margin-top: 20px; position: relative; z-index: 2; border-top: 1px dashed #30363d; padding-top: 14px; align-items: center;">
+          <div class="hero-pills-container">
 
-            <!-- Pílula 1: Disponível -->
+            <!-- Pílula 1: Disponível (Menor e sem o "Hoje") -->
             <div style="text-align: left;">
-              <div
-                style="font-size: 0.6rem; color: #8b949e; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">
-                Disponível</div>
-              <div id="dashAvailableHero"
-                style="font-size: 0.95rem; font-weight: 700; color: #f0f6fc; white-space: nowrap;">R$ 0,00</div>
+              <div class="pill-title">Disponível</div>
+              <div id="dashAvailableHero" class="pill-value" style="color: #f0f6fc;">R$ 0,00</div>
             </div>
 
-            <!-- Pílula 2: A Facada Diária -->
+            <!-- Pílula 2: A Facada Diária (Texto Branco, Números Vermelhos, Alinhado à Direita) -->
             <div
-              style="text-align: right; border-left: 1px solid #30363d; border-right: 1px solid #30363d; padding: 0 8px;">
-              <div style="font-size: 0.68rem; font-weight: 600; margin-bottom: 3px; white-space: nowrap;">
+              style="text-align: right; border-left: 1px solid #30363d; border-right: 1px solid #30363d; padding: 0 6px;">
+              <div class="pill-facada" style="margin-bottom: 2px;">
                 <span style="color: #f0f6fc;">Parcelas:</span> <span id="dashDailyInstHero"
-                  style="color: #f85149; font-weight: 700;">-R$ 0,00/dia</span>
+                  style="color: #f85149; font-weight: 700;">-R$ 0,00/d</span>
               </div>
-              <div style="font-size: 0.68rem; font-weight: 600; white-space: nowrap;">
+              <div class="pill-facada">
                 <span style="color: #f0f6fc;">Fixo:</span> <span id="dashDailyFixedHero"
-                  style="color: #f85149; font-weight: 700;">-R$ 0,00/dia</span>
+                  style="color: #f85149; font-weight: 700;">-R$ 0,00/d</span>
               </div>
             </div>
 
-            <!-- Pílula 3: Cofre -->
+            <!-- Pílula 3: Cofre do Mês (Número Menor) -->
             <div style="text-align: right;">
-              <div
-                style="font-size: 0.6rem; color: #8b949e; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">
-                Cofre do Mês</div>
-              <div id="dashVaultHero"
-                style="font-size: 0.95rem; font-weight: 700; color: #3fb950; white-space: nowrap;">R$ 0,00</div>
+              <div class="pill-title">Cofre do Mês</div>
+              <div id="dashVaultHero" class="pill-value" style="color: #3fb950;">R$ 0,00</div>
             </div>
 
           </div>
@@ -1401,87 +1464,86 @@
       </div>
       <div id="historyContainer"></div>
     </div>
-  </div>
 
-  <div id="modalSobra" class="modal-overlay"
-    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;">
-    <div class="modal-content"
-      style="background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 20px; width: 90%; max-width: 400px; color: #c9d1d9;">
-      <div
-        style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #30363d; padding-bottom: 10px; margin-bottom: 15px;">
-        <h3 style="margin: 0; font-size: 1.1rem; color: #58a6ff;">Como calculamos a Sobra?</h3>
-        <button onclick="fecharModalSobra()"
-          style="background: transparent; border: none; color: #8b949e; font-size: 20px; cursor: pointer;">&times;</button>
-      </div>
-      <div id="detalhesMathSobra" style="font-size: 0.9rem; line-height: 1.6;">
-        <!-- O JS vai cuspir as contas aqui -->
+    <div id="modalSobra" class="modal-overlay"
+      style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;">
+      <div class="modal-content"
+        style="background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 20px; width: 90%; max-width: 400px; color: #c9d1d9;">
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #30363d; padding-bottom: 10px; margin-bottom: 15px;">
+          <h3 style="margin: 0; font-size: 1.1rem; color: #58a6ff;">Como calculamos a Sobra?</h3>
+          <button onclick="fecharModalSobra()"
+            style="background: transparent; border: none; color: #8b949e; font-size: 20px; cursor: pointer;">&times;</button>
+        </div>
+        <div id="detalhesMathSobra" style="font-size: 0.9rem; line-height: 1.6;">
+          <!-- O JS vai cuspir as contas aqui -->
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="app-view" id="viewTools">
-    <div class="section-title" style="margin-top: 0.5rem">
-      <span>🛠️ Hub de Ferramentas</span>
-    </div>
+    <div class="app-view" id="viewTools">
+      <div class="section-title" style="margin-top: 0.5rem">
+        <span>🛠️ Hub de Ferramentas</span>
+      </div>
 
-    <div class="tools-grid">
-      <div class="tool-card" onclick="
+      <div class="tools-grid">
+        <div class="tool-card" onclick="
               alert(
                 '📈 CALMA CHEFIA! Os gráficos de barra e pizza gerais estão sendo lapidados pelo Toby!',
               )
             ">
-        <div class="tool-card-info">
-          <div class="tool-icon">📊</div>
-          <div>
-            <div class="tool-title">G R A F I C O S ! ! 🔥</div>
-            <div class="tool-desc">
-              Gráficos de barra, pizza e rosquinha
+          <div class="tool-card-info">
+            <div class="tool-icon">📊</div>
+            <div>
+              <div class="tool-title">G R A F I C O S ! ! 🔥</div>
+              <div class="tool-desc">
+                Gráficos de barra, pizza e rosquinha
+              </div>
             </div>
           </div>
+          <span class="tool-status" style="background: rgba(88, 166, 255, 0.15); color: #58a6ff">⏳ Em Breve</span>
         </div>
-        <span class="tool-status" style="background: rgba(88, 166, 255, 0.15); color: #58a6ff">⏳ Em Breve</span>
-      </div>
 
-      <div class="tool-card" onclick="switchView('investments')">
-        <div class="tool-card-info">
-          <div class="tool-icon">📈</div>
-          <div>
-            <div class="tool-title">Investimentos & Rendimentos</div>
-            <div class="tool-desc">
-              Gerencie por cards (CDB, FIIs) com lucro %, aportes e
-              histórico mensal
+        <div class="tool-card" onclick="switchView('investments')">
+          <div class="tool-card-info">
+            <div class="tool-icon">📈</div>
+            <div>
+              <div class="tool-title">Investimentos & Rendimentos</div>
+              <div class="tool-desc">
+                Gerencie por cards (CDB, FIIs) com lucro %, aportes e
+                histórico mensal
+              </div>
             </div>
           </div>
+          <span class="tool-status" style="background: rgba(63, 185, 80, 0.15); color: #3fb950">✨ Ativo</span>
         </div>
-        <span class="tool-status" style="background: rgba(63, 185, 80, 0.15); color: #3fb950">✨ Ativo</span>
-      </div>
 
-      <div class="tool-card" onclick="switchView('splitter')">
-        <div class="tool-card-info">
-          <div class="tool-icon">🍕</div>
-          <div>
-            <div class="tool-title">Raxador de Gastos</div>
-            <div class="tool-desc">
-              Divisão inteligente de rolês, viagens e contas
+        <div class="tool-card" onclick="switchView('splitter')">
+          <div class="tool-card-info">
+            <div class="tool-icon">🍕</div>
+            <div>
+              <div class="tool-title">Raxador de Gastos</div>
+              <div class="tool-desc">
+                Divisão inteligente de rolês, viagens e contas
+              </div>
             </div>
           </div>
+          <span class="tool-status" style="background: rgba(63, 185, 80, 0.15); color: #3fb950">✨ Ativo</span>
         </div>
-        <span class="tool-status" style="background: rgba(63, 185, 80, 0.15); color: #3fb950">✨ Ativo</span>
       </div>
     </div>
-  </div>
 
-  <!-- VIEW 3: TELA DE INVESTIMENTOS (📈) -->
-  <div class="app-view" id="viewInvestments">
-    <div class="section-title" style="
+    <!-- VIEW 3: TELA DE INVESTIMENTOS (📈) -->
+    <div class="app-view" id="viewInvestments">
+      <div class="section-title" style="
             margin-top: 0.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
           ">
-      <span>Investimentos</span>
-      <div style="display: flex; gap: 8px; align-items: center">
-        <button onclick="
+        <span>Investimentos</span>
+        <div style="display: flex; gap: 8px; align-items: center">
+          <button onclick="
                 document.getElementById('mathHelpModal').classList.add('active')
               " style="
                 background: #21262d;
@@ -1498,54 +1560,54 @@
                 justify-content: center;
                 transition: transform 0.2s;
               " title="Como o cálculo funciona?" onmouseover="this.style.transform = 'scale(1.1)'"
-          onmouseout="this.style.transform = 'scale(1)'">
-          ?
+            onmouseout="this.style.transform = 'scale(1)'">
+            ?
+          </button>
+          <button class="history-mini-btn" onclick="openInvestmentsHistoryModal()">
+            📜 Histórico
+          </button>
+        </div>
+      </div>
+
+      <div class="invest-summary-card">
+        <button class="btn-open-chart" onclick="openPatrimonyChart()" title="Abrir Gráficos">
+          <span>📈</span>
         </button>
-        <button class="history-mini-btn" onclick="openInvestmentsHistoryModal()">
-          📜 Histórico
-        </button>
-      </div>
-    </div>
 
-    <div class="invest-summary-card">
-      <button class="btn-open-chart" onclick="openPatrimonyChart()" title="Abrir Gráficos">
-        <span>📈</span>
-      </button>
+        <div class="card-title">Patrimônio Investido Consolidado</div>
+        <div class="card-value text-green" id="invTotalBalance">R$ 0,00</div>
 
-      <div class="card-title">Patrimônio Investido Consolidado</div>
-      <div class="card-value text-green" id="invTotalBalance">R$ 0,00</div>
-
-      <div class="invest-grid">
-        <div class="invest-item-box">
-          <div class="card-title">Total Aportado (Ativos)</div>
-          <div class="history-metric-val text-neutral" id="invTotalDeposited">
-            R$ 0,00
+        <div class="invest-grid">
+          <div class="invest-item-box">
+            <div class="card-title">Total Aportado (Ativos)</div>
+            <div class="history-metric-val text-neutral" id="invTotalDeposited">
+              R$ 0,00
+            </div>
+          </div>
+          <div class="invest-item-box">
+            <div class="card-title">Rendimento Ativo (Ao Vivo)</div>
+            <div class="history-metric-val" id="invRealProfit">R$ 0,00</div>
           </div>
         </div>
-        <div class="invest-item-box">
-          <div class="card-title">Rendimento Ativo (Ao Vivo)</div>
-          <div class="history-metric-val" id="invRealProfit">R$ 0,00</div>
-        </div>
-      </div>
 
-      <div class="invest-grid" style="grid-template-columns: 1fr 1fr; margin-top: 10px">
-        <div class="invest-item-box">
-          <div class="card-title">Lucro Histórico (Fechados)</div>
-          <div class="history-metric-val text-green" id="invHistoryProfit">
-            R$ 0,00
+        <div class="invest-grid" style="grid-template-columns: 1fr 1fr; margin-top: 10px">
+          <div class="invest-item-box">
+            <div class="card-title">Lucro Histórico (Fechados)</div>
+            <div class="history-metric-val text-green" id="invHistoryProfit">
+              R$ 0,00
+            </div>
+          </div>
+          <div class="invest-item-box" style="border-color: #58a6ff">
+            <div class="card-title" style="color: #58a6ff">
+              Ganho Total da Vida
+            </div>
+            <div class="history-metric-val text-blue" id="invTotalLifeProfit">
+              R$ 0,00
+            </div>
           </div>
         </div>
-        <div class="invest-item-box" style="border-color: #58a6ff">
-          <div class="card-title" style="color: #58a6ff">
-            Ganho Total da Vida
-          </div>
-          <div class="history-metric-val text-blue" id="invTotalLifeProfit">
-            R$ 0,00
-          </div>
-        </div>
-      </div>
 
-      <div style="
+        <div style="
               margin-top: 10px;
               padding-top: 10px;
               border-top: 1px solid #21262d;
@@ -1553,28 +1615,30 @@
               justify-content: space-between;
               align-items: center;
             ">
-        <span style="
+          <span style="
                 font-size: 0.72rem;
                 color: #8b949e;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
               ">🚀 Projeção 12 Meses</span>
-        <span id="invGlobalProjection" style="font-size: 0.85rem; font-weight: 700; color: #3fb950">+R$ 0,00
-          (+0.00%)</span>
+          <span id="invGlobalProjection" style="font-size: 0.85rem; font-weight: 700; color: #3fb950">+R$ 0,00
+            (+0.00%)</span>
+        </div>
       </div>
-    </div>
 
-    <div style="display: flex; gap: 8px; margin-bottom: 1.2rem">
-      <button class="btn btn-primary" onclick="openNewFundModal(false)" style="flex: 1">
-        + Investimento
-      </button>
-      <button class="btn btn-secondary" onclick="toggleCofrinhosView()"
-        style="flex: 1; border-color: #ff7b72; color: #ff7b72" id="btnToggleCofrinhos">
-        🐷 Ver Cofrinhos
-      </button>
-    </div>
+      <div style="display: flex; gap: 8px; margin-bottom: 1.2rem; flex-wrap: wrap;">
+        <button class="btn btn-primary" onclick="openNewFundModal(false)"
+          style="flex: 1; min-width: 130px; font-size: 0.8rem; padding: 0.6rem 0.4rem;">
+          + Investimento
+        </button>
+        <button class="btn btn-secondary" onclick="toggleCofrinhosView()"
+          style="flex: 1; min-width: 130px; border-color: #ff7b72; color: #ff7b72; font-size: 0.8rem; padding: 0.6rem 0.4rem;"
+          id="btnToggleCofrinhos">
+          🐷 Ver Cofrinhos
+        </button>
+      </div>
 
-    <div id="cofrinhosWrapper" style="
+      <div id="cofrinhosWrapper" style="
             display: none;
             background: rgba(255, 123, 114, 0.05);
             padding: 10px;
@@ -1582,7 +1646,7 @@
             border: 1px solid rgba(255, 123, 114, 0.2);
             margin-bottom: 1.5rem;
           ">
-      <div style="
+        <div style="
               background: #161b22;
               border: 1px solid rgba(255, 123, 114, 0.3);
               border-radius: 10px;
@@ -1592,8 +1656,8 @@
               justify-content: space-between;
               align-items: flex-start;
             ">
-        <div style="flex: 1">
-          <div style="
+          <div style="flex: 1">
+            <div style="
                   font-size: 0.72rem;
                   color: #8b949e;
                   text-transform: uppercase;
@@ -1601,10 +1665,10 @@
                   font-weight: 700;
                   letter-spacing: 0.5px;
                 ">
-            Resumo dos Cofrinhos
-          </div>
+              Resumo dos Cofrinhos
+            </div>
 
-          <div style="
+            <div style="
                   font-size: 0.9rem;
                   font-weight: 600;
                   margin-bottom: 6px;
@@ -1612,11 +1676,11 @@
                   align-items: center;
                   gap: 6px;
                 ">
-            <span style="color: #8b949e; width: 60px">Saques</span>
-            <span style="color: #3fb950" id="cofrinhosTotalWithdrawalsVal">R$ 0,00</span>
-          </div>
+              <span style="color: #8b949e; width: 60px">Saques</span>
+              <span style="color: #3fb950" id="cofrinhosTotalWithdrawalsVal">R$ 0,00</span>
+            </div>
 
-          <div style="
+            <div style="
                   font-size: 0.9rem;
                   font-weight: 600;
                   margin-bottom: 6px;
@@ -1624,28 +1688,28 @@
                   align-items: center;
                   gap: 6px;
                 ">
-            <span style="color: #8b949e; width: 60px">Rend.</span>
-            <span style="color: #3fb950" id="cofrinhosAvgYieldVal">+0.00%</span>
-          </div>
+              <span style="color: #8b949e; width: 60px">Rend.</span>
+              <span style="color: #3fb950" id="cofrinhosAvgYieldVal">+0.00%</span>
+            </div>
 
-          <div style="
+            <div style="
                   font-size: 0.85rem;
                   font-weight: 600;
                   display: flex;
                   align-items: center;
                   gap: 6px;
                 ">
-            <span style="color: #8b949e; width: 60px">Proj. 12m</span>
-            <span style="color: #58a6ff" id="cofrinhosProjectionVal">R$ 0,00 (+0.00%)</span>
+              <span style="color: #8b949e; width: 60px">Proj. 12m</span>
+              <span style="color: #58a6ff" id="cofrinhosProjectionVal">R$ 0,00 (+0.00%)</span>
+            </div>
           </div>
-        </div>
-        <div style="
+          <div style="
                 display: flex;
                 gap: 8px;
                 flex-direction: column;
                 align-items: center;
               ">
-          <button onclick="openNewFundModal(true)" style="
+            <button onclick="openNewFundModal(true)" style="
                   background: #238636;
                   border: 1px solid #2ea043;
                   color: #fff;
@@ -1661,10 +1725,10 @@
                   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
                   transition: transform 0.2s;
                 " title="Novo Cofrinho" onmouseover="this.style.transform = 'scale(1.05)'"
-            onmouseout="this.style.transform = 'scale(1)'">
-            +
-          </button>
-          <button onclick="openCofrinhoHelpModal()" style="
+              onmouseout="this.style.transform = 'scale(1)'">
+              +
+            </button>
+            <button onclick="openCofrinhoHelpModal()" style="
                   background: #21262d;
                   border: 1px solid #30363d;
                   color: #58a6ff;
@@ -1679,32 +1743,32 @@
                   justify-content: center;
                   transition: transform 0.2s;
                 " title="Como funciona?" onmouseover="this.style.transform = 'scale(1.05)'"
-            onmouseout="this.style.transform = 'scale(1)'">
-            ?
-          </button>
+              onmouseout="this.style.transform = 'scale(1)'">
+              ?
+            </button>
+          </div>
         </div>
+
+        <div class="section-title" style="margin-top: 0.5rem; color: #ff7b72">
+          <span>🐷 Seus Cofrinhos</span>
+        </div>
+        <div id="cofrinhosContainer"></div>
       </div>
 
-      <div class="section-title" style="margin-top: 0.5rem; color: #ff7b72">
-        <span>🐷 Seus Cofrinhos</span>
+      <div class="section-title">
+        <span>📈 Investimentos de Longo Prazo</span>
       </div>
-      <div id="cofrinhosContainer"></div>
-    </div>
+      <div id="investmentsContainer"></div>
 
-    <div class="section-title">
-      <span>📈 Investimentos de Longo Prazo</span>
-    </div>
-    <div id="investmentsContainer"></div>
+      <div class="section-title" style="margin-top: 2rem">
+        <span>🏁 Histórico de Investimentos Resgatados</span>
+      </div>
 
-    <div class="section-title" style="margin-top: 2rem">
-      <span>🏁 Histórico de Investimentos Resgatados</span>
-    </div>
+      <input type="text" id="finishedSearchInput" class="form-control"
+        placeholder="🔍 Buscar por ativo ou data (ex: 07-26)..." style="margin-bottom: 1rem"
+        onkeyup="renderInvestmentsScreen()" />
 
-    <input type="text" id="finishedSearchInput" class="form-control"
-      placeholder="🔍 Buscar por ativo ou data (ex: 07-26)..." style="margin-bottom: 1rem"
-      onkeyup="renderInvestmentsScreen()" />
-
-    <div id="finishedSummaryBox" style="
+      <div id="finishedSummaryBox" style="
             background: rgba(63, 185, 80, 0.08);
             border: 1px solid rgba(63, 185, 80, 0.2);
             border-radius: 12px;
@@ -1712,49 +1776,49 @@
             margin-bottom: 1rem;
             text-align: center;
           ">
-      <div style="font-size: 0.8rem; color: #8b949e; text-transform: uppercase">
-        Lucro Líquido Acumulado Histórico
+        <div style="font-size: 0.8rem; color: #8b949e; text-transform: uppercase">
+          Lucro Líquido Acumulado Histórico
+        </div>
+        <div id="finishedTotalProfitVal" style="font-size: 1.4rem; font-weight: 700; color: #3fb950">
+          R$ 0,00
+        </div>
       </div>
-      <div id="finishedTotalProfitVal" style="font-size: 1.4rem; font-weight: 700; color: #3fb950">
-        R$ 0,00
-      </div>
+
+      <div id="finishedInvestmentsContainer"></div>
     </div>
 
-    <div id="finishedInvestmentsContainer"></div>
-  </div>
-
-  <div class="invest-popup-overlay" id="investActionPopup">
-    <div class="invest-popup">
-      <div class="modal-header" style="
+    <div class="invest-popup-overlay" id="investActionPopup">
+      <div class="invest-popup">
+        <div class="modal-header" style="
               align-items: flex-start;
               border-bottom: none;
               padding-bottom: 0;
             ">
-        <div style="
+          <div style="
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 width: 100%;
               ">
-          <div style="display: flex; align-items: center; gap: 6px">
-            <h3 id="popupFundTitle" style="font-size: 1.1rem; color: #f0f6fc">
-              Gerenciar Ativo
-            </h3>
-            <span onclick="openEditFundNameModalFromPopup()" style="cursor: pointer; font-size: 0.9rem; opacity: 0.8"
-              title="Editar Nome">✏️</span>
-          </div>
-          <button class="close-btn" onclick="
+            <div style="display: flex; align-items: center; gap: 6px">
+              <h3 id="popupFundTitle" style="font-size: 1.1rem; color: #f0f6fc">
+                Gerenciar Ativo
+              </h3>
+              <span onclick="openEditFundNameModalFromPopup()" style="cursor: pointer; font-size: 0.9rem; opacity: 0.8"
+                title="Editar Nome">✏️</span>
+            </div>
+            <button class="close-btn" onclick="
                   document
                     .getElementById('investActionPopup')
                     .classList.remove('active')
                 ">
-            &times;
-          </button>
+              &times;
+            </button>
+          </div>
         </div>
-      </div>
-      <input type="hidden" id="popupFundIdInput" />
+        <input type="hidden" id="popupFundIdInput" />
 
-      <div id="popupHeaderInvest" style="
+        <div id="popupHeaderInvest" style="
               background: #0d1117;
               border: 1px solid #21262d;
               border-radius: 10px;
@@ -1764,45 +1828,45 @@
               justify-content: space-between;
               align-items: center;
             ">
-        <div>
-          <div style="
+          <div>
+            <div style="
                   color: #8b949e;
                   font-size: 0.65rem;
                   text-transform: uppercase;
                   letter-spacing: 0.5px;
                 ">
-            Total Aportado
-          </div>
-          <div id="popupHeaderDeposited" style="
+              Total Aportado
+            </div>
+            <div id="popupHeaderDeposited" style="
                   font-weight: 700;
                   color: #f0f6fc;
                   font-size: 0.95rem;
                   margin-top: 2px;
                 ">
-            R$ 0,00
+              R$ 0,00
+            </div>
           </div>
-        </div>
-        <div style="text-align: right">
-          <div style="
+          <div style="text-align: right">
+            <div style="
                   color: #8b949e;
                   font-size: 0.65rem;
                   text-transform: uppercase;
                   letter-spacing: 0.5px;
                 ">
-            Data de Início
-          </div>
-          <div id="popupHeaderStartDate" style="
+              Data de Início
+            </div>
+            <div id="popupHeaderStartDate" style="
                   font-weight: 700;
                   color: #f0f6fc;
                   font-size: 0.95rem;
                   margin-top: 2px;
                 ">
-            --/--/----
+              --/--/----
+            </div>
           </div>
         </div>
-      </div>
 
-      <div id="popupHeaderCofrinho" style="
+        <div id="popupHeaderCofrinho" style="
               background: #0d1117;
               border: 1px solid #21262d;
               border-radius: 10px;
@@ -1812,163 +1876,164 @@
               justify-content: space-between;
               align-items: center;
             ">
-        <div>
-          <div style="
+          <div>
+            <div style="
                   color: #8b949e;
                   font-size: 0.65rem;
                   text-transform: uppercase;
                   letter-spacing: 0.5px;
                 ">
-            Saldo Base (Imobilizado)
-          </div>
-          <div id="popupHeaderCofrinhoBase" style="
+              Saldo Base (Imobilizado)
+            </div>
+            <div id="popupHeaderCofrinhoBase" style="
                   font-weight: 700;
                   color: #f0f6fc;
                   font-size: 0.95rem;
                   margin-top: 2px;
                 ">
-            R$ 0,00
+              R$ 0,00
+            </div>
           </div>
-        </div>
-        <div style="text-align: right">
-          <div style="
+          <div style="text-align: right">
+            <div style="
                   color: #8b949e;
                   font-size: 0.65rem;
                   text-transform: uppercase;
                   letter-spacing: 0.5px;
                 ">
-            Saques Realizados
-          </div>
-          <div id="popupHeaderCofrinhoWithdrawn" style="
+              Saques Realizados
+            </div>
+            <div id="popupHeaderCofrinhoWithdrawn" style="
                   font-weight: 700;
                   color: #3fb950;
                   font-size: 0.95rem;
                   margin-top: 2px;
                 ">
-            R$ 0,00
+              R$ 0,00
+            </div>
           </div>
         </div>
-      </div>
 
-      <div id="popupNormalInvestActions">
-        <div class="invest-action-accordion" id="accUpdateBal">
-          <div class="invest-action-header" onclick="toggleInvestActionAcc('accUpdateBal')">
-            <span style="color: #f0f6fc">🔄 Atualizar Saldo</span>
-            <span class="invest-action-arrow">▼</span>
-          </div>
-          <div class="invest-action-body">
-            <div style="display: flex; flex-direction: column; gap: 8px">
-              <input type="date" id="popupBalDate" class="form-control" style="padding: 0.5rem; font-size: 0.8rem" />
-              <input type="text" inputmode="numeric" id="popupBalAmount" class="form-control smart-money"
-                placeholder="R$ Saldo Atual" style="padding: 0.5rem; font-size: 0.8rem" />
-              <button class="btn btn-secondary" onclick="submitPopupBalance()" style="
+        <div id="popupNormalInvestActions">
+          <div class="invest-action-accordion" id="accUpdateBal">
+            <div class="invest-action-header" onclick="toggleInvestActionAcc('accUpdateBal')">
+              <span style="color: #f0f6fc">🔄 Atualizar Saldo</span>
+              <span class="invest-action-arrow">▼</span>
+            </div>
+            <div class="invest-action-body">
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <input type="date" id="popupBalDate" class="form-control" style="padding: 0.5rem; font-size: 0.8rem" />
+                <input type="text" inputmode="numeric" id="popupBalAmount" class="form-control smart-money"
+                  placeholder="R$ Saldo Atual" style="padding: 0.5rem; font-size: 0.8rem" />
+                <button class="btn btn-secondary" onclick="submitPopupBalance()" style="
                       border-color: #58a6ff;
                       color: #58a6ff;
                       font-size: 0.8rem;
                     ">
-                Atualizar Saldo
-              </button>
+                  Atualizar Saldo
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="invest-action-accordion" id="accNewDep">
+            <div class="invest-action-header" onclick="toggleInvestActionAcc('accNewDep')">
+              <span style="color: #f0f6fc">➕ Novo Aporte</span>
+              <span class="invest-action-arrow">▼</span>
+            </div>
+            <div class="invest-action-body">
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <input type="date" id="popupDepDate" class="form-control" style="padding: 0.5rem; font-size: 0.8rem" />
+                <input type="text" inputmode="numeric" id="popupDepAmount" class="form-control smart-money"
+                  placeholder="R$ 0,00" style="padding: 0.5rem; font-size: 0.8rem" />
+                <button class="btn btn-primary" onclick="submitPopupDeposit()"
+                  style="font-size: 0.8rem; background: #238636">
+                  Confirmar Aporte
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="invest-action-accordion" id="accNewDep">
-          <div class="invest-action-header" onclick="toggleInvestActionAcc('accNewDep')">
-            <span style="color: #f0f6fc">➕ Novo Aporte</span>
+        <div class="invest-action-accordion" id="accWithdraw">
+          <div class="invest-action-header" onclick="toggleInvestActionAcc('accWithdraw')">
+            <span style="color: #f0f6fc">🪙 Resgate</span>
             <span class="invest-action-arrow">▼</span>
           </div>
           <div class="invest-action-body">
             <div style="display: flex; flex-direction: column; gap: 8px">
-              <input type="date" id="popupDepDate" class="form-control" style="padding: 0.5rem; font-size: 0.8rem" />
-              <input type="text" inputmode="numeric" id="popupDepAmount" class="form-control smart-money"
+              <input type="text" inputmode="numeric" id="popupWithdrawAmount" class="form-control smart-money"
                 placeholder="R$ 0,00" style="padding: 0.5rem; font-size: 0.8rem" />
-              <button class="btn btn-primary" onclick="submitPopupDeposit()"
-                style="font-size: 0.8rem; background: #238636">
-                Confirmar Aporte
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="invest-action-accordion" id="accWithdraw">
-        <div class="invest-action-header" onclick="toggleInvestActionAcc('accWithdraw')">
-          <span style="color: #f0f6fc">🪙 Resgate</span>
-          <span class="invest-action-arrow">▼</span>
-        </div>
-        <div class="invest-action-body">
-          <div style="display: flex; flex-direction: column; gap: 8px">
-            <input type="text" inputmode="numeric" id="popupWithdrawAmount" class="form-control smart-money"
-              placeholder="R$ 0,00" style="padding: 0.5rem; font-size: 0.8rem" />
-            <input type="date" id="popupWithdrawDate" class="form-control" style="padding: 0.5rem; font-size: 0.8rem" />
-            <button class="btn btn-secondary" onclick="submitPopupWithdraw()" style="
+              <input type="date" id="popupWithdrawDate" class="form-control"
+                style="padding: 0.5rem; font-size: 0.8rem" />
+              <button class="btn btn-secondary" onclick="submitPopupWithdraw()" style="
                     border-color: #d29922;
                     color: #d29922;
                     font-size: 0.8rem;
                   ">
-              Efetuar Resgate
-            </button>
+                Efetuar Resgate
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="invest-action-accordion" id="accHistory">
-        <div class="invest-action-header" onclick="toggleInvestActionAcc('accHistory')">
-          <span style="color: #f0f6fc">📜 Histórico de Lançamentos</span>
-          <span class="invest-action-arrow">▼</span>
+        <div class="invest-action-accordion" id="accHistory">
+          <div class="invest-action-header" onclick="toggleInvestActionAcc('accHistory')">
+            <span style="color: #f0f6fc">📜 Histórico de Lançamentos</span>
+            <span class="invest-action-arrow">▼</span>
+          </div>
+          <div class="invest-action-body">
+            <div class="log-list" id="popupHistoryLogsList" style="max-height: 180px; overflow-y: auto"></div>
+          </div>
         </div>
-        <div class="invest-action-body">
-          <div class="log-list" id="popupHistoryLogsList" style="max-height: 180px; overflow-y: auto"></div>
-        </div>
-      </div>
 
-      <div style="
+        <div style="
               display: flex;
               gap: 8px;
               margin-top: 1.2rem;
               border-top: 1px solid #30363d;
               padding-top: 1rem;
             ">
-        <button class="btn btn-secondary" style="font-size: 0.8rem; border-color: #d29922; color: #d29922"
-          onclick="openTotalFinishFundModalFromPopup()">
-          🏁 Finalizar
-        </button>
-        <button class="btn btn-danger" style="font-size: 0.8rem" onclick="deleteFundFromPopup()">
-          🗑️ Excluir
-        </button>
+          <button class="btn btn-secondary" style="font-size: 0.8rem; border-color: #d29922; color: #d29922"
+            onclick="openTotalFinishFundModalFromPopup()">
+            🏁 Finalizar
+          </button>
+          <button class="btn btn-danger" style="font-size: 0.8rem" onclick="deleteFundFromPopup()">
+            🗑️ Excluir
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="invest-popup-overlay" id="finishedActionPopup">
-    <div class="invest-popup">
-      <div class="modal-header" style="
+    <div class="invest-popup-overlay" id="finishedActionPopup">
+      <div class="invest-popup">
+        <div class="modal-header" style="
               align-items: flex-start;
               border-bottom: none;
               padding-bottom: 0;
             ">
-        <div style="
+          <div style="
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 width: 100%;
               ">
-          <h3 id="popupFinishedTitle" style="font-size: 1.1rem; color: #f0f6fc">
-            Ativo Finalizado
-          </h3>
-          <button class="close-btn" onclick="
+            <h3 id="popupFinishedTitle" style="font-size: 1.1rem; color: #f0f6fc">
+              Ativo Finalizado
+            </h3>
+            <button class="close-btn" onclick="
                   document
                     .getElementById('finishedActionPopup')
                     .classList.remove('active')
                 ">
-            &times;
-          </button>
+              &times;
+            </button>
+          </div>
         </div>
-      </div>
-      <input type="hidden" id="popupFinishedIdInput" />
+        <input type="hidden" id="popupFinishedIdInput" />
 
-      <!-- CABEÇALHO DE RESUMO DO FINALIZADO -->
-      <div style="
+        <!-- CABEÇALHO DE RESUMO DO FINALIZADO -->
+        <div style="
               background: #0d1117;
               border: 1px solid #21262d;
               border-radius: 10px;
@@ -1978,87 +2043,87 @@
               flex-direction: column;
               gap: 8px;
             ">
-        <div style="
+          <div style="
                 display: flex;
                 justify-content: space-between;
                 font-size: 0.8rem;
               ">
-          <span style="color: #8b949e">Período:</span>
-          <span id="popupFinishedPeriod" style="color: #f0f6fc; font-weight: 600">--</span>
-        </div>
-        <div style="
+            <span style="color: #8b949e">Período:</span>
+            <span id="popupFinishedPeriod" style="color: #f0f6fc; font-weight: 600">--</span>
+          </div>
+          <div style="
                 display: flex;
                 justify-content: space-between;
                 font-size: 0.8rem;
               ">
-          <span style="color: #8b949e">Aporte Total:</span>
-          <span id="popupFinishedDep" style="color: #f0f6fc; font-weight: 600">--</span>
-        </div>
-        <div style="
+            <span style="color: #8b949e">Aporte Total:</span>
+            <span id="popupFinishedDep" style="color: #f0f6fc; font-weight: 600">--</span>
+          </div>
+          <div style="
                 display: flex;
                 justify-content: space-between;
                 font-size: 0.8rem;
               ">
-          <span style="color: #8b949e">Saque Total:</span>
-          <span id="popupFinishedWd" style="color: #f0f6fc; font-weight: 600">--</span>
-        </div>
-        <div style="
+            <span style="color: #8b949e">Saque Total:</span>
+            <span id="popupFinishedWd" style="color: #f0f6fc; font-weight: 600">--</span>
+          </div>
+          <div style="
                 display: flex;
                 justify-content: space-between;
                 font-size: 0.8rem;
                 border-top: 1px solid #21262d;
                 padding-top: 6px;
               ">
-          <span style="color: #8b949e">Lucro Líquido:</span>
-          <span id="popupFinishedProfit" style="font-weight: 700">--</span>
-        </div>
-        <div style="
+            <span style="color: #8b949e">Lucro Líquido:</span>
+            <span id="popupFinishedProfit" style="font-weight: 700">--</span>
+          </div>
+          <div style="
                 display: flex;
                 justify-content: space-between;
                 font-size: 0.8rem;
               ">
-          <span style="color: #8b949e">IR Retido:</span>
-          <span id="popupFinishedIr" style="color: #ff7b72; font-weight: 600">--</span>
+            <span style="color: #8b949e">IR Retido:</span>
+            <span id="popupFinishedIr" style="color: #ff7b72; font-weight: 600">--</span>
+          </div>
         </div>
-      </div>
 
-      <div style="
+        <div style="
               display: flex;
               gap: 8px;
               margin-top: 1.2rem;
               border-top: 1px solid #30363d;
               padding-top: 1rem;
             ">
-        <button class="btn btn-secondary" style="
+          <button class="btn btn-secondary" style="
                 flex: 1;
                 font-size: 0.8rem;
                 border-color: #58a6ff;
                 color: #58a6ff;
               " onclick="reactivateFundFromPopup()">
-          🔄 Reativar Ativo
-        </button>
-        <button class="btn btn-danger" style="flex: 1; font-size: 0.8rem" onclick="deleteFinishedFundFromPopup()">
-          🗑️ Excluir
-        </button>
+            🔄 Reativar Ativo
+          </button>
+          <button class="btn btn-danger" style="flex: 1; font-size: 0.8rem" onclick="deleteFinishedFundFromPopup()">
+            🗑️ Excluir
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="app-view" id="viewSplitter">
-    <div class="section-title" style="
+    <div class="app-view" id="viewSplitter">
+      <div class="section-title" style="
             margin-top: 0.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
           ">
-      <span>🍕 Raxador de Rolês</span>
-      <button class="btn btn-primary" onclick="openNewSplitterGroupModal()"
-        style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.8rem">
-        + Novo Grupo
-      </button>
-    </div>
+        <span>🍕 Raxador de Rolês</span>
+        <button class="btn btn-primary" onclick="openNewSplitterGroupModal()"
+          style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.8rem">
+          + Novo Grupo
+        </button>
+      </div>
 
-    <div style="
+      <div style="
             font-size: 0.85rem;
             font-weight: 700;
             color: #d29922;
@@ -2067,11 +2132,11 @@
             align-items: center;
             gap: 6px;
           ">
-      <span>🏃 Em Andamento</span>
-    </div>
-    <div id="splitterActiveContainer"></div>
+        <span>🏃 Em Andamento</span>
+      </div>
+      <div id="splitterActiveContainer"></div>
 
-    <div style="
+      <div style="
             font-size: 0.85rem;
             font-weight: 700;
             color: #3fb950;
@@ -2080,29 +2145,29 @@
             align-items: center;
             gap: 6px;
           ">
-      <span>🏁 Finalizados</span>
+        <span>🏁 Finalizados</span>
+      </div>
+      <div id="splitterFinishedContainer"></div>
     </div>
-    <div id="splitterFinishedContainer"></div>
-  </div>
 
-  <div class="app-view" id="viewSplitterDetail">
-    <div class="section-title" style="
+    <div class="app-view" id="viewSplitterDetail">
+      <div class="section-title" style="
             margin-top: 0.5rem;
             display: flex;
             flex-direction: column;
             align-items: flex-start;
             gap: 12px;
           ">
-      <div style="
+        <div style="
               display: flex;
               justify-content: space-between;
               align-items: flex-start;
               width: 100%;
             ">
-        <span id="detailSplitterTitle" style="font-size: 1.3rem; font-weight: 700; line-height: 1.2">🍕 Detalhes do
-          Rolê</span>
-        <!-- O Lápis Mágico do Toba Bank aqui 👇 -->
-        <button class="action-icon-btn" onclick="toggleSplitterMetaCard()" style="
+          <span id="detailSplitterTitle" style="font-size: 1.3rem; font-weight: 700; line-height: 1.2">🍕 Detalhes do
+            Rolê</span>
+          <!-- O Lápis Mágico do Toba Bank aqui 👇 -->
+          <button class="action-icon-btn" onclick="toggleSplitterMetaCard()" style="
                 font-size: 1rem;
                 padding: 6px;
                 background: #21262d;
@@ -2110,73 +2175,73 @@
                 border: 1px solid #30363d;
                 transition: all 0.2s;
               " title="Editar Configurações">
-          ✏️
-        </button>
-      </div>
-      <div style="display: flex; gap: 8px; width: 100%">
-        <button class="btn btn-secondary" id="splitterToggleFinishBtnView" onclick="toggleSplitterFinished()" style="
+            ✏️
+          </button>
+        </div>
+        <div style="display: flex; gap: 8px; width: 100%">
+          <button class="btn btn-secondary" id="splitterToggleFinishBtnView" onclick="toggleSplitterFinished()" style="
                 flex: 1;
                 padding: 0.5rem 0.8rem;
                 font-size: 0.85rem;
                 border-color: #3fb950;
                 color: #3fb950;
               ">
-          🏁 Finalizar
-        </button>
-        <button class="btn btn-danger" onclick="deleteSplitterGroup()"
-          style="flex: 1; padding: 0.5rem 0.8rem; font-size: 0.85rem">
-          🗑️ Excluir
-        </button>
-      </div>
-    </div>
-
-    <input type="hidden" id="splitterGroupIdInput" />
-
-    <div class="card" style="margin-bottom: 1.5rem; padding: 1rem; display: none" id="splitterMetaCard">
-      <div class="form-group splitter-edit-field">
-        <label>Nome do Rolê</label>
-        <input type="text" id="editSplitterName" class="form-control" onchange="updateSplitterGroupMeta()" />
-      </div>
-      <div class="form-group splitter-edit-field">
-        <label>Categoria</label>
-        <select id="editSplitterCategory" class="form-control" onchange="updateSplitterGroupMeta()">
-          <option value="✈️ Viagem">✈️ Viagem</option>
-          <option value="🥩 Churrasco">🥩 Churrasco</option>
-          <option value="🎉 Festinha / Rolê">🎉 Festinha / Rolê</option>
-          <option value="🛒 Compras / Outros">🛒 Compras / Outros</option>
-        </select>
-      </div>
-      <div class="form-group splitter-edit-field">
-        <label>Data</label>
-        <input type="date" id="editSplitterDate" class="form-control" onchange="updateSplitterGroupMeta()" />
-      </div>
-      <div class="form-group splitter-edit-field" style="margin-bottom: 0">
-        <label>👥 Participantes (separados por vírgula)</label>
-        <div style="display: flex; gap: 6px">
-          <input type="text" id="splitterMembersInput" class="form-control" placeholder="Ex: Toba, Gon..." />
-          <button class="btn btn-secondary" onclick="saveSplitterMembers()" style="width: auto">
-            Add
+            🏁 Finalizar
+          </button>
+          <button class="btn btn-danger" onclick="deleteSplitterGroup()"
+            style="flex: 1; padding: 0.5rem 0.8rem; font-size: 0.85rem">
+            🗑️ Excluir
           </button>
         </div>
       </div>
-    </div>
 
-    <div style="
+      <input type="hidden" id="splitterGroupIdInput" />
+
+      <div class="card" style="margin-bottom: 1.5rem; padding: 1rem; display: none" id="splitterMetaCard">
+        <div class="form-group splitter-edit-field">
+          <label>Nome do Rolê</label>
+          <input type="text" id="editSplitterName" class="form-control" onchange="updateSplitterGroupMeta()" />
+        </div>
+        <div class="form-group splitter-edit-field">
+          <label>Categoria</label>
+          <select id="editSplitterCategory" class="form-control" onchange="updateSplitterGroupMeta()">
+            <option value="✈️ Viagem">✈️ Viagem</option>
+            <option value="🥩 Churrasco">🥩 Churrasco</option>
+            <option value="🎉 Festinha / Rolê">🎉 Festinha / Rolê</option>
+            <option value="🛒 Compras / Outros">🛒 Compras / Outros</option>
+          </select>
+        </div>
+        <div class="form-group splitter-edit-field">
+          <label>Data</label>
+          <input type="date" id="editSplitterDate" class="form-control" onchange="updateSplitterGroupMeta()" />
+        </div>
+        <div class="form-group splitter-edit-field" style="margin-bottom: 0">
+          <label>👥 Participantes (separados por vírgula)</label>
+          <div style="display: flex; gap: 6px">
+            <input type="text" id="splitterMembersInput" class="form-control" placeholder="Ex: Toba, Gon..." />
+            <button class="btn btn-secondary" onclick="saveSplitterMembers()" style="width: auto">
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style="
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 0.8rem;
           ">
-      <div class="section-title" style="margin: 0; font-size: 0.9rem; color: #58a6ff">
-        ⚖️ Quem deve para quem
+        <div class="section-title" style="margin: 0; font-size: 0.9rem; color: #58a6ff">
+          ⚖️ Quem deve para quem
+        </div>
+        <button class="btn btn-primary" id="openAddSplitterExpenseBtn" onclick="openSplitterExpenseModal()"
+          style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.8rem">
+          💸 Add Gasto
+        </button>
       </div>
-      <button class="btn btn-primary" id="openAddSplitterExpenseBtn" onclick="openSplitterExpenseModal()"
-        style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.8rem">
-        💸 Add Gasto
-      </button>
-    </div>
 
-    <div id="splitterSettlementBox" style="
+      <div id="splitterSettlementBox" style="
             background: #0d1117;
             padding: 12px;
             border-radius: 12px;
@@ -2186,91 +2251,91 @@
             line-height: 1.6;
           "></div>
 
-    <div class="section-title" style="
+      <div class="section-title" style="
             font-size: 0.85rem;
             margin-top: 0;
             margin-bottom: 0.5rem;
             color: #f0f6fc;
           ">
-      📜 Histórico de Gastos do Rolê
-    </div>
-    <div id="splitterExpensesList" class="expense-list" style="margin-bottom: 1rem"></div>
-  </div>
-
-  <div class="app-view" id="viewPatrimonyChart">
-    <div class="section-title" style="margin-top: 0.5rem; justify-content: center">
-      <span style="font-size: 1rem">📊 Visão Estratégica</span>
+        📜 Histórico de Gastos do Rolê
+      </div>
+      <div id="splitterExpensesList" class="expense-list" style="margin-bottom: 1rem"></div>
     </div>
 
-    <div class="tab-nav" style="margin-bottom: 1rem">
-      <button class="tab-btn active" id="tabChartPastBtn" onclick="switchChartTab('past')">
-        ⏪ Retrovisor (Passado)
-      </button>
-      <button class="tab-btn" id="tabChartFutureBtn" onclick="switchChartTab('future')">
-        🔮 Bola de Cristal (Futuro)
-      </button>
-    </div>
+    <div class="app-view" id="viewPatrimonyChart">
+      <div class="section-title" style="margin-top: 0.5rem; justify-content: center">
+        <span style="font-size: 1rem">📊 Visão Estratégica</span>
+      </div>
 
-    <div id="chartPastContainer" style="display: block">
-      <div style="display: flex; gap: 8px; margin-bottom: 8px">
-        <button class="btn btn-secondary active" id="chartModeBrl" onclick="changeChartMode('brl')" style="flex: 1">
-          R$ Valor Bruto
+      <div class="tab-nav" style="margin-bottom: 1rem">
+        <button class="tab-btn active" id="tabChartPastBtn" onclick="switchChartTab('past')">
+          ⏪ Retrovisor (Passado)
         </button>
-        <button class="btn btn-secondary" id="chartModePct" onclick="changeChartMode('pct')" style="flex: 1">
-          % Crescimento
+        <button class="tab-btn" id="tabChartFutureBtn" onclick="switchChartTab('future')">
+          🔮 Bola de Cristal (Futuro)
         </button>
       </div>
-      <div style="display: flex; gap: 8px; margin-bottom: 12px">
-        <button class="btn btn-secondary" id="chartModeAlign" onclick="toggleAlignMode()" style="
+
+      <div id="chartPastContainer" style="display: block">
+        <div style="display: flex; gap: 8px; margin-bottom: 8px">
+          <button class="btn btn-secondary active" id="chartModeBrl" onclick="changeChartMode('brl')" style="flex: 1">
+            R$ Valor Bruto
+          </button>
+          <button class="btn btn-secondary" id="chartModePct" onclick="changeChartMode('pct')" style="flex: 1">
+            % Crescimento
+          </button>
+        </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 12px">
+          <button class="btn btn-secondary" id="chartModeAlign" onclick="toggleAlignMode()" style="
                 flex: 1;
                 border-color: #30363d;
                 color: #8b949e;
                 background: #0d1117;
               ">
-          🏁 Alinhado na Partida (Off)
-        </button>
+            🏁 Alinhado na Partida (Off)
+          </button>
+        </div>
+
+        <div class="period-selector">
+          <button class="period-btn active" data-period="3m" onclick="changeChartPeriod('3m')">
+            3 Meses
+          </button>
+          <button class="period-btn" data-period="6m" onclick="changeChartPeriod('6m')">
+            6 Meses
+          </button>
+          <button class="period-btn" data-period="1y" onclick="changeChartPeriod('1y')">
+            1 Ano
+          </button>
+        </div>
+
+        <div class="chart-card">
+          <canvas id="patrimonyChartCanvas"></canvas>
+        </div>
+
+        <div class="active-assets-list">
+          <h3>Seus Ativos Atuais</h3>
+          <ul id="assetColorList"></ul>
+        </div>
       </div>
 
-      <div class="period-selector">
-        <button class="period-btn active" data-period="3m" onclick="changeChartPeriod('3m')">
-          3 Meses
-        </button>
-        <button class="period-btn" data-period="6m" onclick="changeChartPeriod('6m')">
-          6 Meses
-        </button>
-        <button class="period-btn" data-period="1y" onclick="changeChartPeriod('1y')">
-          1 Ano
-        </button>
-      </div>
+      <div id="chartFutureContainer" style="display: none">
+        <div class="period-selector">
+          <button class="period-btn active" data-period="6m" onclick="changeProjPeriod('6m')">
+            6 Meses
+          </button>
+          <button class="period-btn" data-period="1y" onclick="changeProjPeriod('1y')">
+            1 Ano
+          </button>
+          <button class="period-btn" data-period="5y" onclick="changeProjPeriod('5y')">
+            5 Anos
+          </button>
+        </div>
 
-      <div class="chart-card">
-        <canvas id="patrimonyChartCanvas"></canvas>
-      </div>
+        <div class="chart-card">
+          <canvas id="projectionChartCanvas"></canvas>
+        </div>
 
-      <div class="active-assets-list">
-        <h3>Seus Ativos Atuais</h3>
-        <ul id="assetColorList"></ul>
-      </div>
-    </div>
-
-    <div id="chartFutureContainer" style="display: none">
-      <div class="period-selector">
-        <button class="period-btn active" data-period="6m" onclick="changeProjPeriod('6m')">
-          6 Meses
-        </button>
-        <button class="period-btn" data-period="1y" onclick="changeProjPeriod('1y')">
-          1 Ano
-        </button>
-        <button class="period-btn" data-period="5y" onclick="changeProjPeriod('5y')">
-          5 Anos
-        </button>
-      </div>
-
-      <div class="chart-card">
-        <canvas id="projectionChartCanvas"></canvas>
-      </div>
-
-      <div id="projectionSummaryBox" style="
+        <div id="projectionSummaryBox" style="
               background: rgba(63, 185, 80, 0.08);
               border: 1px solid rgba(63, 185, 80, 0.2);
               border-radius: 12px;
@@ -2278,21 +2343,21 @@
               margin-bottom: 1rem;
               text-align: center;
             ">
-        <!-- Preenchido via JS -->
-      </div>
+          <!-- Preenchido via JS -->
+        </div>
 
-      <div style="
+        <div style="
               font-size: 0.75rem;
               color: #8b949e;
               text-align: center;
               padding: 0 1rem;
               line-height: 1.4;
             ">
-        * Projeção baseada na taxa média (pro-rata) atual ponderada de toda
-        a sua carteira, mantendo os juros compostos rasgando pra cima.
+          * Projeção baseada na taxa média (pro-rata) atual ponderada de toda
+          a sua carteira, mantendo os juros compostos rasgando pra cima.
+        </div>
       </div>
     </div>
-  </div>
   </div>
 
   <div class="modal-overlay" id="newSplitterExpenseModal">
@@ -3656,18 +3721,29 @@
 
       // 3. Pílulas Inferiores
       const availableHeroEl = document.getElementById("dashAvailableHero");
-      availableHeroEl.innerText = formatCurrency(todayAvailable);
-      availableHeroEl.style.color = todayAvailable >= 0 ? '#f0f6fc' : '#f85149';
+      if (availableHeroEl) {
+        availableHeroEl.innerText = formatCurrency(todayAvailable);
+        availableHeroEl.style.color = todayAvailable >= 0 ? '#f0f6fc' : '#f85149';
+      }
 
-      // Facada Diária com números em vermelho e rótulos limpos
-      document.getElementById("dashDailyInstHero").innerText = `-${formatCurrency(dailyInstallmentDeduction)}/dia`;
-      document.getElementById("dashDailyFixedHero").innerText = `-${formatCurrency(dailyFixedDeduction)}/dia`;
+      // Facada Diária com números em vermelho e rótulos brancos em PT-BR
+      const dailyInstEl = document.getElementById("dashDailyInstHero");
+      if (dailyInstEl) {
+        dailyInstEl.innerText = `-${formatCurrency(dailyInstallmentDeduction)}/dia`;
+      }
+
+      const dailyFixedEl = document.getElementById("dashDailyFixedHero");
+      if (dailyFixedEl) {
+        dailyFixedEl.innerText = `-${formatCurrency(dailyFixedDeduction)}/dia`;
+      }
 
       const vaultHeroEl = document.getElementById("dashVaultHero");
-      vaultHeroEl.innerText = formatCurrency(vaultBalance);
-      vaultHeroEl.style.color = vaultBalance >= 0 ? '#3fb950' : '#f85149';
+      if (vaultHeroEl) {
+        vaultHeroEl.innerText = formatCurrency(vaultBalance);
+        vaultHeroEl.style.color = vaultBalance >= 0 ? '#3fb950' : '#f85149';
+      }
 
-      // RENDERIZAÇÃO DAS SANFONAS E HISTÓRICOS (FAZ VOLTAR A EXIBIR OS DADOS)
+      // RENDERIZAÇÃO OBRIGATÓRIA DAS SANFONAS E HISTÓRICOS ABAIXO
       renderCategoryBars(currentMonthTransactions, monthlySpentVista, "categoryBarsContainer");
       renderExpenseListWithInstallments(currentMonthTransactions, activeInstallmentsMonth);
     }
@@ -5858,17 +5934,17 @@
         card.className = "splitter-card";
         card.onclick = () => openSplitterGroupView(g.id);
         card.innerHTML = `
-                    <div class="splitter-header">
-                        <div class="splitter-header-top">
-                            <span class="splitter-title">${catEmoji} ${g.name}</span>
-                            <span style="font-size: 0.75rem; color: #8b949e;">${isoToBrDate(g.date)}</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:0.82rem;">
-                            <span style="color:#8b949e;">👥 ${membersCount} participantes</span>
-                            <span>Total: <b style="color:#58a6ff;">${formatCurrency(totalSpent)}</b></span>
-                        </div>
-                    </div>
-                `;
+            <div class="splitter-header" style="padding: 0.8rem;">
+                <div class="splitter-header-top" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                    <span class="splitter-title" style="font-size: 0.9rem; word-break: break-word; max-width: 70%;">${catEmoji} ${g.name}</span>
+                    <span style="font-size: 0.7rem; color: #8b949e; white-space: nowrap;">${isoToBrDate(g.date)}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:0.78rem; flex-wrap: wrap; gap: 4px;">
+                    <span style="color:#8b949e;">👥 ${membersCount} participantes</span>
+                    <span>Total: <b style="color:#58a6ff;">${formatCurrency(totalSpent)}</b></span>
+                </div>
+            </div>
+        `;
 
         if (g.isFinished) {
           finishedContainer.appendChild(card);
