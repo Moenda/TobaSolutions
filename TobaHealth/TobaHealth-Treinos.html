@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Toba Health 🥗</title>
+  <title>Toba Health | Treinos & Cargas</title>
   <style>
     * {
       margin: 0;
@@ -42,7 +42,9 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
       margin-bottom: 1.2rem;
+      width: 100%;
     }
 
     .brand-title {
@@ -85,8 +87,9 @@
     .gear-btn {
       width: 32px;
       /* QUADRADO PERFEITO */
-      padding: 0.45rem 0.65rem;
+      padding: 0;
       font-size: 1.1rem;
+      border-radius: 10px;
     }
 
     .back-nav-btn:hover,
@@ -135,6 +138,34 @@
       box-shadow: none;
     }
 
+    .popup-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(4px);
+    }
+
+    .popup-overlay.active {
+      display: flex;
+    }
+
+    .popup-panel {
+      width: 100%;
+      max-width: 440px;
+      max-height: min(80vh, 620px);
+      overflow-y: auto;
+      padding: 1.2rem;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+    }
+
     .module-header {
       display: flex;
       justify-content: space-between;
@@ -147,20 +178,13 @@
       font-weight: 700;
       color: #f0f6fc;
       display: flex;
-      align-items: center;
-      gap: 8px;
     }
 
     .badge {
-      font-size: 0.65rem;
       font-weight: 800;
       padding: 3px 8px;
       border-radius: 20px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .badge-soon {
       background: rgba(210, 153, 34, 0.15);
       color: #d29922;
       border: 1px solid rgba(210, 153, 34, 0.4);
@@ -280,6 +304,147 @@
       margin-top: 9px;
     }
 
+    .workout-hero-launch {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding: 0.9rem 1rem;
+      color: #f0f6fc;
+      text-align: left;
+      background: linear-gradient(145deg, #25220f, #161b22 72%);
+      border: 1px solid rgba(210, 153, 34, 0.45);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .workout-hero-launch:hover {
+      border-color: #e3b341;
+      transform: translateY(-1px);
+    }
+
+    .workout-hero-launch-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .workout-hero-launch-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+    }
+
+    .workout-hero-launch-detail {
+      color: #8b949e;
+      font-size: 0.75rem;
+      line-height: 1.4;
+    }
+
+    .workout-hero-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 1rem;
+    }
+
+    .workout-hero-heading h1 {
+      min-width: 0;
+      line-height: 1.3;
+    }
+
+    .workout-distance-breakdown {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin: 8px 0 12px;
+    }
+
+    .workout-distance-mode {
+      min-width: 0;
+      padding: 7px 8px;
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 8px;
+    }
+
+    .workout-distance-mode-label {
+      display: block;
+      color: #8b949e;
+      font-size: 0.62rem;
+      line-height: 1.3;
+      text-transform: uppercase;
+    }
+
+    .workout-distance-mode-value {
+      display: block;
+      margin-top: 3px;
+      color: #e3b341;
+      font-size: 0.8rem;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .workout-legacy-action {
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .workout-legacy-action:hover,
+    .workout-legacy-action:focus-visible {
+      border-color: #e3b341;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .workout-distance-routes {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      margin-top: 0.8rem;
+    }
+
+    .workout-distance-route {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      padding: 0;
+      line-height: 1.3;
+    }
+
+    .workout-distance-route-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 3px;
+      color: #c9d1d9;
+      font-size: 0.66rem;
+      line-height: 1.3;
+    }
+
+    .workout-distance-route-value {
+      color: #e3b341;
+      font-weight: 700;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .workout-distance-fill {
+      min-width: 3px;
+      background: #56d364 !important;
+      box-shadow: 0 0 8px rgba(86, 211, 100, 0.55);
+    }
+
     .workout-month-archive {
       background: #161b22;
       border: 1px solid #21262d;
@@ -397,6 +562,8 @@
     }
 
     .workout-earth-progress-track {
+      display: flex;
+      align-items: stretch;
       height: 10px;
       overflow: hidden;
       background: #0d1117;
@@ -410,6 +577,12 @@
       background: linear-gradient(90deg, #238636, #3fb950);
       border-radius: inherit;
       transition: width 0.3s ease;
+    }
+
+    .workout-earth-progress-fill.workout-distance-fill {
+      min-width: 3px;
+      background: #56d364 !important;
+      box-shadow: 0 0 8px rgba(86, 211, 100, 0.55);
     }
 
     @media (max-width: 420px) {
@@ -428,6 +601,12 @@
       border-radius: 12px;
       padding: 0.85rem;
       margin-top: 8px;
+    }
+
+    .workout-record-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
     }
 
     .workout-record-title {
@@ -768,28 +947,77 @@
       cursor: pointer;
     }
 
-    /* MODAIS */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(4px);
+    .ruler-explanation-row {
       display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .ruler-explanation-copy {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .ruler-advice-btn {
+      flex: 0 0 36px;
+      width: 36px;
+      height: 36px;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      background: #21262d;
+      color: #f0f6fc;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .ruler-advice-btn:hover,
+    .ruler-advice-btn:focus-visible {
+      background: #30363d;
+      border-color: #3fb950;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .page-message-text {
+      color: #c9d1d9;
+      font-size: 0.92rem;
+      line-height: 1.55;
+      white-space: pre-line;
+    }
+
+    .page-message-actions .btn {
+      flex: 1;
+      width: auto;
+      margin-top: 0;
+    }
+
+    /* As telas auxiliares seguem o fluxo normal; só o documento rola. */
+    .modal-overlay {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      min-height: calc(100vh - 2rem);
+      height: auto;
+      margin: 0 auto;
+      background: transparent;
+      display: none;
       justify-content: center;
-      align-items: center;
-      z-index: 999;
+      align-items: flex-start;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.25s ease;
-      padding: 1rem;
+      padding: 0;
     }
 
     .modal-overlay.active {
+      display: flex;
       opacity: 1;
       pointer-events: auto;
+    }
+
+    body:has(> .modal-overlay.active)>.container {
+      display: none;
     }
 
     .modal-body {
@@ -798,10 +1026,10 @@
       border-radius: 20px;
       padding: 1.25rem;
       width: 100%;
-      max-width: 440px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
-      max-height: 90vh;
-      overflow-y: auto;
+      max-width: 480px;
+      min-height: calc(100vh - 2rem);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+      overflow: visible;
     }
 
     .modal-header {
@@ -866,7 +1094,8 @@
 <body>
   <div class="container">
     <div class="top-header">
-      <div class="brand-title" onclick="openModule('viewHub')" style="cursor: pointer" title="Voltar ao Início">
+      <div class="brand-title" onclick="window.location.href='TobaHealth-Index.html'" style="cursor: pointer"
+        title="Voltar ao Início">
         <span>🥗 Toba Health</span>
       </div>
       <div class="header-actions" id="headerActions">
@@ -944,6 +1173,14 @@
     </div>
 
     <div id="viewTraining" class="view-section">
+      <button type="button" class="workout-hero-launch" onclick="openModule('viewHero')">
+        <span class="workout-hero-launch-copy">
+          <span class="workout-hero-launch-title">🏆 Hall dos Heróis</span>
+          <span class="workout-hero-launch-detail">Seu legado de treino, distância e energia queimada</span>
+        </span>
+        <span aria-hidden="true" style="font-size: 1.25rem; color: #e3b341">›</span>
+      </button>
+
       <div class="card">
         <div class="card-header">
           <span class="card-title" id="workoutMonthTitle">🏋️‍♂️ Treinos</span>
@@ -956,21 +1193,32 @@
 
       <div class="card">
         <div class="card-title" style="margin-bottom: 0.5rem">
-          🏆 Hall dos Heróis
-        </div>
-        <div id="workoutLegacy">
-          <span style="font-size: 0.8rem; color: #8b949e">Seu legado de treinos aparecerá aqui.</span>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title" style="margin-bottom: 0.5rem">
           📜 Histórico mensal
         </div>
         <div id="workoutHistory">
           <span style="font-size: 0.8rem; color: #8b949e">Os meses anteriores aparecerão aqui.</span>
         </div>
       </div>
+    </div>
+
+    <div id="viewHero" class="view-section">
+      <div class="workout-hero-heading">
+        <h1 style="font-size: 1.05rem; color: #e3b341">🏆 Hall dos Heróis</h1>
+        <button type="button" class="back-nav-btn" onclick="openModule('viewTraining')">‹ Treinos</button>
+      </div>
+      <div id="workoutHallContent"></div>
+    </div>
+  </div>
+
+  <div class="popup-overlay" id="workoutHallDetailModal" onclick="if (event.target === this) closeWorkoutHallDetail()">
+    <div class="popup-panel" role="dialog" aria-modal="true" aria-labelledby="workoutHallDetailTitle">
+      <div class="modal-header">
+        <div class="modal-title" id="workoutHallDetailTitle">🏆 Detalhes do legado</div>
+        <button type="button" class="close-btn" onclick="closeWorkoutHallDetail()" aria-label="Fechar">✖</button>
+      </div>
+      <div id="workoutHallDetailContent" class="page-message-text"></div>
+      <button type="button" class="btn btn-secondary" onclick="closeWorkoutHallDetail()"
+        style="margin-top: 1rem">Fechar</button>
     </div>
   </div>
 
@@ -1020,8 +1268,8 @@
   </div>
 
   <!-- GRÁFICO SEMANAL DO CONSOLIDADO DE TREINOS -->
-  <div class="modal-overlay" id="workoutChartModal">
-    <div class="modal-body">
+  <div class="popup-overlay" id="workoutChartModal" onclick="if (event.target === this) closeWorkoutChart()">
+    <div class="popup-panel" role="dialog" aria-modal="true" aria-labelledby="workoutChartTitle">
       <div class="modal-header">
         <div class="modal-title" id="workoutChartTitle">📊 Últimos 7 dias</div>
         <button class="close-btn" onclick="closeWorkoutChart()" aria-label="Fechar gráfico">✖</button>
@@ -1038,9 +1286,7 @@
     <div class="modal-body">
       <div class="modal-header">
         <div class="modal-title" id="compModalTitle">📊 Comparativo</div>
-        <button class="close-btn" onclick="closeMetricCompareModal()">
-          ✖
-        </button>
+        <button class="back-nav-btn" onclick="closeMetricCompareModal()">‹ Voltar</button>
       </div>
 
       <!-- CARDS DE MÉDIA, VS MÉDIA E VS ANTERIOR -->
@@ -1109,8 +1355,39 @@
       <div id="compHistoryList"></div>
 
       <button class="btn btn-secondary" onclick="closeMetricCompareModal()" style="margin-top: 0.8rem">
-        Fechar
+        ‹ Voltar
       </button>
+    </div>
+  </div>
+
+  <div class="popup-overlay" id="metricAdviceModal" onclick="if (event.target === this) closeMetricAdviceModal()">
+    <div class="popup-panel" role="dialog" aria-modal="true" aria-labelledby="metricAdviceTitle">
+      <div class="modal-header">
+        <div class="modal-title" id="metricAdviceTitle">🍄 Plano de ação</div>
+        <button class="close-btn" onclick="closeMetricAdviceModal()" aria-label="Voltar ao gráfico">✖</button>
+      </div>
+      <div id="metricAdviceContent" class="page-message-text"></div>
+      <button class="btn btn-secondary" onclick="closeMetricAdviceModal()" style="margin-top: 1rem">
+        ‹ Voltar ao gráfico
+      </button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="pageMessageModal" aria-live="polite">
+    <div class="modal-body">
+      <div class="modal-header">
+        <div class="modal-title" id="pageMessageTitle">Toba Health</div>
+        <button class="close-btn" onclick="resolvePageMessage(false)" aria-label="Fechar aviso">✖</button>
+      </div>
+      <p id="pageMessageText" class="page-message-text"></p>
+      <div id="pageMessageActions" class="page-message-actions" style="display: flex; gap: 8px; margin-top: 1rem">
+        <button type="button" id="pageMessageCancel" class="btn btn-secondary"
+          onclick="resolvePageMessage(false)">Cancelar</button>
+        <button type="button" id="pageMessageConfirm" class="btn btn-danger"
+          onclick="resolvePageMessage(true)">Confirmar</button>
+        <button type="button" id="pageMessageOk" class="btn" onclick="resolvePageMessage(true)"
+          style="display: none">Entendi</button>
+      </div>
     </div>
   </div>
 
@@ -1152,10 +1429,10 @@
   </div>
 
   <!-- MENU DE CONFIGURAÇÕES -->
-  <div class="modal-overlay" id="settingsMenuModal">
-    <div class="modal-body">
+  <div class="popup-overlay" id="settingsMenuModal" onclick="if (event.target === this) closeSettingsMenuModal()">
+    <div class="popup-panel" role="dialog" aria-modal="true" aria-labelledby="settingsMenuTitle">
       <div class="modal-header">
-        <div class="modal-title">⚙️ Configurações</div>
+        <div class="modal-title" id="settingsMenuTitle">⚙️ Configurações</div>
         <button class="close-btn" onclick="closeSettingsMenuModal()">✖</button>
       </div>
 
@@ -1169,10 +1446,10 @@
   </div>
 
   <!-- MODAL CONFIGURAÇÃO E REORDENAÇÃO DAS MÉTRICAS DA BALANÇA -->
-  <div class="modal-overlay" id="scaleConfigModal">
-    <div class="modal-body">
+  <div class="popup-overlay" id="scaleConfigModal" onclick="if (event.target === this) closeScaleConfigModal()">
+    <div class="popup-panel" role="dialog" aria-modal="true" aria-labelledby="scaleConfigTitle">
       <div class="modal-header">
-        <div class="modal-title">⚙️ Métricas da sua Balança</div>
+        <div class="modal-title" id="scaleConfigTitle">⚙️ Métricas da sua Balança</div>
         <button class="close-btn" onclick="closeScaleConfigModal()">✖</button>
       </div>
 
@@ -1190,10 +1467,10 @@
   </div>
 
   <!-- MODAL DE CONFIGURAÇÕES GERAIS (ROLDANA SUPERIOR) -->
-  <div class="modal-overlay" id="settingsModal">
-    <div class="modal-body">
+  <div class="popup-overlay" id="settingsModal" onclick="if (event.target === this) closeSettingsModal()">
+    <div class="popup-panel" role="dialog" aria-modal="true" aria-labelledby="profileSettingsTitle">
       <div class="modal-header">
-        <div class="modal-title">👤 Perfil do Usuário</div>
+        <div class="modal-title" id="profileSettingsTitle">👤 Perfil do Usuário</div>
         <button class="close-btn" onclick="closeSettingsModal()">✖</button>
       </div>
 
@@ -1534,11 +1811,6 @@
 
     if (!healthDb.weighIns) healthDb.weighIns = [];
     if (!Array.isArray(healthDb.workouts)) healthDb.workouts = [];
-    if (!healthDb.metricsOrder) healthDb.metricsOrder = DEFAULT_METRICS_ORDER;
-    healthDb.metricsOrder = healthDb.metricsOrder.filter(
-      (m) => m.key !== "bmi",
-    );
-
     /* NAVEGAÇÃO DE MÓDULOS */
     function openModule(viewId) {
       // Esconde todas as telas e ativa apenas a solicitada.
@@ -1549,15 +1821,15 @@
 
       const headerActions = document.getElementById("headerActions");
       if (viewId === "viewHub") {
-        headerActions.innerHTML = '<a href="../index.html" class="back-nav-btn">Portal ›</a>';
+        headerActions.innerHTML = '<a href="TobaHealth-Index.html" class="back-nav-btn">Hub ›</a>';
       } else {
         headerActions.innerHTML = `
           <button class="gear-btn" onclick="openSettingsModal()" title="Configurações" aria-label="Configurações">⚙️</button>
-          <button class="back-nav-btn" onclick="openModule('viewHub')">Hub ›</button>
+          <a class="back-nav-btn" href="TobaHealth-Index.html">Hub ›</a>
         `;
       }
 
-      if (viewId === "viewTraining") renderWorkoutScreen();
+      if (viewId === "viewTraining" || viewId === "viewHero") renderWorkoutScreen();
     }
 
     function getLocalDateInputValue(date = new Date()) {
@@ -1672,9 +1944,125 @@
             ${metrics.length ? `<div class="workout-record-details">${metrics.join(" · ")}</div>` : ""}
             ${workout.notes ? `<div class="workout-record-meta">${escapeWorkoutHtml(workout.notes)}</div>` : ""}
           </div>
-          <button type="button" class="action-icon-btn" data-workout-delete="${escapeWorkoutHtml(workout.id)}" title="Excluir registro" aria-label="Excluir registro">🗑️</button>
+          <div class="workout-record-actions">
+            <button type="button" class="action-icon-btn" data-workout-edit="${escapeWorkoutHtml(workout.id)}" title="Editar treino" aria-label="Editar treino">✏️</button>
+            <button type="button" class="action-icon-btn" data-workout-delete="${escapeWorkoutHtml(workout.id)}" title="Excluir registro" aria-label="Excluir registro">🗑️</button>
+          </div>
         </div>
       `;
+    }
+
+    const WORKOUT_DISTANCE_DESTINATIONS = [
+      { label: "São Paulo → Rio de Janeiro", distanceKm: 360 },
+      { label: "São Paulo → Manaus", distanceKm: 2690 },
+      { label: "São Paulo → Nova York", distanceKm: 7690 },
+      { label: "São Paulo → Madri", distanceKm: 8390 },
+      { label: "São Paulo → Dubai", distanceKm: 12220 },
+      { label: "São Paulo → Pequim", distanceKm: 17750 },
+      { label: "São Paulo → Tóquio", distanceKm: 18550 },
+      { label: "Uma volta ao mundo", distanceKm: 40075 },
+    ];
+
+    function getWorkoutLifetimeStats(workouts = healthDb.workouts) {
+      return workouts.reduce(
+        (totals, workout) => {
+          totals.durationMinutes += Number(workout.durationMinutes) || 0;
+          totals.calories += Number(workout.calories) || 0;
+          const distance = Number(workout.distanceKm) || 0;
+          totals.distance += distance;
+          if (workout.type === "walking" || workout.type === "saitama") {
+            totals.walkDistance += distance;
+          } else if (workout.type === "bike") {
+            totals.bikeDistance += distance;
+          } else if (workout.type === "elliptical") {
+            totals.ellipticalDistance += distance;
+          } else {
+            totals.otherDistance += distance;
+          }
+          if (workout.type === "saitama") {
+            totals.pushups += Number(workout.pushups) || 0;
+            totals.situps += Number(workout.situps) || 0;
+            totals.squats += Number(workout.squats) || 0;
+          }
+          return totals;
+        },
+        { durationMinutes: 0, calories: 0, distance: 0, walkDistance: 0, bikeDistance: 0, ellipticalDistance: 0, otherDistance: 0, pushups: 0, situps: 0, squats: 0 },
+      );
+    }
+
+    function renderWorkoutDistanceBars(distanceKm) {
+      return WORKOUT_DISTANCE_DESTINATIONS.map((destination) => {
+        const percentage = destination.distanceKm
+          ? (distanceKm / destination.distanceKm) * 100
+          : 0;
+        const barWidth = Math.min(100, Math.max(0, percentage));
+        return `
+          <div class="workout-distance-route">
+            <div class="workout-distance-route-label">
+              <span>${destination.label} <span style="color:#8b949e">(~${formatWorkoutNumber(destination.distanceKm, 0)} km)</span></span>
+              <span class="workout-distance-route-value">${formatWorkoutNumber(percentage, 1)}%</span>
+            </div>
+            <div class="workout-earth-progress-track" role="progressbar" aria-label="${destination.label}: ${formatWorkoutNumber(percentage, 1)}%" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${barWidth}">
+              <div class="workout-earth-progress-fill workout-distance-fill" style="width: ${barWidth}%"></div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function openWorkoutHallDetail(detail) {
+      const stats = getWorkoutLifetimeStats();
+      const title = document.getElementById("workoutHallDetailTitle");
+      const content = document.getElementById("workoutHallDetailContent");
+
+      if (detail === "energy") {
+        title.innerText = "🔥 Energia queimada";
+        const foods = [
+          { icon: "🍕", name: "fatias de pizza", calories: 275, detail: "275 kcal por fatia média, com queijo puxando fio e calabresa fazendo hora extra." },
+          { icon: "🍣", name: "temakis completos", calories: 230, detail: "230 kcal por peça completa, não aquele mini que desaparece em duas mordidas." },
+          { icon: "🍬", name: "brigadeiros", calories: 80, detail: "80 kcal por unidade de festa. Se foi de colher, vamos deixar a matemática descansar." },
+        ];
+        content.innerHTML = `
+          <p>Você queimou <strong>${formatWorkoutNumber(stats.calories, 0)} kcal</strong>. Isso dá, mais ou menos:</p>
+          <div class="workout-distance-routes">
+            ${foods.map((food) => `<div class="workout-legacy-stat"><strong>${food.icon} ${formatWorkoutNumber(stats.calories / food.calories, 1)} ${food.name}</strong><span class="workout-legacy-detail">${food.detail}</span></div>`).join("")}
+          </div>
+          <p style="margin-top:1rem;color:#8b949e">Conta de guardanapo, chefia: não vira passe livre no rodízio, mas já dá pra comemorar sem inventar número.</p>
+        `;
+      } else if (detail === "distance") {
+        title.innerText = "🌍 Sua quilometragem pelo mapa";
+        content.innerHTML = `
+          <p>Você já acumulou <strong>${formatWorkoutNumber(stats.distance, 2)} km</strong>. Toda caminhada conta, até aquela que começou porque o elevador demorou.</p>
+          <div class="workout-distance-routes">${renderWorkoutDistanceBars(stats.distance)}</div>
+          <p style="margin-top:1rem;color:#8b949e">Distâncias aproximadas em linha reta a partir de São Paulo; trajetos reais variam. O importante é a barra crescer, não comprar passagem hoje.</p>
+        `;
+      } else if (detail === "saitama") {
+        title.innerText = "👊 Você contra o mestre careca";
+        const benchmarkDays = 365 * 3;
+        const benchmarkReps = 100 * benchmarkDays;
+        const benchmarkDistance = 10 * benchmarkDays;
+        const comparisons = [
+          { name: "Abdominais", value: stats.situps },
+          { name: "Flexões", value: stats.pushups },
+          { name: "Agachamentos", value: stats.squats },
+        ];
+        content.innerHTML = `
+          <p>Na referência do treino, Saitama fez <strong>100 de cada exercício e correu 10 km por dia durante 3 anos</strong>. Isso dá <strong>${formatWorkoutNumber(benchmarkReps, 0)} repetições de cada</strong> e <strong>${formatWorkoutNumber(benchmarkDistance, 0)} km</strong>.</p>
+          <div class="workout-distance-routes">
+            ${comparisons.map((item) => `<div class="workout-legacy-stat"><div class="workout-distance-route-label"><span>${item.name}</span><span class="workout-distance-route-value">${formatWorkoutNumber((item.value / benchmarkReps) * 100, 3)}%</span></div><strong>${formatWorkoutNumber(item.value, 0)} / ${formatWorkoutNumber(benchmarkReps, 0)}</strong><div class="workout-earth-progress-track" role="progressbar" aria-label="${item.name}: ${formatWorkoutNumber((item.value / benchmarkReps) * 100, 3)}% do treino Saitama" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.min(100, (item.value / benchmarkReps) * 100)}"><div class="workout-earth-progress-fill" style="width:${Math.min(100, (item.value / benchmarkReps) * 100)}%"></div></div></div>`).join("")}
+            <div class="workout-legacy-stat"><div class="workout-distance-route-label"><span>Distância</span><span class="workout-distance-route-value">${formatWorkoutNumber((stats.distance / benchmarkDistance) * 100, 2)}%</span></div><strong>${formatWorkoutNumber(stats.distance, 2)} / ${formatWorkoutNumber(benchmarkDistance, 0)} km</strong><div class="workout-earth-progress-track" role="progressbar" aria-label="Distância: ${formatWorkoutNumber((stats.distance / benchmarkDistance) * 100, 2)}% do treino Saitama" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.min(100, (stats.distance / benchmarkDistance) * 100)}"><div class="workout-earth-progress-fill" style="width:${Math.min(100, (stats.distance / benchmarkDistance) * 100)}%"></div></div></div>
+          </div>
+          <p style="margin-top:1rem;color:#8b949e">Não precisa virar o careca até sexta. Ele treinou por 3 anos; você já está fazendo a parte mais difícil: começar e voltar.</p>
+        `;
+      } else {
+        return;
+      }
+
+      document.getElementById("workoutHallDetailModal").classList.add("active");
+    }
+
+    function closeWorkoutHallDetail() {
+      document.getElementById("workoutHallDetailModal").classList.remove("active");
     }
 
     function renderWorkoutScreen() {
@@ -1690,27 +2078,7 @@
         currentMonthKey,
         today,
       );
-      const allTimeStats = workouts.reduce(
-        (totals, workout) => {
-          totals.durationMinutes += Number(workout.durationMinutes) || 0;
-          totals.calories += Number(workout.calories) || 0;
-          totals.distance += Number(workout.distanceKm) || 0;
-          if (workout.type === "saitama") {
-            totals.pushups += Number(workout.pushups) || 0;
-            totals.situps += Number(workout.situps) || 0;
-            totals.squats += Number(workout.squats) || 0;
-          }
-          return totals;
-        },
-        {
-          durationMinutes: 0,
-          calories: 0,
-          distance: 0,
-          pushups: 0,
-          situps: 0,
-          squats: 0,
-        },
-      );
+      const allTimeStats = getWorkoutLifetimeStats(workouts);
       const dailyAverage = (value) =>
         currentMonth.elapsedDays ? value / currentMonth.elapsedDays : 0;
       const earthCircumferenceKm = 40075;
@@ -1761,80 +2129,86 @@
         if (metricCard) openWorkoutChart(metricCard.dataset.workoutMetric);
       };
 
-      document.getElementById("workoutLegacy").innerHTML = `
-        <p class="workout-legacy-intro">Olha o tamanho do legado que você já construiu:</p>
+      const heroContent = document.getElementById("workoutHallContent");
+      heroContent.innerHTML = `
+        <p class="workout-legacy-intro">O shape não veio por carta registrada. Olha o que você já construiu:</p>
         <div class="workout-legacy-grid">
           <div class="workout-legacy-stat">
             <span class="workout-legacy-label">⏱️ Tempo de treino</span>
             <strong class="workout-legacy-value">${formatWorkoutNumber(allTimeStats.durationMinutes, 0)} minutos</strong>
             <span class="workout-legacy-detail">em ${formatWorkoutNumber(workouts.length, 0)} treinos registrados</span>
           </div>
-          <div class="workout-legacy-stat">
+          <div class="workout-legacy-stat workout-legacy-action" role="button" tabindex="0" data-hero-detail="energy" aria-label="Ver equivalências de energia queimada">
             <span class="workout-legacy-label">🔥 Energia queimada</span>
             <strong class="workout-legacy-value">${formatWorkoutNumber(allTimeStats.calories, 0)} kcal</strong>
-            <span class="workout-legacy-detail workout-legacy-detail-compact">🍕 ≈ ${formatWorkoutNumber(allTimeStats.calories / 275, 1)} fatias de pizza</span>
+            <span class="workout-legacy-detail workout-legacy-detail-compact">Ver equivalências ↗</span>
           </div>
-          <div class="workout-legacy-stat workout-legacy-stat-wide workout-legacy-distance">
-            <div>
-              <span class="workout-legacy-label">🌍 Distância percorrida</span>
-              <strong class="workout-legacy-value">${formatWorkoutNumber(allTimeStats.distance, 2)} km</strong>
+          <div class="workout-legacy-stat workout-legacy-stat-wide workout-legacy-action" role="button" tabindex="0" data-hero-detail="distance" aria-label="Ver distâncias percorridas e rotas">
+            <span class="workout-legacy-label">🌍 Distância percorrida · ${formatWorkoutNumber(allTimeStats.distance, 2)} km</span>
+            <div class="workout-distance-breakdown">
+              <div class="workout-distance-mode"><span class="workout-distance-mode-label">A pé</span><strong class="workout-distance-mode-value">${formatWorkoutNumber(allTimeStats.walkDistance, 2)} km</strong></div>
+              <div class="workout-distance-mode"><span class="workout-distance-mode-label">De bike</span><strong class="workout-distance-mode-value">${formatWorkoutNumber(allTimeStats.bikeDistance, 2)} km</strong></div>
+              <div class="workout-distance-mode"><span class="workout-distance-mode-label">Elíptico</span><strong class="workout-distance-mode-value">${formatWorkoutNumber(allTimeStats.ellipticalDistance, 2)} km</strong></div>
             </div>
-            <div>
-              <div class="workout-earth-progress-label">
-                <span>Volta na Terra</span>
-                <span>${formatWorkoutNumber(earthDistancePercentage, 2)}%</span>
-              </div>
-              <div
-                class="workout-earth-progress-track"
-                role="progressbar"
-                aria-label="Progresso de uma volta ao redor da Terra"
-                aria-valuemin="0"
-                aria-valuemax="100"
-                aria-valuenow="${Math.min(100, Math.max(0, earthDistancePercentage))}"
-              >
-                <div class="workout-earth-progress-fill" style="width: ${Math.min(100, Math.max(0, earthDistancePercentage))}%"></div>
-              </div>
+            <div class="workout-earth-progress-label"><span>Volta na Terra</span><span>${formatWorkoutNumber(earthDistancePercentage, 2)}%</span></div>
+            <div class="workout-earth-progress-track" role="progressbar" aria-label="${formatWorkoutNumber(earthDistancePercentage, 2)}% de uma volta ao redor da Terra" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.min(100, Math.max(0, earthDistancePercentage))}">
+              <div class="workout-earth-progress-fill" style="width: ${Math.min(100, Math.max(0, earthDistancePercentage))}%"></div>
             </div>
+            <span class="workout-legacy-detail">Toque para ver as cidades que essa distância alcança</span>
           </div>
-          <div class="workout-legacy-stat workout-legacy-stat-wide">
+          <div class="workout-legacy-stat workout-legacy-stat-wide workout-legacy-action" role="button" tabindex="0" data-hero-detail="saitama" aria-label="Comparar repetições e distância com Saitama">
             <span class="workout-legacy-label">💪 Repetições do treino Saitama</span>
             <strong class="workout-legacy-value">${formatWorkoutNumber(allTimeStats.situps, 0)} abdominais · ${formatWorkoutNumber(allTimeStats.pushups, 0)} flexões · ${formatWorkoutNumber(allTimeStats.squats, 0)} agachamentos</strong>
-            <span class="workout-legacy-detail">O careca está ficando preocupado com a concorrência.</span>
+            <span class="workout-legacy-detail">Toque para descobrir quanto falta para o careca fictício</span>
           </div>
         </div>
       `;
+      heroContent.onclick = (event) => {
+        const detailCard = event.target.closest("[data-hero-detail]");
+        if (detailCard) openWorkoutHallDetail(detailCard.dataset.heroDetail);
+      };
+      heroContent.onkeydown = (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        const detailCard = event.target.closest("[data-hero-detail]");
+        if (!detailCard) return;
+        event.preventDefault();
+        openWorkoutHallDetail(detailCard.dataset.heroDetail);
+      };
 
       const history = document.getElementById("workoutHistory");
-      const archivedMonths = [...new Set(
-        workouts
+      const historyMonths = [...new Set([
+        currentMonthKey,
+        ...workouts
           .map((workout) => getWorkoutMonthKey(workout.date))
           .filter((monthKey) => monthKey && monthKey < currentMonthKey),
-      )].sort((a, b) => b.localeCompare(a));
-      if (!archivedMonths.length) {
-        history.innerHTML =
-          '<span style="font-size: 0.8rem; color: #8b949e">Os meses anteriores aparecerão aqui.</span>';
-      } else {
-        history.innerHTML = archivedMonths
-          .map((monthKey) => {
-            const month = getWorkoutMonthStats(workouts, monthKey, today);
-            const calories = formatWorkoutNumber(month.calories, 0);
-            const distance = formatWorkoutNumber(month.distance, 2);
-            return `
-              <details class="workout-month-archive">
-                <summary>
-                  <span class="workout-month-title">${formatWorkoutMonth(monthKey)}</span>
-                  <span class="workout-month-meta">${month.count} treinos · ${calories} kcal · ${distance} km</span>
-                </summary>
-                <div class="workout-month-records">
-                  ${month.workouts.map(renderWorkoutRecord).join("")}
-                </div>
-              </details>
-            `;
-          })
-          .join("");
-      }
+      ])].sort((a, b) => b.localeCompare(a));
+      history.innerHTML = historyMonths
+        .map((monthKey) => {
+          const month = getWorkoutMonthStats(workouts, monthKey, today);
+          const calories = formatWorkoutNumber(month.calories, 0);
+          const distance = formatWorkoutNumber(month.distance, 2);
+          const isCurrentMonth = monthKey === currentMonthKey;
+          const records = month.workouts.length
+            ? month.workouts.map(renderWorkoutRecord).join("")
+            : '<span style="font-size: 0.8rem; color: #8b949e">Nenhum treino registrado neste mês ainda.</span>';
+          return `
+            <details class="workout-month-archive" ${isCurrentMonth ? "open" : ""}>
+              <summary>
+                <span class="workout-month-title">${formatWorkoutMonth(monthKey)}${isCurrentMonth ? " · Atual" : ""}</span>
+                <span class="workout-month-meta">${month.count} treinos · ${calories} kcal · ${distance} km</span>
+              </summary>
+              <div class="workout-month-records">${records}</div>
+            </details>
+          `;
+        })
+        .join("");
 
       history.onclick = (event) => {
+        const editButton = event.target.closest("[data-workout-edit]");
+        if (editButton) {
+          editWorkout(editButton.dataset.workoutEdit);
+          return;
+        }
         const deleteButton = event.target.closest("[data-workout-delete]");
         if (deleteButton) deleteWorkout(deleteButton.dataset.workoutDelete);
       };
@@ -1843,10 +2217,14 @@
     function openWorkoutChart(metric) {
       const chartOptions = {
         workouts: {
-          title: "🏋️ Treinos por dia",
-          description: "Quantidade de treinos registrados em cada dia.",
-          unit: "treinos",
-          value: (workouts) => workouts.length,
+          title: "⏱️ Minutos treinados por dia",
+          description: "Soma dos minutos de treino registrados em cada dia.",
+          unit: "min",
+          value: (workouts) =>
+            workouts.reduce(
+              (total, workout) => total + (Number(workout.durationMinutes) || 0),
+              0,
+            ),
         },
         calories: {
           title: "🔥 Calorias por dia",
@@ -1948,9 +2326,11 @@
     }
 
     let selectedWorkoutType = "";
+    let editingWorkoutId = null;
 
     function openWorkoutModal() {
       selectedWorkoutType = "";
+      editingWorkoutId = null;
       document.getElementById("workoutModalTitle").innerText =
         "🏋️ Registrar treino";
       document.getElementById("workoutTypePicker").style.display = "block";
@@ -2058,6 +2438,43 @@
       document.getElementById("workoutForm").style.display = "block";
     }
 
+    function editWorkout(workoutId) {
+      const workout = healthDb.workouts.find(
+        (item) => String(item.id) === String(workoutId),
+      );
+      if (!workout) return;
+
+      openWorkoutModal();
+      editingWorkoutId = String(workout.id);
+      selectWorkoutType(workout.type);
+      document.getElementById("workoutModalTitle").innerText = "✏️ Editar treino";
+      document.getElementById("workout-date").value = workout.date || "";
+
+      if (workout.type === "custom") {
+        document.getElementById("workout-title").value = workout.title || "";
+        document.getElementById("workout-notes").value = workout.notes || "";
+      }
+
+      [
+        "durationMinutes",
+        "calories",
+        "distanceKm",
+        "pushups",
+        "situps",
+        "squats",
+        "sets",
+        "reps",
+        "weightKg",
+      ].forEach((field) => {
+        const input = document.getElementById(`workout-${field}`);
+        if (input && workout[field] !== null && workout[field] !== undefined) {
+          input.value = workout[field];
+        }
+      });
+
+      document.getElementById("workoutModal").classList.add("active");
+    }
+
     function readWorkoutNumber(id) {
       const value = document.getElementById(`workout-${id}`)?.value;
       if (value === undefined || value === "") return null;
@@ -2070,7 +2487,7 @@
       if (!selectedWorkoutType) return;
 
       const workout = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id: editingWorkoutId || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         type: selectedWorkoutType,
         title:
           selectedWorkoutType === "saitama"
@@ -2107,22 +2524,32 @@
       ];
 
       if (!workout.date || (selectedWorkoutType === "custom" && !workout.title)) {
-        alert("Preencha o nome da atividade e a data do treino.");
+        showPageMessage("Preencha o nome da atividade e a data do treino.", { title: "Falta um detalhe" });
         return;
       }
       if (!measurements.some((value) => value !== null && value > 0)) {
-        alert("Informe pelo menos uma quantidade maior que zero para registrar o treino.");
+        showPageMessage("Informe pelo menos uma quantidade maior que zero para registrar o treino.", { title: "Falta um número" });
         return;
       }
 
-      healthDb.workouts.push(workout);
+      if (editingWorkoutId) {
+        const workoutIndex = healthDb.workouts.findIndex(
+          (item) => String(item.id) === editingWorkoutId,
+        );
+        if (workoutIndex === -1) return;
+        healthDb.workouts[workoutIndex] = workout;
+      } else {
+        healthDb.workouts.push(workout);
+      }
+      editingWorkoutId = null;
       localStorage.setItem(HEALTH_KEY, JSON.stringify(healthDb));
       closeWorkoutModal();
       renderWorkoutScreen();
     }
 
-    function deleteWorkout(workoutId) {
-      if (!confirm("Deseja excluir este registro de treino?")) return;
+    async function deleteWorkout(workoutId) {
+      const confirmed = await showPageMessage("Deseja excluir este registro de treino?", { title: "Excluir treino", confirm: true, confirmLabel: "Excluir" });
+      if (!confirmed) return;
       healthDb.workouts = healthDb.workouts.filter(
         (workout) => String(workout.id) !== String(workoutId),
       );
@@ -2230,8 +2657,13 @@
 
       return `
                 <div style="background: #161b22; border: 1px solid #30363d; border-radius: 14px; padding: 1.2rem; margin-bottom: 1rem;">
-                    <div style="font-size: 0.7rem; font-weight: 800; color: #58a6ff; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">${demoStr}</div>
-                    <div style="font-size: 0.85rem; color: #c9d1d9; margin-bottom: 15px; line-height: 1.4;">${rule.title}</div>
+                    <div class="ruler-explanation-row">
+                      <div class="ruler-explanation-copy">
+                        <div style="font-size: 0.7rem; font-weight: 800; color: #58a6ff; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">${demoStr}</div>
+                        <div style="font-size: 0.85rem; color: #c9d1d9; line-height: 1.4;">${rule.title}</div>
+                      </div>
+                      <button type="button" class="ruler-advice-btn" onclick="openMetricAdviceModal('${key}')" title="Ver dica prática" aria-label="Ver dica prática sobre ${demoStr}">🍄</button>
+                    </div>
                     
                     <div style="position: relative; padding-top: 25px; padding-bottom: 5px;">
                         <div style="display: flex; width: 100%; border-radius: 4px; overflow: hidden; background: #21262d;">
@@ -2247,6 +2679,48 @@
                     </div>
                 </div>
             `;
+    }
+
+    const metricAdvice = {
+      bmi: { title: "IMC: a régua não sabe se você é forte ou só alto", text: "O IMC é um sinal grosseiro, não um diagnóstico. Ele não distingue músculo de gordura, então não deixe um número sozinho mandar na sua autoestima.\n\nPara melhorar a tendência: mantenha refeições consistentes, caminhe mais e faça treino de força. Se o resultado preocupa ou não combina com sua saúde, converse com um profissional em vez de brigar com a calculadora." },
+      weight: { title: "Peso: a balança não é boletim escolar", text: "Peso muda com água, comida, sal e horário. Uma pesagem isolada pode fazer drama; acompanhe a tendência em condições parecidas.\n\nSe seu objetivo é reduzir: procure um déficit calórico moderado, priorize comida que sustenta e some caminhadas com treino de força. Nada de dieta-relâmpago: ela costuma voltar com juros." },
+      score: { title: "Pontuação corporal: nota da balança, não da sua vida", text: "Cada fabricante inventa sua própria fórmula para essa nota. Use-a para observar tendências no mesmo aparelho, não como verdade universal.\n\nO plano pé no chão continua valendo: treino de força progressivo, movimento regular, refeições equilibradas e sono decente. A balança não aceita recurso, mas seu hábito aceita ajuste." },
+      fat: { title: "Como reduzir gordura sem virar refém do alface", text: "Gordura corporal não baixa por decreto do espelho. O caminho costuma ser um déficit calórico moderado, refeições com proteína e fibras, treino de força e caminhadas regulares.\n\nAbdominal fortalece a barriga, mas não escolhe de onde o corpo tira gordura. Faça o básico por semanas, não por duas segundas-feiras. E desconfie de promessa de secar em sete dias: até boleto demora mais que isso." },
+      muscle: { title: "Como ganhar músculo sem esperar milagre do whey", text: "Músculo responde a treino de força com progressão, recuperação e comida suficiente. Inclua fontes de proteína nas refeições e durma bem; suplemento é conveniência, não feitiço.\n\nAumente carga ou repetições aos poucos e dê tempo ao corpo. Se todo treino vira tentativa de recorde, a evolução pode ser trocar o halter pelo gelo." },
+      water: { title: "Água: hidratação não é campeonato de litros", text: "A leitura da bioimpedância varia com hidratação, horário e exercício recente. Compare medições feitas em condições parecidas.\n\nBeba ao longo do dia e ajuste ao calor e à atividade. Não force litros de uma vez nem tente enganar a balança ficando desidratado: isso só engana você e deixa o corpo reclamando." },
+      bmr: { title: "Metabolismo basal não é seu vale-pizza", text: "Esse número estima o que o corpo gasta em repouso; não é uma meta perfeita de ingestão nem uma autorização para comer só isso.\n\nEvite cortar comida agressivamente. Manter músculos com treino de força, alimentação adequada e sono ajuda mais do que tentar acelerar o metabolismo com chá misterioso de procedência duvidosa." },
+      visceral: { title: "Gordura visceral: aqui vale cuidar sem pânico", text: "A bioimpedância dá uma estimativa, não um diagnóstico. Para melhorar a saúde metabólica, atividade regular, treino de força, alimentação equilibrada, sono e moderação no álcool são um começo honesto.\n\nSe a leitura continuar alta ou você tiver fatores de risco, leve os dados a um profissional de saúde. Google às duas da manhã não substitui consulta, por mais confiante que pareça." },
+      protein: { title: "Proteína: constrói músculo, não argumento de academia", text: "A porcentagem da balança é uma estimativa e não define sozinha se sua dieta está adequada. Inclua fontes de proteína nas refeições e combine isso com treino e recuperação.\n\nNão precisa transformar todo alimento em suplemento. Se há doença renal ou outra condição clínica, converse com um profissional antes de aumentar muito o consumo." },
+      bone: { title: "Massa óssea: não dá para resolver no modo maromba", text: "A balança estima esse valor; ela não mede densidade óssea como um exame clínico. Para cuidar dos ossos, atividade com carga apropriada, alimentação adequada e acompanhamento de saúde contam.\n\nNão aumente impacto ou suplemento no chute. Se houver preocupação real, médico e exame específico são melhores conselheiros que o botão de intensidade da academia." },
+      bodyAge: { title: "Idade corporal: ficção científica com uma pitada de balança", text: "Essa idade é uma estimativa do algoritmo do aparelho, não sua idade biológica comprovada. Veja como ela evolui no mesmo aparelho e não cancele seu aniversário por causa dela.\n\nMovimento, força, sono e alimentação consistente são hábitos que ajudam a saúde de verdade. Não existe botão de voltar no tempo, mas existe o de sair do sofá." },
+    };
+
+    let pageMessageReturnId = null;
+    let pageMessageResolver = null;
+
+    function showPageMessage(message, options = {}) {
+      const activePage = document.querySelector(".modal-overlay.active");
+      pageMessageReturnId = activePage?.id || null;
+      activePage?.classList.remove("active");
+      document.getElementById("pageMessageTitle").innerText = options.title || "Toba Health";
+      document.getElementById("pageMessageText").innerText = message;
+      const isConfirm = Boolean(options.confirm);
+      document.getElementById("pageMessageCancel").style.display = isConfirm ? "block" : "none";
+      document.getElementById("pageMessageConfirm").style.display = isConfirm ? "block" : "none";
+      document.getElementById("pageMessageOk").style.display = isConfirm ? "none" : "block";
+      document.getElementById("pageMessageConfirm").innerText = options.confirmLabel || "Confirmar";
+      document.getElementById("pageMessageModal").classList.add("active");
+      window.scrollTo(0, 0);
+      return new Promise((resolve) => { pageMessageResolver = resolve; });
+    }
+
+    function resolvePageMessage(confirmed) {
+      document.getElementById("pageMessageModal").classList.remove("active");
+      if (pageMessageReturnId) document.getElementById(pageMessageReturnId)?.classList.add("active");
+      const resolve = pageMessageResolver;
+      pageMessageResolver = null;
+      pageMessageReturnId = null;
+      resolve?.(confirmed);
     }
 
     /* MODAL DE COMPARATIVO */
@@ -2281,7 +2755,7 @@
 
       const last5 = dataPoints.slice(0, 5);
       if (last5.length === 0) {
-        alert("Nenhum dado registrado para essa métrica ainda!");
+        showPageMessage("Ainda não há registros para essa métrica. Cadastre esse campo em uma pesagem e volte para conferir a evolução.", { title: "Sem dados nessa métrica" });
         return;
       }
 
@@ -2377,12 +2851,26 @@
         .join("");
 
       document.getElementById("metricCompareModal").classList.add("active");
+      window.scrollTo(0, 0);
     }
 
     function closeMetricCompareModal() {
       document
         .getElementById("metricCompareModal")
         .classList.remove("active");
+      window.scrollTo(0, 0);
+    }
+
+    function openMetricAdviceModal(metricKey) {
+      const advice = metricAdvice[metricKey];
+      if (!advice) return;
+      document.getElementById("metricAdviceTitle").innerText = `🍄 ${advice.title}`;
+      document.getElementById("metricAdviceContent").innerText = advice.text;
+      document.getElementById("metricAdviceModal").classList.add("active");
+    }
+
+    function closeMetricAdviceModal() {
+      document.getElementById("metricAdviceModal").classList.remove("active");
     }
 
     /* GRÁFICO SVG */
@@ -2646,7 +3134,7 @@
         document.getElementById("wWeight").value,
       );
       if (!weightVal) {
-        alert("Preencha pelo menos o peso, meu consagrado!");
+        showPageMessage("Preencha pelo menos o peso, meu consagrado!", { title: "Faltou o peso" });
         return;
       }
 
@@ -2690,12 +3178,11 @@
       updateUI();
     }
 
-    function deleteCurrentWeighIn() {
+    async function deleteCurrentWeighIn() {
       const editingId = document.getElementById("editingWeighId").value;
       if (!editingId) return;
-      if (
-        confirm("Tem certeza que deseja apagar este registro de pesagem?")
-      ) {
+      const confirmed = await showPageMessage("Tem certeza que deseja apagar este registro de pesagem?", { title: "Excluir pesagem", confirm: true, confirmLabel: "Excluir" });
+      if (confirmed) {
         healthDb.weighIns = healthDb.weighIns.filter(
           (w) => w.id !== parseInt(editingId, 10),
         );
@@ -2740,7 +3227,7 @@
       localStorage.setItem(HEALTH_KEY, JSON.stringify(healthDb));
       closeSettingsModal();
       updateUI();
-      alert("Perfil salvo com sucesso! (⁠⁠👍⁠￣⁠🏽⁠￣⁠)⁠👍");
+      showPageMessage("Perfil salvo com sucesso! (⁠⁠👍⁠￣⁠🏽⁠￣⁠)⁠👍", { title: "Perfil atualizado" });
     }
 
     function exportBackup() {
@@ -2777,20 +3264,20 @@
           localStorage.setItem(HEALTH_KEY, JSON.stringify(healthDb));
           closeSettingsModal();
           updateUI();
-          alert("Backup restaurado com sucesso! (⁠⌐⁠■⁠-⁠■⁠)");
+          showPageMessage("Backup restaurado com sucesso! (⁠⌐⁠■⁠-⁠■⁠)", { title: "Backup restaurado" });
         } catch (err) {
-          alert("Erro ao carregar o arquivo JSON!");
+          showPageMessage("Não consegui ler esse arquivo JSON. Confira se ele é um backup válido do Toba Health.", { title: "Arquivo inválido" });
         }
       };
       if (e.target.files[0]) fileReader.readAsText(e.target.files[0]);
     }
 
-    function clearAllData() {
-      if (
-        confirm(
-          "Tem certeza que deseja APAGAR TUDO do Toba Health? Essa ação não pode ser desfeita!",
-        )
-      ) {
+    async function clearAllData() {
+      const confirmed = await showPageMessage(
+        "Tem certeza que deseja APAGAR TUDO do Toba Health? Essa ação não pode ser desfeita!",
+        { title: "Apagar todos os dados", confirm: true, confirmLabel: "Apagar tudo" },
+      );
+      if (confirmed) {
         // Limpa somente a chave deste módulo, sem afetar os demais aplicativos.
         localStorage.removeItem(HEALTH_KEY);
         healthDb = {
@@ -2803,12 +3290,13 @@
         };
         closeSettingsModal();
         updateUI();
-        alert("Tudo limpo e zerado! ( ͡° 开启 ͡°)");
+        showPageMessage("Tudo limpo e zerado! ( ͡° 开启 ͡°)", { title: "Banco zerado" });
       }
     }
 
     initTobaDecimalMasks();
     updateUI();
+    openModule("viewTraining");
   </script>
 </body>
 

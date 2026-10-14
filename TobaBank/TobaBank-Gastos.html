@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Toba Bank 🚀</title>
+  <title>Toba Bank | Gastos</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     * {
@@ -183,19 +183,20 @@
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      margin-bottom: 1rem;
+      margin-bottom: 1.2rem;
       width: 100%;
       overflow: hidden;
     }
 
     .brand-title {
-      font-size: 1rem !important;
+      font-size: 1.1rem !important;
       font-weight: 800 !important;
       color: #58a6ff !important;
       white-space: nowrap !important;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
+      letter-spacing: -0.5px;
       flex-shrink: 1;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -208,7 +209,7 @@
 
     .header-actions {
       display: flex;
-      gap: 4px;
+      gap: 8px;
       align-items: center;
       flex-shrink: 0;
     }
@@ -242,14 +243,26 @@
       border-color: #58a6ff;
     }
 
+    .header-actions .back-nav-btn {
+      color: #f0f6fc;
+      font-size: 0.85rem !important;
+      padding: 0 0.65rem !important;
+      border-radius: 10px;
+    }
+
+    .header-actions .back-nav-btn:hover {
+      background: #30363d;
+      border-color: #8b949e;
+    }
+
     .add-btn {
       background: #238636 !important;
       border: 1px solid #2ea043 !important;
       color: #fff !important;
       font-weight: 700 !important;
-      font-size: 0.78rem !important;
-      padding: 0.35rem 0.6rem !important;
-      border-radius: 8px;
+      font-size: 0.85rem !important;
+      padding: 0 0.65rem !important;
+      border-radius: 10px;
       cursor: pointer;
       white-space: nowrap;
       height: 32px !important;
@@ -271,12 +284,12 @@
       width: 32px !important;
       height: 32px !important;
       padding: 0 !important;
-      border-radius: 8px !important;
+      border-radius: 10px !important;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      font-size: 0.82rem !important;
+      font-size: 1.1rem !important;
       flex-shrink: 0;
       transition: all 0.2s ease;
     }
@@ -1126,7 +1139,8 @@
 <body>
   <div class="container">
     <div class="top-header">
-      <div class="brand-title" onclick="switchView('hub')" title="Voltar para Início" style="cursor: pointer">
+      <div class="brand-title" onclick="window.location.href='TobaBank-Index.html'" title="Voltar para Início"
+        style="cursor: pointer">
         <span>🏦 Toba Bank</span>
       </div>
       <div class="header-actions" id="headerActionsContainer"></div>
@@ -1278,35 +1292,35 @@
           </div>
 
         </div>
-      </div>
 
-      <div class="home-acc-card expanded" id="homeCatCard">
-        <div class="home-acc-header" onclick="toggleHomeAcc('homeCatCard')">
-          <span class="home-acc-title">📊 Gastos por Categoria</span>
-          <span class="home-acc-arrow">▼</span>
+        <div class="home-acc-card expanded" id="homeCatCard">
+          <div class="home-acc-header" onclick="toggleHomeAcc('homeCatCard')">
+            <span class="home-acc-title">📊 Gastos por Categoria</span>
+            <span class="home-acc-arrow">▼</span>
+          </div>
+          <div class="home-acc-body">
+            <div id="categoryBarsContainer"></div>
+          </div>
         </div>
-        <div class="home-acc-body">
-          <div id="categoryBarsContainer"></div>
-        </div>
-      </div>
 
-      <div class="home-acc-card" id="homeInstCard">
-        <div class="home-acc-header" onclick="toggleHomeAcc('homeInstCard')">
-          <span class="home-acc-title">💳 Parcelas do Mês</span>
-          <span class="home-acc-arrow">▼</span>
+        <div class="home-acc-card" id="homeInstCard">
+          <div class="home-acc-header" onclick="toggleHomeAcc('homeInstCard')">
+            <span class="home-acc-title">💳 Parcelas do Mês</span>
+            <span class="home-acc-arrow">▼</span>
+          </div>
+          <div class="home-acc-body">
+            <div class="expense-list" id="homeInstallmentsListContainer"></div>
+          </div>
         </div>
-        <div class="home-acc-body">
-          <div class="expense-list" id="homeInstallmentsListContainer"></div>
-        </div>
-      </div>
 
-      <div class="home-acc-card expanded" id="homeTransCard">
-        <div class="home-acc-header" onclick="toggleHomeAcc('homeTransCard')">
-          <span class="home-acc-title">💸 Lançamentos do Mês</span>
-          <span class="home-acc-arrow">▼</span>
-        </div>
-        <div class="home-acc-body">
-          <div class="expense-list" id="expenseListContainer"></div>
+        <div class="home-acc-card expanded" id="homeTransCard">
+          <div class="home-acc-header" onclick="toggleHomeAcc('homeTransCard')">
+            <span class="home-acc-title">💸 Lançamentos do Mês</span>
+            <span class="home-acc-arrow">▼</span>
+          </div>
+          <div class="home-acc-body">
+            <div class="expense-list" id="expenseListContainer"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -3466,7 +3480,8 @@
         } else if (viewName === "main") {
           actionsContainer.innerHTML = `
                     <button class="add-btn" onclick="openExpenseModal()">+ Gasto</button>
-                    <button class="back-nav-btn" onclick="switchView('hub')"><span style="color: #8b949e; font-weight: 900; font-size: 1.1rem; line-height: 1; margin-right: 4px;">‹</span> Hub</button>
+                    <button class="config-btn" onclick="openConfigModalHandler()" title="Configurações" aria-label="Configurações">⚙️</button>
+                    <a class="back-nav-btn" href="TobaBank-Index.html" style="text-decoration: none;">Hub ›</a>
                 `;
         } else if (viewName === "tools") {
           actionsContainer.innerHTML = `
@@ -3475,13 +3490,13 @@
         } else if (viewName === "investments") {
           actionsContainer.innerHTML = `
                     <button class="config-btn" onclick="openConfigModalHandler()" title="Configurações">⚙️</button>
-                    <button class="back-nav-btn" onclick="switchView('hub')"><span style="color: #8b949e; font-weight: 900; font-size: 1.1rem; line-height: 1; margin-right: 4px;">‹</span> Hub</button>
+                    <a class="back-nav-btn" href="TobaBank-Index.html" style="text-decoration: none;">Hub ›</a>
                 `;
           renderInvestmentsScreen();
         } else if (viewName === "splitter") {
           actionsContainer.innerHTML = `
                     <button class="config-btn" onclick="openConfigModalHandler()" title="Configurações">⚙️</button>
-                    <button class="back-nav-btn" onclick="switchView('hub')"><span style="color: #8b949e; font-weight: 900; font-size: 1.1rem; line-height: 1; margin-right: 4px;">‹</span> Hub</button>
+                    <a class="back-nav-btn" href="TobaBank-Index.html" style="text-decoration: none;">Hub ›</a>
                 `;
           renderSplitterScreen();
         } else if (viewName === "splitterDetail") {
@@ -7014,7 +7029,7 @@
     document.addEventListener("DOMContentLoaded", () => {
       loadDatabase();
       setupEvents();
-      switchView("hub");
+      switchView("main");
       renderDashboard();
 
       const urlParams = new URLSearchParams(window.location.search);

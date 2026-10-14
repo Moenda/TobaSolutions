@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Toba Health 🥗</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: #0d1117;
+            color: #f0f6fc;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .container {
+            background: #161b22;
+            padding: 1.25rem;
+            border-radius: 20px;
+            border: 1px solid #30363d;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+        }
+
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 1.2rem;
+            width: 100%;
+        }
+
+        .brand-title {
+            color: #3fb950;
+            font-size: 1.1rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: -0.5px;
+            white-space: nowrap;
+        }
+
+        .back-nav-btn {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #f0f6fc;
+            font-size: 0.85rem;
+            border-radius: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            height: 32px;
+            padding: 0 0.65rem;
+        }
+
+        .back-nav-btn:hover {
+            background: #30363d;
+            border-color: #8b949e;
+        }
+
+        .hub-title {
+            font-size: 0.85rem;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-weight: 700;
+            margin-bottom: 0.8rem;
+        }
+
+        .module-card {
+            display: block;
+            background: #0d1117;
+            border: 1px solid #21262d;
+            border-radius: 16px;
+            padding: 1.2rem;
+            margin-bottom: 0.9rem;
+            color: inherit;
+            text-decoration: none;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .module-card:hover {
+            border-color: #3fb950;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(63, 185, 80, 0.12);
+        }
+
+        .module-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .module-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #f0f6fc;
+        }
+
+        .module-desc {
+            font-size: 0.82rem;
+            color: #8b949e;
+            line-height: 1.35;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <header class="top-header">
+            <div class="brand-title"><span>🥗 Toba Health</span></div>
+            <a href="../index.html" class="back-nav-btn">Portal ›</a>
+        </header>
+
+        <div class="hub-title">Módulos de Saúde & Performance</div>
+
+        <a class="module-card" href="TobaHealth-Pesagem.html">
+            <div class="module-header">
+                <div class="module-name">⚖️ Pesagem & Bioimpedância</div>
+            </div>
+            <div class="module-desc">
+                Acompanhamento de peso, métricas da balança e evolução das banhas no
+                padrão Toberson (⁠⌐⁠■⁠-⁠■⁠).
+            </div>
+        </a>
+
+        <a class="module-card" href="TobaHealth-Treinos.html">
+            <div class="module-header">
+                <div class="module-name">🏋️‍♂️ Treinos & Cargas</div>
+            </div>
+            <div class="module-desc">
+                Registre seus treinos, caminhadas e evolução no seu ritmo.
+            </div>
+        </a>
+    </main>
+</body>
+
+</html>
