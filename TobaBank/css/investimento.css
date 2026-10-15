@@ -1,0 +1,206 @@
+/* Toba Bank · estilos exclusivos de Investimentos */
+
+.invest-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 150;
+}
+
+.invest-popup-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.invest-popup {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 18px;
+  padding: 1.4rem;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.invest-action-accordion {
+  background: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 12px;
+  margin-bottom: 0.8rem;
+  overflow: hidden;
+}
+
+.invest-action-header {
+  padding: 0.8rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #58a6ff;
+  user-select: none;
+}
+
+.invest-action-body {
+  display: none;
+  padding: 0 1rem 1rem 1rem;
+}
+
+.invest-action-accordion.expanded .invest-action-body {
+  display: block;
+}
+
+.invest-action-arrow {
+  font-size: 0.7rem;
+  color: #8b949e;
+  transition: transform 0.2s;
+}
+
+.invest-action-accordion.expanded .invest-action-arrow {
+  transform: rotate(180deg);
+}
+
+.text-blue {
+  color: #58a6ff;
+}
+
+.invest-summary-card {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 14px;
+  padding: 1rem;
+  margin-bottom: 1.2rem;
+  position: relative;
+}
+
+.btn-open-chart {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 40px;
+  height: 40px;
+  background: #1f6feb;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(31, 111, 235, 0.4);
+  transition: transform 0.2s;
+}
+
+.btn-open-chart:hover {
+  transform: scale(1.05);
+}
+
+.btn-open-chart span {
+  font-size: 1.2rem;
+}
+
+.invest-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.invest-item-box {
+  background: #161b22;
+  padding: 0.6rem;
+  border-radius: 8px;
+  border: 1px solid #21262d;
+}
+
+.log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 0.5rem;
+}
+
+.log-item {
+  font-size: 0.75rem;
+  background: #0d1117;
+  padding: 0.5rem 0.7rem;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #21262d;
+}
+
+.period-selector {
+  display: flex;
+  background: #0d1117;
+  padding: 4px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  border: 1px solid #21262d;
+}
+
+.period-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #8b949e;
+  padding: 8px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+}
+
+.period-btn.active {
+  background: #238636;
+  color: #fff;
+}
+
+.chart-card {
+  background: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.active-assets-list {
+  background: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.active-assets-list h3 {
+  font-size: 0.95rem;
+  color: #f0f6fc;
+  margin-bottom: 10px;
+}
+
+#assetColorList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#assetColorList li {
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

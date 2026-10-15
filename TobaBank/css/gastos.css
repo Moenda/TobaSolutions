@@ -1,0 +1,283 @@
+/* Toba Bank · estilos exclusivos de Gastos */
+
+.hero-pills-container {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 4px;
+  margin-top: 20px;
+  position: relative;
+  z-index: 2;
+  border-top: 1px dashed #30363d;
+  padding-top: 14px;
+  align-items: center;
+  width: 100%;
+}
+
+.pill-title {
+  font-size: 0.58rem;
+  color: #8b949e;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 2px;
+  white-space: nowrap;
+}
+
+.pill-value {
+  font-size: 0.88rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pill-facada {
+  font-size: 0.62rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 360px) {
+  .pill-title {
+    font-size: 0.5rem;
+  }
+
+  .pill-value {
+    font-size: 0.75rem;
+  }
+
+  .pill-facada {
+    font-size: 0.55rem;
+  }
+}
+
+.fixed-card {
+  background: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 14px;
+  margin-bottom: 0.8rem;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.fixed-header {
+  padding: 0.9rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.fixed-body {
+  display: none;
+  padding: 0 1rem 1rem 1rem;
+}
+
+.fixed-card.expanded .fixed-body {
+  display: block;
+}
+
+.fixed-arrow {
+  font-size: 0.75rem;
+  color: #8b949e;
+  transition: transform 0.2s;
+}
+
+.fixed-card.expanded .fixed-arrow {
+  transform: rotate(180deg);
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.home-acc-card {
+  background: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 14px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.home-acc-header {
+  padding: 0.9rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.home-acc-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #f0f6fc;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.home-acc-arrow {
+  font-size: 0.75rem;
+  color: #8b949e;
+  transition: transform 0.2s;
+}
+
+.home-acc-card.expanded .home-acc-arrow {
+  transform: rotate(180deg);
+}
+
+.home-acc-body {
+  display: none;
+  padding: 0 1rem 1rem 1rem;
+}
+
+.home-acc-card.expanded .home-acc-body {
+  display: block;
+}
+
+.month-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.month-badge {
+  background: rgba(88, 166, 255, 0.15);
+  color: #58a6ff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 12px;
+  text-transform: capitalize;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 1.2rem;
+}
+
+.card-full {
+  grid-column: span 2;
+}
+
+.text-gold {
+  color: #d29922;
+}
+
+.sub-text {
+  font-size: 0.73rem;
+  color: #8b949e;
+  line-height: 1.35;
+}
+
+.advice-banner {
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1.2rem;
+  font-size: 0.82rem;
+  color: #ff7b72;
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.advice-banner.active {
+  display: flex;
+}
+
+.category-item {
+  margin-bottom: 0.8rem;
+}
+
+.category-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.progress-bar-bg {
+  background: #21262d;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  background: #58a6ff;
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.expense-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.installment-body,
+.history-body,
+.invest-body {
+  display: none;
+  padding: 0 1rem 1rem 1rem;
+}
+
+.installment-card.expanded .installment-body,
+.history-card.expanded .history-body,
+.invest-card.expanded .invest-body {
+  display: block;
+}
+
+.installment-arrow,
+.history-arrow,
+.invest-arrow {
+  font-size: 0.75rem;
+  color: #8b949e;
+  transition: transform 0.2s;
+}
+
+.installment-card.expanded .installment-arrow,
+.history-card.expanded .history-arrow,
+.invest-card.expanded .invest-arrow {
+  transform: rotate(180deg);
+}
+
+.installment-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  background: #161b22;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid #21262d;
+  margin-top: 0.4rem;
+}
+
+.switch-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.switch-container input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #238636;
+  cursor: pointer;
+}
