@@ -1,0 +1,4179 @@
+{
+  "version": 29,
+  "config": {
+    "startDate": "2025-11-01",
+    "fixedExpenses": [
+      {
+        "id": "1762000000007",
+        "name": "Aluguel + condomínio",
+        "amount": 2180,
+        "category": "Moradia - Aluguel/Condomínio"
+      },
+      {
+        "id": "1762000001000",
+        "name": "Conta de luz (média)",
+        "amount": 180,
+        "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+      },
+      {
+        "id": "1762000002000",
+        "name": "Água e gás",
+        "amount": 85,
+        "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+      },
+      {
+        "id": "1762000003000",
+        "name": "Internet fibra 500mb",
+        "amount": 109.9,
+        "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+      },
+      {
+        "id": "1762000004000",
+        "name": "Plano do celular",
+        "amount": 59.99,
+        "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+      },
+      {
+        "id": "1762000005000",
+        "name": "Plano de saúde",
+        "amount": 389,
+        "category": "Saúde & Bem-Estar"
+      },
+      {
+        "id": "1762000006000",
+        "name": "Academia",
+        "amount": 129.9,
+        "category": "Saúde & Bem-Estar"
+      },
+      {
+        "id": "1762000007000",
+        "name": "Netflix",
+        "amount": 44.9,
+        "category": "Assinaturas"
+      },
+      {
+        "id": "1762000008000",
+        "name": "Spotify",
+        "amount": 21.9,
+        "category": "Assinaturas"
+      },
+      {
+        "id": "1762000009000",
+        "name": "Xbox Game Pass",
+        "amount": 59.99,
+        "category": "Games"
+      }
+    ]
+  },
+  "months": {
+    "2025-11": {
+      "dailyBudget": 245,
+      "fixedExpensesSnapshot": [
+        {
+          "id": "1762000000000",
+          "name": "Aluguel + condomínio",
+          "amount": 2050,
+          "category": "Moradia - Aluguel/Condomínio"
+        },
+        {
+          "id": "1762000001000",
+          "name": "Conta de luz (média)",
+          "amount": 180,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000002000",
+          "name": "Água e gás",
+          "amount": 85,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000003000",
+          "name": "Internet fibra 500mb",
+          "amount": 109.9,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000004000",
+          "name": "Plano do celular",
+          "amount": 59.99,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000005000",
+          "name": "Plano de saúde",
+          "amount": 389,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000006000",
+          "name": "Academia",
+          "amount": 119.9,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000007000",
+          "name": "Netflix",
+          "amount": 39.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000008000",
+          "name": "Spotify",
+          "amount": 21.9,
+          "category": "Assinaturas"
+        }
+      ]
+    },
+    "2025-12": {
+      "dailyBudget": 245,
+      "fixedExpensesSnapshot": [
+        {
+          "id": "1762000000000",
+          "name": "Aluguel + condomínio",
+          "amount": 2050,
+          "category": "Moradia - Aluguel/Condomínio"
+        },
+        {
+          "id": "1762000001000",
+          "name": "Conta de luz (média)",
+          "amount": 180,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000002000",
+          "name": "Água e gás",
+          "amount": 85,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000003000",
+          "name": "Internet fibra 500mb",
+          "amount": 109.9,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000004000",
+          "name": "Plano do celular",
+          "amount": 59.99,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000005000",
+          "name": "Plano de saúde",
+          "amount": 389,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000006000",
+          "name": "Academia",
+          "amount": 119.9,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000007000",
+          "name": "Netflix",
+          "amount": 39.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000008000",
+          "name": "Spotify",
+          "amount": 21.9,
+          "category": "Assinaturas"
+        }
+      ]
+    },
+    "2026-01": {
+      "dailyBudget": 245,
+      "fixedExpensesSnapshot": [
+        {
+          "id": "1762000000000",
+          "name": "Aluguel + condomínio",
+          "amount": 2050,
+          "category": "Moradia - Aluguel/Condomínio"
+        },
+        {
+          "id": "1762000001000",
+          "name": "Conta de luz (média)",
+          "amount": 180,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000002000",
+          "name": "Água e gás",
+          "amount": 85,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000003000",
+          "name": "Internet fibra 500mb",
+          "amount": 109.9,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000004000",
+          "name": "Plano do celular",
+          "amount": 59.99,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000005000",
+          "name": "Plano de saúde",
+          "amount": 389,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000006000",
+          "name": "Academia",
+          "amount": 119.9,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000007000",
+          "name": "Netflix",
+          "amount": 39.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000008000",
+          "name": "Spotify",
+          "amount": 21.9,
+          "category": "Assinaturas"
+        }
+      ]
+    },
+    "2026-02": {
+      "dailyBudget": 245,
+      "fixedExpensesSnapshot": [
+        {
+          "id": "1762000000000",
+          "name": "Aluguel + condomínio",
+          "amount": 2050,
+          "category": "Moradia - Aluguel/Condomínio"
+        },
+        {
+          "id": "1762000001000",
+          "name": "Conta de luz (média)",
+          "amount": 180,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000002000",
+          "name": "Água e gás",
+          "amount": 85,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000003000",
+          "name": "Internet fibra 500mb",
+          "amount": 109.9,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000004000",
+          "name": "Plano do celular",
+          "amount": 59.99,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000005000",
+          "name": "Plano de saúde",
+          "amount": 389,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000006000",
+          "name": "Academia",
+          "amount": 119.9,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000007000",
+          "name": "Netflix",
+          "amount": 39.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000008000",
+          "name": "Spotify",
+          "amount": 21.9,
+          "category": "Assinaturas"
+        }
+      ]
+    },
+    "2026-03": {
+      "dailyBudget": 245,
+      "fixedExpensesSnapshot": [
+        {
+          "id": "1762000000007",
+          "name": "Aluguel + condomínio",
+          "amount": 2180,
+          "category": "Moradia - Aluguel/Condomínio"
+        },
+        {
+          "id": "1762000001000",
+          "name": "Conta de luz (média)",
+          "amount": 180,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000002000",
+          "name": "Água e gás",
+          "amount": 85,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000003000",
+          "name": "Internet fibra 500mb",
+          "amount": 109.9,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000004000",
+          "name": "Plano do celular",
+          "amount": 59.99,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000005000",
+          "name": "Plano de saúde",
+          "amount": 389,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000006000",
+          "name": "Academia",
+          "amount": 129.9,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000007000",
+          "name": "Netflix",
+          "amount": 44.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000008000",
+          "name": "Spotify",
+          "amount": 21.9,
+          "category": "Assinaturas"
+        }
+      ]
+    },
+    "2026-04": {
+      "dailyBudget": 265,
+      "fixedExpensesSnapshot": [
+        {
+          "id": "1762000000007",
+          "name": "Aluguel + condomínio",
+          "amount": 2180,
+          "category": "Moradia - Aluguel/Condomínio"
+        },
+        {
+          "id": "1762000001000",
+          "name": "Conta de luz (média)",
+          "amount": 180,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000002000",
+          "name": "Água e gás",
+          "amount": 85,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000003000",
+          "name": "Internet fibra 500mb",
+          "amount": 109.9,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000004000",
+          "name": "Plano do celular",
+          "amount": 59.99,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000005000",
+          "name": "Plano de saúde",
+          "amount": 389,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000006000",
+          "name": "Academia",
+          "amount": 129.9,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000007000",
+          "name": "Netflix",
+          "amount": 44.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000008000",
+          "name": "Spotify",
+          "amount": 21.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000009000",
+          "name": "Xbox Game Pass",
+          "amount": 59.99,
+          "category": "Games"
+        }
+      ]
+    },
+    "2026-05": {
+      "dailyBudget": 265,
+      "fixedExpensesSnapshot": [
+        {
+          "id": "1762000000007",
+          "name": "Aluguel + condomínio",
+          "amount": 2180,
+          "category": "Moradia - Aluguel/Condomínio"
+        },
+        {
+          "id": "1762000001000",
+          "name": "Conta de luz (média)",
+          "amount": 180,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000002000",
+          "name": "Água e gás",
+          "amount": 85,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000003000",
+          "name": "Internet fibra 500mb",
+          "amount": 109.9,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000004000",
+          "name": "Plano do celular",
+          "amount": 59.99,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000005000",
+          "name": "Plano de saúde",
+          "amount": 389,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000006000",
+          "name": "Academia",
+          "amount": 129.9,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000007000",
+          "name": "Netflix",
+          "amount": 44.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000008000",
+          "name": "Spotify",
+          "amount": 21.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000009000",
+          "name": "Xbox Game Pass",
+          "amount": 59.99,
+          "category": "Games"
+        }
+      ]
+    },
+    "2026-06": {
+      "dailyBudget": 265,
+      "fixedExpensesSnapshot": [
+        {
+          "id": "1762000000007",
+          "name": "Aluguel + condomínio",
+          "amount": 2180,
+          "category": "Moradia - Aluguel/Condomínio"
+        },
+        {
+          "id": "1762000001000",
+          "name": "Conta de luz (média)",
+          "amount": 180,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000002000",
+          "name": "Água e gás",
+          "amount": 85,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000003000",
+          "name": "Internet fibra 500mb",
+          "amount": 109.9,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000004000",
+          "name": "Plano do celular",
+          "amount": 59.99,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000005000",
+          "name": "Plano de saúde",
+          "amount": 389,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000006000",
+          "name": "Academia",
+          "amount": 129.9,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000007000",
+          "name": "Netflix",
+          "amount": 44.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000008000",
+          "name": "Spotify",
+          "amount": 21.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000009000",
+          "name": "Xbox Game Pass",
+          "amount": 59.99,
+          "category": "Games"
+        }
+      ]
+    },
+    "2026-07": {
+      "dailyBudget": 265,
+      "fixedExpensesSnapshot": [
+        {
+          "id": "1762000000007",
+          "name": "Aluguel + condomínio",
+          "amount": 2180,
+          "category": "Moradia - Aluguel/Condomínio"
+        },
+        {
+          "id": "1762000001000",
+          "name": "Conta de luz (média)",
+          "amount": 180,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000002000",
+          "name": "Água e gás",
+          "amount": 85,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000003000",
+          "name": "Internet fibra 500mb",
+          "amount": 109.9,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000004000",
+          "name": "Plano do celular",
+          "amount": 59.99,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000005000",
+          "name": "Plano de saúde",
+          "amount": 389,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000006000",
+          "name": "Academia",
+          "amount": 129.9,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000007000",
+          "name": "Netflix",
+          "amount": 44.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000008000",
+          "name": "Spotify",
+          "amount": 21.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000009000",
+          "name": "Xbox Game Pass",
+          "amount": 59.99,
+          "category": "Games"
+        }
+      ]
+    },
+    "2026-08": {
+      "dailyBudget": 265,
+      "fixedExpensesSnapshot": [
+        {
+          "id": "1762000000007",
+          "name": "Aluguel + condomínio",
+          "amount": 2180,
+          "category": "Moradia - Aluguel/Condomínio"
+        },
+        {
+          "id": "1762000001000",
+          "name": "Conta de luz (média)",
+          "amount": 180,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000002000",
+          "name": "Água e gás",
+          "amount": 85,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000003000",
+          "name": "Internet fibra 500mb",
+          "amount": 109.9,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000004000",
+          "name": "Plano do celular",
+          "amount": 59.99,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000005000",
+          "name": "Plano de saúde",
+          "amount": 389,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000006000",
+          "name": "Academia",
+          "amount": 129.9,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000007000",
+          "name": "Netflix",
+          "amount": 44.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000008000",
+          "name": "Spotify",
+          "amount": 21.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000009000",
+          "name": "Xbox Game Pass",
+          "amount": 59.99,
+          "category": "Games"
+        }
+      ]
+    },
+    "2026-09": {
+      "dailyBudget": 265,
+      "fixedExpensesSnapshot": [
+        {
+          "id": "1762000000007",
+          "name": "Aluguel + condomínio",
+          "amount": 2180,
+          "category": "Moradia - Aluguel/Condomínio"
+        },
+        {
+          "id": "1762000001000",
+          "name": "Conta de luz (média)",
+          "amount": 180,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000002000",
+          "name": "Água e gás",
+          "amount": 85,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000003000",
+          "name": "Internet fibra 500mb",
+          "amount": 109.9,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000004000",
+          "name": "Plano do celular",
+          "amount": 59.99,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000005000",
+          "name": "Plano de saúde",
+          "amount": 389,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000006000",
+          "name": "Academia",
+          "amount": 129.9,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000007000",
+          "name": "Netflix",
+          "amount": 44.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000008000",
+          "name": "Spotify",
+          "amount": 21.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000009000",
+          "name": "Xbox Game Pass",
+          "amount": 59.99,
+          "category": "Games"
+        }
+      ]
+    },
+    "2026-10": {
+      "dailyBudget": 265,
+      "fixedExpensesSnapshot": [
+        {
+          "id": "1762000000007",
+          "name": "Aluguel + condomínio",
+          "amount": 2180,
+          "category": "Moradia - Aluguel/Condomínio"
+        },
+        {
+          "id": "1762000001000",
+          "name": "Conta de luz (média)",
+          "amount": 180,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000002000",
+          "name": "Água e gás",
+          "amount": 85,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000003000",
+          "name": "Internet fibra 500mb",
+          "amount": 109.9,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000004000",
+          "name": "Plano do celular",
+          "amount": 59.99,
+          "category": "Moradia - Contas Básicas (Luz/Água/Internet)"
+        },
+        {
+          "id": "1762000005000",
+          "name": "Plano de saúde",
+          "amount": 389,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000006000",
+          "name": "Academia",
+          "amount": 129.9,
+          "category": "Saúde & Bem-Estar"
+        },
+        {
+          "id": "1762000007000",
+          "name": "Netflix",
+          "amount": 44.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000008000",
+          "name": "Spotify",
+          "amount": 21.9,
+          "category": "Assinaturas"
+        },
+        {
+          "id": "1762000009000",
+          "name": "Xbox Game Pass",
+          "amount": 59.99,
+          "category": "Games"
+        }
+      ]
+    }
+  },
+  "transactions": [
+    {
+      "id": "1762030800000",
+      "description": "Atacadão (compra do mês)",
+      "amount": 349.52,
+      "category": "Mercado",
+      "date": "2025-11-01"
+    },
+    {
+      "id": "1761998401371",
+      "description": "Cinema",
+      "amount": 56.96,
+      "category": "Lazer",
+      "date": "2025-11-01"
+    },
+    {
+      "id": "1762261202742",
+      "description": "Almoço no trabalho",
+      "amount": 47.91,
+      "category": "Alimentação",
+      "date": "2025-11-04"
+    },
+    {
+      "id": "1762257604113",
+      "description": "Gasolina - posto Shell",
+      "amount": 223.03,
+      "category": "Transporte - Combustível",
+      "date": "2025-11-04"
+    },
+    {
+      "id": "1762333205484",
+      "description": "Lanche no shopping",
+      "amount": 44.07,
+      "category": "Alimentação",
+      "date": "2025-11-05"
+    },
+    {
+      "id": "1762444806855",
+      "description": "Uber",
+      "amount": 22.24,
+      "category": "Transporte - Uber/App",
+      "date": "2025-11-06"
+    },
+    {
+      "id": "1762466408226",
+      "description": "Ração Golden + areia (Mingau 🐱)",
+      "amount": 227.21,
+      "category": "Pet",
+      "date": "2025-11-06"
+    },
+    {
+      "id": "1762542009597",
+      "description": "iFood - Pizza",
+      "amount": 71.83,
+      "category": "Alimentação",
+      "date": "2025-11-07"
+    },
+    {
+      "id": "1762520410968",
+      "description": "Show no Audio",
+      "amount": 80.73,
+      "category": "Lazer",
+      "date": "2025-11-07"
+    },
+    {
+      "id": "1762639212339",
+      "description": "Mercado - reposição",
+      "amount": 117.49,
+      "category": "Mercado",
+      "date": "2025-11-08"
+    },
+    {
+      "id": "1762779613710",
+      "description": "Almoço no PF da esquina",
+      "amount": 46.83,
+      "category": "Alimentação",
+      "date": "2025-11-10"
+    },
+    {
+      "id": "1763150415081",
+      "description": "Bar com a galera",
+      "amount": 50.38,
+      "category": "Lazer",
+      "date": "2025-11-14"
+    },
+    {
+      "id": "1763136016452",
+      "description": "Barbeiro",
+      "amount": 55,
+      "category": "Cuidados Pessoais",
+      "date": "2025-11-14"
+    },
+    {
+      "id": "1763211617823",
+      "description": "Mercado - reposição",
+      "amount": 129.02,
+      "category": "Mercado",
+      "date": "2025-11-15"
+    },
+    {
+      "id": "1763568019194",
+      "description": "Gasolina - posto Shell",
+      "amount": 197.88,
+      "category": "Transporte - Combustível",
+      "date": "2025-11-19"
+    },
+    {
+      "id": "1763665220565",
+      "description": "Padaria (café da manhã)",
+      "amount": 19.57,
+      "category": "Alimentação",
+      "date": "2025-11-20"
+    },
+    {
+      "id": "1763625621936",
+      "description": "Uber",
+      "amount": 19,
+      "category": "Transporte - Uber/App",
+      "date": "2025-11-20"
+    },
+    {
+      "id": "1763726423307",
+      "description": "iFood - Japa",
+      "amount": 18.75,
+      "category": "Alimentação",
+      "date": "2025-11-21"
+    },
+    {
+      "id": "1763751624678",
+      "description": "iFood - Hambúrguer",
+      "amount": 92.87,
+      "category": "Alimentação",
+      "date": "2025-11-21"
+    },
+    {
+      "id": "1763823626049",
+      "description": "Feira de sábado",
+      "amount": 170.95,
+      "category": "Mercado",
+      "date": "2025-11-22"
+    },
+    {
+      "id": "1763906427420",
+      "description": "iFood - Pizza",
+      "amount": 91.97,
+      "category": "Alimentação",
+      "date": "2025-11-23"
+    },
+    {
+      "id": "1763892028791",
+      "description": "Farmácia",
+      "amount": 54.56,
+      "category": "Saúde & Bem-Estar",
+      "date": "2025-11-23"
+    },
+    {
+      "id": "1764097230162",
+      "description": "Almoço no trabalho",
+      "amount": 37.22,
+      "category": "Alimentação",
+      "date": "2025-11-25"
+    },
+    {
+      "id": "1764273631533",
+      "description": "Lanche no shopping",
+      "amount": 18.45,
+      "category": "Alimentação",
+      "date": "2025-11-27"
+    },
+    {
+      "id": "1764331232904",
+      "description": "iFood - Pizza",
+      "amount": 82.69,
+      "category": "Alimentação",
+      "date": "2025-11-28"
+    },
+    {
+      "id": "1764453634275",
+      "description": "Feira de sábado",
+      "amount": 152.61,
+      "category": "Mercado",
+      "date": "2025-11-29"
+    },
+    {
+      "id": "1764500435646",
+      "description": "iFood - Japa",
+      "amount": 78.32,
+      "category": "Alimentação",
+      "date": "2025-11-30"
+    },
+    {
+      "id": "1764604837017",
+      "description": "Lanche no shopping",
+      "amount": 37.54,
+      "category": "Alimentação",
+      "date": "2025-12-01"
+    },
+    {
+      "id": "1764676838388",
+      "description": "iFood - Japa",
+      "amount": 23.83,
+      "category": "Alimentação",
+      "date": "2025-12-02"
+    },
+    {
+      "id": "1764792039759",
+      "description": "Calça jeans",
+      "amount": 116.48,
+      "category": "Vestuário",
+      "date": "2025-12-03"
+    },
+    {
+      "id": "1764871241130",
+      "description": "Gasolina - posto Shell",
+      "amount": 243.1,
+      "category": "Transporte - Combustível",
+      "date": "2025-12-04"
+    },
+    {
+      "id": "1764921642501",
+      "description": "iFood - Pizza",
+      "amount": 87.42,
+      "category": "Alimentação",
+      "date": "2025-12-05"
+    },
+    {
+      "id": "1765026043872",
+      "description": "Atacadão (compra do mês)",
+      "amount": 394.16,
+      "category": "Mercado",
+      "date": "2025-12-06"
+    },
+    {
+      "id": "1765033245243",
+      "description": "Ração Golden + areia (Mingau 🐱)",
+      "amount": 229.87,
+      "category": "Pet",
+      "date": "2025-12-06"
+    },
+    {
+      "id": "1765191646614",
+      "description": "Almoço no trabalho",
+      "amount": 42.89,
+      "category": "Alimentação",
+      "date": "2025-12-08"
+    },
+    {
+      "id": "1765209647985",
+      "description": "Uber",
+      "amount": 33.97,
+      "category": "Transporte - Uber/App",
+      "date": "2025-12-08"
+    },
+    {
+      "id": "1765209649356",
+      "description": "Skin no Valorant",
+      "amount": 39.44,
+      "category": "Games",
+      "date": "2025-12-08"
+    },
+    {
+      "id": "1765310450727",
+      "description": "Uber",
+      "amount": 31.84,
+      "category": "Transporte - Uber/App",
+      "date": "2025-12-09"
+    },
+    {
+      "id": "1765371652098",
+      "description": "Hortifruti",
+      "amount": 33.49,
+      "category": "Mercado",
+      "date": "2025-12-10"
+    },
+    {
+      "id": "1765450853469",
+      "description": "Padaria (café da manhã)",
+      "amount": 34.12,
+      "category": "Alimentação",
+      "date": "2025-12-11"
+    },
+    {
+      "id": "1765552033236",
+      "description": "Amigo secreto do trampo",
+      "amount": 100,
+      "category": "Presentes",
+      "date": "2025-12-12"
+    },
+    {
+      "id": "1765663254840",
+      "description": "Mercado da semana",
+      "amount": 200.31,
+      "category": "Mercado",
+      "date": "2025-12-13"
+    },
+    {
+      "id": "1765735256211",
+      "description": "Barbeiro",
+      "amount": 55,
+      "category": "Cuidados Pessoais",
+      "date": "2025-12-14"
+    },
+    {
+      "id": "1765792857582",
+      "description": "Café com pão de queijo",
+      "amount": 17.66,
+      "category": "Alimentação",
+      "date": "2025-12-15"
+    },
+    {
+      "id": "1765882858953",
+      "description": "iFood - Hambúrguer",
+      "amount": 35.85,
+      "category": "Alimentação",
+      "date": "2025-12-16"
+    },
+    {
+      "id": "1765875660324",
+      "description": "Livro na Amazon",
+      "amount": 57.97,
+      "category": "Educação",
+      "date": "2025-12-16"
+    },
+    {
+      "id": "1766062861695",
+      "description": "Farmácia",
+      "amount": 46.59,
+      "category": "Saúde & Bem-Estar",
+      "date": "2025-12-18"
+    },
+    {
+      "id": "1766081234607",
+      "description": "Presente da mãe (Natal)",
+      "amount": 289.9,
+      "category": "Presentes",
+      "date": "2025-12-18"
+    },
+    {
+      "id": "1766048835978",
+      "description": "Presente do pai (Natal)",
+      "amount": 219.9,
+      "category": "Presentes",
+      "date": "2025-12-18"
+    },
+    {
+      "id": "1766152863066",
+      "description": "Marmita fitness",
+      "amount": 19.96,
+      "category": "Alimentação",
+      "date": "2025-12-19"
+    },
+    {
+      "id": "1766142064437",
+      "description": "Happy hour do trampo",
+      "amount": 116.53,
+      "category": "Lazer",
+      "date": "2025-12-19"
+    },
+    {
+      "id": "1766170865808",
+      "description": "Gasolina - posto Shell",
+      "amount": 202.81,
+      "category": "Transporte - Combustível",
+      "date": "2025-12-19"
+    },
+    {
+      "id": "1766217667179",
+      "description": "Hortifruti",
+      "amount": 187.89,
+      "category": "Mercado",
+      "date": "2025-12-20"
+    },
+    {
+      "id": "1766242868550",
+      "description": "Boliche",
+      "amount": 133.74,
+      "category": "Lazer",
+      "date": "2025-12-20"
+    },
+    {
+      "id": "1766228837349",
+      "description": "Presente da namorada",
+      "amount": 349,
+      "category": "Presentes",
+      "date": "2025-12-20"
+    },
+    {
+      "id": "1766408469921",
+      "description": "Açaí",
+      "amount": 18.53,
+      "category": "Alimentação",
+      "date": "2025-12-22"
+    },
+    {
+      "id": "1766484438720",
+      "description": "Ceia de Natal (rateio família)",
+      "amount": 260,
+      "category": "Mercado",
+      "date": "2025-12-23"
+    },
+    {
+      "id": "1766588471292",
+      "description": "iFood - Japa",
+      "amount": 36.12,
+      "category": "Alimentação",
+      "date": "2025-12-24"
+    },
+    {
+      "id": "1766653272663",
+      "description": "Uber",
+      "amount": 35.63,
+      "category": "Transporte - Uber/App",
+      "date": "2025-12-25"
+    },
+    {
+      "id": "1766736074034",
+      "description": "Rodízio com os amigos",
+      "amount": 80.41,
+      "category": "Lazer",
+      "date": "2025-12-26"
+    },
+    {
+      "id": "1766757675405",
+      "description": "Uber",
+      "amount": 21.18,
+      "category": "Transporte - Uber/App",
+      "date": "2025-12-26"
+    },
+    {
+      "id": "1766826076776",
+      "description": "Atacadão (compra do mês)",
+      "amount": 119.56,
+      "category": "Mercado",
+      "date": "2025-12-27"
+    },
+    {
+      "id": "1767114440091",
+      "description": "Roupa branca do Réveillon",
+      "amount": 159.9,
+      "category": "Vestuário",
+      "date": "2025-12-30"
+    },
+    {
+      "id": "1767182478147",
+      "description": "Hortifruti",
+      "amount": 49.99,
+      "category": "Mercado",
+      "date": "2025-12-31"
+    },
+    {
+      "id": "1767434479518",
+      "description": "Atacadão (compra do mês)",
+      "amount": 389.22,
+      "category": "Mercado",
+      "date": "2026-01-03"
+    },
+    {
+      "id": "1767538880889",
+      "description": "iFood - Pizza",
+      "amount": 61.1,
+      "category": "Alimentação",
+      "date": "2026-01-04"
+    },
+    {
+      "id": "1767524482260",
+      "description": "Gasolina - posto Shell",
+      "amount": 226.47,
+      "category": "Transporte - Combustível",
+      "date": "2026-01-04"
+    },
+    {
+      "id": "1767715283631",
+      "description": "Ração Golden + areia (Mingau 🐱)",
+      "amount": 209.17,
+      "category": "Pet",
+      "date": "2026-01-06"
+    },
+    {
+      "id": "1767783685002",
+      "description": "Café com pão de queijo",
+      "amount": 46.74,
+      "category": "Alimentação",
+      "date": "2026-01-07"
+    },
+    {
+      "id": "1767790886373",
+      "description": "Uber",
+      "amount": 14.63,
+      "category": "Transporte - Uber/App",
+      "date": "2026-01-07"
+    },
+    {
+      "id": "1767798087744",
+      "description": "Farmácia",
+      "amount": 136.91,
+      "category": "Saúde & Bem-Estar",
+      "date": "2026-01-07"
+    },
+    {
+      "id": "1767985289115",
+      "description": "Lanche no shopping",
+      "amount": 33.75,
+      "category": "Alimentação",
+      "date": "2026-01-09"
+    },
+    {
+      "id": "1767981690486",
+      "description": "Show no Audio",
+      "amount": 82.81,
+      "category": "Lazer",
+      "date": "2026-01-09"
+    },
+    {
+      "id": "1768053691857",
+      "description": "Atacadão (compra do mês)",
+      "amount": 125.41,
+      "category": "Mercado",
+      "date": "2026-01-10"
+    },
+    {
+      "id": "1768057293228",
+      "description": "Rodízio com os amigos",
+      "amount": 101.16,
+      "category": "Lazer",
+      "date": "2026-01-10"
+    },
+    {
+      "id": "1768143694599",
+      "description": "iFood - Japa",
+      "amount": 82.58,
+      "category": "Alimentação",
+      "date": "2026-01-11"
+    },
+    {
+      "id": "1768330895970",
+      "description": "Café com pão de queijo",
+      "amount": 30.73,
+      "category": "Alimentação",
+      "date": "2026-01-13"
+    },
+    {
+      "id": "1768392097341",
+      "description": "Almoço no trabalho",
+      "amount": 22.13,
+      "category": "Alimentação",
+      "date": "2026-01-14"
+    },
+    {
+      "id": "1768410098712",
+      "description": "Barbeiro",
+      "amount": 55,
+      "category": "Cuidados Pessoais",
+      "date": "2026-01-14"
+    },
+    {
+      "id": "1768467700083",
+      "description": "Café com pão de queijo",
+      "amount": 36.78,
+      "category": "Alimentação",
+      "date": "2026-01-15"
+    },
+    {
+      "id": "1768504041462",
+      "description": "IPVA 2026 (cota única)",
+      "amount": 1384.6,
+      "category": "Transporte - Manutenção/IPVA",
+      "date": "2026-01-15"
+    },
+    {
+      "id": "1768564901454",
+      "description": "iFood - Japa",
+      "amount": 66.08,
+      "category": "Alimentação",
+      "date": "2026-01-16"
+    },
+    {
+      "id": "1768575702825",
+      "description": "Barzinho sexta",
+      "amount": 67.44,
+      "category": "Lazer",
+      "date": "2026-01-16"
+    },
+    {
+      "id": "1768665704196",
+      "description": "Hortifruti",
+      "amount": 159.36,
+      "category": "Mercado",
+      "date": "2026-01-17"
+    },
+    {
+      "id": "1768759305567",
+      "description": "Farmácia",
+      "amount": 114.06,
+      "category": "Saúde & Bem-Estar",
+      "date": "2026-01-18"
+    },
+    {
+      "id": "1768852906938",
+      "description": "iFood - Pizza",
+      "amount": 46.11,
+      "category": "Alimentação",
+      "date": "2026-01-19"
+    },
+    {
+      "id": "1768845708309",
+      "description": "Uber",
+      "amount": 29.56,
+      "category": "Transporte - Uber/App",
+      "date": "2026-01-19"
+    },
+    {
+      "id": "1768816909680",
+      "description": "Gasolina - posto Shell",
+      "amount": 196.81,
+      "category": "Transporte - Combustível",
+      "date": "2026-01-19"
+    },
+    {
+      "id": "1769101311051",
+      "description": "iFood - Pizza",
+      "amount": 45.49,
+      "category": "Alimentação",
+      "date": "2026-01-22"
+    },
+    {
+      "id": "1769119642833",
+      "description": "Material de escritório home office",
+      "amount": 129.9,
+      "category": "Outros",
+      "date": "2026-01-22"
+    },
+    {
+      "id": "1769155312422",
+      "description": "Café com pão de queijo",
+      "amount": 25.3,
+      "category": "Alimentação",
+      "date": "2026-01-23"
+    },
+    {
+      "id": "1769259713793",
+      "description": "Feira de sábado",
+      "amount": 137.79,
+      "category": "Mercado",
+      "date": "2026-01-24"
+    },
+    {
+      "id": "1769414515164",
+      "description": "iFood - Pizza",
+      "amount": 27.97,
+      "category": "Alimentação",
+      "date": "2026-01-26"
+    },
+    {
+      "id": "1769598116535",
+      "description": "Hortifruti",
+      "amount": 34.21,
+      "category": "Mercado",
+      "date": "2026-01-28"
+    },
+    {
+      "id": "1769605317906",
+      "description": "Uber",
+      "amount": 33.98,
+      "category": "Transporte - Uber/App",
+      "date": "2026-01-28"
+    },
+    {
+      "id": "1769806919277",
+      "description": "Camiseta Hering",
+      "amount": 101.44,
+      "category": "Vestuário",
+      "date": "2026-01-30"
+    },
+    {
+      "id": "1769871720648",
+      "description": "Atacadão (compra do mês)",
+      "amount": 169.67,
+      "category": "Mercado",
+      "date": "2026-01-31"
+    },
+    {
+      "id": "1769889722019",
+      "description": "Barzinho sexta",
+      "amount": 65.09,
+      "category": "Lazer",
+      "date": "2026-01-31"
+    },
+    {
+      "id": "1770145323390",
+      "description": "Almoço no PF da esquina",
+      "amount": 45.54,
+      "category": "Alimentação",
+      "date": "2026-02-03"
+    },
+    {
+      "id": "1770228124761",
+      "description": "Hortifruti",
+      "amount": 55.96,
+      "category": "Mercado",
+      "date": "2026-02-04"
+    },
+    {
+      "id": "1770213726132",
+      "description": "Gasolina - posto Shell",
+      "amount": 199.51,
+      "category": "Transporte - Combustível",
+      "date": "2026-02-04"
+    },
+    {
+      "id": "1770393727503",
+      "description": "Ração Golden + areia (Mingau 🐱)",
+      "amount": 222.27,
+      "category": "Pet",
+      "date": "2026-02-06"
+    },
+    {
+      "id": "1770487328874",
+      "description": "Atacadão (compra do mês)",
+      "amount": 380.32,
+      "category": "Mercado",
+      "date": "2026-02-07"
+    },
+    {
+      "id": "1770667330245",
+      "description": "iFood - Hambúrguer",
+      "amount": 46.54,
+      "category": "Alimentação",
+      "date": "2026-02-09"
+    },
+    {
+      "id": "1770843731616",
+      "description": "Hortifruti",
+      "amount": 42.75,
+      "category": "Mercado",
+      "date": "2026-02-11"
+    },
+    {
+      "id": "1770930132987",
+      "description": "Açaí",
+      "amount": 30.28,
+      "category": "Alimentação",
+      "date": "2026-02-12"
+    },
+    {
+      "id": "1770930134358",
+      "description": "Jogo na promo da Steam",
+      "amount": 74.57,
+      "category": "Games",
+      "date": "2026-02-12"
+    },
+    {
+      "id": "1770994935729",
+      "description": "Bar com a galera",
+      "amount": 72.99,
+      "category": "Lazer",
+      "date": "2026-02-13"
+    },
+    {
+      "id": "1771009337100",
+      "description": "Camiseta Hering",
+      "amount": 167.46,
+      "category": "Vestuário",
+      "date": "2026-02-13"
+    },
+    {
+      "id": "1771070538471",
+      "description": "Mercado da semana",
+      "amount": 128.96,
+      "category": "Mercado",
+      "date": "2026-02-14"
+    },
+    {
+      "id": "1771056139842",
+      "description": "Happy hour do trampo",
+      "amount": 133.24,
+      "category": "Lazer",
+      "date": "2026-02-14"
+    },
+    {
+      "id": "1771066941213",
+      "description": "Barbeiro",
+      "amount": 55,
+      "category": "Cuidados Pessoais",
+      "date": "2026-02-14"
+    },
+    {
+      "id": "1771056444204",
+      "description": "Bloquinho de Carnaval",
+      "amount": 180,
+      "category": "Lazer",
+      "date": "2026-02-14"
+    },
+    {
+      "id": "1771142542584",
+      "description": "Calça jeans",
+      "amount": 186.97,
+      "category": "Vestuário",
+      "date": "2026-02-15"
+    },
+    {
+      "id": "1771254445575",
+      "description": "Abadá + bebidas Carnaval",
+      "amount": 240,
+      "category": "Lazer",
+      "date": "2026-02-16"
+    },
+    {
+      "id": "1771426943955",
+      "description": "Hortifruti",
+      "amount": 62.04,
+      "category": "Mercado",
+      "date": "2026-02-18"
+    },
+    {
+      "id": "1771412545326",
+      "description": "Jogo na promo da Steam",
+      "amount": 85.3,
+      "category": "Games",
+      "date": "2026-02-18"
+    },
+    {
+      "id": "1771527746697",
+      "description": "Gasolina - posto Shell",
+      "amount": 197.33,
+      "category": "Transporte - Combustível",
+      "date": "2026-02-19"
+    },
+    {
+      "id": "1771711348068",
+      "description": "Hortifruti",
+      "amount": 156.31,
+      "category": "Mercado",
+      "date": "2026-02-21"
+    },
+    {
+      "id": "1771675349439",
+      "description": "Boliche",
+      "amount": 65.16,
+      "category": "Lazer",
+      "date": "2026-02-21"
+    },
+    {
+      "id": "1771678950810",
+      "description": "Livro na Amazon",
+      "amount": 78.19,
+      "category": "Educação",
+      "date": "2026-02-21"
+    },
+    {
+      "id": "1771786952181",
+      "description": "iFood - Pizza",
+      "amount": 70.54,
+      "category": "Alimentação",
+      "date": "2026-02-22"
+    },
+    {
+      "id": "1772182953552",
+      "description": "iFood - Hambúrguer",
+      "amount": 86.05,
+      "category": "Alimentação",
+      "date": "2026-02-27"
+    },
+    {
+      "id": "1772204554923",
+      "description": "Happy hour do trampo",
+      "amount": 107.76,
+      "category": "Lazer",
+      "date": "2026-02-27"
+    },
+    {
+      "id": "1772283756294",
+      "description": "Atacadão (compra do mês)",
+      "amount": 145.43,
+      "category": "Mercado",
+      "date": "2026-02-28"
+    },
+    {
+      "id": "1772355757665",
+      "description": "iFood - Pizza",
+      "amount": 57.92,
+      "category": "Alimentação",
+      "date": "2026-03-01"
+    },
+    {
+      "id": "1772614959036",
+      "description": "Hortifruti",
+      "amount": 40.45,
+      "category": "Mercado",
+      "date": "2026-03-04"
+    },
+    {
+      "id": "1772643760407",
+      "description": "Gasolina - posto Shell",
+      "amount": 190.3,
+      "category": "Transporte - Combustível",
+      "date": "2026-03-04"
+    },
+    {
+      "id": "1772787761778",
+      "description": "Ração Golden + areia (Mingau 🐱)",
+      "amount": 226.34,
+      "category": "Pet",
+      "date": "2026-03-06"
+    },
+    {
+      "id": "1772906563149",
+      "description": "Atacadão (compra do mês)",
+      "amount": 404,
+      "category": "Mercado",
+      "date": "2026-03-07"
+    },
+    {
+      "id": "1772960564520",
+      "description": "Farmácia",
+      "amount": 27.71,
+      "category": "Saúde & Bem-Estar",
+      "date": "2026-03-08"
+    },
+    {
+      "id": "1773090446946",
+      "description": "Revisão do carro 30 mil km",
+      "amount": 890,
+      "category": "Transporte - Manutenção/IPVA",
+      "date": "2026-03-09"
+    },
+    {
+      "id": "1773133365891",
+      "description": "Café com pão de queijo",
+      "amount": 20.98,
+      "category": "Alimentação",
+      "date": "2026-03-10"
+    },
+    {
+      "id": "1773266567262",
+      "description": "Hortifruti",
+      "amount": 52,
+      "category": "Mercado",
+      "date": "2026-03-11"
+    },
+    {
+      "id": "1773313368633",
+      "description": "Uber",
+      "amount": 24.36,
+      "category": "Transporte - Uber/App",
+      "date": "2026-03-12"
+    },
+    {
+      "id": "1773417770004",
+      "description": "Almoço no PF da esquina",
+      "amount": 16.89,
+      "category": "Alimentação",
+      "date": "2026-03-13"
+    },
+    {
+      "id": "1773482571375",
+      "description": "Atacadão (compra do mês)",
+      "amount": 149.31,
+      "category": "Mercado",
+      "date": "2026-03-14"
+    },
+    {
+      "id": "1773504172746",
+      "description": "Barbeiro",
+      "amount": 55,
+      "category": "Cuidados Pessoais",
+      "date": "2026-03-14"
+    },
+    {
+      "id": "1773828174117",
+      "description": "Hortifruti",
+      "amount": 34.42,
+      "category": "Mercado",
+      "date": "2026-03-18"
+    },
+    {
+      "id": "1773939775488",
+      "description": "Gasolina - posto Shell",
+      "amount": 227.77,
+      "category": "Transporte - Combustível",
+      "date": "2026-03-19"
+    },
+    {
+      "id": "1773997376859",
+      "description": "Lanche no shopping",
+      "amount": 34.12,
+      "category": "Alimentação",
+      "date": "2026-03-20"
+    },
+    {
+      "id": "1774087378230",
+      "description": "Feira de sábado",
+      "amount": 153.84,
+      "category": "Mercado",
+      "date": "2026-03-21"
+    },
+    {
+      "id": "1774112579601",
+      "description": "Show no Audio",
+      "amount": 63.14,
+      "category": "Lazer",
+      "date": "2026-03-21"
+    },
+    {
+      "id": "1774256580972",
+      "description": "Uber",
+      "amount": 18.79,
+      "category": "Transporte - Uber/App",
+      "date": "2026-03-23"
+    },
+    {
+      "id": "1774270982343",
+      "description": "Skin no Valorant",
+      "amount": 61.94,
+      "category": "Games",
+      "date": "2026-03-23"
+    },
+    {
+      "id": "1774443783714",
+      "description": "Uber",
+      "amount": 25.16,
+      "category": "Transporte - Uber/App",
+      "date": "2026-03-25"
+    },
+    {
+      "id": "1774562585085",
+      "description": "Café com pão de queijo",
+      "amount": 22.67,
+      "category": "Alimentação",
+      "date": "2026-03-26"
+    },
+    {
+      "id": "1774620186456",
+      "description": "Meias e cuecas",
+      "amount": 72.3,
+      "category": "Vestuário",
+      "date": "2026-03-27"
+    },
+    {
+      "id": "1774720987827",
+      "description": "Mercado - reposição",
+      "amount": 139.62,
+      "category": "Mercado",
+      "date": "2026-03-28"
+    },
+    {
+      "id": "1775134989198",
+      "description": "Marmita fitness",
+      "amount": 38.18,
+      "category": "Alimentação",
+      "date": "2026-04-02"
+    },
+    {
+      "id": "1775145790569",
+      "description": "Calça jeans",
+      "amount": 205.07,
+      "category": "Vestuário",
+      "date": "2026-04-02"
+    },
+    {
+      "id": "1775336591940",
+      "description": "Atacadão (compra do mês)",
+      "amount": 429.01,
+      "category": "Mercado",
+      "date": "2026-04-04"
+    },
+    {
+      "id": "1775314993311",
+      "description": "Uber",
+      "amount": 22.82,
+      "category": "Transporte - Uber/App",
+      "date": "2026-04-04"
+    },
+    {
+      "id": "1775304194682",
+      "description": "Gasolina - posto Shell",
+      "amount": 207.73,
+      "category": "Transporte - Combustível",
+      "date": "2026-04-04"
+    },
+    {
+      "id": "1775509396053",
+      "description": "Lanche no shopping",
+      "amount": 20.42,
+      "category": "Alimentação",
+      "date": "2026-04-06"
+    },
+    {
+      "id": "1775512997424",
+      "description": "Ração Golden + areia (Mingau 🐱)",
+      "amount": 218.19,
+      "category": "Pet",
+      "date": "2026-04-06"
+    },
+    {
+      "id": "1775581398795",
+      "description": "Lanche no shopping",
+      "amount": 33.36,
+      "category": "Alimentação",
+      "date": "2026-04-07"
+    },
+    {
+      "id": "1775901800166",
+      "description": "Mercado da semana",
+      "amount": 122.2,
+      "category": "Mercado",
+      "date": "2026-04-11"
+    },
+    {
+      "id": "1775984601537",
+      "description": "Uber",
+      "amount": 15.23,
+      "category": "Transporte - Uber/App",
+      "date": "2026-04-12"
+    },
+    {
+      "id": "1776074602908",
+      "description": "iFood - Hambúrguer",
+      "amount": 42.36,
+      "category": "Alimentação",
+      "date": "2026-04-13"
+    },
+    {
+      "id": "1776204204279",
+      "description": "Padaria (café da manhã)",
+      "amount": 46.49,
+      "category": "Alimentação",
+      "date": "2026-04-14"
+    },
+    {
+      "id": "1776168205650",
+      "description": "Barbeiro",
+      "amount": 55,
+      "category": "Cuidados Pessoais",
+      "date": "2026-04-14"
+    },
+    {
+      "id": "1776279807021",
+      "description": "iFood - Japa",
+      "amount": 34.15,
+      "category": "Alimentação",
+      "date": "2026-04-15"
+    },
+    {
+      "id": "1776351808392",
+      "description": "Lanche no shopping",
+      "amount": 21.42,
+      "category": "Alimentação",
+      "date": "2026-04-16"
+    },
+    {
+      "id": "1776463409763",
+      "description": "iFood - Hambúrguer",
+      "amount": 23.6,
+      "category": "Alimentação",
+      "date": "2026-04-17"
+    },
+    {
+      "id": "1776449011134",
+      "description": "Cinema",
+      "amount": 90.74,
+      "category": "Lazer",
+      "date": "2026-04-17"
+    },
+    {
+      "id": "1776506612505",
+      "description": "Mercado - reposição",
+      "amount": 118.02,
+      "category": "Mercado",
+      "date": "2026-04-18"
+    },
+    {
+      "id": "1776603813876",
+      "description": "Gasolina - posto Shell",
+      "amount": 228.08,
+      "category": "Transporte - Combustível",
+      "date": "2026-04-19"
+    },
+    {
+      "id": "1777064615247",
+      "description": "iFood - Hambúrguer",
+      "amount": 57.41,
+      "category": "Alimentação",
+      "date": "2026-04-24"
+    },
+    {
+      "id": "1777147416618",
+      "description": "Feira de sábado",
+      "amount": 136.28,
+      "category": "Mercado",
+      "date": "2026-04-25"
+    },
+    {
+      "id": "1777460617989",
+      "description": "Hortifruti",
+      "amount": 32.75,
+      "category": "Mercado",
+      "date": "2026-04-29"
+    },
+    {
+      "id": "1777489419360",
+      "description": "Almoço no trabalho",
+      "amount": 27.44,
+      "category": "Alimentação",
+      "date": "2026-04-29"
+    },
+    {
+      "id": "1777651420731",
+      "description": "iFood - Hambúrguer",
+      "amount": 93.38,
+      "category": "Alimentação",
+      "date": "2026-05-01"
+    },
+    {
+      "id": "1777727022102",
+      "description": "Atacadão (compra do mês)",
+      "amount": 372.14,
+      "category": "Mercado",
+      "date": "2026-05-02"
+    },
+    {
+      "id": "1777928623473",
+      "description": "Gasolina - posto Shell",
+      "amount": 256.23,
+      "category": "Transporte - Combustível",
+      "date": "2026-05-04"
+    },
+    {
+      "id": "1778101424844",
+      "description": "Ração Golden + areia (Mingau 🐱)",
+      "amount": 232.76,
+      "category": "Pet",
+      "date": "2026-05-06"
+    },
+    {
+      "id": "1778231026215",
+      "description": "iFood - Japa",
+      "amount": 61.69,
+      "category": "Alimentação",
+      "date": "2026-05-08"
+    },
+    {
+      "id": "1778277827586",
+      "description": "Show no Audio",
+      "amount": 136.53,
+      "category": "Lazer",
+      "date": "2026-05-08"
+    },
+    {
+      "id": "1778317428957",
+      "description": "Hortifruti",
+      "amount": 171.88,
+      "category": "Mercado",
+      "date": "2026-05-09"
+    },
+    {
+      "id": "1778421830328",
+      "description": "iFood - Hambúrguer",
+      "amount": 86.97,
+      "category": "Alimentação",
+      "date": "2026-05-10"
+    },
+    {
+      "id": "1778404048317",
+      "description": "Presente Dia das Mães",
+      "amount": 239.9,
+      "category": "Presentes",
+      "date": "2026-05-10"
+    },
+    {
+      "id": "1778497431699",
+      "description": "Padaria (café da manhã)",
+      "amount": 42.63,
+      "category": "Alimentação",
+      "date": "2026-05-11"
+    },
+    {
+      "id": "1778576633070",
+      "description": "Marmita fitness",
+      "amount": 26,
+      "category": "Alimentação",
+      "date": "2026-05-12"
+    },
+    {
+      "id": "1778702634441",
+      "description": "Hortifruti",
+      "amount": 64.02,
+      "category": "Mercado",
+      "date": "2026-05-13"
+    },
+    {
+      "id": "1778771035812",
+      "description": "Barbeiro",
+      "amount": 55,
+      "category": "Cuidados Pessoais",
+      "date": "2026-05-14"
+    },
+    {
+      "id": "1778796237183",
+      "description": "Farmácia",
+      "amount": 68.27,
+      "category": "Saúde & Bem-Estar",
+      "date": "2026-05-14"
+    },
+    {
+      "id": "1778936638554",
+      "description": "Hortifruti",
+      "amount": 137.07,
+      "category": "Mercado",
+      "date": "2026-05-16"
+    },
+    {
+      "id": "1778943839925",
+      "description": "Happy hour do trampo",
+      "amount": 84.71,
+      "category": "Lazer",
+      "date": "2026-05-16"
+    },
+    {
+      "id": "1779203041296",
+      "description": "Açaí",
+      "amount": 26.61,
+      "category": "Alimentação",
+      "date": "2026-05-19"
+    },
+    {
+      "id": "1779192242667",
+      "description": "Gasolina - posto Shell",
+      "amount": 204.36,
+      "category": "Transporte - Combustível",
+      "date": "2026-05-19"
+    },
+    {
+      "id": "1779177844038",
+      "description": "Livro na Amazon",
+      "amount": 73.19,
+      "category": "Educação",
+      "date": "2026-05-19"
+    },
+    {
+      "id": "1779437045409",
+      "description": "iFood - Hambúrguer",
+      "amount": 43.15,
+      "category": "Alimentação",
+      "date": "2026-05-22"
+    },
+    {
+      "id": "1779487446780",
+      "description": "iFood - Hambúrguer",
+      "amount": 62.69,
+      "category": "Alimentação",
+      "date": "2026-05-22"
+    },
+    {
+      "id": "1779455048151",
+      "description": "Farmácia",
+      "amount": 119.64,
+      "category": "Saúde & Bem-Estar",
+      "date": "2026-05-22"
+    },
+    {
+      "id": "1779563049522",
+      "description": "Feira de sábado",
+      "amount": 198.73,
+      "category": "Mercado",
+      "date": "2026-05-23"
+    },
+    {
+      "id": "1779703450893",
+      "description": "Almoço no trabalho",
+      "amount": 20.52,
+      "category": "Alimentação",
+      "date": "2026-05-25"
+    },
+    {
+      "id": "1779804252264",
+      "description": "Açaí",
+      "amount": 34.39,
+      "category": "Alimentação",
+      "date": "2026-05-26"
+    },
+    {
+      "id": "1779825853635",
+      "description": "Uber",
+      "amount": 15.35,
+      "category": "Transporte - Uber/App",
+      "date": "2026-05-26"
+    },
+    {
+      "id": "1779833055006",
+      "description": "Farmácia",
+      "amount": 50.22,
+      "category": "Saúde & Bem-Estar",
+      "date": "2026-05-26"
+    },
+    {
+      "id": "1779984256377",
+      "description": "Lanche no shopping",
+      "amount": 28.05,
+      "category": "Alimentação",
+      "date": "2026-05-28"
+    },
+    {
+      "id": "1780085057748",
+      "description": "Boliche",
+      "amount": 70.97,
+      "category": "Lazer",
+      "date": "2026-05-29"
+    },
+    {
+      "id": "1780160659119",
+      "description": "Hortifruti",
+      "amount": 203.13,
+      "category": "Mercado",
+      "date": "2026-05-30"
+    },
+    {
+      "id": "1780164260490",
+      "description": "Uber",
+      "amount": 22.85,
+      "category": "Transporte - Uber/App",
+      "date": "2026-05-30"
+    },
+    {
+      "id": "1780319061861",
+      "description": "Açaí",
+      "amount": 32.27,
+      "category": "Alimentação",
+      "date": "2026-06-01"
+    },
+    {
+      "id": "1780405463232",
+      "description": "Padaria (café da manhã)",
+      "amount": 26.01,
+      "category": "Alimentação",
+      "date": "2026-06-02"
+    },
+    {
+      "id": "1780401864603",
+      "description": "Uber",
+      "amount": 36.36,
+      "category": "Transporte - Uber/App",
+      "date": "2026-06-02"
+    },
+    {
+      "id": "1780513465974",
+      "description": "iFood - Hambúrguer",
+      "amount": 40.29,
+      "category": "Alimentação",
+      "date": "2026-06-03"
+    },
+    {
+      "id": "1780563867345",
+      "description": "Gasolina - posto Shell",
+      "amount": 259.8,
+      "category": "Transporte - Combustível",
+      "date": "2026-06-04"
+    },
+    {
+      "id": "1780679068716",
+      "description": "iFood - Japa",
+      "amount": 92.76,
+      "category": "Alimentação",
+      "date": "2026-06-05"
+    },
+    {
+      "id": "1780736670087",
+      "description": "Atacadão (compra do mês)",
+      "amount": 365.05,
+      "category": "Mercado",
+      "date": "2026-06-06"
+    },
+    {
+      "id": "1780743871458",
+      "description": "Ração Golden + areia (Mingau 🐱)",
+      "amount": 229.72,
+      "category": "Pet",
+      "date": "2026-06-06"
+    },
+    {
+      "id": "1781006672829",
+      "description": "Lanche no shopping",
+      "amount": 40.59,
+      "category": "Alimentação",
+      "date": "2026-06-09"
+    },
+    {
+      "id": "1781103874200",
+      "description": "Almoço no PF da esquina",
+      "amount": 24.65,
+      "category": "Alimentação",
+      "date": "2026-06-10"
+    },
+    {
+      "id": "1781255075571",
+      "description": "Rodízio com os amigos",
+      "amount": 95.36,
+      "category": "Lazer",
+      "date": "2026-06-12"
+    },
+    {
+      "id": "1781251649688",
+      "description": "Jantar Dia dos Namorados",
+      "amount": 312,
+      "category": "Lazer",
+      "date": "2026-06-12"
+    },
+    {
+      "id": "1781352276942",
+      "description": "Hortifruti",
+      "amount": 207.99,
+      "category": "Mercado",
+      "date": "2026-06-13"
+    },
+    {
+      "id": "1781427878313",
+      "description": "iFood - Japa",
+      "amount": 72.34,
+      "category": "Alimentação",
+      "date": "2026-06-14"
+    },
+    {
+      "id": "1781456679684",
+      "description": "Barbeiro",
+      "amount": 55,
+      "category": "Cuidados Pessoais",
+      "date": "2026-06-14"
+    },
+    {
+      "id": "1781550281055",
+      "description": "iFood - Pizza",
+      "amount": 45.9,
+      "category": "Alimentação",
+      "date": "2026-06-15"
+    },
+    {
+      "id": "1781885082426",
+      "description": "Happy hour do trampo",
+      "amount": 79.44,
+      "category": "Lazer",
+      "date": "2026-06-19"
+    },
+    {
+      "id": "1781885083797",
+      "description": "Gasolina - posto Shell",
+      "amount": 254.07,
+      "category": "Transporte - Combustível",
+      "date": "2026-06-19"
+    },
+    {
+      "id": "1781946285168",
+      "description": "Feira de sábado",
+      "amount": 155.38,
+      "category": "Mercado",
+      "date": "2026-06-20"
+    },
+    {
+      "id": "1781971486539",
+      "description": "Jogo na promo da Steam",
+      "amount": 76,
+      "category": "Games",
+      "date": "2026-06-20"
+    },
+    {
+      "id": "1782147887910",
+      "description": "iFood - Hambúrguer",
+      "amount": 43.73,
+      "category": "Alimentação",
+      "date": "2026-06-22"
+    },
+    {
+      "id": "1782327889281",
+      "description": "Almoço no trabalho",
+      "amount": 35.62,
+      "category": "Alimentação",
+      "date": "2026-06-24"
+    },
+    {
+      "id": "1782417890652",
+      "description": "Almoço no trabalho",
+      "amount": 29.19,
+      "category": "Alimentação",
+      "date": "2026-06-25"
+    },
+    {
+      "id": "1782479092023",
+      "description": "Cinema",
+      "amount": 124.39,
+      "category": "Lazer",
+      "date": "2026-06-26"
+    },
+    {
+      "id": "1782554693394",
+      "description": "Mercado da semana",
+      "amount": 195.69,
+      "category": "Mercado",
+      "date": "2026-06-27"
+    },
+    {
+      "id": "1782558294765",
+      "description": "Boliche",
+      "amount": 141.37,
+      "category": "Lazer",
+      "date": "2026-06-27"
+    },
+    {
+      "id": "1782579896136",
+      "description": "Calça jeans",
+      "amount": 218.92,
+      "category": "Vestuário",
+      "date": "2026-06-27"
+    },
+    {
+      "id": "1782738297507",
+      "description": "Lanche no shopping",
+      "amount": 25.74,
+      "category": "Alimentação",
+      "date": "2026-06-29"
+    },
+    {
+      "id": "1782857098878",
+      "description": "Padaria (café da manhã)",
+      "amount": 36.97,
+      "category": "Alimentação",
+      "date": "2026-06-30"
+    },
+    {
+      "id": "1782939900249",
+      "description": "Hortifruti",
+      "amount": 35.42,
+      "category": "Mercado",
+      "date": "2026-07-01"
+    },
+    {
+      "id": "1782979501620",
+      "description": "Café com pão de queijo",
+      "amount": 31.01,
+      "category": "Alimentação",
+      "date": "2026-07-02"
+    },
+    {
+      "id": "1783087502991",
+      "description": "Almoço no trabalho",
+      "amount": 35.61,
+      "category": "Alimentação",
+      "date": "2026-07-03"
+    },
+    {
+      "id": "1783080304362",
+      "description": "iFood - Pizza",
+      "amount": 60.87,
+      "category": "Alimentação",
+      "date": "2026-07-03"
+    },
+    {
+      "id": "1783173905733",
+      "description": "Atacadão (compra do mês)",
+      "amount": 377.41,
+      "category": "Mercado",
+      "date": "2026-07-04"
+    },
+    {
+      "id": "1783181107104",
+      "description": "Rodízio com os amigos",
+      "amount": 87.85,
+      "category": "Lazer",
+      "date": "2026-07-04"
+    },
+    {
+      "id": "1783202708475",
+      "description": "Gasolina - posto Shell",
+      "amount": 247.43,
+      "category": "Transporte - Combustível",
+      "date": "2026-07-04"
+    },
+    {
+      "id": "1783245909846",
+      "description": "iFood - Pizza",
+      "amount": 53.4,
+      "category": "Alimentação",
+      "date": "2026-07-05"
+    },
+    {
+      "id": "1783357511217",
+      "description": "Ração Golden + areia (Mingau 🐱)",
+      "amount": 221.09,
+      "category": "Pet",
+      "date": "2026-07-06"
+    },
+    {
+      "id": "1783530312588",
+      "description": "Hortifruti",
+      "amount": 59.67,
+      "category": "Mercado",
+      "date": "2026-07-08"
+    },
+    {
+      "id": "1783512313959",
+      "description": "Café com pão de queijo",
+      "amount": 38.02,
+      "category": "Alimentação",
+      "date": "2026-07-08"
+    },
+    {
+      "id": "1783537515330",
+      "description": "Farmácia",
+      "amount": 97.51,
+      "category": "Saúde & Bem-Estar",
+      "date": "2026-07-08"
+    },
+    {
+      "id": "1783613116701",
+      "description": "Camiseta Hering",
+      "amount": 84.09,
+      "category": "Vestuário",
+      "date": "2026-07-09"
+    },
+    {
+      "id": "1783688718072",
+      "description": "iFood - Pizza",
+      "amount": 79.65,
+      "category": "Alimentação",
+      "date": "2026-07-10"
+    },
+    {
+      "id": "1783674319443",
+      "description": "Farmácia",
+      "amount": 26.62,
+      "category": "Saúde & Bem-Estar",
+      "date": "2026-07-10"
+    },
+    {
+      "id": "1783699520814",
+      "description": "Camiseta Hering",
+      "amount": 63.38,
+      "category": "Vestuário",
+      "date": "2026-07-10"
+    },
+    {
+      "id": "1783674451059",
+      "description": "Gasolina ida Floripa (minha parte)",
+      "amount": 260,
+      "category": "Viagens",
+      "date": "2026-07-10"
+    },
+    {
+      "id": "1783868722185",
+      "description": "iFood - Japa",
+      "amount": 69.88,
+      "category": "Alimentação",
+      "date": "2026-07-12"
+    },
+    {
+      "id": "1783865252430",
+      "description": "Restaurante em Floripa",
+      "amount": 186,
+      "category": "Viagens",
+      "date": "2026-07-12"
+    },
+    {
+      "id": "1784016323556",
+      "description": "Barbeiro",
+      "amount": 55,
+      "category": "Cuidados Pessoais",
+      "date": "2026-07-14"
+    },
+    {
+      "id": "1784038053801",
+      "description": "Passeio de barco (minha parte)",
+      "amount": 150,
+      "category": "Viagens",
+      "date": "2026-07-14"
+    },
+    {
+      "id": "1784290055172",
+      "description": "Lembrancinhas Floripa",
+      "amount": 95,
+      "category": "Viagens",
+      "date": "2026-07-17"
+    },
+    {
+      "id": "1784563524927",
+      "description": "Uber",
+      "amount": 24.27,
+      "category": "Transporte - Uber/App",
+      "date": "2026-07-20"
+    },
+    {
+      "id": "1784898326298",
+      "description": "Show no Audio",
+      "amount": 125.6,
+      "category": "Lazer",
+      "date": "2026-07-24"
+    },
+    {
+      "id": "1784973927669",
+      "description": "Feira de sábado",
+      "amount": 159.85,
+      "category": "Mercado",
+      "date": "2026-07-25"
+    },
+    {
+      "id": "1785175529040",
+      "description": "Uber",
+      "amount": 41.18,
+      "category": "Transporte - Uber/App",
+      "date": "2026-07-27"
+    },
+    {
+      "id": "1785272730411",
+      "description": "iFood - Hambúrguer",
+      "amount": 30.11,
+      "category": "Alimentação",
+      "date": "2026-07-28"
+    },
+    {
+      "id": "1785485131782",
+      "description": "Padaria (café da manhã)",
+      "amount": 29.56,
+      "category": "Alimentação",
+      "date": "2026-07-31"
+    },
+    {
+      "id": "1785521133153",
+      "description": "iFood - Pizza",
+      "amount": 60.58,
+      "category": "Alimentação",
+      "date": "2026-07-31"
+    },
+    {
+      "id": "1785517534524",
+      "description": "Farmácia",
+      "amount": 109.72,
+      "category": "Saúde & Bem-Estar",
+      "date": "2026-07-31"
+    },
+    {
+      "id": "1785600335895",
+      "description": "Atacadão (compra do mês)",
+      "amount": 360.08,
+      "category": "Mercado",
+      "date": "2026-08-01"
+    },
+    {
+      "id": "1785603937266",
+      "description": "Show no Audio",
+      "amount": 58.46,
+      "category": "Lazer",
+      "date": "2026-08-01"
+    },
+    {
+      "id": "1785758738637",
+      "description": "Uber",
+      "amount": 35.57,
+      "category": "Transporte - Uber/App",
+      "date": "2026-08-03"
+    },
+    {
+      "id": "1785852340008",
+      "description": "Gasolina - posto Shell",
+      "amount": 213.75,
+      "category": "Transporte - Combustível",
+      "date": "2026-08-04"
+    },
+    {
+      "id": "1786014341379",
+      "description": "Ração Golden + areia (Mingau 🐱)",
+      "amount": 228.97,
+      "category": "Pet",
+      "date": "2026-08-06"
+    },
+    {
+      "id": "1786028742750",
+      "description": "Farmácia",
+      "amount": 125.73,
+      "category": "Saúde & Bem-Estar",
+      "date": "2026-08-06"
+    },
+    {
+      "id": "1786111544121",
+      "description": "iFood - Hambúrguer",
+      "amount": 87.6,
+      "category": "Alimentação",
+      "date": "2026-08-07"
+    },
+    {
+      "id": "1786194345492",
+      "description": "Feira de sábado",
+      "amount": 165.83,
+      "category": "Mercado",
+      "date": "2026-08-08"
+    },
+    {
+      "id": "1786298856543",
+      "description": "Presente Dia dos Pais",
+      "amount": 199.9,
+      "category": "Presentes",
+      "date": "2026-08-09"
+    },
+    {
+      "id": "1786356346863",
+      "description": "Uber",
+      "amount": 31.86,
+      "category": "Transporte - Uber/App",
+      "date": "2026-08-10"
+    },
+    {
+      "id": "1786435548234",
+      "description": "Uber",
+      "amount": 41.57,
+      "category": "Transporte - Uber/App",
+      "date": "2026-08-11"
+    },
+    {
+      "id": "1786557949605",
+      "description": "iFood - Pizza",
+      "amount": 22.75,
+      "category": "Alimentação",
+      "date": "2026-08-12"
+    },
+    {
+      "id": "1786698350976",
+      "description": "Barbeiro",
+      "amount": 55,
+      "category": "Cuidados Pessoais",
+      "date": "2026-08-14"
+    },
+    {
+      "id": "1786813552347",
+      "description": "Feira de sábado",
+      "amount": 143.39,
+      "category": "Mercado",
+      "date": "2026-08-15"
+    },
+    {
+      "id": "1786917953718",
+      "description": "Uber",
+      "amount": 40.43,
+      "category": "Transporte - Uber/App",
+      "date": "2026-08-16"
+    },
+    {
+      "id": "1786953955089",
+      "description": "iFood - Pizza",
+      "amount": 45.95,
+      "category": "Alimentação",
+      "date": "2026-08-17"
+    },
+    {
+      "id": "1787162756460",
+      "description": "Hortifruti",
+      "amount": 38.81,
+      "category": "Mercado",
+      "date": "2026-08-19"
+    },
+    {
+      "id": "1787155557831",
+      "description": "iFood - Japa",
+      "amount": 26.94,
+      "category": "Alimentação",
+      "date": "2026-08-19"
+    },
+    {
+      "id": "1787126759202",
+      "description": "Gasolina - posto Shell",
+      "amount": 202.11,
+      "category": "Transporte - Combustível",
+      "date": "2026-08-19"
+    },
+    {
+      "id": "1787324760573",
+      "description": "Padaria (café da manhã)",
+      "amount": 24.71,
+      "category": "Alimentação",
+      "date": "2026-08-21"
+    },
+    {
+      "id": "1787310457914",
+      "description": "Veterinário - vacina do Mingau",
+      "amount": 285,
+      "category": "Pet",
+      "date": "2026-08-21"
+    },
+    {
+      "id": "1787396761944",
+      "description": "Mercado - reposição",
+      "amount": 166.98,
+      "category": "Mercado",
+      "date": "2026-08-22"
+    },
+    {
+      "id": "1787389563315",
+      "description": "Happy hour do trampo",
+      "amount": 91.73,
+      "category": "Lazer",
+      "date": "2026-08-22"
+    },
+    {
+      "id": "1787475964686",
+      "description": "iFood - Pizza",
+      "amount": 65.05,
+      "category": "Alimentação",
+      "date": "2026-08-23"
+    },
+    {
+      "id": "1787601966057",
+      "description": "Açaí",
+      "amount": 24.12,
+      "category": "Alimentação",
+      "date": "2026-08-24"
+    },
+    {
+      "id": "1787648767428",
+      "description": "Uber",
+      "amount": 28.15,
+      "category": "Transporte - Uber/App",
+      "date": "2026-08-25"
+    },
+    {
+      "id": "1787778368799",
+      "description": "Hortifruti",
+      "amount": 55.02,
+      "category": "Mercado",
+      "date": "2026-08-26"
+    },
+    {
+      "id": "1787745970170",
+      "description": "iFood - Pizza",
+      "amount": 42.05,
+      "category": "Alimentação",
+      "date": "2026-08-26"
+    },
+    {
+      "id": "1787853971541",
+      "description": "Café com pão de queijo",
+      "amount": 43.3,
+      "category": "Alimentação",
+      "date": "2026-08-27"
+    },
+    {
+      "id": "1787940372912",
+      "description": "iFood - Pizza",
+      "amount": 62.66,
+      "category": "Alimentação",
+      "date": "2026-08-28"
+    },
+    {
+      "id": "1787922374283",
+      "description": "Camiseta Hering",
+      "amount": 62.91,
+      "category": "Vestuário",
+      "date": "2026-08-28"
+    },
+    {
+      "id": "1788019575654",
+      "description": "Mercado - reposição",
+      "amount": 144.82,
+      "category": "Mercado",
+      "date": "2026-08-29"
+    },
+    {
+      "id": "1788030377025",
+      "description": "Rodízio com os amigos",
+      "amount": 148.5,
+      "category": "Lazer",
+      "date": "2026-08-29"
+    },
+    {
+      "id": "1788188778396",
+      "description": "Açaí",
+      "amount": 32.21,
+      "category": "Alimentação",
+      "date": "2026-08-31"
+    },
+    {
+      "id": "1788559579767",
+      "description": "Gasolina - posto Shell",
+      "amount": 205.55,
+      "category": "Transporte - Combustível",
+      "date": "2026-09-04"
+    },
+    {
+      "id": "1788609981138",
+      "description": "Atacadão (compra do mês)",
+      "amount": 350.42,
+      "category": "Mercado",
+      "date": "2026-09-05"
+    },
+    {
+      "id": "1788699982509",
+      "description": "Ração Golden + areia (Mingau 🐱)",
+      "amount": 223.74,
+      "category": "Pet",
+      "date": "2026-09-06"
+    },
+    {
+      "id": "1788771983880",
+      "description": "Almoço no PF da esquina",
+      "amount": 35.29,
+      "category": "Alimentação",
+      "date": "2026-09-07"
+    },
+    {
+      "id": "1788977185251",
+      "description": "Hortifruti",
+      "amount": 64.01,
+      "category": "Mercado",
+      "date": "2026-09-09"
+    },
+    {
+      "id": "1789117586622",
+      "description": "Boliche",
+      "amount": 51.64,
+      "category": "Lazer",
+      "date": "2026-09-11"
+    },
+    {
+      "id": "1789200387993",
+      "description": "Atacadão (compra do mês)",
+      "amount": 184.07,
+      "category": "Mercado",
+      "date": "2026-09-12"
+    },
+    {
+      "id": "1789214789364",
+      "description": "Uber",
+      "amount": 29.02,
+      "category": "Transporte - Uber/App",
+      "date": "2026-09-12"
+    },
+    {
+      "id": "1789319190735",
+      "description": "iFood - Hambúrguer",
+      "amount": 63.2,
+      "category": "Alimentação",
+      "date": "2026-09-13"
+    },
+    {
+      "id": "1789290459285",
+      "description": "Presente aniversário da Marina",
+      "amount": 150,
+      "category": "Presentes",
+      "date": "2026-09-13"
+    },
+    {
+      "id": "1789376792106",
+      "description": "Lanche no shopping",
+      "amount": 25.89,
+      "category": "Alimentação",
+      "date": "2026-09-14"
+    },
+    {
+      "id": "1789401993477",
+      "description": "Barbeiro",
+      "amount": 55,
+      "category": "Cuidados Pessoais",
+      "date": "2026-09-14"
+    },
+    {
+      "id": "1789589194848",
+      "description": "Hortifruti",
+      "amount": 53.42,
+      "category": "Mercado",
+      "date": "2026-09-16"
+    },
+    {
+      "id": "1789553196219",
+      "description": "Lanche no shopping",
+      "amount": 23.51,
+      "category": "Alimentação",
+      "date": "2026-09-16"
+    },
+    {
+      "id": "1789574797590",
+      "description": "Lâmpadas e pilhas",
+      "amount": 125.45,
+      "category": "Moradia - Manutenção/Eletro",
+      "date": "2026-09-16"
+    },
+    {
+      "id": "1789725998961",
+      "description": "Bar com a galera",
+      "amount": 142.31,
+      "category": "Lazer",
+      "date": "2026-09-18"
+    },
+    {
+      "id": "1789765600332",
+      "description": "Livro na Amazon",
+      "amount": 40.68,
+      "category": "Educação",
+      "date": "2026-09-18"
+    },
+    {
+      "id": "1789830401703",
+      "description": "Hortifruti",
+      "amount": 159.2,
+      "category": "Mercado",
+      "date": "2026-09-19"
+    },
+    {
+      "id": "1789826803074",
+      "description": "Gasolina - posto Shell",
+      "amount": 244.89,
+      "category": "Transporte - Combustível",
+      "date": "2026-09-19"
+    },
+    {
+      "id": "1789924004445",
+      "description": "iFood - Japa",
+      "amount": 68.75,
+      "category": "Alimentação",
+      "date": "2026-09-20"
+    },
+    {
+      "id": "1790374005816",
+      "description": "Café com pão de queijo",
+      "amount": 29.58,
+      "category": "Alimentação",
+      "date": "2026-09-25"
+    },
+    {
+      "id": "1790330807187",
+      "description": "Cinema",
+      "amount": 83.01,
+      "category": "Lazer",
+      "date": "2026-09-25"
+    },
+    {
+      "id": "1790366808558",
+      "description": "Farmácia",
+      "amount": 123.91,
+      "category": "Saúde & Bem-Estar",
+      "date": "2026-09-25"
+    },
+    {
+      "id": "1790442409929",
+      "description": "Hortifruti",
+      "amount": 163.46,
+      "category": "Mercado",
+      "date": "2026-09-26"
+    },
+    {
+      "id": "1790802411300",
+      "description": "Farmácia",
+      "amount": 35.99,
+      "category": "Saúde & Bem-Estar",
+      "date": "2026-09-30"
+    },
+    {
+      "id": "1791032812671",
+      "description": "Atacadão (compra do mês)",
+      "amount": 369.35,
+      "category": "Mercado",
+      "date": "2026-10-03"
+    },
+    {
+      "id": "1791050814042",
+      "description": "Farmácia",
+      "amount": 118.74,
+      "category": "Saúde & Bem-Estar",
+      "date": "2026-10-03"
+    },
+    {
+      "id": "1791058060656",
+      "description": "Ingresso show (meia)",
+      "amount": 240,
+      "category": "Lazer",
+      "date": "2026-10-03"
+    },
+    {
+      "id": "1791119215413",
+      "description": "Gasolina - posto Shell",
+      "amount": 241.91,
+      "category": "Transporte - Combustível",
+      "date": "2026-10-04"
+    },
+    {
+      "id": "1791144416784",
+      "description": "Jogo na promo da Steam",
+      "amount": 29.42,
+      "category": "Games",
+      "date": "2026-10-04"
+    },
+    {
+      "id": "1791317218155",
+      "description": "Ração Golden + areia (Mingau 🐱)",
+      "amount": 216.54,
+      "category": "Pet",
+      "date": "2026-10-06"
+    },
+    {
+      "id": "1791392819526",
+      "description": "iFood - Pizza",
+      "amount": 16.61,
+      "category": "Alimentação",
+      "date": "2026-10-07"
+    },
+    {
+      "id": "1791479220897",
+      "description": "Açaí",
+      "amount": 37.52,
+      "category": "Alimentação",
+      "date": "2026-10-08"
+    },
+    {
+      "id": "1791580022268",
+      "description": "Uber",
+      "amount": 18.07,
+      "category": "Transporte - Uber/App",
+      "date": "2026-10-09"
+    },
+    {
+      "id": "1791634023639",
+      "description": "Mercado da semana",
+      "amount": 156.04,
+      "category": "Mercado",
+      "date": "2026-10-10"
+    },
+    {
+      "id": "1791742025010",
+      "description": "iFood - Japa",
+      "amount": 58.58,
+      "category": "Alimentação",
+      "date": "2026-10-11"
+    },
+    {
+      "id": "1791839262027",
+      "description": "Feriado - churrasco do Pedro (Raxador)",
+      "amount": 85,
+      "category": "Lazer",
+      "date": "2026-10-12"
+    },
+    {
+      "id": "1791886026381",
+      "description": "iFood - Pizza",
+      "amount": 26.77,
+      "category": "Alimentação",
+      "date": "2026-10-13"
+    },
+    {
+      "id": "1791896827752",
+      "description": "Meias e cuecas",
+      "amount": 128.68,
+      "category": "Vestuário",
+      "date": "2026-10-13"
+    },
+    {
+      "id": "1791983229123",
+      "description": "Hortifruti",
+      "amount": 59.14,
+      "category": "Mercado",
+      "date": "2026-10-14"
+    },
+    {
+      "id": "1791979630494",
+      "description": "Marmita fitness",
+      "amount": 41.1,
+      "category": "Alimentação",
+      "date": "2026-10-14"
+    },
+    {
+      "id": "1791972431865",
+      "description": "Barbeiro",
+      "amount": 55,
+      "category": "Cuidados Pessoais",
+      "date": "2026-10-14"
+    },
+    {
+      "id": "1792051663398",
+      "description": "Café com pão de queijo",
+      "amount": 14.5,
+      "category": "Alimentação",
+      "date": "2026-10-15"
+    },
+    {
+      "id": "1792084064769",
+      "description": "Almoço no PF da esquina",
+      "amount": 32.9,
+      "category": "Alimentação",
+      "date": "2026-10-15"
+    }
+  ],
+  "installments": [
+    {
+      "id": "1759691266140",
+      "description": "Geladeira Brastemp Frost Free",
+      "totalAmount": 3890,
+      "totalInstallments": 10,
+      "startDate": "2025-10-05",
+      "category": "Moradia - Manutenção/Eletro"
+    },
+    {
+      "id": "1768244867511",
+      "description": "Celular novo (troca do antigo)",
+      "totalAmount": 4799,
+      "totalInstallments": 12,
+      "startDate": "2026-01-12",
+      "category": "Outros"
+    },
+    {
+      "id": "1771182468882",
+      "description": "Pneus do carro (4 un.)",
+      "totalAmount": 1560,
+      "totalInstallments": 4,
+      "startDate": "2026-02-15",
+      "category": "Transporte - Manutenção/IPVA"
+    },
+    {
+      "id": "1776539270253",
+      "description": "Passagens aéreas (Floripa)",
+      "totalAmount": 1680,
+      "totalInstallments": 6,
+      "startDate": "2026-04-18",
+      "category": "Viagens"
+    },
+    {
+      "id": "1785956871624",
+      "description": "Curso de inglês (semestre)",
+      "totalAmount": 1470,
+      "totalInstallments": 6,
+      "startDate": "2026-08-05",
+      "category": "Educação"
+    },
+    {
+      "id": "1789931272995",
+      "description": "Tênis de corrida Asics",
+      "totalAmount": 699.9,
+      "totalInstallments": 3,
+      "startDate": "2026-09-20",
+      "category": "Vestuário"
+    },
+    {
+      "id": "1790968074366",
+      "description": "Air fryer Mondial",
+      "totalAmount": 449.9,
+      "totalInstallments": 5,
+      "startDate": "2026-10-02",
+      "category": "Moradia - Manutenção/Eletro"
+    }
+  ],
+  "investmentFunds": [
+    {
+      "id": "1762765675737",
+      "name": "Tesouro Selic 2029",
+      "isCofrinho": false,
+      "deposits": [
+        {
+          "id": "1762765677108",
+          "date": "2025-11-10",
+          "amount": 3000
+        },
+        {
+          "id": "1765361281221",
+          "date": "2025-12-10",
+          "amount": 500
+        },
+        {
+          "id": "1768039683963",
+          "date": "2026-01-10",
+          "amount": 500
+        },
+        {
+          "id": "1770718086705",
+          "date": "2026-02-10",
+          "amount": 500
+        },
+        {
+          "id": "1773137289447",
+          "date": "2026-03-10",
+          "amount": 500
+        },
+        {
+          "id": "1775815692189",
+          "date": "2026-04-10",
+          "amount": 500
+        },
+        {
+          "id": "1778407694931",
+          "date": "2026-05-10",
+          "amount": 500
+        },
+        {
+          "id": "1781086097673",
+          "date": "2026-06-10",
+          "amount": 500
+        },
+        {
+          "id": "1783678100415",
+          "date": "2026-07-10",
+          "amount": 500
+        },
+        {
+          "id": "1786356503157",
+          "date": "2026-08-10",
+          "amount": 500
+        },
+        {
+          "id": "1789034905899",
+          "date": "2026-09-10",
+          "amount": 500
+        }
+      ],
+      "balanceLogs": [
+        {
+          "id": "1762765678479",
+          "date": "2025-11-10",
+          "amount": 3000,
+          "isSystem": true
+        },
+        {
+          "id": "1764360479850",
+          "date": "2025-11-28",
+          "amount": 3026.03
+        },
+        {
+          "id": "1766952482592",
+          "date": "2025-12-28",
+          "amount": 3558.63
+        },
+        {
+          "id": "1769630885334",
+          "date": "2026-01-28",
+          "amount": 4094.87
+        },
+        {
+          "id": "1772309288076",
+          "date": "2026-02-28",
+          "amount": 4637
+        },
+        {
+          "id": "1774728490818",
+          "date": "2026-03-28",
+          "amount": 5185.79
+        },
+        {
+          "id": "1777406893560",
+          "date": "2026-04-28",
+          "amount": 5736.94
+        },
+        {
+          "id": "1779998896302",
+          "date": "2026-05-28",
+          "amount": 6292.86
+        },
+        {
+          "id": "1782677299044",
+          "date": "2026-06-28",
+          "amount": 6857.31
+        },
+        {
+          "id": "1785269301786",
+          "date": "2026-07-28",
+          "amount": 7422.46
+        },
+        {
+          "id": "1787947704528",
+          "date": "2026-08-28",
+          "amount": 7992.7
+        },
+        {
+          "id": "1790626107270",
+          "date": "2026-09-28",
+          "amount": 8568.51
+        }
+      ],
+      "withdrawals": [],
+      "isFinished": false,
+      "irAmount": 0
+    },
+    {
+      "id": "1762938508641",
+      "name": "CDB Inter 110% CDI",
+      "isCofrinho": false,
+      "deposits": [
+        {
+          "id": "1762938510012",
+          "date": "2025-11-12",
+          "amount": 10000
+        },
+        {
+          "id": "1773137318238",
+          "date": "2026-03-10",
+          "amount": 2000
+        }
+      ],
+      "balanceLogs": [
+        {
+          "id": "1762938511383",
+          "date": "2025-11-12",
+          "amount": 10000,
+          "isSystem": true
+        },
+        {
+          "id": "1764360512754",
+          "date": "2025-11-28",
+          "amount": 10089.82
+        },
+        {
+          "id": "1766952514125",
+          "date": "2025-12-28",
+          "amount": 10187.62
+        },
+        {
+          "id": "1769630915496",
+          "date": "2026-01-28",
+          "amount": 10284.83
+        },
+        {
+          "id": "1772309316867",
+          "date": "2026-02-28",
+          "amount": 10381.34
+        },
+        {
+          "id": "1774728519609",
+          "date": "2026-03-28",
+          "amount": 12501.25
+        },
+        {
+          "id": "1777406920980",
+          "date": "2026-04-28",
+          "amount": 12614.17
+        },
+        {
+          "id": "1779998922351",
+          "date": "2026-05-28",
+          "amount": 12735.69
+        },
+        {
+          "id": "1782677323722",
+          "date": "2026-06-28",
+          "amount": 12856.98
+        },
+        {
+          "id": "1785269325093",
+          "date": "2026-07-28",
+          "amount": 12982.94
+        },
+        {
+          "id": "1787947726464",
+          "date": "2026-08-28",
+          "amount": 13102.01
+        },
+        {
+          "id": "1790626127835",
+          "date": "2026-09-28",
+          "amount": 13229.6
+        }
+      ],
+      "withdrawals": [],
+      "isFinished": false,
+      "irAmount": 0
+    },
+    {
+      "id": "1763629729206",
+      "name": "Ações + FIIs (XP)",
+      "isCofrinho": false,
+      "deposits": [
+        {
+          "id": "1763629730577",
+          "date": "2025-11-20",
+          "amount": 5000
+        },
+        {
+          "id": "1765361334690",
+          "date": "2025-12-10",
+          "amount": 300
+        },
+        {
+          "id": "1768039737432",
+          "date": "2026-01-10",
+          "amount": 300
+        },
+        {
+          "id": "1770718140174",
+          "date": "2026-02-10",
+          "amount": 300
+        },
+        {
+          "id": "1773137342916",
+          "date": "2026-03-10",
+          "amount": 300
+        },
+        {
+          "id": "1775815745658",
+          "date": "2026-04-10",
+          "amount": 300
+        },
+        {
+          "id": "1778407748400",
+          "date": "2026-05-10",
+          "amount": 300
+        },
+        {
+          "id": "1781086151142",
+          "date": "2026-06-10",
+          "amount": 300
+        },
+        {
+          "id": "1783678156626",
+          "date": "2026-07-10",
+          "amount": 300
+        },
+        {
+          "id": "1786356559368",
+          "date": "2026-08-10",
+          "amount": 300
+        },
+        {
+          "id": "1789034962110",
+          "date": "2026-09-10",
+          "amount": 300
+        }
+      ],
+      "balanceLogs": [
+        {
+          "id": "1763629731948",
+          "date": "2025-11-20",
+          "amount": 5000,
+          "isSystem": true
+        },
+        {
+          "id": "1764360533319",
+          "date": "2025-11-28",
+          "amount": 5155.76
+        },
+        {
+          "id": "1766952536061",
+          "date": "2025-12-28",
+          "amount": 5463.81
+        },
+        {
+          "id": "1769630938803",
+          "date": "2026-01-28",
+          "amount": 5832.86
+        },
+        {
+          "id": "1772309341545",
+          "date": "2026-02-28",
+          "amount": 6284.26
+        },
+        {
+          "id": "1774728544287",
+          "date": "2026-03-28",
+          "amount": 6324.94
+        },
+        {
+          "id": "1777406947029",
+          "date": "2026-04-28",
+          "amount": 6381.3
+        },
+        {
+          "id": "1779998949771",
+          "date": "2026-05-28",
+          "amount": 6841.99
+        },
+        {
+          "id": "1781536153884",
+          "date": "2026-06-15",
+          "amount": 6043.97,
+          "isSystem": true
+        },
+        {
+          "id": "1782677355255",
+          "date": "2026-06-28",
+          "amount": 5836.8
+        },
+        {
+          "id": "1785269357997",
+          "date": "2026-07-28",
+          "amount": 6397.41
+        },
+        {
+          "id": "1787947760739",
+          "date": "2026-08-28",
+          "amount": 6915.63
+        },
+        {
+          "id": "1790626163481",
+          "date": "2026-09-28",
+          "amount": 7469.17
+        }
+      ],
+      "withdrawals": [
+        {
+          "id": "1781536152513",
+          "date": "2026-06-15",
+          "amount": 1200
+        }
+      ],
+      "isFinished": false,
+      "irAmount": 0
+    },
+    {
+      "id": "1764925764852",
+      "name": "CDB 102% CDI - Reserva viagem",
+      "isCofrinho": false,
+      "deposits": [
+        {
+          "id": "1764925766223",
+          "date": "2025-12-05",
+          "amount": 3000
+        },
+        {
+          "id": "1770286171707",
+          "date": "2026-02-05",
+          "amount": 1000
+        }
+      ],
+      "balanceLogs": [
+        {
+          "id": "1764925767594",
+          "date": "2025-12-05",
+          "amount": 3000,
+          "isSystem": true
+        },
+        {
+          "id": "1766952568965",
+          "date": "2025-12-28",
+          "amount": 3028.81
+        },
+        {
+          "id": "1769630970336",
+          "date": "2026-01-28",
+          "amount": 3056.85
+        },
+        {
+          "id": "1772309373078",
+          "date": "2026-02-28",
+          "amount": 4096.42
+        },
+        {
+          "id": "1774728574449",
+          "date": "2026-03-28",
+          "amount": 4133.27
+        },
+        {
+          "id": "1777406975820",
+          "date": "2026-04-28",
+          "amount": 4172.07
+        },
+        {
+          "id": "1779998977191",
+          "date": "2026-05-28",
+          "amount": 4208.91
+        },
+        {
+          "id": "1781971778562",
+          "date": "2026-06-20",
+          "amount": 4225.75,
+          "isSystem": true
+        }
+      ],
+      "withdrawals": [],
+      "isFinished": true,
+      "irAmount": 45.15,
+      "closeAmount": 4225.75,
+      "closeDate": "2026-06-20"
+    },
+    {
+      "id": "1767863379933",
+      "name": "LCI 90 dias Banco do Brasil",
+      "isCofrinho": false,
+      "deposits": [
+        {
+          "id": "1767863381304",
+          "date": "2026-01-08",
+          "amount": 5000
+        }
+      ],
+      "balanceLogs": [
+        {
+          "id": "1767863382675",
+          "date": "2026-01-08",
+          "amount": 5000,
+          "isSystem": true
+        },
+        {
+          "id": "1769630984046",
+          "date": "2026-01-28",
+          "amount": 5044.15
+        },
+        {
+          "id": "1772309385417",
+          "date": "2026-02-28",
+          "amount": 5092.11
+        },
+        {
+          "id": "1774728586788",
+          "date": "2026-03-28",
+          "amount": 5140.24
+        },
+        {
+          "id": "1775664588159",
+          "date": "2026-04-08",
+          "amount": 5160.8,
+          "isSystem": true
+        }
+      ],
+      "withdrawals": [],
+      "isFinished": true,
+      "irAmount": 0,
+      "closeAmount": 5160.8,
+      "closeDate": "2026-04-08"
+    },
+    {
+      "id": "1762157389530",
+      "name": "Caixinha Nubank - Reserva de emergência",
+      "isCofrinho": true,
+      "deposits": [
+        {
+          "id": "1762157390901",
+          "date": "2025-11-03",
+          "amount": 15000
+        },
+        {
+          "id": "1772525392272",
+          "date": "2026-03-03",
+          "amount": 3000
+        }
+      ],
+      "balanceLogs": [],
+      "withdrawals": [
+        {
+          "id": "1764673793643",
+          "date": "2025-12-02",
+          "amount": 110.11
+        },
+        {
+          "id": "1767352195014",
+          "date": "2026-01-02",
+          "amount": 112.58
+        },
+        {
+          "id": "1770030596385",
+          "date": "2026-02-02",
+          "amount": 114.74
+        },
+        {
+          "id": "1772449797756",
+          "date": "2026-03-02",
+          "amount": 115.25
+        },
+        {
+          "id": "1775128199127",
+          "date": "2026-04-02",
+          "amount": 135.76
+        },
+        {
+          "id": "1777720200498",
+          "date": "2026-05-02",
+          "amount": 138.93
+        },
+        {
+          "id": "1780398601869",
+          "date": "2026-06-02",
+          "amount": 136.96
+        },
+        {
+          "id": "1782990603240",
+          "date": "2026-07-02",
+          "amount": 128.34
+        },
+        {
+          "id": "1785669004611",
+          "date": "2026-08-02",
+          "amount": 129.05
+        },
+        {
+          "id": "1788347405982",
+          "date": "2026-09-02",
+          "amount": 136.32
+        },
+        {
+          "id": "1790939407353",
+          "date": "2026-10-02",
+          "amount": 139.23
+        }
+      ],
+      "isFinished": false,
+      "irAmount": 0
+    },
+    {
+      "id": "1767859808724",
+      "name": "Cofrinho PicPay - Viagem fim de ano",
+      "isCofrinho": true,
+      "deposits": [
+        {
+          "id": "1767859810095",
+          "date": "2026-01-08",
+          "amount": 4000
+        }
+      ],
+      "balanceLogs": [],
+      "withdrawals": [
+        {
+          "id": "1770030611466",
+          "date": "2026-02-02",
+          "amount": 31.04
+        },
+        {
+          "id": "1772449812837",
+          "date": "2026-03-02",
+          "amount": 30.96
+        },
+        {
+          "id": "1775128214208",
+          "date": "2026-04-02",
+          "amount": 30.39
+        },
+        {
+          "id": "1777720215579",
+          "date": "2026-05-02",
+          "amount": 31.34
+        },
+        {
+          "id": "1780398616950",
+          "date": "2026-06-02",
+          "amount": 30.74
+        },
+        {
+          "id": "1782990618321",
+          "date": "2026-07-02",
+          "amount": 30.83
+        },
+        {
+          "id": "1785669019692",
+          "date": "2026-08-02",
+          "amount": 31.59
+        },
+        {
+          "id": "1788347421063",
+          "date": "2026-09-02",
+          "amount": 32.25
+        },
+        {
+          "id": "1790939422434",
+          "date": "2026-10-02",
+          "amount": 31.67
+        }
+      ],
+      "isFinished": false,
+      "irAmount": 0
+    }
+  ],
+  "splitterGroups": [
+    {
+      "id": "1765649423805",
+      "name": "Churras de fim de ano",
+      "category": "🥩 Churrasco",
+      "date": "2025-12-13",
+      "members": [
+        "Eu",
+        "Lucas",
+        "Marina",
+        "Pedro"
+      ],
+      "isFinished": true,
+      "expenses": [
+        {
+          "id": "1765649425176",
+          "desc": "Carnes (picanha, linguiça, frango)",
+          "amount": 486.3,
+          "payer": "Eu",
+          "date": "2025-12-13",
+          "shares": {
+            "Eu": 25,
+            "Lucas": 25,
+            "Marina": 25,
+            "Pedro": 25
+          }
+        },
+        {
+          "id": "1765649426547",
+          "desc": "Cerveja e refri",
+          "amount": 264.9,
+          "payer": "Lucas",
+          "date": "2025-12-13",
+          "shares": {
+            "Eu": 25,
+            "Lucas": 25,
+            "Marina": 25,
+            "Pedro": 25
+          }
+        },
+        {
+          "id": "1765649427918",
+          "desc": "Carvão, gelo e pão de alho",
+          "amount": 92.5,
+          "payer": "Pedro",
+          "date": "2025-12-13",
+          "shares": {
+            "Eu": 25,
+            "Lucas": 25,
+            "Marina": 25,
+            "Pedro": 25
+          }
+        },
+        {
+          "id": "1765649429289",
+          "desc": "Sobremesa (pavê)",
+          "amount": 48,
+          "payer": "Marina",
+          "date": "2025-12-13",
+          "shares": {
+            "Eu": 25,
+            "Lucas": 25,
+            "Marina": 25,
+            "Pedro": 25
+          }
+        }
+      ]
+    },
+    {
+      "id": "1771006230660",
+      "name": "Carnaval em Paraty",
+      "category": "🎉 Festinha / Rolê",
+      "date": "2026-02-13",
+      "members": [
+        "Eu",
+        "Lucas",
+        "Ju"
+      ],
+      "isFinished": true,
+      "expenses": [
+        {
+          "id": "1771006232031",
+          "desc": "Pousada (3 diárias)",
+          "amount": 1350,
+          "payer": "Lucas",
+          "date": "2026-02-13",
+          "shares": {
+            "Eu": 33.34,
+            "Lucas": 33.33,
+            "Ju": 33.33
+          }
+        },
+        {
+          "id": "1771006233402",
+          "desc": "Pedágio + gasolina",
+          "amount": 310,
+          "payer": "Eu",
+          "date": "2026-02-13",
+          "shares": {
+            "Eu": 33.34,
+            "Lucas": 33.33,
+            "Ju": 33.33
+          }
+        },
+        {
+          "id": "1771092634773",
+          "desc": "Mercado pra pousada",
+          "amount": 214.6,
+          "payer": "Ju",
+          "date": "2026-02-14",
+          "shares": {
+            "Eu": 33.34,
+            "Lucas": 33.33,
+            "Ju": 33.33
+          }
+        },
+        {
+          "id": "1771179036144",
+          "desc": "Abadás do bloco",
+          "amount": 270,
+          "payer": "Eu",
+          "date": "2026-02-15",
+          "shares": {
+            "Eu": 33.34,
+            "Lucas": 33.33,
+            "Ju": 33.33
+          }
+        }
+      ]
+    },
+    {
+      "id": "1783707037515",
+      "name": "Viagem Floripa",
+      "category": "✈️ Viagem",
+      "date": "2026-07-10",
+      "members": [
+        "Eu",
+        "Marina",
+        "Ju"
+      ],
+      "isFinished": true,
+      "expenses": [
+        {
+          "id": "1783707038886",
+          "desc": "Airbnb Lagoa da Conceição (7 noites)",
+          "amount": 2480,
+          "payer": "Eu",
+          "date": "2026-07-10",
+          "shares": {
+            "Eu": 33.34,
+            "Marina": 33.33,
+            "Ju": 33.33
+          }
+        },
+        {
+          "id": "1783707040257",
+          "desc": "Gasolina + pedágios",
+          "amount": 540,
+          "payer": "Marina",
+          "date": "2026-07-10",
+          "shares": {
+            "Eu": 33.34,
+            "Marina": 33.33,
+            "Ju": 33.33
+          }
+        },
+        {
+          "id": "1783793441628",
+          "desc": "Mercado da semana",
+          "amount": 386.4,
+          "payer": "Ju",
+          "date": "2026-07-11",
+          "shares": {
+            "Eu": 33.34,
+            "Marina": 33.33,
+            "Ju": 33.33
+          }
+        },
+        {
+          "id": "1784052642999",
+          "desc": "Passeio de barco",
+          "amount": 450,
+          "payer": "Eu",
+          "date": "2026-07-14",
+          "shares": {
+            "Eu": 33.34,
+            "Marina": 33.33,
+            "Ju": 33.33
+          }
+        },
+        {
+          "id": "1784139044370",
+          "desc": "Jantar de frutos do mar (Marina não comeu)",
+          "amount": 328,
+          "payer": "Ju",
+          "date": "2026-07-15",
+          "shares": {
+            "Eu": 50,
+            "Marina": 0,
+            "Ju": 50
+          }
+        },
+        {
+          "id": "1784225445741",
+          "desc": "Aluguel de prancha",
+          "amount": 120,
+          "payer": "Marina",
+          "date": "2026-07-16",
+          "shares": {
+            "Eu": 0,
+            "Marina": 50,
+            "Ju": 50
+          }
+        }
+      ]
+    },
+    {
+      "id": "1788631847112",
+      "name": "Presente de casamento da Ana",
+      "category": "🛒 Compras / Outros",
+      "date": "2026-09-05",
+      "members": [
+        "Eu",
+        "Lucas",
+        "Marina",
+        "Pedro",
+        "Ju"
+      ],
+      "isFinished": false,
+      "expenses": [
+        {
+          "id": "1788631848483",
+          "desc": "Jogo de panelas Tramontina",
+          "amount": 899,
+          "payer": "Marina",
+          "date": "2026-09-05",
+          "shares": {
+            "Eu": 20,
+            "Lucas": 20,
+            "Marina": 20,
+            "Pedro": 20,
+            "Ju": 20
+          }
+        },
+        {
+          "id": "1788718249854",
+          "desc": "Cartão + embrulho",
+          "amount": 32,
+          "payer": "Eu",
+          "date": "2026-09-06",
+          "shares": {
+            "Eu": 20,
+            "Lucas": 20,
+            "Marina": 20,
+            "Pedro": 20,
+            "Ju": 20
+          }
+        }
+      ]
+    },
+    {
+      "id": "1791655851225",
+      "name": "Churrasco aniversário do Pedro",
+      "category": "🥩 Churrasco",
+      "date": "2026-10-10",
+      "members": [
+        "Eu",
+        "Lucas",
+        "Marina",
+        "Pedro"
+      ],
+      "isFinished": false,
+      "expenses": [
+        {
+          "id": "1791655852596",
+          "desc": "Carnes",
+          "amount": 520.8,
+          "payer": "Pedro",
+          "date": "2026-10-10",
+          "shares": {
+            "Eu": 25,
+            "Lucas": 25,
+            "Marina": 25,
+            "Pedro": 25
+          }
+        },
+        {
+          "id": "1791655853967",
+          "desc": "Bebidas",
+          "amount": 310,
+          "payer": "Eu",
+          "date": "2026-10-10",
+          "shares": {
+            "Eu": 25,
+            "Lucas": 25,
+            "Marina": 25,
+            "Pedro": 25
+          }
+        },
+        {
+          "id": "1791742255338",
+          "desc": "Bolo",
+          "amount": 120,
+          "payer": "Marina",
+          "date": "2026-10-11",
+          "shares": {
+            "Eu": 33.34,
+            "Lucas": 33.33,
+            "Marina": 33.33,
+            "Pedro": 0
+          }
+        }
+      ]
+    }
+  ]
+}
