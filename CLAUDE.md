@@ -225,6 +225,7 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
   - `strengthRoutines` guardam **só** `exerciseId` → nunca renomeie nem remova um `id` de exercício; para "remover", esconda da UI mas mantenha no catálogo.
   - `workouts` de força guardam um **snapshot** de `name` e `group` (histórico não muda se o catálogo mudar). O `group` alimenta o futuro mapa de calor; mantenha-o gravado.
   - Pode renomear o `name` exibido; o `id` fica.
+- **Peso levantado com peso do corpo** (só cálculo, nada gravado): os campos `pushups/squats/situps` (Saitama) e os exercícios do catálogo com `bodyweight` somam `reps × peso do corpo × fração` (`BODYWEIGHT_FIELDS` em treinos.js; `bodyweight` em `STRENGTH_EXERCISES`). O peso do corpo é a pesagem mais recente até a data do treino (`getBodyWeightOn`, padrão 75 kg). `BODYWEIGHT_FIELDS` também dá o **grupo muscular** desses campos; `getWorkoutMuscleWork(workout)` devolve `[{ group, exerciseId, reps, kg }]` de qualquer treino e é a base do futuro mapa de calor. Campo novo de exercício de peso do corpo precisa entrar ali com grupo.
 - Treinos `custom` antigos usam `sets/reps/weightKg` soltos; treinos `strength` usam `exercises[]` e deixam esses campos `null`. `getWorkoutLift()` trata os dois casos — qualquer métrica nova de treino precisa tratar os dois também.
 - Todo treino precisa ter `type` conhecido; tipos novos precisam de ícone em `WORKOUT_TYPE_ICONS` (senão cai no 🏅) e de tratamento nos cálculos (distância, reps do Saitama etc.).
 
