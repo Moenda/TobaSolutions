@@ -36,6 +36,6 @@ Esta pasta é um app **funcionando** de exemplo: abra `_molde-app/TobaMolde-Inde
 - **Avisos:** só `showPageMessage(...)` (nunca `alert`/`confirm`/`prompt`). Depois de gravar, o core chama `tobaSaved()` ("Salvo ✓").
 - **Lista vazia:** `tobaEmpty("🫙", "Título", "dica do que fazer")`.
 - **Cabeçalho:** `‹` volta um nível (hub do app → portal); o título leva ao mesmo lugar; ⚙️ à direita. Em "subpáginas" dentro do mesmo HTML use `tobaSetHeader({ page, back: "acao" })`.
-- **Folhas (modais):** `.toba-modal > .toba-sheet`, com o botão principal dentro de `.toba-sheet-footer` (fica preso no rodapé, acima do teclado).
+- **Folhas (modais):** `.toba-modal > .toba-sheet`, com o botão principal dentro de `.toba-sheet-footer` (fica preso no rodapé da caixa, acima do teclado; a folha abre no meio da tela).
 - **⚙️ Configurações** vem pronta (backup do app, restaurar, apagar tudo) via `tobaSetupApp`. Itens só da página vão num `<div id="tobaSettingsExtra" hidden>`.
 - **Telas de 360px (S24) a 384px (S24+):** rótulos dos quadradinhos curtos (cabem em 1 linha) e nada de largura fixa.
