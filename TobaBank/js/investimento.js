@@ -1414,7 +1414,7 @@ function confirmFinishFund() {
   const rescueDate =
     document.getElementById("finishDateInput").value ||
     getTodayIsoDateStr();
-  const fund = db.investmentFunds.find((f) => f.id === fundId);
+  const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (!fund) return;
 
   if (rescueType === "partial") {
@@ -1920,6 +1920,19 @@ function setupInvestEvents() {
       e.preventDefault();
       saveFundName();
     });
+
+  document
+    .getElementById("finishFundForm")
+    ?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      confirmFinishFund();
+    });
+
+  // No document (e depois do setupCoreEvents) para ler o valor já com a máscara.
+  document.addEventListener("input", (e) => {
+    if (e.target.id === "finishGrossAmount" || e.target.id === "finishIrAmount")
+      updateFinishNetPreview();
+  });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
