@@ -185,3 +185,20 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 - Depois de publicar, feche e abra o app uma vez (o `sw.js` mudou para `toba-v4`).
 
 **Commit sugerido:** `v1.22 - Base comum (toba-common), visual padronizado, avisos do Toba e molde de app novo`
+
+---
+
+## v1.23 — Flexão conta no peso levantado
+
+**Arquivos alterados:** `TobaHealth/js/treinos.js`, `TobaHealth/js/forca.js`, `TobaHealth/js/hall.js`, `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **Peso levantado sem academia:** flexão, agachamento e abdominal agora contam no "Peso levantado" (Treinos e Hall do Herói). Cada repetição soma uma parte do seu peso: flexão ~64%, agachamento ~70%, abdominal ~30%. O peso usado é o da pesagem mais recente até o dia do treino (sem pesagem: 75 kg). Vale também para os treinos antigos, porque é só conta: nada é gravado. No Treino de força, Flexão, Barra fixa (~95%), Mergulho (~90%), Abdominais (~30%) e o novo "Agachamento (peso do corpo)" (~70%) também somam o peso do corpo à carga. Cada um desses exercícios tem grupo muscular (flexão → peito, agachamento → quadríceps, abdominal → abdômen), pronto para o futuro mapa de calor.
+
+**Dados:** "Nenhuma mudança no banco." É só cálculo na hora de mostrar; o exercício novo "Agachamento (peso do corpo)" entra no catálogo com id novo, sem mexer nos existentes.
+
+**Como testar:**
+- Treinos: o "Levantado" do mês agora soma as flexões, agachamentos e abdominais do Saitama, inclusive nos treinos antigos.
+- Hall do Herói → Peso levantado: o rodapé explica a conta (64/70/30%).
+- Treino de força: registrar Flexão 2×10 com 0 kg e conferir que o levantado não fica zerado.
+
+**Commit sugerido:** `v1.23 - Flexao, agachamento e abdominal contam no peso levantado (com grupo muscular)`

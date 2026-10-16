@@ -183,7 +183,7 @@ function renderDistancePage(stats) {
 function renderLiftPage(stats) {
   const kg = stats.liftKg;
   const tagline = pickTagline(kg, [
-    { below: 1, text: "Nada levantado ainda. A barra está te esperando, ela é paciente." },
+    { below: 1, text: "Nada levantado ainda. O chão tá te esperando pra umas flexões, ele é paciente." },
     { below: 500, text: "Fase de aquecimento. O ferro já sabe seu nome." },
     { below: 5000, text: "Agora sim! A galera da academia já te cumprimenta." },
     { below: 50000, text: "Respeitado no supino. O personal já te chama de lenda." },
@@ -191,7 +191,7 @@ function renderLiftPage(stats) {
     { below: Infinity, text: "A prefeitura quer saber como você levanta isso. Você virou obra pública." },
   ]);
   const sections = renderProgressSections(kg, WORKOUT_LIFT_EQUIVALENTS, {
-    emptyText: "Nada conquistado ainda. Registre um <strong>treino de força</strong> com carga e o primeiro gato cai rapidinho.",
+    emptyText: "Nada conquistado ainda. Umas <strong>flexões</strong> no treino Saitama ou um <strong>treino de força</strong> e o primeiro gato cai rapidinho.",
     allDoneText: "Você levantou um Titanic inteiro. Não tem mais escala: você virou a escala.",
     doneTitle: (item, times) => `Você já levantou ${formatWorkoutNumber(times, 0)} ${times === 1 ? item.one : item.name}`,
     challengeLabel: (item) => item.one.charAt(0).toUpperCase() + item.one.slice(1),
@@ -200,7 +200,7 @@ function renderLiftPage(stats) {
   return `
     ${eqSummary(`${formatWorkoutNumber(kg, 0)} kg`, `em ${formatWorkoutNumber(stats.liftReps, 0)} repetições`, tagline)}
     ${sections}
-    <p class="eq-footer">Conta de guardanapo com pesos aproximados. Levantar o Titanic é por série, pelo menos em espírito.</p>`;
+    <p class="eq-footer">Conta de guardanapo com pesos aproximados. Sem academia também conta: cada flexão levanta ~64% do seu peso, cada agachamento ~70% e cada abdominal ~30% (pelo peso da sua última pesagem até o dia do treino). Levantar o Titanic é por série, pelo menos em espírito.</p>`;
 }
 
 function renderSaitamaPage(stats) {

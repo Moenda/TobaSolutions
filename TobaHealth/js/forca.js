@@ -10,6 +10,10 @@
  *   O grupo muscular fica gravado em cada exercício feito: é o que vai alimentar
  *   o mapa de calor do corpo no Hall do Herói.
  *
+ * bodyweight (opcional no catálogo): parte do peso do corpo que o exercício
+ * levanta. Cada repetição soma (carga + peso do corpo × bodyweight) no
+ * "Peso levantado"; o peso do corpo vem de getBodyWeightOn() (treinos.js).
+ *
  * Carregado ANTES de treinos.js; só usa funções de treinos.js dentro de
  * funções (nunca na carga do arquivo).
  * ===================================================================== */
@@ -38,11 +42,11 @@ const STRENGTH_EXERCISES = [
   { id: "crucifixo-halter", name: "Crucifixo (halteres)", group: "peito" },
   { id: "crossover", name: "Crossover (polia)", group: "peito" },
   { id: "peck-deck", name: "Peck deck (voador)", group: "peito" },
-  { id: "flexao", name: "Flexão de braço", group: "peito" },
+  { id: "flexao", name: "Flexão de braço", group: "peito", bodyweight: 0.64 },
   // Costas
   { id: "puxada-frente", name: "Puxada frontal (pulley)", group: "costas" },
   { id: "puxada-triangulo", name: "Puxada com triângulo", group: "costas" },
-  { id: "barra-fixa", name: "Barra fixa", group: "costas" },
+  { id: "barra-fixa", name: "Barra fixa", group: "costas", bodyweight: 0.95 },
   { id: "remada-curvada", name: "Remada curvada (barra)", group: "costas" },
   { id: "remada-baixa", name: "Remada baixa (polia)", group: "costas" },
   { id: "remada-unilateral", name: "Remada unilateral (halter)", group: "costas" },
@@ -71,10 +75,11 @@ const STRENGTH_EXERCISES = [
   { id: "triceps-testa", name: "Tríceps testa", group: "triceps" },
   { id: "triceps-frances", name: "Tríceps francês", group: "triceps" },
   { id: "triceps-coice", name: "Tríceps coice", group: "triceps" },
-  { id: "mergulho", name: "Mergulho (paralelas)", group: "triceps" },
+  { id: "mergulho", name: "Mergulho (paralelas)", group: "triceps", bodyweight: 0.9 },
   { id: "supino-fechado", name: "Supino fechado", group: "triceps" },
   // Quadríceps
   { id: "agachamento-livre", name: "Agachamento livre", group: "quadriceps" },
+  { id: "agachamento-corpo", name: "Agachamento (peso do corpo)", group: "quadriceps", bodyweight: 0.7 },
   { id: "agachamento-smith", name: "Agachamento no Smith", group: "quadriceps" },
   { id: "agachamento-hack", name: "Agachamento hack", group: "quadriceps" },
   { id: "agachamento-bulgaro", name: "Agachamento búlgaro", group: "quadriceps" },
@@ -95,8 +100,8 @@ const STRENGTH_EXERCISES = [
   { id: "panturrilha-sentado", name: "Panturrilha sentado", group: "panturrilha" },
   { id: "panturrilha-leg", name: "Panturrilha no leg press", group: "panturrilha" },
   // Abdômen
-  { id: "abdominal-crunch", name: "Abdominal (crunch)", group: "abdomen" },
-  { id: "abdominal-infra", name: "Abdominal infra (elevação de pernas)", group: "abdomen" },
+  { id: "abdominal-crunch", name: "Abdominal (crunch)", group: "abdomen", bodyweight: 0.3 },
+  { id: "abdominal-infra", name: "Abdominal infra (elevação de pernas)", group: "abdomen", bodyweight: 0.3 },
   { id: "abdominal-polia", name: "Abdominal na polia", group: "abdomen" },
   { id: "abdominal-maquina", name: "Abdominal na máquina", group: "abdomen" },
 ];
@@ -117,10 +122,14 @@ function getStrengthGroupName(groupId) {
 // séries com carga informada.
 function getStrengthLift(workout) {
   const totals = { kg: 0, reps: 0, sets: 0 };
+  let bodyKg = null;
   (workout.exercises || []).forEach((exercise) => {
+    const fraction = getStrengthExercise(exercise.exerciseId)?.bodyweight || 0;
+    if (fraction && bodyKg === null) bodyKg = getBodyWeightOn(workout.date);
+    const bodyPart = fraction ? bodyKg * fraction : 0;
     (exercise.sets || []).forEach((set) => {
       const reps = Number(set.reps) || 0;
-      const kg = Number(set.kg) || 0;
+      const kg = (Number(set.kg) || 0) + bodyPart;
       if (reps > 0) totals.sets += 1;
       if (reps > 0 && kg > 0) {
         totals.kg += reps * kg;

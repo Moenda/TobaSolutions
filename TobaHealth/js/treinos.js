@@ -103,7 +103,7 @@ function renderWorkoutRecord(workout) {
   if (workout.reps) chips.push(`${formatWorkoutNumber(workout.reps, 0)} repetições`);
   if (workout.weightKg) chips.push(`🏋️ ${formatWorkoutNumber(workout.weightKg, 1)} kg`);
   const lift = getWorkoutLift(workout);
-  if (lift.kg > 0 && (workout.sets || workout.reps)) {
+  if (lift.kg > 0 && (workout.sets || workout.reps || workout.pushups || workout.situps || workout.squats)) {
     chips.push(`💪 ${formatWorkoutNumber(lift.kg, 0)} kg levantados`);
   }
   const weekday = new Date(`${workout.date}T12:00:00`).toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
@@ -162,19 +162,77 @@ function getWorkoutLifetimeStats(workouts = healthDb.workouts) {
 }
 
 /* ---------------------------------------------------------------------
- * PESO LEVANTADO (musculação): carga × séries × repetições
- * Séries/repetições ausentes contam como 1; sem carga não entra na conta.
+ * PESO LEVANTADO
+ * - Musculação: carga × séries × repetições (séries/repetições ausentes
+ *   contam como 1; sem carga não entra na conta).
+ * - Peso do corpo (flexão, agachamento, abdominal do Saitama e exercícios
+ *   do catálogo com "bodyweight"): cada repetição conta a parte do corpo que
+ *   o exercício levanta × o peso da pesagem mais recente até a data do
+ *   treino (sem pesagem: BODYWEIGHT_DEFAULT_KG). Só cálculo: nada disso é
+ *   gravado, então vale também para os treinos antigos.
  * ------------------------------------------------------------------- */
+const BODYWEIGHT_DEFAULT_KG = 75;
+// Campos soltos do treino Saitama -> exercício do catálogo (grupo muscular
+// para o futuro mapa de calor) e parte do corpo levantada.
+const BODYWEIGHT_FIELDS = {
+  pushups: { exerciseId: "flexao", group: "peito", fraction: 0.64 }, // ~64% do corpo
+  squats: { exerciseId: "agachamento-corpo", group: "quadriceps", fraction: 0.7 }, // ~70%
+  situps: { exerciseId: "abdominal-crunch", group: "abdomen", fraction: 0.3 }, // ~30% (tronco)
+};
+
+function getBodyWeightOn(dateStr) {
+  const weighIns = (healthDb.weighIns || [])
+    .filter((w) => Number(w.weight) > 0)
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  if (!weighIns.length) return BODYWEIGHT_DEFAULT_KG;
+  const day = String(dateStr || "");
+  const before = weighIns.filter((w) => String(w.date).slice(0, 10) <= day);
+  // Treino antes da 1ª pesagem usa a 1ª pesagem
+  return Number((before.length ? before[before.length - 1] : weighIns[0]).weight);
+}
+
+function getBodyweightLift(workout) {
+  return getWorkoutMuscleWork(workout, { bodyweightOnly: true }).reduce(
+    (totals, item) => ({ kg: totals.kg + item.kg, reps: totals.reps + item.reps }),
+    { kg: 0, reps: 0 },
+  );
+}
+
+/* Trabalho por grupo muscular de um treino: base do futuro mapa de calor.
+ * Devolve [{ group, exerciseId, reps, kg }] juntando os exercícios do treino
+ * de força (grupo gravado no próprio treino) e os campos de peso do corpo
+ * (flexão/agachamento/abdominal), que ganham grupo por BODYWEIGHT_FIELDS. */
+function getWorkoutMuscleWork(workout, { bodyweightOnly = false } = {}) {
+  const items = [];
+  const counts = Object.keys(BODYWEIGHT_FIELDS)
+    .map((field) => [field, Number(workout[field]) || 0])
+    .filter(([, count]) => count > 0);
+  if (counts.length) {
+    const bodyKg = getBodyWeightOn(workout.date);
+    counts.forEach(([field, count]) => {
+      const info = BODYWEIGHT_FIELDS[field];
+      items.push({ group: info.group, exerciseId: info.exerciseId, reps: count, kg: count * bodyKg * info.fraction });
+    });
+  }
+  if (bodyweightOnly || !Array.isArray(workout.exercises)) return items;
+  workout.exercises.forEach((exercise) => {
+    const single = getStrengthLift({ date: workout.date, exercises: [exercise] });
+    items.push({ group: exercise.group || "", exerciseId: exercise.exerciseId, reps: single.reps, kg: single.kg });
+  });
+  return items;
+}
+
 function getWorkoutLift(workout) {
+  const body = getBodyweightLift(workout);
   if (Array.isArray(workout.exercises)) {
     const strength = getStrengthLift(workout);
-    return { kg: strength.kg, reps: strength.reps };
+    return { kg: strength.kg + body.kg, reps: strength.reps + body.reps };
   }
   const weight = Number(workout.weightKg) || 0;
-  if (weight <= 0) return { kg: 0, reps: 0 };
+  if (weight <= 0) return body;
   const sets = Math.max(Number(workout.sets) || 1, 1);
   const reps = Math.max(Number(workout.reps) || 1, 1);
-  return { kg: weight * sets * reps, reps: sets * reps };
+  return { kg: weight * sets * reps + body.kg, reps: sets * reps + body.reps };
 }
 
 function sumWorkoutLift(workouts) {
@@ -385,7 +443,7 @@ function openWorkoutChart(metric) {
     },
     lifted: {
       title: "🏋️ Peso levantado por dia",
-      description: "Carga × séries × repetições somadas em cada dia.",
+      description: "Carga × séries × repetições, mais flexão, agachamento e abdominal pelo seu peso.",
       unit: "kg",
       value: (workouts) =>
         workouts.reduce((total, workout) => total + getWorkoutLift(workout).kg, 0),
