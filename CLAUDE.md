@@ -232,7 +232,7 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 - `getFixedExpensesForMonth()` (gastos.js) **grava** `db.months[mKey].fixedExpensesSnapshot` como efeito colateral de leitura: o mês atual sempre recebe cópia de `config.fixedExpenses`; meses passados congelam a primeira cópia criada. Alterar gasto fixo hoje **não** deve mudar meses passados.
 - Parcelas: valor da parcela = `totalAmount / totalInstallments`; ativas enquanto `0 <= diferençaDeMeses < totalInstallments`, contando a partir do mês de `startDate`.
 - Raxador: membros são identificados **pelo nome**. `payer` e as chaves de `shares` são nomes. Editar a lista de membros (`saveSplitterMembers`) não renomeia nas despesas — renomear alguém deixa despesas órfãs. Se implementar renomear, atualize `payer` e `shares` juntos.
-- Investimentos: o saldo atual é o `balanceLogs` mais recente por data; sem log, é a soma dos `deposits`. Logs `isSystem` são filtrados em algumas listas de histórico — não os apague.
+- Investimentos (longo prazo): toda conta passa por `getFundStats()` em `investimento.js`. Saldo atual = último `balanceLogs` **não** `isSystem` + `deposits` − `withdrawals` com data posterior a ele; sem log, é `deposits` − `withdrawals`. Investido = `deposits` − `withdrawals`. Logs `isSystem` (criação, resgates antigos, encerramento) são ignorados nos cálculos — não os apague. Retiradas não geram mais log `isSystem` (desde v1.18). Cofrinhos têm conta própria (`withdrawals` = rendimento sacado).
 - `localStorage` tem limite (~5 MB por origem). Sempre envolver `setItem` em `try/catch` (padrão já usado). Não guardar imagens/base64 no banco.
 - iPhone: app instalado na Tela de Início tem `localStorage` **separado** do Safari.
 

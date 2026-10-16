@@ -37,44 +37,94 @@ function toggleAlignMode() {
   renderPatrimonyChart(currentChartPeriod);
 }
 
-function calculateCompoundProjection(deposits, balanceLogs) {
-  if (!deposits || deposits.length === 0)
-    return { profitAmount: 0, projectedPct: 0 };
+const DAY_MS = 1000 * 60 * 60 * 24;
 
-  // A estimativa anualiza a variação entre o primeiro aporte e o saldo
-  // mais recente registrado; é uma projeção, não uma garantia de retorno.
-  const totalDeposited = deposits.reduce((acc, d) => acc + d.amount, 0);
-  let latestBalance = totalDeposited;
-  let latestDate = new Date();
+const sumAmounts = (list) => (list || []).reduce((acc, x) => acc + x.amount, 0);
 
-  if (balanceLogs && balanceLogs.length > 0) {
-    const sortedLogs = [...balanceLogs].sort(
-      (a, b) => new Date(b.date) - new Date(a.date),
-    );
-    latestBalance = sortedLogs[0].amount;
-    latestDate = new Date(sortedLogs[0].date);
+/* Números de um investimento de longo prazo (não cofrinho), levando em
+ * conta aportes E retiradas.
+ * - balance: último saldo informado pelo usuário + aportes − retiradas
+ *   lançados depois dele (os logs automáticos "isSystem" de versões antigas
+ *   são ignorados, pois eram calculados sem os aportes posteriores).
+ * - dailyRate: taxa diária que faz os aportes/retiradas, com juros, chegarem
+ *   ao último saldo informado (TIR). Não distorce quando entra ou sai
+ *   dinheiro no meio do caminho.
+ * - profit/profitPct: lucro sobre o valor investido (aportes − retiradas).
+ * - projection: ganho estimado nos próximos 12 meses sobre o saldo atual. */
+function getFundStats(fund) {
+  const deposits = fund.deposits || [];
+  const withdrawals = fund.withdrawals || [];
+  const totalDeposited = sumAmounts(deposits);
+  const totalWithdrawn = sumAmounts(withdrawals);
+  const netInvested = totalDeposited - totalWithdrawn;
+
+  const userLogs = (fund.balanceLogs || [])
+    .filter((b) => !b.isSystem)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const lastLog = userLogs[userLogs.length - 1];
+
+  let balance = Math.max(netInvested, 0);
+  let dailyRate = 0;
+
+  if (lastLog) {
+    const T = lastLog.date;
+    balance =
+      lastLog.amount +
+      sumAmounts(deposits.filter((d) => d.date > T)) -
+      sumAmounts(withdrawals.filter((w) => w.date > T));
+
+    const flows = [
+      ...deposits.filter((d) => d.date <= T).map((d) => [d.date, d.amount]),
+      ...withdrawals
+        .filter((w) => w.date <= T)
+        .map((w) => [w.date, -w.amount]),
+    ];
+    if (flows.length > 0) {
+      const endMs = new Date(T).getTime();
+      const flowDays = flows.map(([date, amount]) => [
+        Math.max((endMs - new Date(date).getTime()) / DAY_MS, 0),
+        amount,
+      ]);
+      // Valor que os lançamentos teriam hoje rendendo "rate" ao dia.
+      const futureValue = (rate) =>
+        flowDays.reduce(
+          (acc, [days, amount]) => acc + amount * Math.pow(1 + rate, days),
+          0,
+        );
+
+      if (Math.max(...flowDays.map(([days]) => days)) >= 1) {
+        let lo = -0.01;
+        let hi = 0.01;
+        const fLo = futureValue(lo) - lastLog.amount;
+        const fHi = futureValue(hi) - lastLog.amount;
+        if (fLo * fHi < 0) {
+          for (let i = 0; i < 100; i++) {
+            const mid = (lo + hi) / 2;
+            if ((futureValue(mid) - lastLog.amount) * fLo > 0) lo = mid;
+            else hi = mid;
+          }
+          dailyRate = (lo + hi) / 2;
+        }
+      }
+    }
   }
 
-  const sortedDeposits = [...deposits].sort(
-    (a, b) => new Date(a.date) - new Date(b.date),
-  );
-  const firstDate = new Date(sortedDeposits[0].date);
-  const diffTime = latestDate - firstDate;
-  const daysInvested = Math.max(
-    Math.ceil(diffTime / (1000 * 60 * 60 * 24)),
-    1,
-  );
+  const profit = balance - netInvested;
+  const profitPct = netInvested > 0 ? (profit / netInvested) * 100 : 0;
+  const projectedProfit =
+    balance > 0 ? balance * (Math.pow(1 + dailyRate, 365) - 1) : 0;
+  const projectedPct = (Math.pow(1 + dailyRate, 365) - 1) * 100;
 
-  if (totalDeposited <= 0 || latestBalance <= 0)
-    return { profitAmount: 0, projectedPct: 0 };
-
-  const dailyRate =
-    Math.pow(latestBalance / totalDeposited, 1 / daysInvested) - 1;
-  const projectedBalance = latestBalance * Math.pow(1 + dailyRate, 365);
-  const profitAmount = projectedBalance - totalDeposited;
-  const projectedPct = (profitAmount / totalDeposited) * 100;
-
-  return { profitAmount, projectedPct, dailyRate };
+  return {
+    totalDeposited,
+    totalWithdrawn,
+    netInvested,
+    balance,
+    profit,
+    profitPct,
+    dailyRate,
+    projection: { profitAmount: projectedProfit, projectedPct },
+  };
 }
 
 function switchChartTab(tab) {
@@ -271,19 +321,6 @@ function renderInvestmentsScreen() {
         (acc, d) => acc + d.amount,
         0,
       );
-      let latestBalance = totalDeposited;
-
-      if (
-        !fund.isCofrinho &&
-        fund.balanceLogs &&
-        fund.balanceLogs.length > 0
-      ) {
-        const sortedLogs = [...fund.balanceLogs].sort(
-          (a, b) => new Date(b.date) - new Date(a.date),
-        );
-        latestBalance = sortedLogs[0].amount;
-      }
-
       if (fund.isCofrinho) {
         const totalWithdrawn = (fund.withdrawals || []).reduce(
           (acc, w) => acc + w.amount,
@@ -321,19 +358,14 @@ function renderInvestmentsScreen() {
           totalDeposited;
         cofrinhosProjectedProfitSum += projectedCofProfit;
 
-        latestBalance = totalDeposited + totalWithdrawn;
+        globalTotalBalance += totalDeposited;
+        globalTotalDeposited += totalDeposited;
       } else {
-        const proj = calculateCompoundProjection(
-          fund.deposits,
-          fund.balanceLogs,
-        );
-        globalProjectedProfitSum += proj.profitAmount;
+        const stats = getFundStats(fund);
+        globalProjectedProfitSum += stats.projection.profitAmount;
+        globalTotalBalance += stats.balance;
+        globalTotalDeposited += stats.netInvested;
       }
-
-      globalTotalBalance += fund.isCofrinho
-        ? totalDeposited
-        : latestBalance;
-      globalTotalDeposited += totalDeposited;
 
       const card = document.createElement("div");
       card.className = "invest-card";
@@ -498,8 +530,8 @@ function renderInvestmentsScreen() {
       ? (globalRealProfit / globalTotalDeposited) * 100
       : 0;
   const globalProjPct =
-    globalTotalDeposited > 0
-      ? (globalProjectedProfitSum / globalTotalDeposited) * 100
+    globalTotalBalance > 0
+      ? (globalProjectedProfitSum / globalTotalBalance) * 100
       : 0;
 
   document.getElementById("invTotalBalance").innerText =
@@ -593,27 +625,11 @@ function createCardHtml(fund) {
             `;
   }
 
-  const totalDeposited = (fund.deposits || []).reduce(
-    (acc, d) => acc + d.amount,
-    0,
-  );
-  let latestBalance = totalDeposited;
-  if (fund.balanceLogs && fund.balanceLogs.length > 0) {
-    const sortedLogs = [...fund.balanceLogs].sort(
-      (a, b) => new Date(b.date) - new Date(a.date),
-    );
-    latestBalance = sortedLogs[0].amount;
-  }
-
-  const realProfit = latestBalance - totalDeposited;
-  const profitPercentage =
-    totalDeposited > 0 ? (realProfit / totalDeposited) * 100 : 0;
-  const proj = calculateCompoundProjection(
-    fund.deposits,
-    fund.balanceLogs,
-  );
-  const profitClass = realProfit >= 0 ? "text-green" : "text-red";
-  const profitSign = realProfit >= 0 ? "+" : "";
+  const stats = getFundStats(fund);
+  const latestBalance = stats.balance;
+  const proj = stats.projection;
+  const profitClass = stats.profit >= 0 ? "text-green" : "text-red";
+  const profitSign = stats.profit >= 0 ? "+" : "";
   const projClass = proj.profitAmount >= 0 ? "text-green" : "text-red";
   const projSign = proj.profitAmount >= 0 ? "+" : "";
 
@@ -630,12 +646,13 @@ function createCardHtml(fund) {
                         <span class="invest-metric-val text-neutral">${formatCurrency(latestBalance)}</span>
                     </div>
                     <div class="invest-metric-box">
-                        <span class="invest-metric-label">Aportado</span>
-                        <span class="invest-metric-val text-neutral" style="font-size:0.78rem; opacity:0.8;">${formatCurrency(totalDeposited)}</span>
+                        <span class="invest-metric-label">Investido</span>
+                        <span class="invest-metric-val text-neutral" style="font-size:0.78rem; opacity:0.8;">${formatCurrency(stats.netInvested)}</span>
                     </div>
                     <div class="invest-metric-box">
                         <span class="invest-metric-label">Rendimento</span>
-                        <span class="invest-metric-val ${profitClass}">${profitSign}${profitPercentage.toFixed(2)}%</span>
+                        <span class="invest-metric-val ${profitClass}">${profitSign}${formatCurrency(stats.profit)}</span>
+                        <span class="${profitClass}" style="font-size:0.7rem;">${profitSign}${stats.profitPct.toFixed(2)}%</span>
                     </div>
                 </div>
                 <div style="margin-top: 8px; font-size: 0.75rem; background: rgba(88, 166, 255, 0.08); padding: 5px 8px; border-radius: 6px;">
@@ -920,32 +937,9 @@ function submitPopupWithdraw() {
   const date = document.getElementById("popupWithdrawDate").value;
   const amount = getMoney("popupWithdrawAmount");
   if (amount > 0) {
-    if (fund.isCofrinho) {
-      if (!fund.withdrawals) fund.withdrawals = [];
-      fund.withdrawals.push({ id: Date.now().toString(), date, amount });
-    } else {
-      if (!fund.withdrawals) fund.withdrawals = [];
-      fund.withdrawals.push({ id: Date.now().toString(), date, amount });
-
-      let latestBalance = (fund.deposits || []).reduce(
-        (acc, d) => acc + d.amount,
-        0,
-      );
-      if (fund.balanceLogs && fund.balanceLogs.length > 0) {
-        const sorted = [...fund.balanceLogs].sort(
-          (a, b) => new Date(b.date) - new Date(a.date),
-        );
-        latestBalance = sorted[0].amount;
-      }
-      const newBal = Math.max(latestBalance - amount, 0);
-      if (!fund.balanceLogs) fund.balanceLogs = [];
-      fund.balanceLogs.push({
-        id: Date.now().toString(),
-        date,
-        amount: newBal,
-        isSystem: true,
-      });
-    }
+    // Nos investimentos, o saldo depois da retirada é derivado em getFundStats.
+    if (!fund.withdrawals) fund.withdrawals = [];
+    fund.withdrawals.push({ id: Date.now().toString(), date, amount });
     saveDatabase();
     document
       .getElementById("investActionPopup")
@@ -1062,14 +1056,20 @@ function openInvestmentsHistoryModal() {
         )[0];
         points.push({
           date: firstDep.date,
-          amount: firstDep.amount,
+          amount:
+            sumAmounts(fund.deposits.filter((d) => d.date === firstDep.date)) -
+            sumAmounts(
+              (fund.withdrawals || []).filter((w) => w.date === firstDep.date),
+            ),
           type: "init",
         });
       }
       if (fund.balanceLogs && fund.balanceLogs.length > 0) {
-        fund.balanceLogs.forEach((b) => {
-          points.push({ date: b.date, amount: b.amount, type: "bal" });
-        });
+        fund.balanceLogs
+          .filter((b) => !b.isSystem)
+          .forEach((b) => {
+            points.push({ date: b.date, amount: b.amount, type: "bal" });
+          });
       }
 
       points.sort((a, b) => {
@@ -1118,9 +1118,11 @@ function openInvestmentsHistoryModal() {
             const expectedBalance =
               lastBalance + depsInBetween - withsInBetween;
             const yieldAmount = pt.amount - expectedBalance;
-            const totalDepAtEnd = (fund.deposits || [])
-              .filter((d) => d.date <= pt.date)
-              .reduce((a, b) => a + b.amount, 0);
+            const totalDepAtEnd =
+              sumAmounts((fund.deposits || []).filter((d) => d.date <= pt.date)) -
+              sumAmounts(
+                (fund.withdrawals || []).filter((w) => w.date <= pt.date),
+              );
 
             let tempDate = parseIso(lastDateIso);
             while (tempDate < endD) {
@@ -1352,19 +1354,9 @@ function openFinishFundModal(fundId) {
   );
   if (!fund) return;
 
-  const totalDeposited = (fund.deposits || []).reduce(
-    (acc, d) => acc + d.amount,
-    0,
-  );
-  let latestBalance = totalDeposited;
-  if (fund.balanceLogs && fund.balanceLogs.length > 0) {
-    const sortedLogs = [...fund.balanceLogs].sort(
-      (a, b) => new Date(b.date) - new Date(a.date),
-    );
-    latestBalance = sortedLogs[0].amount;
-  }
-
-  const realProfit = Math.max(latestBalance - totalDeposited, 0);
+  const stats = getFundStats(fund);
+  const latestBalance = stats.balance;
+  const realProfit = Math.max(stats.profit, 0);
   const estimatedIr = realProfit * 0.15;
 
   document.getElementById("finishFundIdInput").value = fund.id;
@@ -1430,31 +1422,12 @@ function confirmFinishFund() {
     if (withdrawAmount <= 0)
       return alert("Informe um valor de resgate válido!");
 
-    let latestBalance = (fund.deposits || []).reduce(
-      (acc, d) => acc + d.amount,
-      0,
-    );
-    if (fund.balanceLogs && fund.balanceLogs.length > 0) {
-      const sortedLogs = [...fund.balanceLogs].sort(
-        (a, b) => new Date(b.date) - new Date(a.date),
-      );
-      latestBalance = sortedLogs[0].amount;
-    }
-
-    const newBalance = latestBalance - withdrawAmount;
+    // O saldo depois da retirada é derivado em getFundStats.
     if (!fund.withdrawals) fund.withdrawals = [];
     fund.withdrawals.push({
       id: Date.now().toString(),
       date: rescueDate,
       amount: withdrawAmount,
-    });
-
-    if (!fund.balanceLogs) fund.balanceLogs = [];
-    fund.balanceLogs.push({
-      id: Date.now().toString(),
-      date: rescueDate,
-      amount: Math.max(newBalance, 0),
-      isSystem: true,
     });
 
     saveDatabase();
@@ -1584,44 +1557,30 @@ function renderPatrimonyChart(period) {
 
     if (chartVisibleAssets.has(fund.id) || isDisabledInMode) return;
 
-    const totalDep = (fund.deposits || []).reduce(
-      (a, b) => a + b.amount,
-      0,
-    );
+    let totalDep = sumAmounts(fund.deposits);
     let latestBal = totalDep;
-    let latestDate = new Date();
-
-    if (isCofrinho) {
-      const totalWithdrawn = (fund.withdrawals || []).reduce(
-        (a, b) => a + b.amount,
-        0,
-      );
-      latestBal = totalDep + totalWithdrawn;
-    } else {
-      if (fund.balanceLogs && fund.balanceLogs.length > 0) {
-        const sorted = [...fund.balanceLogs].sort(
-          (a, b) => new Date(b.date) - new Date(a.date),
-        );
-        latestBal = sorted[0].amount;
-        latestDate = new Date(sorted[0].date);
-      }
-    }
-
     let dailyRate = 0;
     let firstDate = new Date();
     const sortedDeposits = [...(fund.deposits || [])].sort(
       (a, b) => new Date(a.date) - new Date(b.date),
     );
-    if (sortedDeposits.length > 0) {
+    if (sortedDeposits.length > 0)
       firstDate = new Date(sortedDeposits[0].date);
-      const diffTime = latestDate - firstDate;
+
+    if (isCofrinho) {
+      latestBal = totalDep + sumAmounts(fund.withdrawals);
       const daysInvested = Math.max(
-        Math.ceil(diffTime / (1000 * 60 * 60 * 24)),
+        Math.ceil((new Date() - firstDate) / DAY_MS),
         1,
       );
       if (totalDep > 0 && latestBal > 0) {
         dailyRate = Math.pow(latestBal / totalDep, 1 / daysInvested) - 1;
       }
+    } else {
+      const stats = getFundStats(fund);
+      totalDep = stats.netInvested;
+      latestBal = stats.balance;
+      dailyRate = stats.dailyRate;
     }
 
     const startYearMonth =
@@ -1743,42 +1702,30 @@ function renderProjectionChart(period) {
   let weightedDailyRateSum = 0;
 
   activeFunds.forEach((fund) => {
-    const totalDeposited = (fund.deposits || []).reduce(
-      (acc, d) => acc + d.amount,
-      0,
-    );
-    let latestBal = totalDeposited;
-    let latestDate = new Date();
+    let latestBal;
+    let dailyRate = 0;
 
     if (fund.isCofrinho) {
-      const totalWithdrawn = (fund.withdrawals || []).reduce(
-        (a, b) => a + b.amount,
-        0,
+      const totalDeposited = sumAmounts(fund.deposits);
+      latestBal = totalDeposited + sumAmounts(fund.withdrawals);
+      const sortedDeposits = [...(fund.deposits || [])].sort(
+        (a, b) => new Date(a.date) - new Date(b.date),
       );
-      latestBal = totalDeposited + totalWithdrawn;
-    } else if (fund.balanceLogs && fund.balanceLogs.length > 0) {
-      const sorted = [...fund.balanceLogs].sort(
-        (a, b) => new Date(b.date) - new Date(a.date),
-      );
-      latestBal = sorted[0].amount;
-      latestDate = new Date(sorted[0].date);
-    }
-
-    let dailyRate = 0;
-    const sortedDeposits = [...(fund.deposits || [])].sort(
-      (a, b) => new Date(a.date) - new Date(b.date),
-    );
-    if (sortedDeposits.length > 0) {
-      const firstDate = new Date(sortedDeposits[0].date);
-      const diffTime = latestDate - firstDate;
-      const daysInvested = Math.max(
-        Math.ceil(diffTime / (1000 * 60 * 60 * 24)),
-        1,
-      );
-      if (totalDeposited > 0 && latestBal > 0) {
-        dailyRate =
-          Math.pow(latestBal / totalDeposited, 1 / daysInvested) - 1;
+      if (sortedDeposits.length > 0) {
+        const firstDate = new Date(sortedDeposits[0].date);
+        const daysInvested = Math.max(
+          Math.ceil((new Date() - firstDate) / DAY_MS),
+          1,
+        );
+        if (totalDeposited > 0 && latestBal > 0) {
+          dailyRate =
+            Math.pow(latestBal / totalDeposited, 1 / daysInvested) - 1;
+        }
       }
+    } else {
+      const stats = getFundStats(fund);
+      latestBal = stats.balance;
+      dailyRate = stats.dailyRate;
     }
 
     totalCurrentBal += latestBal;
