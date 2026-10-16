@@ -1070,6 +1070,27 @@ button.toba-stat:hover,
   font-size: 0.9rem;
 }
 
+.toba-menu-btn.is-danger {
+  border-color: rgba(248, 81, 73, 0.35);
+}
+
+.toba-menu-btn.is-danger:hover {
+  border-color: var(--red);
+  background: rgba(248, 81, 73, 0.08);
+}
+
+.toba-menu-btn.is-danger .toba-menu-title {
+  color: var(--red);
+}
+
+#tobaDataHint {
+  margin-bottom: 0.8rem;
+}
+
+#tobaDangerSection {
+  margin-top: 1.2rem;
+}
+
 .toba-menu-desc {
   font-size: 0.74rem;
   color: var(--muted);

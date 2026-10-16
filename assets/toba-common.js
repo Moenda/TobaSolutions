@@ -490,18 +490,54 @@ const TOBA_SETTINGS_HTML = `
       <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
     </div>
     <div id="tobaSettingsSlot"></div>
-    <div class="toba-settings-section" id="tobaDataSection">
-      <div class="toba-settings-label">💾 Dados &amp; Backup</div>
-      <div class="btn-row">
-        <button type="button" class="btn btn-secondary" data-click="tobaExportBackup">📥 Baixar backup</button>
-        <button type="button" class="btn btn-secondary" data-click="tobaPickBackup">📤 Restaurar</button>
-      </div>
-      <input type="file" id="tobaImportInput" accept=".json,application/json" hidden data-change="tobaImportBackup" />
-      <p class="text-muted" style="font-size: 0.74rem; margin-top: 0.5rem; line-height: 1.4" id="tobaDataHint"></p>
-    </div>
     <div class="toba-settings-section">
+      <div class="toba-settings-label">💾 Dados</div>
+      <button type="button" class="toba-menu-btn" data-open="tobaDataModal">
+        <span class="toba-menu-icon">💾</span>
+        <span class="toba-menu-text">
+          <span class="toba-menu-title">Dados &amp; Backup</span>
+          <span class="toba-menu-desc" id="tobaDataMenuDesc">Baixar, restaurar ou apagar os dados</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="toba-modal" id="tobaDataModal" role="dialog" aria-modal="true" aria-labelledby="tobaDataModalTitle">
+  <div class="toba-sheet">
+    <div class="toba-sheet-header">
+      <h3 id="tobaDataModalTitle">💾 Dados &amp; Backup</h3>
+      <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+    </div>
+    <p class="toba-sheet-text" id="tobaDataHint"></p>
+    <div class="toba-menu">
+      <button type="button" class="toba-menu-btn" data-click="tobaExportBackup">
+        <span class="toba-menu-icon">📥</span>
+        <span class="toba-menu-text">
+          <span class="toba-menu-title">Baixar backup</span>
+          <span class="toba-menu-desc">Salva um arquivo .json no aparelho</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </button>
+      <button type="button" class="toba-menu-btn" data-click="tobaPickBackup">
+        <span class="toba-menu-icon">📤</span>
+        <span class="toba-menu-text">
+          <span class="toba-menu-title">Restaurar backup</span>
+          <span class="toba-menu-desc">Escolhe um .json e troca os dados atuais</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </button>
+    </div>
+    <input type="file" id="tobaImportInput" accept=".json,application/json" hidden data-change="tobaImportBackup" />
+    <div class="toba-settings-section" id="tobaDangerSection">
       <div class="toba-settings-label is-danger">☢️ Zona de perigo</div>
-      <button type="button" class="btn btn-danger" data-click="tobaResetData" id="tobaResetBtn">🗑️ Apagar tudo</button>
+      <button type="button" class="toba-menu-btn is-danger" data-click="tobaResetData" id="tobaResetBtn">
+        <span class="toba-menu-icon">🗑️</span>
+        <span class="toba-menu-text">
+          <span class="toba-menu-title" id="tobaResetTitle">Apagar tudo</span>
+          <span class="toba-menu-desc">Não dá para desfazer. Baixe um backup antes!</span>
+        </span>
+      </button>
     </div>
   </div>
 </div>`;
@@ -521,9 +557,12 @@ function ensureTobaSettings() {
   }
   document.getElementById("tobaDataHint").textContent = TOBA_APP.dataHint ||
     `O backup é um arquivo .json só com os dados do ${TOBA_APP.name}. Guarde no Drive de vez em quando, vai que...`;
-  document.getElementById("tobaResetBtn").textContent = `🗑️ Apagar tudo do ${TOBA_APP.name}`;
+  document.getElementById("tobaResetTitle").textContent = `Apagar tudo do ${TOBA_APP.name}`;
   // Sem resetData (ex.: portal), a zona de perigo nem aparece.
-  if (!TOBA_APP.resetData) document.getElementById("tobaResetBtn").closest(".toba-settings-section").hidden = true;
+  if (!TOBA_APP.resetData) {
+    document.getElementById("tobaDangerSection").hidden = true;
+    document.getElementById("tobaDataMenuDesc").textContent = "Baixar ou restaurar o backup";
+  }
 }
 
 function openDataModal() {
@@ -532,6 +571,7 @@ function openDataModal() {
 }
 
 function closeDataModal() {
+  closeTobaModal("tobaDataModal");
   closeTobaModal("settingsModal");
 }
 

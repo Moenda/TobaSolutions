@@ -159,7 +159,7 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 **Arquivos novos/alterados:** `assets/toba-common.js` (NOVO), `assets/toba-common.css` (NOVO), `assets/portal.js` (NOVO), `assets/portal.css` (NOVO), `_molde-app/` (NOVO: `README.md`, `TobaMolde-Index.html`, `TobaMolde-Modulo.html`, `js/molde-core.js`, `js/modulo.js`, `css/molde-base.css`), `index.html`, `sw.js`, `TobaBank/TobaBank-Index.html`, `TobaBank/TobaBank-Gastos.html`, `TobaBank/TobaBank-Investimento.html`, `TobaBank/TobaBank-Raxador.html`, `TobaBank/css/bank-base.css`, `TobaBank/css/gastos.css`, `TobaBank/css/investimento.css`, `TobaBank/css/raxador.css`, `TobaBank/js/bank-core.js`, `TobaBank/js/gastos.js`, `TobaBank/js/investimento.js`, `TobaBank/js/raxador.js`, `TobaHealth/TobaHealth-Index.html`, `TobaHealth/TobaHealth-Pesagem.html`, `TobaHealth/TobaHealth-Treinos.html`, `TobaHealth/css/health-base.css`, `TobaHealth/css/pesagem.css`, `TobaHealth/css/treinos.css`, `TobaHealth/js/health-core.js`, `TobaHealth/js/pesagem.js`, `TobaHealth/js/treinos.js`, `TobaHealth/js/forca.js`, `CLAUDE.md`, `PATCH-NOTES.md`.
 
 1. **Tudo com a mesma cara:** portal, Bank e Health agora têm o mesmo cabeçalho. O `‹` à esquerda sempre sobe um nível (tela → hub do app → Toba Solutions), o nome do app e da tela ficam no meio, e o "+" e a ⚙️ ficam sempre à direita. Botões, cards, quadradinhos de números e espaçamentos vêm de um estilo só.
-2. **⚙️ igual em todo lugar:** a engrenagem abre "Configurações" com os ajustes da tela (orçamento no Gastos, perfil e balança na Pesagem, card do Bank e ordem dos apps no portal), mais **Dados & Backup** e **Zona de perigo**.
+2. **⚙️ igual em todo lugar:** a engrenagem abre "Configurações" com os ajustes da tela (orçamento no Gastos, perfil e balança na Pesagem, card do Bank e ordem dos apps no portal) e, no fim, o item de menu **💾 Dados & Backup**. Ele abre uma folha própria com Baixar backup, Restaurar backup e a Zona de perigo (Apagar tudo), todos no mesmo estilo de menu.
 3. **Um jeito só de avisar:** acabaram os `alert`/`confirm`/`prompt` do navegador (eram 22 no Bank e 10 no portal). Todo aviso e confirmação usa a janelinha do Toba. Editar gasto fixo agora abre uma folha de edição de verdade (antes eram 3 `prompt` seguidos).
 4. **Botão principal acima do teclado:** em todas as folhas de cadastro (gasto, parcela, retirada, pesagem, treino, rolê...), o botão de salvar fica preso no rodapé. O "Confirmar Retirada" não some mais atrás do teclado.
 5. **"Salvo ✓" e telas vazias:** depois de gravar aparece um aviso rápido "Salvo ✓". Listas vazias mostram o que fazer ("Nenhum gasto ainda, toque em + Gasto").
@@ -180,7 +180,7 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 - Gastos: lançar um gasto (aparece "Salvo ✓"), editar um gasto fixo tocando nele, apagar algo (confirmação do Toba, não do navegador).
 - Pesagem: ⚙️ → Sua balança → desmarcar uma métrica; editar uma pesagem antiga e salvar: o valor escondido continua lá quando você remarcar.
 - Treinos: registrar uma caminhada e um treino de força; abrir Hall do Herói → um detalhe → voltar duas vezes pelo `‹`.
-- ⚙️ de cada app: baixar backup → Apagar tudo → Restaurar. No portal: backup geral baixar/restaurar.
+- ⚙️ de cada app → Dados & Backup: baixar backup → Apagar tudo → Restaurar. No portal: backup geral baixar/restaurar.
 - Abrir `_molde-app/TobaMolde-Modulo.html` para ver o molde funcionando.
 - Depois de publicar, feche e abra o app uma vez (o `sw.js` mudou para `toba-v4`).
 
