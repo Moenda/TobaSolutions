@@ -132,7 +132,11 @@ function saveDatabase() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
   } catch (err) {
+    // Sem esse aviso o app parecia ter salvo, e a mudança sumia ao recarregar.
     console.error("Erro ao gravar dados no localStorage:", err);
+    alert(
+      "⚠️ Não consegui salvar neste aparelho (memória do navegador cheia?). Baixe um backup em ⚙️ → Dados & Backup antes de continuar.",
+    );
   }
 
   onBankDataSaved();
@@ -160,10 +164,31 @@ function importBackup(event) {
   reader.onload = function (e) {
     try {
       const importedDb = JSON.parse(e.target.result);
-      if (importedDb && (importedDb.version || importedDb.transactions)) {
-        db = importedDb;
-        isDbLoaded = true;
-        saveDatabase();
+      if (
+        importedDb &&
+        typeof importedDb === "object" &&
+        !Array.isArray(importedDb) &&
+        (importedDb.version || Array.isArray(importedDb.transactions))
+      ) {
+        // Grava direto e recarrega: o loadDatabase() da próxima abertura
+        // completa os campos que faltarem. Redesenhar a tela aqui, com o
+        // backup ainda sem normalizar, podia travar antes do reload.
+        try {
+          const currentStored = localStorage.getItem(STORAGE_KEY);
+          // Banco ilegível não substitui o último auto-backup bom.
+          if (currentStored) {
+            JSON.parse(currentStored);
+            localStorage.setItem(BACKUP_KEY, currentStored);
+          }
+        } catch (backupErr) {
+          console.warn("Aviso ao atualizar auto-backup:", backupErr);
+        }
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(importedDb));
+        } catch (saveErr) {
+          alert("❌ Não consegui gravar o backup neste aparelho (memória cheia?).");
+          return;
+        }
         alert("✅ Backup restaurado com sucesso!");
         location.reload();
       } else {
@@ -174,6 +199,8 @@ function importBackup(event) {
     }
   };
   reader.readAsText(file);
+  // Permite escolher o mesmo arquivo de novo depois de um erro.
+  event.target.value = "";
 }
 
 function resetAllData() {
@@ -224,6 +251,25 @@ function formatCurrency(val) {
     style: "currency",
     currency: "BRL",
   });
+}
+
+// Todo texto digitado pelo usuário (descrição, nome, participante) passa por
+// aqui antes de entrar num innerHTML: "Pizza <b>" aparece como texto.
+function escapeBankHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[ch]);
+}
+
+// Categoria sem o grupo ("Moradia - Aluguel" -> "Aluguel"); tolera gasto
+// antigo sem categoria.
+function getCleanCategory(category) {
+  if (!category) return "Outros";
+  return category.includes(" - ") ? category.split(" - ")[1] : category;
 }
 
 function isoToBrDate(isoStr) {

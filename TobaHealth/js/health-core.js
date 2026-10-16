@@ -7,6 +7,15 @@
  * ===================================================================== */
 const HEALTH_KEY = "TOBA_HEALTH_DB";
 
+// Cópia do valor ANTERIOR do banco, atualizada a cada gravação e no load
+// (mesma ideia do TOBA_BANK_DB_AUTO_BACKUP).
+const HEALTH_BACKUP_KEY = "TOBA_HEALTH_DB_AUTO_BACKUP";
+
+// Trava de gravação: fica false quando o banco salvo não pôde ser lido, para
+// a próxima gravação não apagar o original. Importar um backup ou "Apagar
+// Tudo" liberam de novo.
+let isHealthDbLoaded = false;
+
 const DEFAULT_METRICS_ORDER = [
   {
     key: "score",
@@ -224,7 +233,10 @@ function normalizeHealthDb(db) {
 
 function loadHealthDb() {
   const raw = localStorage.getItem(HEALTH_KEY);
-  if (raw === null) return createEmptyHealthDb();
+  if (raw === null) {
+    isHealthDbLoaded = true;
+    return createEmptyHealthDb();
+  }
   // Cópia de segurança única, feita antes da primeira gravação da versão
   // reorganizada (não é tocada depois disso).
   if (localStorage.getItem(HEALTH_KEY + "_PRE_REFACTOR_BACKUP") === null) {
@@ -235,21 +247,57 @@ function loadHealthDb() {
     }
   }
   try {
-    return normalizeHealthDb(JSON.parse(raw));
-  } catch (err) {
-    // Dado ilegível: guarda o texto original para recuperação manual em vez
-    // de sobrescrevê-lo silenciosamente.
-    console.error("Banco do Toba Health ilegível:", err);
+    const parsed = normalizeHealthDb(JSON.parse(raw));
+    // Só vira auto-backup depois de confirmar que o dado é legível.
     try {
-      localStorage.setItem(HEALTH_KEY + "_CORRUPT_" + Date.now(), raw);
-    } catch (e) { /* sem espaço: segue sem a cópia */ }
+      localStorage.setItem(HEALTH_BACKUP_KEY, raw);
+    } catch (backupErr) {
+      console.warn("Aviso ao salvar auto-backup inicial:", backupErr);
+    }
+    isHealthDbLoaded = true;
+    return parsed;
+  } catch (err) {
+    // Dado ilegível: guarda o texto original para recuperação manual e NÃO
+    // libera gravação (isHealthDbLoaded fica false), senão a próxima pesagem
+    // sobrescreveria o original com um banco vazio.
+    console.error("Banco do Toba Health ilegível:", err);
+    saveCorruptHealthCopy(raw);
     return createEmptyHealthDb();
   }
+}
+
+// Uma cópia por conteúdo: como a gravação fica travada, o mesmo texto ruim
+// seria copiado de novo a cada abertura e encheria a memória do navegador.
+function saveCorruptHealthCopy(raw) {
+  const prefix = HEALTH_KEY + "_CORRUPT_";
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(prefix) && localStorage.getItem(key) === raw)
+      return;
+  }
+  try {
+    localStorage.setItem(prefix + Date.now(), raw);
+  } catch (e) { /* sem espaço: segue sem a cópia */ }
 }
 
 let healthDb = loadHealthDb();
 
 function saveHealthDb() {
+  if (!isHealthDbLoaded) {
+    console.warn("Gravação bloqueada: o banco do Toba Health não foi lido com segurança.");
+    showHealthDbLockedMessage();
+    return;
+  }
+
+  // O backup é melhor esforço: se ele falhar (por exemplo, por quota),
+  // ainda tentamos gravar o banco atual na chave principal.
+  try {
+    const currentStored = localStorage.getItem(HEALTH_KEY);
+    if (currentStored) localStorage.setItem(HEALTH_BACKUP_KEY, currentStored);
+  } catch (backupErr) {
+    console.warn("Aviso ao atualizar auto-backup:", backupErr);
+  }
+
   try {
     localStorage.setItem(HEALTH_KEY, JSON.stringify(healthDb));
   } catch (err) {
@@ -258,8 +306,29 @@ function saveHealthDb() {
   }
 }
 
+function showHealthDbLockedMessage() {
+  showPageMessage(
+    "Não consegui ler os dados salvos do Toba Health, então nada novo será gravado para não apagar o original. Restaure um backup em ⚙️ → Dados & Backup → Importar (ou use Apagar Tudo para começar do zero).",
+    { title: "Dados protegidos" },
+  );
+}
+
 // As páginas sobrescrevem esta função para redesenhar a própria tela.
 function onHealthDataReplaced() {}
+
+// Backup do Toba Health tem pelo menos uma das listas do banco. Barra o
+// backup do Bank e o backup geral do portal, que seriam aceitos como um
+// banco "vazio" e apagariam todas as pesagens e treinos.
+function looksLikeHealthBackup(data) {
+  return Boolean(
+    data &&
+    typeof data === "object" &&
+    !Array.isArray(data) &&
+    (Array.isArray(data.weighIns) ||
+      Array.isArray(data.workouts) ||
+      Array.isArray(data.metricsOrder)),
+  );
+}
 
 
 function importBackup(e) {
@@ -268,7 +337,10 @@ function importBackup(e) {
     try {
       // O parse só confirma que é JSON; normalizeHealthDb garante os campos
       // que o app espera encontrar.
-      healthDb = normalizeHealthDb(JSON.parse(event.target.result));
+      const imported = JSON.parse(event.target.result);
+      if (!looksLikeHealthBackup(imported)) throw new Error("Não é backup do Toba Health");
+      healthDb = normalizeHealthDb(imported);
+      isHealthDbLoaded = true;
       saveHealthDb();
       closeDataModal();
       onHealthDataReplaced();
@@ -290,6 +362,7 @@ async function clearAllData() {
     // Limpa somente a chave deste módulo, sem afetar os demais aplicativos.
     localStorage.removeItem(HEALTH_KEY);
     healthDb = createEmptyHealthDb();
+    isHealthDbLoaded = true;
     closeDataModal();
     onHealthDataReplaced();
     showPageMessage("Tudo limpo e zerado! ( ͡° 开启 ͡°)", { title: "Banco zerado" });
@@ -337,3 +410,5 @@ function closeDataModal() {
 }
 
 document.body.insertAdjacentHTML("beforeend", SHARED_MODALS_HTML);
+
+if (!isHealthDbLoaded) showHealthDbLockedMessage();

@@ -607,7 +607,7 @@ function renderWeighIns() {
         timeStyle: "short",
       });
       return `
-                <div class="history-item" onclick="openEditWeighModal(${w.id})">
+                <div class="history-item" onclick="openEditWeighModal('${w.id}')">
                     <div>
                         <div class="history-weight">${formatDec2(w.weight)} kg</div>
                         <div class="history-date">${dt} ${w.fat && fatMetric && fatMetric.active ? `• ${formatDec1(w.fat)}% gordura` : ""}</div>
@@ -634,7 +634,7 @@ function openAddWeighModal() {
 }
 
 function openEditWeighModal(weighId) {
-  const entry = healthDb.weighIns.find((w) => w.id === weighId);
+  const entry = healthDb.weighIns.find((w) => String(w.id) === String(weighId));
   if (!entry) return;
   document.getElementById("weighModalTitle").innerText =
     "✏️ Editar Pesagem";
@@ -692,16 +692,20 @@ function saveWeighIn(e) {
     return;
   }
 
+  // Puxa os dados antigos se estivermos editando pra não perder o que tá oculto!
+  // (compara como texto: um id gravado como "123" não pode sumir na edição)
+  const existingEntry = editingId
+    ? healthDb.weighIns.find((w) => String(w.id) === String(editingId))
+    : null;
+
   const entry = {
-    id: editingId ? parseInt(editingId, 10) : Date.now(),
+    id: existingEntry ? existingEntry.id : Date.now(),
     date: document.getElementById("wDate").value,
     weight: weightVal,
   };
 
   // A gravação percorre todas as métricas configuradas; campos que não
   // existem no formulário (por estarem inativos) acabam salvos como null.
-  // Puxa os dados antigos se estivermos editando pra não perder o que tá oculto!
-  const existingEntry = editingId ? healthDb.weighIns.find(w => w.id === parseInt(editingId, 10)) : null;
 
   healthDb.metricsOrder.forEach((m) => {
     const el = document.getElementById(`w_${m.key}`);
@@ -718,14 +722,9 @@ function saveWeighIn(e) {
     }
   });
 
-  if (editingId) {
-    const idx = healthDb.weighIns.findIndex(
-      (w) => w.id === parseInt(editingId, 10),
-    );
-    if (idx !== -1) healthDb.weighIns[idx] = entry;
-  } else {
-    healthDb.weighIns.push(entry);
-  }
+  const idx = existingEntry ? healthDb.weighIns.indexOf(existingEntry) : -1;
+  if (idx !== -1) healthDb.weighIns[idx] = entry;
+  else healthDb.weighIns.push(entry);
 
   saveHealthDb();
   closeAddWeighModal();
@@ -738,7 +737,7 @@ async function deleteCurrentWeighIn() {
   const confirmed = await showPageMessage("Tem certeza que deseja apagar este registro de pesagem?", { title: "Excluir pesagem", confirm: true, confirmLabel: "Excluir" });
   if (confirmed) {
     healthDb.weighIns = healthDb.weighIns.filter(
-      (w) => w.id !== parseInt(editingId, 10),
+      (w) => String(w.id) !== String(editingId),
     );
     saveHealthDb();
     closeAddWeighModal();

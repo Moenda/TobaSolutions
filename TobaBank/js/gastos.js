@@ -2,26 +2,9 @@
  * Toba Bank · Controle de Gastos
  * Depende de bank-core.js
  * ===================================================================== */
+/* As contas do mês ficam em bank-metrics.js (mesmo cálculo do card do portal). */
 function getEffectiveDaysInMonth(year, monthIndex) {
-  const totalDays = getDaysInMonth(year, monthIndex);
-  if (!db.config.startDate) return totalDays;
-  const isoStart = db.config.startDate;
-  if (!isoStart || !isoStart.includes("-")) return totalDays;
-
-  const [sYear, sMonth, sDay] = isoStart.split("-").map(Number);
-  const currentYear = year;
-  const currentMonth = monthIndex + 1;
-
-  if (
-    currentYear < sYear ||
-    (currentYear === sYear && currentMonth < sMonth)
-  )
-    return 0;
-  if (currentYear === sYear && currentMonth === sMonth) {
-    const daysLeft = totalDays - sDay + 1;
-    return daysLeft > 0 ? daysLeft : 0;
-  }
-  return totalDays;
+  return calcBankEffectiveDays(db, year, monthIndex);
 }
 
 function getFixedExpensesForMonth(mKey) {
@@ -54,31 +37,7 @@ function getFixedTotalForMonth(mKey) {
 }
 
 function getActiveInstallmentsForMonth(monthKey) {
-  const result = [];
-  const [targetYear, targetMonth] = monthKey.split("-").map(Number);
-
-  (db.installments || []).forEach((inst) => {
-    if (!inst.startDate) return;
-    const [sYear, sMonth] = inst.startDate.split("-").map(Number);
-    // Trabalhamos em meses civis, não em dias: isso evita erros com
-    // meses de durações diferentes e identifica a parcela do mês certo.
-    const monthDiff = (targetYear - sYear) * 12 + (targetMonth - sMonth);
-
-    if (monthDiff >= 0 && monthDiff < inst.totalInstallments) {
-      const currentParcelNum = monthDiff + 1;
-      const parcelAmount = inst.totalAmount / inst.totalInstallments;
-      result.push({
-        id: inst.id,
-        description: inst.description,
-        amount: parcelAmount,
-        category: inst.category || "Outros",
-        currentParcel: currentParcelNum,
-        totalInstallments: inst.totalInstallments,
-        startDate: inst.startDate,
-      });
-    }
-  });
-  return result;
+  return calcBankActiveInstallments(db, monthKey);
 }
 
 function switchTab(tabName) {
@@ -112,85 +71,25 @@ function switchTab(tabName) {
 function renderDashboard() {
   const now = new Date();
   const currentMonthKey = getCurrentMonthKey();
-  const todayIso = getTodayIsoDateStr();
   const monthFormatted = formatMonthYearLabel(
     now.getFullYear(),
     now.getMonth(),
   );
-  const totalDaysInMonth = getDaysInMonth(
-    now.getFullYear(),
-    now.getMonth(),
-  );
-  const effectiveDays = getEffectiveDaysInMonth(
-    now.getFullYear(),
-    now.getMonth(),
-  );
 
-  const baseDailyBudget =
-    (db.months[currentMonthKey] || {}).dailyBudget || 0;
-  const grossMonthlyBudget = baseDailyBudget * effectiveDays;
-  const activeInstallmentsMonth =
-    getActiveInstallmentsForMonth(currentMonthKey);
-  const monthInstallmentsTotal = activeInstallmentsMonth.reduce(
-    (acc, p) => acc + p.amount,
-    0,
-  );
+  // Mantém o snapshot dos gastos fixos do mês (usado pelo histórico).
+  getFixedExpensesForMonth(currentMonthKey);
 
-  const currentMonthFixed = getFixedExpensesForMonth(currentMonthKey);
-  const fixedTotal = getFixedTotalForMonth(currentMonthKey);
-  const dailyFixedDeduction =
-    totalDaysInMonth > 0 ? fixedTotal / totalDaysInMonth : 0;
-  const dailyInstallmentDeduction =
-    totalDaysInMonth > 0 ? monthInstallmentsTotal / totalDaysInMonth : 0;
-
-  const netDailyBudget = Math.max(
-    baseDailyBudget - dailyInstallmentDeduction - dailyFixedDeduction,
-    0,
-  );
-
-  // Uma única passagem reúne os lançamentos do mês e calcula ambos os
-  // totais; a lista mensal continua sendo usada nas categorias e no histórico.
-  const currentMonthTransactions = [];
-  let monthlySpentVista = 0;
-  let todaySpent = 0;
-  db.transactions.forEach((transaction) => {
-    if (!transaction.date) return;
-    if (transaction.date.startsWith(currentMonthKey)) {
-      currentMonthTransactions.push(transaction);
-      monthlySpentVista += transaction.amount;
-    }
-    if (transaction.date === todayIso) {
-      todaySpent += transaction.amount;
-    }
-  });
-
-  const varSpent = monthlySpentVista + monthInstallmentsTotal;
-  const totalMonthlySpent = varSpent + fixedTotal;
-
-  let diasPassados = 1;
-  const startDateIso = db.config.startDate || todayIso;
-  if (startDateIso.startsWith(currentMonthKey)) {
-    const sDay = parseInt(startDateIso.split("-")[2], 10);
-    diasPassados = Math.max(now.getDate() - sDay + 1, 1);
-  } else if (startDateIso < currentMonthKey) {
-    diasPassados = now.getDate();
-  } else {
-    diasPassados = 0;
-  }
-
-  const diasRestantes = Math.max(effectiveDays - diasPassados, 0);
-
-  // A projeção variável usa apenas gastos à vista; parcelas e fixos já
-  // são descontados separadamente do orçamento mensal.
-  // A média diária é feita em cima do dinheiro que você gasta no dia a dia (Vista)
-  const mediaDiariaVista = diasPassados > 0 ? (monthlySpentVista / diasPassados) : 0;
-
-  // A VERDADEIRA FACADA DIÁRIA (Variável + Fixo + Parcelas)
-  const mediaDiariaTotal = mediaDiariaVista + dailyInstallmentDeduction + dailyFixedDeduction;
-
-  const projecaoRestanteVista = mediaDiariaVista * diasRestantes;
-  const projecaoTotalMes = monthlySpentVista + projecaoRestanteVista + monthInstallmentsTotal + fixedTotal;
-  const sobraPrevista = grossMonthlyBudget - projecaoTotalMes;
+  // Mesmo cálculo do card do Toba Bank no portal (bank-metrics.js).
+  const summary = calcBankMonthSummary(db, now);
+  const {
+    monthlySpentVista, monthInstallmentsTotal, fixedTotal, grossMonthlyBudget,
+    diasPassados, diasRestantes, mediaDiariaVista, mediaDiariaTotal,
+    dailyFixedDeduction, dailyInstallmentDeduction,
+    projecaoRestanteVista, projecaoTotalMes, sobraPrevista,
+    totalMonthlySpent, vaultBalance, todayAvailable,
+  } = summary;
+  const currentMonthTransactions = summary.monthTransactions;
+  const activeInstallmentsMonth = summary.activeInstallments;
 
   window.dadosSobra = {
     monthlySpentVista, monthInstallmentsTotal, fixedTotal, grossMonthlyBudget,
@@ -198,12 +97,6 @@ function renderDashboard() {
     dailyFixedDeduction, dailyInstallmentDeduction,
     projecaoRestanteVista, projecaoTotalMes, sobraPrevista
   };
-
-  // O cofre acumula o orçamento diário líquido desde o início do período,
-  // descontando os gastos variáveis já lançados no mês.
-  const totalAccumulatedBudgetToday = netDailyBudget * diasPassados;
-  const vaultBalance = totalAccumulatedBudgetToday - monthlySpentVista;
-  let todayAvailable = netDailyBudget - todaySpent;
 
   document.getElementById("dashMonthBadge").innerText = monthFormatted;
 
@@ -286,9 +179,7 @@ function renderCategoryBars(
 
   const catMap = {};
   transactions.forEach((t) => {
-    let cleanCat = t.category.includes(" - ")
-      ? t.category.split(" - ")[1]
-      : t.category;
+    let cleanCat = getCleanCategory(t.category);
     catMap[cleanCat] = (catMap[cleanCat] || 0) + t.amount;
   });
 
@@ -303,7 +194,7 @@ function renderCategoryBars(
       itemEl.className = "category-item";
       itemEl.innerHTML = `
                 <div class="category-info">
-                    <span>${category}</span>
+                    <span>${escapeBankHtml(category)}</span>
                     <span>${formatCurrency(amount)} (${percentage}%)</span>
                 </div>
                 <div class="progress-bar-bg">
@@ -333,16 +224,14 @@ function renderExpenseListWithInstallments(
         (a, b) => new Date(b.date) - new Date(a.date),
       );
       sortedTransactions.forEach((t) => {
-        let cleanCat = t.category.includes(" - ")
-          ? t.category.split(" - ")[1]
-          : t.category;
+        let cleanCat = getCleanCategory(t.category);
         const itemEl = document.createElement("div");
         itemEl.className = "expense-item";
         itemEl.onclick = () => openExpenseModal(t.id);
         itemEl.innerHTML = `
                         <div class="expense-details">
-                            <span class="expense-desc">${t.description}</span>
-                            <span class="expense-meta">${cleanCat} • ${isoToBrDate(t.date)}</span>
+                            <span class="expense-desc">${escapeBankHtml(t.description)}</span>
+                            <span class="expense-meta">${escapeBankHtml(cleanCat)} • ${isoToBrDate(t.date)}</span>
                         </div>
                         <div class="expense-right">
                             <div class="expense-amount">
@@ -362,17 +251,15 @@ function renderExpenseListWithInstallments(
         '<div class="empty-state">Nenhuma parcela ativa neste mês.</div>';
     } else {
       activeInstallments.forEach((p) => {
-        let cleanCat = p.category.includes(" - ")
-          ? p.category.split(" - ")[1]
-          : p.category;
+        let cleanCat = getCleanCategory(p.category);
         const itemEl = document.createElement("div");
         itemEl.className = "expense-item";
         itemEl.style.borderLeft = "3px solid #d29922";
         itemEl.onclick = () => openEditInstallmentModal(p.id);
         itemEl.innerHTML = `
                         <div class="expense-details">
-                            <span class="expense-desc">${p.description}</span>
-                            <span class="expense-meta">${cleanCat} • Parcela ${p.currentParcel}/${p.totalInstallments}</span>
+                            <span class="expense-desc">${escapeBankHtml(p.description)}</span>
+                            <span class="expense-meta">${escapeBankHtml(cleanCat)} • Parcela ${p.currentParcel}/${p.totalInstallments}</span>
                         </div>
                         <div class="expense-right">
                             <div class="expense-amount">
@@ -471,7 +358,7 @@ function renderInstallments() {
       card.innerHTML = `
                     <div class="installment-header">
                         <div class="installment-header-top">
-                            <span class="installment-title">${inst.description}</span>
+                            <span class="installment-title">${escapeBankHtml(inst.description)}</span>
                         </div>
                         <div class="category-info" style="margin-top: 6px;">
                             <span>Progresso: Parcela ${currentParcelNum} de ${inst.totalInstallments}</span>
@@ -509,7 +396,7 @@ function renderInstallments() {
       card.innerHTML = `
                     <div class="installment-header">
                         <div class="installment-header-top">
-                            <span class="installment-title" style="color: #8b949e;">✅ ${inst.description} (Quitado)</span>
+                            <span class="installment-title" style="color: #8b949e;">✅ ${escapeBankHtml(inst.description)} (Quitado)</span>
                         </div>
                         <div style="font-size: 0.78rem; color: #8b949e; margin-top: 4px;">
                             Total pago: <b style="color: #f0f6fc;">${formatCurrency(inst.totalAmount)}</b> em <b>${inst.totalInstallments}x</b>
@@ -728,11 +615,7 @@ function renderFixedExpenses() {
   );
 
   expenses.forEach((item) => {
-    let cleanCat = item.category
-      ? item.category.includes(" - ")
-        ? item.category.split(" - ")[1]
-        : item.category
-      : "Outros";
+    let cleanCat = getCleanCategory(item.category);
     const dailyItemRate =
       totalDaysInMonth > 0 ? item.amount / totalDaysInMonth : 0;
 
@@ -742,8 +625,8 @@ function renderFixedExpenses() {
     el.innerHTML = `
                 <div class="fixed-header" onclick="toggleFixedCard('${item.id}')">
                     <div style="display: flex; flex-direction: column;">
-                        <span style="font-weight: 600; font-size: 0.88rem; color: #f0f6fc;">🔄 ${item.name}</span>
-                        <span style="font-size: 0.73rem; color: #8b949e; margin-top: 2px;">${cleanCat}</span>
+                        <span style="font-weight: 600; font-size: 0.88rem; color: #f0f6fc;">🔄 ${escapeBankHtml(item.name)}</span>
+                        <span style="font-size: 0.73rem; color: #8b949e; margin-top: 2px;">${escapeBankHtml(cleanCat)}</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <div style="display: flex; flex-direction: column; align-items: flex-end;">
@@ -767,7 +650,7 @@ function renderFixedExpenses() {
 function editFixedExpense(id) {
   event?.stopPropagation();
   const expenses = db.config.fixedExpenses || [];
-  const item = expenses.find((e) => e.id === id);
+  const item = expenses.find((e) => String(e.id) === String(id));
   if (!item) return;
 
   const newName = prompt("Editar nome do gasto fixo:", item.name);
@@ -819,7 +702,7 @@ function addFixedExpense() {
 function deleteFixedExpense(id) {
   if (confirm("Deseja excluir este gasto fixo?")) {
     db.config.fixedExpenses = (db.config.fixedExpenses || []).filter(
-      (item) => item.id !== id,
+      (item) => String(item.id) !== String(id),
     );
     saveDatabase();
   }
@@ -925,16 +808,14 @@ function renderHistory() {
       [...mTransactions]
         .sort((a, b) => new Date(b.date) - new Date(a.date))
         .forEach((t) => {
-          let cleanCat = t.category.includes(" - ")
-            ? t.category.split(" - ")[1]
-            : t.category;
+          let cleanCat = getCleanCategory(t.category);
           const itemEl = document.createElement("div");
           itemEl.className = "expense-item";
           itemEl.onclick = () => openExpenseModal(t.id);
           itemEl.innerHTML = `
                         <div class="expense-details">
-                            <span class="expense-desc">${t.description}</span>
-                            <span class="expense-meta">${cleanCat} • ${isoToBrDate(t.date)}</span>
+                            <span class="expense-desc">${escapeBankHtml(t.description)}</span>
+                            <span class="expense-meta">${escapeBankHtml(cleanCat)} • ${isoToBrDate(t.date)}</span>
                         </div>
                         <div class="expense-right">
                             <span class="expense-amount-value">-${formatCurrency(t.amount)}</span>
@@ -950,17 +831,15 @@ function renderHistory() {
         '<div class="empty-state" style="font-size:0.75rem;">Nenhuma parcela ativa.</div>';
     } else {
       mActiveInstallments.forEach((p) => {
-        let cleanCat = p.category.includes(" - ")
-          ? p.category.split(" - ")[1]
-          : p.category;
+        let cleanCat = getCleanCategory(p.category);
         const itemEl = document.createElement("div");
         itemEl.className = "expense-item";
         itemEl.style.borderLeft = "3px solid #d29922";
         itemEl.onclick = () => openEditInstallmentModal(p.id);
         itemEl.innerHTML = `
                         <div class="expense-details">
-                            <span class="expense-desc">${p.description}</span>
-                            <span class="expense-meta">${cleanCat} • Parcela ${p.currentParcel}/${p.totalInstallments}</span>
+                            <span class="expense-desc">${escapeBankHtml(p.description)}</span>
+                            <span class="expense-meta">${escapeBankHtml(cleanCat)} • Parcela ${p.currentParcel}/${p.totalInstallments}</span>
                         </div>
                         <div class="expense-right">
                             <span class="expense-amount-value" style="color: #d29922;">-${formatCurrency(p.amount)}</span>

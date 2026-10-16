@@ -3,6 +3,20 @@
  * Depende de bank-core.js
  * ===================================================================== */
 let currentShares = {};
+// Ordem dos participantes nas linhas de divisão: os botões usam o índice,
+// porque um nome com aspas ("D'Ávila") quebraria o onclick.
+let currentShareMembers = [];
+
+// Lista de participantes digitada ("Ana, Beto, Ana") sem vazios nem repetidos:
+// o nome é a chave das fatias, então dois "Ana" virariam um só.
+function parseSplitterMembers(rawMembers) {
+  return [...new Set(
+    rawMembers
+      .split(",")
+      .map((m) => m.trim())
+      .filter((m) => m.length > 0),
+  )];
+}
 
 function openNewSplitterGroupModal() {
   document.getElementById("newSplitterName").value = "";
@@ -49,7 +63,7 @@ function renderSplitterScreen() {
     card.innerHTML = `
         <div class="splitter-header" style="padding: 0.8rem;">
             <div class="splitter-header-top" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
-                <span class="splitter-title" style="font-size: 0.9rem; word-break: break-word; max-width: 70%;">${catEmoji} ${g.name}</span>
+                <span class="splitter-title" style="font-size: 0.9rem; word-break: break-word; max-width: 70%;">${escapeBankHtml(catEmoji)} ${escapeBankHtml(g.name)}</span>
                 <span style="font-size: 0.7rem; color: #8b949e; white-space: nowrap;">${isoToBrDate(g.date)}</span>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:0.78rem; flex-wrap: wrap; gap: 4px;">
@@ -77,7 +91,7 @@ function renderSplitterScreen() {
 }
 
 function openSplitterGroupView(groupId) {
-  const g = db.splitterGroups.find((item) => item.id === groupId);
+  const g = db.splitterGroups.find((item) => String(item.id) === String(groupId));
   if (!g) return;
 
   document.getElementById("splitterGroupIdInput").value = g.id;
@@ -130,7 +144,7 @@ function toggleSplitterMetaCard() {
 
 function updateSplitterGroupMeta() {
   const id = document.getElementById("splitterGroupIdInput").value;
-  const g = db.splitterGroups.find((item) => item.id === id);
+  const g = db.splitterGroups.find((item) => String(item.id) === String(id));
   if (!g) return;
   g.name = document.getElementById("editSplitterName").value;
   g.category = document.getElementById("editSplitterCategory").value;
@@ -142,32 +156,54 @@ function updateSplitterGroupMeta() {
 
 function saveSplitterMembers() {
   const id = document.getElementById("splitterGroupIdInput").value;
-  const g = db.splitterGroups.find((item) => item.id === id);
+  const g = db.splitterGroups.find((item) => String(item.id) === String(id));
   if (!g) return;
   const rawMembers = document.getElementById(
     "splitterMembersInput",
   ).value;
-  g.members = rawMembers
-    .split(",")
-    .map((m) => m.trim())
-    .filter((m) => m.length > 0);
+  const newMembers = parseSplitterMembers(rawMembers);
+  // Tirar alguém que já pagou ou consumiu deixa a conta torta (o nome some
+  // da divisão, mas o gasto continua). Avisa antes.
+  const removedWithExpenses = (g.members || []).filter(
+    (m) =>
+      !newMembers.includes(m) &&
+      (g.expenses || []).some(
+        (e) =>
+          e.payer === m ||
+          (e.shares && e.shares[m] > 0) ||
+          (e.involved && e.involved.includes(m)),
+      ),
+  );
+  if (
+    removedWithExpenses.length > 0 &&
+    !confirm(
+      `${removedWithExpenses.join(", ")} já tem gastos neste rolê. Se tirar da lista, a divisão deixa de contar essa pessoa. Continuar?`,
+    )
+  ) {
+    document.getElementById("splitterMembersInput").value = (
+      g.members || []
+    ).join(", ");
+    return;
+  }
+  g.members = newMembers;
   saveDatabase();
   renderSplitterExpensesAndSettlement(g);
 }
 
 function openSplitterExpenseModal(expenseId = null) {
   const id = document.getElementById("splitterGroupIdInput").value;
-  const g = db.splitterGroups.find((item) => item.id === id);
+  const g = db.splitterGroups.find((item) => String(item.id) === String(id));
   if (!g) return;
 
   const payerSelect = document.getElementById("splitterExpensePayer");
   payerSelect.innerHTML = "";
-  (g.members || []).forEach((m) => {
+  const addPayerOption = (m) => {
     const opt = document.createElement("option");
     opt.value = m;
     opt.innerText = m;
     payerSelect.appendChild(opt);
-  });
+  };
+  (g.members || []).forEach(addPayerOption);
 
   const title = document.getElementById("splitterExpenseModalTitle");
   const idInput = document.getElementById("splitterExpenseIdInput");
@@ -179,12 +215,16 @@ function openSplitterExpenseModal(expenseId = null) {
   currentShares = {};
 
   if (expenseId) {
-    const exp = g.expenses.find((e) => e.id === expenseId);
+    const exp = g.expenses.find((e) => String(e.id) === String(expenseId));
     if (!exp) return;
     title.innerText = "✏️ Editar Gasto no Rolê";
     idInput.value = exp.id;
     descInput.value = exp.desc;
     amountInput.value = formatMoneyInput(exp.amount);
+    // Quem pagou pode ter saído da lista de participantes: mantém o nome
+    // para a edição não trocar o pagador sem você ver.
+    if (exp.payer && !(g.members || []).includes(exp.payer))
+      addPayerOption(exp.payer);
     payerSelect.value = exp.payer;
     dateInput.value = exp.date || g.date || getTodayIsoDateStr();
     deleteBtn.style.display = "inline-block";
@@ -200,7 +240,7 @@ function openSplitterExpenseModal(expenseId = null) {
         currentShares[m] = exp.involved.includes(m) ? equalPct : 0;
       });
     } else {
-      const equalPct = 100 / g.members.length;
+      const equalPct = g.members.length > 0 ? 100 / g.members.length : 0;
       (g.members || []).forEach((m) => {
         currentShares[m] = equalPct;
       });
@@ -245,7 +285,8 @@ function renderShareRows(allMembers) {
     titleEl.innerHTML = `⚖️ Divisão por Participante (<b style="color:${isExact ? "#3fb950" : "#f85149"}">${totalPct.toFixed(1)}%</b>)`;
   }
 
-  allMembers.forEach((m) => {
+  currentShareMembers = [...allMembers];
+  allMembers.forEach((m, index) => {
     const pct = currentShares[m] !== undefined ? currentShares[m] : 0;
     const isChecked = pct > 0;
 
@@ -260,11 +301,11 @@ function renderShareRows(allMembers) {
 
     row.innerHTML = `
                 <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; cursor:pointer; flex:1;">
-                    <input type="checkbox" id="chk-member-${m}" ${isChecked ? "checked" : ""} onchange="toggleMemberShare('${m}')">
-                    <span style="color:${isChecked ? "#f0f6fc" : "#8b949e"}">${m}</span>
+                    <input type="checkbox" id="chk-member-${index}" ${isChecked ? "checked" : ""} onchange="toggleMemberShare(${index})">
+                    <span style="color:${isChecked ? "#f0f6fc" : "#8b949e"}">${escapeBankHtml(m)}</span>
                 </label>
                 <div style="display:flex; align-items:center; gap:4px; width:90px;">
-                    <input type="number" step="0.1" min="0" max="100" class="form-control" style="padding:4px; font-size:0.8rem; text-align:right;" value="${pct.toFixed(1)}" onchange="updateShareValue('${m}', this.value)">
+                    <input type="number" step="0.1" min="0" max="100" class="form-control" style="padding:4px; font-size:0.8rem; text-align:right;" value="${pct.toFixed(1)}" onchange="updateShareValue(${index}, this.value)">
                     <span style="font-size:0.75rem; color:#8b949e;">%</span>
                 </div>
             `;
@@ -272,7 +313,9 @@ function renderShareRows(allMembers) {
   });
 }
 
-function updateShareValue(member, val) {
+function updateShareValue(memberIndex, val) {
+  const member = currentShareMembers[memberIndex];
+  if (member === undefined) return;
   const num = parseFloat(val) || 0;
   currentShares[member] = Math.max(0, Math.min(100, num));
   const allMembers = Object.keys(currentShares);
@@ -281,7 +324,7 @@ function updateShareValue(member, val) {
 
 function saveSplitterExpense() {
   const id = document.getElementById("splitterGroupIdInput").value;
-  const g = db.splitterGroups.find((item) => item.id === id);
+  const g = db.splitterGroups.find((item) => String(item.id) === String(id));
   if (!g) return;
 
   const expenseId = document.getElementById(
@@ -307,7 +350,7 @@ function saveSplitterExpense() {
   }
 
   if (expenseId) {
-    const index = g.expenses.findIndex((e) => e.id === expenseId);
+    const index = g.expenses.findIndex((e) => String(e.id) === String(expenseId));
     if (index !== -1) {
       g.expenses[index] = {
         id: expenseId,
@@ -337,10 +380,12 @@ function saveSplitterExpense() {
   renderSplitterExpensesAndSettlement(g);
 }
 
-function toggleMemberShare(member) {
+function toggleMemberShare(memberIndex) {
+  const member = currentShareMembers[memberIndex];
+  if (member === undefined) return;
   const allMembers = Object.keys(currentShares);
   const isCheckedNow = document.getElementById(
-    `chk-member-${member}`,
+    `chk-member-${memberIndex}`,
   ).checked;
 
   if (!isCheckedNow) {
@@ -363,11 +408,11 @@ function deleteSplitterExpenseFromModal() {
   const expenseId = document.getElementById(
     "splitterExpenseIdInput",
   ).value;
-  const g = db.splitterGroups.find((item) => item.id === groupId);
+  const g = db.splitterGroups.find((item) => String(item.id) === String(groupId));
   if (!g) return;
 
   if (confirm("Deseja mesmo apagar esse gasto do rolê?")) {
-    g.expenses = (g.expenses || []).filter((e) => e.id !== expenseId);
+    g.expenses = (g.expenses || []).filter((e) => String(e.id) !== String(expenseId));
     saveDatabase();
     document
       .getElementById("newSplitterExpenseModal")
@@ -400,8 +445,8 @@ function renderSplitterExpensesAndSettlement(g) {
         item.onclick = () => openSplitterExpenseModal(e.id);
         item.innerHTML = `
                     <div class="expense-details">
-                        <span class="expense-desc">${e.desc}</span>
-                        <span class="expense-meta">Pago por: <i>${e.payer}</i> • ${isoToBrDate(e.date || g.date)}</span>
+                        <span class="expense-desc">${escapeBankHtml(e.desc)}</span>
+                        <span class="expense-meta">Pago por: <i>${escapeBankHtml(e.payer)}</i> • ${isoToBrDate(e.date || g.date)}</span>
                     </div>
                     <div class="expense-right">
                         <span class="expense-amount-value" style="font-size: 0.85rem;">${formatCurrency(e.amount)}</span>
@@ -470,7 +515,7 @@ function renderSplitterExpensesAndSettlement(g) {
     if (paidMap[m] > 0 || consumedMap[m] > 0) {
       htmlTxt += `
                 <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-top:4px;">
-                    <span><b>${m}</b> pagou ${formatCurrency(paidMap[m])}</span>
+                    <span><b>${escapeBankHtml(m)}</b> pagou ${formatCurrency(paidMap[m])}</span>
                     <span style="color:#8b949e;">Consumiu: ${formatCurrency(consumedMap[m])}</span>
                 </div>`;
     }
@@ -489,7 +534,7 @@ function renderSplitterExpensesAndSettlement(g) {
       creditors.forEach((c) => {
         if (d.amount > 0.01 && c.amount > 0.01) {
           const transfer = Math.min(d.amount, c.amount);
-          htmlTxt += `<div style="margin-top: 4px; padding: 6px; background: rgba(88, 166, 255, 0.1); border-radius: 6px;">👉 <b>${d.name}</b> paga <span style="color:#58a6ff; font-weight:700;">${formatCurrency(transfer)}</span> para <b>${c.name}</b></div>`;
+          htmlTxt += `<div style="margin-top: 4px; padding: 6px; background: rgba(88, 166, 255, 0.1); border-radius: 6px;">👉 <b>${escapeBankHtml(d.name)}</b> paga <span style="color:#58a6ff; font-weight:700;">${formatCurrency(transfer)}</span> para <b>${escapeBankHtml(c.name)}</b></div>`;
           d.amount -= transfer;
           c.amount -= transfer;
         }
@@ -501,7 +546,7 @@ function renderSplitterExpensesAndSettlement(g) {
 
 function toggleSplitterFinished() {
   const id = document.getElementById("splitterGroupIdInput").value;
-  const g = db.splitterGroups.find((item) => item.id === id);
+  const g = db.splitterGroups.find((item) => String(item.id) === String(id));
   if (!g) return;
   g.isFinished = !g.isFinished;
   saveDatabase();
@@ -516,7 +561,7 @@ function deleteSplitterGroup() {
   ) {
     const id = document.getElementById("splitterGroupIdInput").value;
     db.splitterGroups = db.splitterGroups.filter(
-      (item) => item.id !== id,
+      (item) => String(item.id) !== String(id),
     );
     saveDatabase();
     switchView("splitter");
@@ -567,10 +612,7 @@ function setupRaxadorEvents() {
       const date = document.getElementById("newSplitterDate").value;
       const rawMembers =
         document.getElementById("newSplitterMembers").value;
-      const members = rawMembers
-        .split(",")
-        .map((m) => m.trim())
-        .filter((m) => m.length > 0);
+      const members = parseSplitterMembers(rawMembers);
 
       if (members.length === 0)
         return alert("Adicione pelo menos 1 participante!");

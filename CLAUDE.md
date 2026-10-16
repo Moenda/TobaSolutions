@@ -64,7 +64,7 @@ assets/pwa-register.js     Registra o sw.js (caminho relativo ao próprio script
 icons/
 TobaBank/
   TobaBank-Index.html      Hub do Bank (sem banco)
-  TobaBank-Gastos.html       -> js/bank-core.js + js/gastos.js
+  TobaBank-Gastos.html       -> js/bank-core.js + js/bank-metrics.js + js/gastos.js
   TobaBank-Investimento.html -> Chart.js + js/bank-core.js + js/investimento.js
   TobaBank-Raxador.html      -> js/bank-core.js + js/raxador.js
   css/bank-base.css + 1 css por módulo
@@ -104,7 +104,8 @@ CLAUDE.md                  Este guia
 | `TOBA_BANK_DB_PRE_REFACTOR_BACKUP` | `bank-core.js` | Cópia única feita na 1ª abertura da versão reorganizada. **Nunca sobrescrever** |
 | `TOBA_HEALTH_DB` | `health-core.js` | Banco principal do Toba Health (JSON) |
 | `TOBA_HEALTH_DB_PRE_REFACTOR_BACKUP` | `health-core.js` | Cópia única, mesma regra acima |
-| `TOBA_HEALTH_DB_CORRUPT_<timestamp>` | `health-core.js` | Texto original quando o JSON do Health não pôde ser lido |
+| `TOBA_HEALTH_DB_AUTO_BACKUP` | `health-core.js` | Cópia do valor **anterior** do banco, atualizada a cada `saveHealthDb()` e no load (desde v1.21) |
+| `TOBA_HEALTH_DB_CORRUPT_<timestamp>` | `health-core.js` | Texto original quando o JSON do Health não pôde ser lido (uma cópia por conteúdo) |
 | `toba_modules_config` | `index.html` | `[{ id, visible }]` — ordem/visibilidade dos cards do portal |
 | `toba_bank_card_config` | `index.html` | `{ type: "personalizado"\|"simples", orcamento, cofre, gastos, sobra, addGasto, privacy }` (mesclado com defaults) |
 
@@ -117,7 +118,7 @@ Ao criar uma chave nova: use prefixo `TOBA_` (bancos) ou `toba_` (preferências 
 - **Decimais do Health**: `number` ou `null`. Ler com `parseTobaDecimal()`; exibir com `formatDec1/formatDec2` (mostram `--` para null).
 - **IDs** (tipos diferentes por coleção — não "padronize" sem migração):
   - Bank (tudo): **string** `Date.now().toString()`. Compare sempre com `String(a) === String(b)`.
-  - Health `weighIns[].id`: **number** `Date.now()` (o código usa `parseInt` + `===`).
+  - Health `weighIns[].id`: **number** `Date.now()` (compare com `String(a) === String(b)`; na edição o id original é mantido).
   - Health `workouts[].id`: **string** `` `${Date.now()}-${rand6}` `` (bancos antigos podem ter outros formatos; compare com `String()`).
   - Health `strengthRoutines[].id`: **string** `` `r-${Date.now()}-${rand4}` ``.
   - Cuidado: dois `Date.now()` no mesmo tick geram o mesmo id (veja `newFund`, que usa `Date.now() + 1`). Ao criar vários itens de uma vez, acrescente sufixo aleatório.
@@ -206,8 +207,9 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 **Ciclo de vida**
 - `healthDb = loadHealthDb()` roda **na carga do script** (não no DOMContentLoaded).
 - `normalizeHealthDb()` é a função de migração: usada no load **e** no `importBackup()`. Toda compatibilidade nova entra **aqui**.
-- Se o JSON estiver ilegível: o texto original vai para `TOBA_HEALTH_DB_CORRUPT_<ts>` e o app segue com banco vazio — **a próxima gravação sobrescreve a chave principal**. A recuperação é manual a partir da chave `_CORRUPT_`.
-- `saveHealthDb()` grava tudo; em erro (quota) mostra aviso. Não há auto-backup no Health.
+- Trava `isHealthDbLoaded` (igual ao `isDbLoaded` do Bank): só vira `true` quando o banco foi lido (ou não existia). Se o JSON estiver ilegível, o texto original vai para `TOBA_HEALTH_DB_CORRUPT_<ts>` (uma vez por conteúdo), o app abre vazio, mostra o aviso "Dados protegidos" e **`saveHealthDb()` não grava nada**. Importar um backup ou "Apagar Tudo" liberam a trava. Não "conserte" isso gravando o banco vazio.
+- `saveHealthDb()`: copia o valor atual para `TOBA_HEALTH_DB_AUTO_BACKUP` e grava tudo; em erro (quota) mostra aviso.
+- `importBackup()` só aceita arquivo com `weighIns`, `workouts` ou `metricsOrder` (`looksLikeHealthBackup`): backup do Bank ou geral do portal seriam lidos como banco vazio.
 - Depois de importar/apagar, chama `onHealthDataReplaced()` (cada página sobrescreve).
 - `clearAllData()` remove só `TOBA_HEALTH_DB`.
 
@@ -223,8 +225,8 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 
 ### 3.6 Leitores "fora do dono" (precisam acompanhar mudanças de formato)
 
-- **Portal `index.html` → `obterMetricasReaisTobaBank()`** lê `TOBA_BANK_DB` direto e **reimplementa** os cálculos do Gastos (dias efetivos desde `startDate`, `dailyBudget`, `fixedExpensesSnapshot`, parcelas por diferença de meses civis, `transactions` do mês/dia). Se mudar qualquer um desses campos ou regras em `gastos.js`, **atualize também o portal**.
-- **Backup geral do portal** (`exportAllData`/`importAllData`): formato `{ "<chave localStorage>": "<valor como STRING>" }`. Na importação, cada chave do arquivo é gravada como está (chaves ausentes no arquivo não são apagadas). Não mude para guardar objetos já parseados — quebraria backups existentes.
+- **Portal `index.html` → `obterMetricasReaisTobaBank()`** lê `TOBA_BANK_DB` direto, mas o cálculo é o **mesmo** da tela de Gastos: os dois chamam `calcBankMonthSummary()` de [TobaBank/js/bank-metrics.js](TobaBank/js/bank-metrics.js) (desde v1.21). Regra nova do painel do Gastos entra **só** em `bank-metrics.js`. Esse arquivo não pode depender de `bank-core.js` (o portal carrega ele sozinho) e só lê o banco, nunca grava.
+- **Backup geral do portal** (`exportAllData`/`importAllData`): formato `{ "<chave localStorage>": "<valor como STRING>" }`. Na importação, cada chave do arquivo é gravada como está (chaves ausentes no arquivo não são apagadas). A importação recusa arquivo sem nenhuma chave `TOBA_`/`toba_` ou com valor que não seja texto (backup de módulo). Não mude para guardar objetos já parseados — quebraria backups existentes.
 - **Backups por módulo** (`toba_bank_backup_*.json`, `toba_health_backup_*.json`): são o objeto do banco puro. Não misturar com o formato do backup geral.
 
 ### 3.7 Outras armadilhas conhecidas
@@ -253,14 +255,14 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 ## 4. Service worker / PWA
 
 - [sw.js](sw.js): páginas/JS/CSS **network-first** (timeout 4 s, cai no cache); jsdelivr **cache-first**.
-- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v2"` → `"toba-v3"`…). Sem isso, o app offline fica sem o arquivo.
+- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v3"` → `"toba-v4"`…). Sem isso, o app offline fica sem o arquivo.
 - Atualizar a versão do Chart.js exige trocar a URL nos HTML **e** no `PRECACHE`.
 - Toda página nova deve incluir `<script src="../assets/pwa-register.js"></script>` (ou `assets/...` na raiz), as metas de `color-scheme: dark` e o link do manifest, como as existentes.
 
 ## 5. Estilo de código
 
 - JS puro, funções globais, `const`/`let`, aspas duplas, ponto e vírgula, indentação de 2 espaços.
-- HTML gerado via template string; escapar texto do usuário (ex.: `escapeWorkoutHtml` no Health) antes de inserir no DOM.
+- HTML gerado via template string; escapar texto do usuário antes de inserir no DOM: `escapeBankHtml` (Bank, em `bank-core.js`) e `escapeWorkoutHtml` (Health). Nunca coloque texto do usuário dentro de `onclick="f('...')"` (aspas quebram o JS): passe id/índice e busque o dado na função (ex.: participantes do Raxador por índice).
 - Avisos no Health: `showPageMessage(msg, { title, confirm, confirmLabel })` (retorna Promise). No Bank ainda usa `alert`/`confirm`.
 - Cada página sobrescreve o hook do core: `onBankDataSaved()` (Bank) / `onHealthDataReplaced()` (Health).
 - Tema sempre escuro (paleta estilo GitHub dark: `#0d1117`, `#30363d`, `#58a6ff`, `#3fb950`, `#f85149`, `#d29922`).

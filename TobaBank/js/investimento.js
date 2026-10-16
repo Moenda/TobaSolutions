@@ -60,7 +60,7 @@ function getFundStats(fund) {
 
   const userLogs = (fund.balanceLogs || [])
     .filter((b) => !b.isSystem)
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
   const lastLog = userLogs[userLogs.length - 1];
 
   let balance = Math.max(netInvested, 0);
@@ -172,6 +172,7 @@ function changeChartMode(mode) {
 }
 
 function toggleChartAsset(id) {
+  id = String(id);
   if (chartVisibleAssets.has(id)) {
     chartVisibleAssets.delete(id);
   } else {
@@ -493,7 +494,7 @@ function renderInvestmentsScreen() {
       card.innerHTML = `
                     <div class="invest-header" style="cursor: pointer;">
                         <div class="invest-header-top">
-                            <span class="invest-title" style="color:#58a6ff;">${titleText}</span>
+                            <span class="invest-title" style="color:#58a6ff;">${escapeBankHtml(titleText)}</span>
                         </div>
                         <div style="font-size: 0.78rem; color: #8b949e; line-height: 1.6; margin-top: 4px;">
                             <div style="display: flex; justify-content: space-between;">
@@ -592,7 +593,7 @@ function createCardHtml(fund) {
                 <div class="invest-header" onclick="openInvestActionPopup('${fund.id}')" style="cursor: pointer;">
                     <div class="invest-header-top">
                         <span class="invest-title" style="font-size: 1rem; font-weight: 700; color: #58a6ff;">
-                            ${fund.name}
+                            ${escapeBankHtml(fund.name)}
                         </span>
                     </div>
                     
@@ -637,7 +638,7 @@ function createCardHtml(fund) {
             <div class="invest-header" onclick="openInvestActionPopup('${fund.id}')" style="cursor: pointer;">
                 <div class="invest-header-top">
                     <span class="invest-title" style="font-size: 1rem; font-weight: 700; color: #58a6ff;">
-                        ${fund.name}
+                        ${escapeBankHtml(fund.name)}
                     </span>
                 </div>
                 <div class="invest-metrics" style="margin-top: 8px;">
@@ -885,7 +886,7 @@ function openInvestActionPopup(fundId) {
 
 function openEditFundNameModalFromPopup() {
   const fundId = document.getElementById("popupFundIdInput").value;
-  const fund = db.investmentFunds.find((f) => f.id === fundId);
+  const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (!fund) return;
   document.getElementById("investActionPopup").classList.remove("active");
   openEditFundNameModal(fund.id, fund.name);
@@ -898,9 +899,14 @@ function toggleInvestActionAcc(accId) {
 
 function submitPopupBalance() {
   const fundId = document.getElementById("popupFundIdInput").value;
-  const fund = db.investmentFunds.find((f) => f.id === fundId);
+  const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (!fund) return;
-  const date = document.getElementById("popupBalDate").value;
+  const date =
+    document.getElementById("popupBalDate").value || getTodayIsoDateStr();
+  // Campo vazio não é "saldo zero": sem essa trava, tocar no botão com o
+  // campo em branco zerava o saldo do investimento.
+  if (!document.getElementById("popupBalAmount").value.trim())
+    return alert("Informe o saldo atual do investimento.");
   const amount = getMoney("popupBalAmount");
   if (amount >= 0) {
     if (!fund.balanceLogs) fund.balanceLogs = [];
@@ -915,9 +921,10 @@ function submitPopupBalance() {
 
 function submitPopupDeposit() {
   const fundId = document.getElementById("popupFundIdInput").value;
-  const fund = db.investmentFunds.find((f) => f.id === fundId);
+  const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (!fund) return;
-  const date = document.getElementById("popupDepDate").value;
+  const date =
+    document.getElementById("popupDepDate").value || getTodayIsoDateStr();
   const amount = getMoney("popupDepAmount");
   if (amount > 0) {
     if (!fund.deposits) fund.deposits = [];
@@ -932,9 +939,10 @@ function submitPopupDeposit() {
 
 function submitPopupWithdraw() {
   const fundId = document.getElementById("popupFundIdInput").value;
-  const fund = db.investmentFunds.find((f) => f.id === fundId);
+  const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (!fund) return;
-  const date = document.getElementById("popupWithdrawDate").value;
+  const date =
+    document.getElementById("popupWithdrawDate").value || getTodayIsoDateStr();
   const amount = getMoney("popupWithdrawAmount");
   if (amount > 0) {
     // Nos investimentos, o saldo depois da retirada é derivado em getFundStats.
@@ -949,15 +957,15 @@ function submitPopupWithdraw() {
 }
 
 function deleteInvestLogFromPopup(fundId, logId, type) {
-  const fund = db.investmentFunds.find((f) => f.id === fundId);
+  const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (!fund) return;
   if (confirm("Deseja apagar este registro?")) {
     if (type === "aporte")
-      fund.deposits = fund.deposits.filter((d) => d.id !== logId);
-    else if (type === "resgate")
-      fund.withdrawals = fund.withdrawals.filter((w) => w.id !== logId);
+      fund.deposits = fund.deposits.filter((d) => String(d.id) !== String(logId));
+    else if (type === "resgate" || type === "saque")
+      fund.withdrawals = fund.withdrawals.filter((w) => String(w.id) !== String(logId));
     else
-      fund.balanceLogs = fund.balanceLogs.filter((b) => b.id !== logId);
+      fund.balanceLogs = fund.balanceLogs.filter((b) => String(b.id) !== String(logId));
     saveDatabase();
     openInvestActionPopup(fundId);
     renderInvestmentsScreen();
@@ -1262,7 +1270,7 @@ function saveFundName() {
   const newName = document
     .getElementById("editFundNameInput")
     .value.trim();
-  const fund = db.investmentFunds.find((f) => f.id === fundId);
+  const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (fund && newName) {
     fund.name = newName;
     saveDatabase();
@@ -1274,7 +1282,7 @@ function saveFundName() {
 
 function addFundDeposit(fundId) {
   event?.stopPropagation();
-  const fund = db.investmentFunds.find((f) => f.id === fundId);
+  const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (!fund) return;
   const date = document.getElementById(`depDate-${fundId}`).value;
   const amount = getMoney(`depAmount-${fundId}`);
@@ -1289,7 +1297,7 @@ function addFundDeposit(fundId) {
 
 function addFundBalanceLog(fundId) {
   event?.stopPropagation();
-  const fund = db.investmentFunds.find((f) => f.id === fundId);
+  const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (!fund) return;
   const date = document.getElementById(`balDate-${fundId}`).value;
   const amount = getMoney(`balAmount-${fundId}`);
@@ -1304,15 +1312,15 @@ function addFundBalanceLog(fundId) {
 
 function deleteInvestLog(fundId, logId, type) {
   event?.stopPropagation();
-  const fund = db.investmentFunds.find((f) => f.id === fundId);
+  const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (!fund) return;
   if (confirm("Deseja apagar este registro?")) {
     if (type === "aporte")
-      fund.deposits = fund.deposits.filter((d) => d.id !== logId);
-    else if (type === "resgate")
-      fund.withdrawals = fund.withdrawals.filter((w) => w.id !== logId);
+      fund.deposits = fund.deposits.filter((d) => String(d.id) !== String(logId));
+    else if (type === "resgate" || type === "saque")
+      fund.withdrawals = fund.withdrawals.filter((w) => String(w.id) !== String(logId));
     else
-      fund.balanceLogs = fund.balanceLogs.filter((b) => b.id !== logId);
+      fund.balanceLogs = fund.balanceLogs.filter((b) => String(b.id) !== String(logId));
     saveDatabase();
     renderInvestmentsScreen();
     setTimeout(() => toggleInvestCard(fundId), 50);
@@ -1321,7 +1329,7 @@ function deleteInvestLog(fundId, logId, type) {
 
 function addCofrinhoWithdrawal(fundId) {
   event?.stopPropagation();
-  const fund = db.investmentFunds.find((f) => f.id === fundId);
+  const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (!fund) return;
   const date = document.getElementById(`saqueDate-${fundId}`).value;
   const amount = getMoney(`saqueAmount-${fundId}`);
@@ -1336,11 +1344,11 @@ function addCofrinhoWithdrawal(fundId) {
 
 function deleteCofrinhoWithdrawal(fundId, withdrawalId) {
   event?.stopPropagation();
-  const fund = db.investmentFunds.find((f) => f.id === fundId);
+  const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (!fund) return;
   if (confirm("Deseja apagar este saque?")) {
     fund.withdrawals = fund.withdrawals.filter(
-      (w) => w.id !== withdrawalId,
+      (w) => String(w.id) !== String(withdrawalId),
     );
     saveDatabase();
     renderInvestmentsScreen();
@@ -1454,7 +1462,7 @@ function confirmFinishFund() {
 }
 
 function toggleFinishFund(fundId) {
-  const fund = db.investmentFunds.find((f) => f.id === fundId);
+  const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (!fund) return;
   fund.isFinished = !fund.isFinished;
   saveDatabase();
@@ -1464,7 +1472,7 @@ function toggleFinishFund(fundId) {
 function deleteFund(fundId) {
   if (confirm("Tem certeza que deseja apagar este investimento?")) {
     db.investmentFunds = db.investmentFunds.filter(
-      (f) => f.id !== fundId,
+      (f) => String(f.id) !== String(fundId),
     );
     saveDatabase();
     renderInvestmentsScreen();
@@ -1548,14 +1556,14 @@ function renderPatrimonyChart(period) {
     li.style.cssText = opacityStyle;
     li.innerHTML = `
                 <label style="display:flex; align-items:center; gap:8px; cursor:${isDisabledInMode ? "not-allowed" : "pointer"};">
-                    <input type="checkbox" ${!chartVisibleAssets.has(fund.id) && !isDisabledInMode ? "checked" : ""} ${disabledAttr} onchange="toggleChartAsset('${fund.id}')">
+                    <input type="checkbox" ${!chartVisibleAssets.has(String(fund.id)) && !isDisabledInMode ? "checked" : ""} ${disabledAttr} onchange="toggleChartAsset('${fund.id}')">
                     <span style="display:inline-block; width:12px; height:12px; background-color:${color}; border-radius:50%;"></span>
-                    <span>${isCofrinho ? "🐷 " : "📈 "}${fund.name} ${isDisabledInMode ? "(Apenas %)" : ""}</span>
+                    <span>${isCofrinho ? "🐷 " : "📈 "}${escapeBankHtml(fund.name)} ${isDisabledInMode ? "(Apenas %)" : ""}</span>
                 </label>
             `;
     assetListEl.appendChild(li);
 
-    if (chartVisibleAssets.has(fund.id) || isDisabledInMode) return;
+    if (chartVisibleAssets.has(String(fund.id)) || isDisabledInMode) return;
 
     let totalDep = sumAmounts(fund.deposits);
     let latestBal = totalDep;
