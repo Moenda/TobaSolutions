@@ -144,17 +144,6 @@ function renderWorkoutRecord(workout) {
   `;
 }
 
-const WORKOUT_DISTANCE_DESTINATIONS = [
-  { label: "São Paulo → Rio de Janeiro", distanceKm: 360, done: "foi de São Paulo ao Rio de Janeiro" },
-  { label: "São Paulo → Manaus", distanceKm: 2690, done: "foi de São Paulo a Manaus" },
-  { label: "São Paulo → Nova York", distanceKm: 7690, done: "foi de São Paulo a Nova York" },
-  { label: "São Paulo → Madri", distanceKm: 8390, done: "foi de São Paulo a Madri" },
-  { label: "São Paulo → Dubai", distanceKm: 12220, done: "foi de São Paulo a Dubai" },
-  { label: "São Paulo → Pequim", distanceKm: 17750, done: "foi de São Paulo a Pequim" },
-  { label: "São Paulo → Tóquio", distanceKm: 18550, done: "foi de São Paulo a Tóquio" },
-  { label: "Uma volta ao mundo", distanceKm: 40075, done: "deu a volta ao mundo" },
-];
-
 function getWorkoutLifetimeStats(workouts = healthDb.workouts) {
   return workouts.reduce(
     (totals, workout) => {
@@ -183,45 +172,6 @@ function getWorkoutLifetimeStats(workouts = healthDb.workouts) {
     },
     { durationMinutes: 0, calories: 0, distance: 0, walkDistance: 0, bikeDistance: 0, ellipticalDistance: 0, otherDistance: 0, pushups: 0, situps: 0, squats: 0, liftKg: 0, liftReps: 0 },
   );
-}
-
-// Linha de progresso com barra. Abaixo de 100% mostra a porcentagem; ao
-// completar, mostra quantas vezes já foi feito ("12×") e uma frase.
-function renderWorkoutProgressRow({ label, hint = "", ratio, doneText = "", note = "" }) {
-  const percentage = ratio * 100;
-  const barWidth = Math.min(100, Math.max(0, percentage));
-  const completions = Math.floor(ratio);
-  const value = completions >= 1
-    ? `${formatWorkoutNumber(completions, 0)}×`
-    : `${formatWorkoutNumber(percentage, 1)}%`;
-  const ariaValue = completions >= 1
-    ? `${formatWorkoutNumber(completions, 0)} vezes`
-    : `${formatWorkoutNumber(percentage, 1)}%`;
-  return `
-    <div class="workout-distance-route">
-      <div class="workout-distance-route-label">
-        <span>${label}${hint ? ` <span style="color:#8b949e">${hint}</span>` : ""}</span>
-        <span class="workout-distance-route-value${completions >= 1 ? " workout-route-done" : ""}">${value}</span>
-      </div>
-      <div class="workout-earth-progress-track" role="progressbar" aria-label="${label}: ${ariaValue}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${barWidth}">
-        <div class="workout-earth-progress-fill workout-distance-fill${completions >= 1 ? " complete" : ""}" style="width: ${barWidth}%"></div>
-      </div>
-      ${completions >= 1 && doneText ? `<div class="workout-progress-done">✅ ${doneText}${note ? ` <span>${note}</span>` : ""}</div>` : ""}
-    </div>
-  `;
-}
-
-function renderWorkoutDistanceBars(distanceKm) {
-  return WORKOUT_DISTANCE_DESTINATIONS.map((destination) => {
-    const ratio = destination.distanceKm ? distanceKm / destination.distanceKm : 0;
-    const times = Math.floor(ratio);
-    return renderWorkoutProgressRow({
-      label: destination.label,
-      hint: `(~${formatWorkoutNumber(destination.distanceKm, 0)} km)`,
-      ratio,
-      doneText: `Você já ${destination.done} ${formatWorkoutNumber(times, 0)} ${times === 1 ? "vez" : "vezes"}`,
-    });
-  }).join("");
 }
 
 /* ---------------------------------------------------------------------
@@ -253,50 +203,6 @@ function sumWorkoutLift(workouts) {
 }
 
 // Escala de comparações (pesos aproximados), do mais leve ao mais absurdo.
-const WORKOUT_LIFT_EQUIVALENTS = [
-  { icon: "🐈", one: "gato", name: "gatos", kg: 4, note: "Gato doméstico. Levantado sem ele aprovar." },
-  { icon: "🐕", one: "cachorro caramelo", name: "cachorros caramelo", kg: 12, note: "O patrimônio nacional." },
-  { icon: "🧍", one: "pessoa adulta", name: "pessoas adultas", kg: 75, note: "Sem reclamar de ninguém." },
-  { icon: "🏍️", one: "moto CG", name: "motos CG", kg: 115, note: "Moto de entrega fazendo supino." },
-  { icon: "🦁", one: "leão", name: "leões", kg: 190, note: "Leão adulto, e ele nem rugiu." },
-  { icon: "🎹", one: "piano de cauda", name: "pianos de cauda", kg: 500, note: "Música para os ouvidos, dor para a coluna." },
-  { icon: "🚗", one: "Fusca", name: "Fuscas", kg: 830, note: "O Fusca de 1970, sem a mudança de casa." },
-  { icon: "🦛", one: "hipopótamo", name: "hipopótamos", kg: 1500, note: "Bicho que parece fofo e pesa uma tonelada e meia." },
-  { icon: "🐘", one: "elefante", name: "elefantes", kg: 5500, note: "Elefante africano. A tromba não ajuda." },
-  { icon: "🚌", one: "ônibus urbano", name: "ônibus urbanos", kg: 12000, note: "Vazio, mas é lotação de 12 toneladas." },
-  { icon: "✈️", one: "Boeing 747 (vazio)", name: "Boeings 747 (vazios)", kg: 180000, note: "Decolagem por sua conta e risco." },
-  { icon: "🗽", one: "Estátua da Liberdade", name: "Estátuas da Liberdade", kg: 204000, note: "Tocha inclusa." },
-  { icon: "🙌", one: "Cristo Redentor", name: "Cristos Redentores", kg: 635000, note: "De braços abertos, mas agora quem abraça é você." },
-  { icon: "🗼", one: "Torre Eiffel", name: "Torres Eiffel", kg: 10100000, note: "Paris que me perdoe, mas a torre veio junto." },
-  { icon: "🚢", one: "Titanic", name: "Titanics", kg: 52000000, note: "Sem iceberg, sem drama e sem Celine Dion." },
-];
-
-function formatWorkoutCount(value) {
-  if (value >= 100) return formatWorkoutNumber(value, 0);
-  if (value >= 1) return formatWorkoutNumber(value, 1);
-  return formatWorkoutNumber(value, 3);
-}
-
-function renderWorkoutLiftDetail(stats) {
-  const total = stats.liftKg;
-  const intro = total > 0
-    ? `<p>Você levantou <strong>${formatWorkoutNumber(total, 0)} kg</strong> em <strong>${formatWorkoutNumber(stats.liftReps, 0)} repetições</strong>. Isso dá, mais ou menos:</p>`
-    : `<p>Ainda não tem nada levantado por aqui. Registre um <strong>treino de força</strong> com carga e esta escala começa a andar.</p>`;
-  const rows = WORKOUT_LIFT_EQUIVALENTS.map((item) => {
-    const ratio = total / item.kg;
-    const times = Math.floor(ratio);
-    const unit = item.one.charAt(0).toUpperCase() + item.one.slice(1);
-    return renderWorkoutProgressRow({
-      label: `${item.icon} ${unit}`,
-      hint: `(~${formatWorkoutNumber(item.kg, 0)} kg)`,
-      ratio,
-      doneText: `Você já levantou ${formatWorkoutNumber(times, 0)} ${times === 1 ? item.one : item.name}`,
-      note: item.note,
-    });
-  }).join("");
-  return `${intro}<div class="workout-distance-routes">${rows}</div><p style="margin-top:1rem;color:#8b949e">Conta de guardanapo com pesos aproximados. Levantar o Titanic é por série, pelo menos em espírito.</p>`;
-}
-
 /* ---------------------------------------------------------------------
  * CARDS DO "HALL DO HERÓI" (geral e de cada mês)
  * ------------------------------------------------------------------- */
@@ -399,71 +305,6 @@ function renderWorkoutMonth(workouts, today) {
     ? month.workouts.map(renderWorkoutRecord).join("")
     : '<span style="font-size: 0.8rem; color: #8b949e">Nenhum treino registrado neste mês ainda.</span>';
   records.onclick = handleWorkoutRecordClick;
-}
-
-function openWorkoutHallDetail(detail, monthKey = "") {
-  // monthKey vazio = Hall do Herói geral; com valor = só aquele mês
-  const scopeWorkouts = monthKey
-    ? getWorkoutMonthStats(healthDb.workouts, monthKey).workouts
-    : healthDb.workouts;
-  const stats = getWorkoutLifetimeStats(scopeWorkouts);
-  const title = document.getElementById("workoutHallDetailTitle");
-  const content = document.getElementById("workoutHallDetailContent");
-
-  if (detail === "energy") {
-    title.innerText = "🔥 Energia queimada";
-    const foods = [
-      { icon: "🍕", name: "fatias de pizza", calories: 275, detail: "275 kcal por fatia média, com queijo puxando fio e calabresa fazendo hora extra." },
-      { icon: "🍣", name: "temakis completos", calories: 230, detail: "230 kcal por peça completa, não aquele mini que desaparece em duas mordidas." },
-      { icon: "🍬", name: "brigadeiros", calories: 80, detail: "80 kcal por unidade de festa. Se foi de colher, vamos deixar a matemática descansar." },
-    ];
-    content.innerHTML = `
-      <p>Você queimou <strong>${formatWorkoutNumber(stats.calories, 0)} kcal</strong>. Isso dá, mais ou menos:</p>
-      <div class="workout-distance-routes">
-        ${foods.map((food) => `<div class="workout-legacy-stat"><strong>${food.icon} ${formatWorkoutNumber(stats.calories / food.calories, 1)} ${food.name}</strong><span class="workout-legacy-detail">${food.detail}</span></div>`).join("")}
-      </div>
-      <p style="margin-top:1rem;color:#8b949e">Conta de guardanapo, chefia: não vira passe livre no rodízio, mas já dá pra comemorar sem inventar número.</p>
-    `;
-  } else if (detail === "distance") {
-    title.innerText = "🌍 Sua quilometragem pelo mapa";
-    content.innerHTML = `
-      <p>Você já acumulou <strong>${formatWorkoutNumber(stats.distance, 2)} km</strong>. Toda caminhada conta, até aquela que começou porque o elevador demorou.</p>
-      <div class="workout-distance-routes">${renderWorkoutDistanceBars(stats.distance)}</div>
-      <p style="margin-top:1rem;color:#8b949e">Distâncias aproximadas em linha reta a partir de São Paulo; trajetos reais variam. O importante é a barra crescer, não comprar passagem hoje.</p>
-    `;
-  } else if (detail === "saitama") {
-    title.innerText = "👊 Você contra o mestre careca";
-    const benchmarkDays = 365 * 3;
-    const benchmarkReps = 100 * benchmarkDays;
-    const benchmarkDistance = 10 * benchmarkDays;
-    const comparisons = [
-      { name: "Abdominais", value: stats.situps },
-      { name: "Flexões", value: stats.pushups },
-      { name: "Agachamentos", value: stats.squats },
-    ];
-    content.innerHTML = `
-      <p>Na referência do treino, Saitama fez <strong>100 de cada exercício e correu 10 km por dia durante 3 anos</strong>. Isso dá <strong>${formatWorkoutNumber(benchmarkReps, 0)} repetições de cada</strong> e <strong>${formatWorkoutNumber(benchmarkDistance, 0)} km</strong>.</p>
-      <div class="workout-distance-routes">
-        ${comparisons.map((item) => `<div class="workout-legacy-stat"><div class="workout-distance-route-label"><span>${item.name}</span><span class="workout-distance-route-value">${formatWorkoutNumber((item.value / benchmarkReps) * 100, 3)}%</span></div><strong>${formatWorkoutNumber(item.value, 0)} / ${formatWorkoutNumber(benchmarkReps, 0)}</strong><div class="workout-earth-progress-track" role="progressbar" aria-label="${item.name}: ${formatWorkoutNumber((item.value / benchmarkReps) * 100, 3)}% do treino Saitama" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.min(100, (item.value / benchmarkReps) * 100)}"><div class="workout-earth-progress-fill" style="width:${Math.min(100, (item.value / benchmarkReps) * 100)}%"></div></div></div>`).join("")}
-        <div class="workout-legacy-stat"><div class="workout-distance-route-label"><span>Distância</span><span class="workout-distance-route-value">${formatWorkoutNumber((stats.distance / benchmarkDistance) * 100, 2)}%</span></div><strong>${formatWorkoutNumber(stats.distance, 2)} / ${formatWorkoutNumber(benchmarkDistance, 0)} km</strong><div class="workout-earth-progress-track" role="progressbar" aria-label="Distância: ${formatWorkoutNumber((stats.distance / benchmarkDistance) * 100, 2)}% do treino Saitama" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.min(100, (stats.distance / benchmarkDistance) * 100)}"><div class="workout-earth-progress-fill" style="width:${Math.min(100, (stats.distance / benchmarkDistance) * 100)}%"></div></div></div>
-      </div>
-      <p style="margin-top:1rem;color:#8b949e">Não precisa virar o careca até sexta. Ele treinou por 3 anos; você já está fazendo a parte mais difícil: começar e voltar.</p>
-    `;
-  } else if (detail === "lifted") {
-    title.innerText = "🏋️ Peso levantado";
-    content.innerHTML = renderWorkoutLiftDetail(stats);
-  } else {
-    return;
-  }
-
-  if (monthKey) {
-    content.innerHTML = `<p style="color:#8b949e">📅 ${formatWorkoutMonth(monthKey)}</p>${content.innerHTML}`;
-  }
-  document.getElementById("workoutHallDetailModal").classList.add("active");
-}
-
-function closeWorkoutHallDetail() {
-  document.getElementById("workoutHallDetailModal").classList.remove("active");
 }
 
 function renderWorkoutScreen() {
