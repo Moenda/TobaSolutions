@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="color-scheme" content="dark" />
   <meta name="supported-color-schemes" content="dark" />
   <title>Toba Bank | Gastos</title>
@@ -13,237 +13,156 @@
   <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
   <link rel="stylesheet" href="css/bank-base.css" />
   <link rel="stylesheet" href="css/gastos.css" />
 </head>
 
 <body>
   <div class="container">
-    <div class="top-header">
-      <div class="brand-title" onclick="window.location.href='TobaBank-Index.html'" title="Voltar para Início"
-        style="cursor: pointer">
-        <span>🏦 Toba Bank</span>
+    <header class="toba-header">
+      <a class="toba-back" href="TobaBank-Index.html" data-label="Voltar para o Toba Bank" aria-label="Voltar para o Toba Bank">‹</a>
+      <a class="toba-titles" href="TobaBank-Index.html">
+        <span class="toba-app">🏦 Toba Bank</span>
+        <span class="toba-page">💸 Gastos</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-add-btn" data-click="newExpense">+ Gasto</button>
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
       </div>
-      <div class="header-actions" id="headerActionsContainer">
-        <button class="add-btn" onclick="openExpenseModal()">+ Gasto</button>
-        <button class="config-btn" onclick="openConfigModalHandler()" title="Configurações" aria-label="Configurações">⚙️</button>
-        <a class="back-nav-btn" href="TobaBank-Index.html" style="text-decoration: none;">Hub ›</a>
-      </div>
-    </div>
+    </header>
 
-    <div class="app-view active" id="viewMain">
-          <div class="tab-nav">
-            <button class="tab-btn active" id="tabBtnCurrent" onclick="switchTab('current')">
-              📅 Mês Atual
-            </button>
-            <button class="tab-btn" id="tabBtnInstallments" onclick="switchTab('installments')">
-              💳 Parcelas
-            </button>
-            <button class="tab-btn" id="tabBtnFixed" onclick="switchTab('fixed')">
-              🔄 Fixo
-            </button>
+    <nav class="tab-nav" aria-label="Seções do Gastos">
+      <button type="button" class="tab-btn active" id="tabBtnCurrent" data-click="switchTab" data-tab="current">📅 Mês</button>
+      <button type="button" class="tab-btn" id="tabBtnInstallments" data-click="switchTab" data-tab="installments">💳 Parcelas</button>
+      <button type="button" class="tab-btn" id="tabBtnFixed" data-click="switchTab" data-tab="fixed">🔄 Fixos</button>
+      <button type="button" class="tab-btn" id="tabBtnHistory" data-click="switchTab" data-tab="history">📜 Meses</button>
+    </nav>
+
+    <section class="tab-content active" id="tabCurrent">
+      <div class="month-header-row">
+        <span class="month-badge" id="dashMonthBadge">Carregando...</span>
+        <span class="month-days" id="dashHeaderRestantes">-- dias pela frente</span>
+      </div>
+
+      <div class="advice-banner" id="adviceBanner">
+        <span>⚡</span>
+        <div id="adviceText">Economize nos próximos dias para voltar pro verde!</div>
+      </div>
+
+      <!-- Card principal: sobra prevista do mês -->
+      <div class="hero-card">
+        <div class="hero-glow" id="heroGlow"></div>
+
+        <div class="hero-top">
+          <div class="hero-main">
+            <div class="hero-label">Sobra prevista no fim do mês</div>
+            <div class="hero-value" id="dashSobraHero">R$ 0,00</div>
+            <div class="hero-sub" id="dashSobraSubHero">Gasto médio: R$ 0,00/dia</div>
           </div>
+          <button type="button" class="round-btn" data-click="openSobraHelp" aria-label="Como calculamos a sobra?">?</button>
+        </div>
 
-          <div class="tab-content active" id="tabCurrent">
-            <div class="month-header-row">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <span class="month-badge" id="dashMonthBadge">Carregando...</span>
-                <span id="dashHeaderRestantes" style="font-size: 0.8rem; color: #8b949e; font-weight: 600;">Restam: --
-                  dias</span>
-              </div>
-              <button class="history-mini-btn" onclick="switchTab('history')">
-                📜 Histórico
-              </button>
-            </div>
-
-            <div class="advice-banner" id="adviceBanner">
-              <span>⚡</span>
-              <div id="adviceText">
-                Economize nos próximos dias para voltar pro verde!
-              </div>
-            </div>
-
-            <!-- CARD REI: COMANDO EXECUTIVO -->
-            <div
-              style="background: linear-gradient(145deg, #161b22 0%, #0d1117 100%); border: 1px solid #30363d; border-radius: 20px; padding: 22px; margin-bottom: 20px; position: relative; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.5);">
-
-              <!-- Efeito Glow de Fundo (Muda no JS) -->
-              <div id="heroGlow"
-                style="position: absolute; top: -50px; right: -50px; width: 180px; height: 180px; background: rgba(63, 185, 80, 0.12); filter: blur(45px); border-radius: 50%; pointer-events: none;">
-              </div>
-
-              <!-- Topo: A Métrica Principal -->
-              <div
-                style="display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 2;">
-                <div>
-                  <div
-                    style="font-size: 0.85rem; color: #8b949e; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">
-                    Sobra Prevista Estimada</div>
-                  <div id="dashSobraHero"
-                    style="font-size: 2.6rem; font-weight: 800; color: #3fb950; letter-spacing: -1.5px; line-height: 1.1; margin-top: 4px;">
-                    R$ 0,00</div>
-                  <div id="dashSobraSubHero" style="font-size: 0.85rem; color: #f85149; margin-top: 6px; font-weight: 700;">
-                    Média Gasto Diário: R$ 0,00</div>
-                </div>
-                <button onclick="abrirModalSobra()"
-                  style="background: #21262d; border: 1px solid #30363d; color: #58a6ff; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">?</button>
-              </div>
-
-              <!-- Meio: Barra de Progresso do Orçamento -->
-              <div style="margin-top: 24px; position: relative; z-index: 2;">
-                <div
-                  style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #c9d1d9; margin-bottom: 8px; font-weight: 600;">
-                  <span>Total Gasto: <b id="dashVarSpentHero" style="color: #f0f6fc;">R$ 0,00</b></span>
-                  <span id="dashLimitHero" style="color: #8b949e;">Orçamento: R$ 0,00</span>
-                </div>
-                <div
-                  style="width: 100%; height: 8px; background: #21262d; border-radius: 4px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);">
-                  <div id="heroProgressBar"
-                    style="height: 100%; width: 0%; background: #3fb950; border-radius: 4px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease;">
-                  </div>
-                </div>
-              </div>
-
-              <!-- Base: As 3 Pílulas Táticas -->
-              <div class="hero-pills-container">
-
-                <!-- Pílula 1: Disponível (Menor e sem o "Hoje") -->
-                <div style="text-align: left;">
-                  <div class="pill-title">Disponível</div>
-                  <div id="dashAvailableHero" class="pill-value" style="color: #f0f6fc;">R$ 0,00</div>
-                </div>
-
-                <!-- Pílula 2: A Facada Diária (Texto Branco, Números Vermelhos, Alinhado à Direita) -->
-                <div
-                  style="text-align: right; border-left: 1px solid #30363d; border-right: 1px solid #30363d; padding: 0 6px;">
-                  <div class="pill-facada" style="margin-bottom: 2px;">
-                    <span style="color: #f0f6fc;">Parcelas:</span> <span id="dashDailyInstHero"
-                      style="color: #f85149; font-weight: 700;">-R$ 0,00/d</span>
-                  </div>
-                  <div class="pill-facada">
-                    <span style="color: #f0f6fc;">Fixo:</span> <span id="dashDailyFixedHero"
-                      style="color: #f85149; font-weight: 700;">-R$ 0,00/d</span>
-                  </div>
-                </div>
-
-                <!-- Pílula 3: Cofre do Mês (Número Menor) -->
-                <div style="text-align: right;">
-                  <div class="pill-title">Cofre do Mês</div>
-                  <div id="dashVaultHero" class="pill-value" style="color: #3fb950;">R$ 0,00</div>
-                </div>
-
-              </div>
-
-            </div>
-
-            <div class="home-acc-card expanded" id="homeCatCard">
-              <div class="home-acc-header" onclick="toggleHomeAcc('homeCatCard')">
-                <span class="home-acc-title">📊 Gastos por Categoria</span>
-                <span class="home-acc-arrow">▼</span>
-              </div>
-              <div class="home-acc-body">
-                <div id="categoryBarsContainer"></div>
-              </div>
-            </div>
-
-            <div class="home-acc-card" id="homeInstCard">
-              <div class="home-acc-header" onclick="toggleHomeAcc('homeInstCard')">
-                <span class="home-acc-title">💳 Parcelas do Mês</span>
-                <span class="home-acc-arrow">▼</span>
-              </div>
-              <div class="home-acc-body">
-                <div class="expense-list" id="homeInstallmentsListContainer"></div>
-              </div>
-            </div>
-
-            <div class="home-acc-card expanded" id="homeTransCard">
-              <div class="home-acc-header" onclick="toggleHomeAcc('homeTransCard')">
-                <span class="home-acc-title">💸 Lançamentos do Mês</span>
-                <span class="home-acc-arrow">▼</span>
-              </div>
-              <div class="home-acc-body">
-                <div class="expense-list" id="expenseListContainer"></div>
-              </div>
-            </div>
+        <div class="hero-progress">
+          <div class="hero-progress-row">
+            <span><b id="dashVarSpentHero">R$ 0,00</b> gastos</span>
+            <span id="dashLimitHero">de R$ 0,00</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="heroProgressBar"></div>
           </div>
         </div>
 
-    <div class="tab-content" id="tabInstallments">
-          <div class="section-title">
-            <span>💳 Compras Parceladas Ativas</span>
+        <div class="toba-stats hero-stats">
+          <div class="toba-stat">
+            <span class="toba-stat-label">💵 Livre hoje</span>
+            <span class="toba-stat-value" id="dashAvailableHero">R$ 0,00</span>
           </div>
-
-          <div class="metrics-grid" style="margin-bottom: 1.2rem">
-            <div class="card">
-              <div class="card-title">Parcelas deste Mês</div>
-              <div class="card-value text-red" id="instMonthlyTotal">
-                R$ 0,00
-              </div>
-              <div class="sub-text" id="instDailyDeductionSub">
-                Impacto diário:<br />-R$ 0,00/dia
-              </div>
-            </div>
-            <div class="card">
-              <div class="card-title">Total a Quitar</div>
-              <div class="card-value text-gold" id="instTotalRemaining">
-                R$ 0,00
-              </div>
-              <div class="sub-text" id="instActiveCountSub">
-                0 compras no total<br />0 terminam este mês
-              </div>
-            </div>
+          <div class="toba-stat">
+            <span class="toba-stat-label">🐖 Cofre do mês</span>
+            <span class="toba-stat-value text-green" id="dashVaultHero">R$ 0,00</span>
           </div>
-
-          <div id="installmentsContainer"></div>
-
-          <div class="section-title" style="margin-top: 2rem">
-            <span>✅ Parcelamentos Finalizados</span>
+          <div class="toba-stat">
+            <span class="toba-stat-label">💳 Parcelas/dia</span>
+            <span class="toba-stat-value text-red" id="dashDailyInstHero">-R$ 0,00</span>
           </div>
-          <div id="finishedInstallmentsContainer"></div>
+          <div class="toba-stat">
+            <span class="toba-stat-label">🔄 Fixos/dia</span>
+            <span class="toba-stat-value text-red" id="dashDailyFixedHero">-R$ 0,00</span>
+          </div>
         </div>
+      </div>
 
-    <div class="tab-content" id="tabFixed">
-          <div class="section-title">
-            <span>🔄 Gastos Fixos Mensais</span>
-          </div>
+      <div class="acc-card expanded" id="homeCatCard">
+        <button type="button" class="acc-header" data-click="toggleCard" data-target="homeCatCard">
+          <span class="acc-title">📊 Gastos por categoria</span>
+          <span class="acc-arrow">▼</span>
+        </button>
+        <div class="acc-body">
+          <div id="categoryBarsContainer"></div>
+        </div>
+      </div>
 
-          <div class="metrics-grid" style="margin-bottom: 1.2rem">
-            <div class="card card-full">
-              <div class="card-title">Total Fixo Mensal</div>
-              <div class="card-value text-red" id="fixedTotalDisplay">
-                R$ 0,00
-              </div>
-              <div class="sub-text" style="color: #58a6ff; margin-top: 6px">
-                Esse valor total é rateado por dia no painel principal pra não
-                engolir seu saldo de uma vez só!
-              </div>
-            </div>
-          </div>
+      <div class="acc-card" id="homeInstCard">
+        <button type="button" class="acc-header" data-click="toggleCard" data-target="homeInstCard">
+          <span class="acc-title">💳 Parcelas do mês <span class="acc-count" id="homeInstCount">0</span></span>
+          <span class="acc-arrow">▼</span>
+        </button>
+        <div class="acc-body">
+          <div class="expense-list" id="homeInstallmentsListContainer"></div>
+        </div>
+      </div>
 
-          <div class="card" style="margin-bottom: 1.2rem; padding: 1rem">
-            <div style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 10px;
-                  ">
-              <div class="card-title" style="color: #3fb950; margin-bottom: 0">
-                ➕ Adicionar gasto fixo
-              </div>
-              <button class="btn btn-primary" onclick="addFixedExpense()"
-                style="width: auto; padding: 0.35rem 0.8rem; font-size: 0.78rem">
-                Adicionar
-              </button>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 8px">
-              <div style="display: flex; gap: 8px">
-                <input type="text" id="fixedNameInput" class="form-control" placeholder="Ex: Spotify, Netflix, Academia..."
-                  style="flex: 2" />
-                <input type="text" inputmode="numeric" id="fixedAmountInput" class="form-control smart-money"
-                  placeholder="R$ 0,00" style="flex: 1" />
-              </div>
-              <div>
-                <select id="fixedCategorySelect" class="form-control" required>
+      <div class="acc-card expanded" id="homeTransCard">
+        <button type="button" class="acc-header" data-click="toggleCard" data-target="homeTransCard">
+          <span class="acc-title">💸 Lançamentos do mês <span class="acc-count" id="homeTransCount">0</span></span>
+          <span class="acc-arrow">▼</span>
+        </button>
+        <div class="acc-body">
+          <div class="expense-list" id="expenseListContainer"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab-content" id="tabInstallments">
+      <div class="toba-stats section-stats">
+        <div class="toba-stat">
+          <span class="toba-stat-label">Parcelas deste mês</span>
+          <span class="toba-stat-value text-red" id="instMonthlyTotal">R$ 0,00</span>
+          <span class="toba-stat-sub" id="instDailyDeductionSub">-R$ 0,00/dia</span>
+        </div>
+        <div class="toba-stat">
+          <span class="toba-stat-label">Falta quitar</span>
+          <span class="toba-stat-value text-gold" id="instTotalRemaining">R$ 0,00</span>
+          <span class="toba-stat-sub" id="instActiveCountSub">0 compras ativas</span>
+        </div>
+      </div>
+
+      <div class="section-title">💳 Compras parceladas ativas</div>
+      <div id="installmentsContainer"></div>
+
+      <div class="section-title">✅ Quitadas</div>
+      <div id="finishedInstallmentsContainer"></div>
+    </section>
+
+    <section class="tab-content" id="tabFixed">
+      <div class="toba-stats section-stats">
+        <div class="toba-stat is-wide">
+          <span class="toba-stat-label">Total fixo mensal</span>
+          <span class="toba-stat-value text-red" id="fixedTotalDisplay">R$ 0,00</span>
+          <span class="toba-stat-sub text-blue">Dividido por dia no painel, pra não engolir o saldo de uma vez só.</span>
+        </div>
+      </div>
+
+      <form class="card add-fixed-card" data-submit="addFixedExpense">
+        <div class="card-header">
+          <span class="card-title text-green">➕ Novo gasto fixo</span>
+        </div>
+        <div class="form-row">
+          <input type="text" id="fixedNameInput" class="form-control fixed-name" placeholder="Ex: Spotify, Academia..." />
+          <input type="text" inputmode="numeric" id="fixedAmountInput" class="form-control smart-money fixed-amount" placeholder="R$ 0,00" />
+        </div>
+        <select id="fixedCategorySelect" class="form-control" style="margin-top: 8px">
                   <optgroup label="🏠 Casa & Moradia">
                     <option value="Moradia - Aluguel/Condomínio">
                       🏢 Aluguel / Condomínio
@@ -305,130 +224,130 @@
                     <option value="Outros">📦 Outros Gastos</option>
                   </optgroup>
                 </select>
-              </div>
-            </div>
-          </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 8px">Adicionar</button>
+      </form>
 
-          <div class="section-title" style="margin-top: 1rem">
-            <span>📋 Suas Assinaturas e Contas</span>
-          </div>
-          <div class="expense-list" id="fixedExpensesList"></div>
-        </div>
+      <div class="section-title">📋 Suas assinaturas e contas</div>
+      <div class="expense-list" id="fixedExpensesList"></div>
+    </section>
 
-    <div class="tab-content" id="tabHistory">
-          <div class="section-title">
-            <span>📂 Histórico de Meses Fechados</span>
-          </div>
-          <div id="historyContainer"></div>
-        </div>
-
-    <div id="modalSobra" class="modal-overlay"
-          style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;">
-          <div class="modal-content"
-            style="background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 20px; width: 90%; max-width: 400px; color: #c9d1d9;">
-            <div
-              style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #30363d; padding-bottom: 10px; margin-bottom: 15px;">
-              <h3 style="margin: 0; font-size: 1.1rem; color: #58a6ff;">Como calculamos a Sobra?</h3>
-              <button onclick="fecharModalSobra()"
-                style="background: transparent; border: none; color: #8b949e; font-size: 20px; cursor: pointer;">&times;</button>
-            </div>
-            <div id="detalhesMathSobra" style="font-size: 0.9rem; line-height: 1.6;">
-              <!-- O JS vai cuspir as contas aqui -->
-            </div>
-          </div>
-        </div>
+    <section class="tab-content" id="tabHistory">
+      <div class="section-title is-first">📂 Meses fechados</div>
+      <div id="historyContainer"></div>
+    </section>
   </div>
 
-  <div class="modal-overlay" id="editInstallmentModal">
-      <div class="modal">
-        <div class="modal-header">
-          <h3>✏️ Editar Compra Parcelada</h3>
-          <button class="close-btn" onclick="
-                document
-                  .getElementById('editInstallmentModal')
-                  .classList.remove('active')
-              ">
-            &times;
-          </button>
+  <!-- Itens da página que aparecem na ⚙️ (o resto vem do toba-common.js) -->
+  <div id="tobaSettingsExtra" hidden>
+    <div class="toba-settings-section">
+      <div class="toba-settings-label">💰 Orçamento</div>
+      <div class="form-group">
+        <label for="dailyBudgetInput">Orçamento diário (R$)</label>
+        <input type="text" inputmode="decimal" id="dailyBudgetInput" class="form-control" placeholder="Ex: 100,00" data-input="saveDailyBudget" />
+        <div class="hint-box" id="monthlyProjection" style="margin-top: 0.4rem">Informe um valor para calcular.</div>
+      </div>
+
+      <button type="button" class="toba-menu-btn" data-click="toggleStartDateArea">
+        <span class="toba-menu-icon">📅</span>
+        <span class="toba-menu-text">
+          <span class="toba-menu-title">Data do 1º uso</span>
+          <span class="toba-menu-desc">Avançado: mexe no cofre acumulado</span>
+        </span>
+        <span id="startDateArrow">🔒</span>
+      </button>
+      <div id="startDateHiddenArea" class="start-date-area" hidden>
+        <p class="text-muted" style="font-size: 0.75rem; margin-bottom: 6px">⚠️ <b>Atenção:</b> alterar esta data muda o cálculo acumulado do cofre.</p>
+        <input type="date" id="startDateInput" class="form-control" data-change="saveStartDate" />
+      </div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="modalSobra">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🧮 Como calculamos a sobra?</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="detalhesMathSobra"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-primary" data-close>Entendi, chefia 🫡</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="editInstallmentModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>✏️ Editar compra parcelada</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form id="editInstallmentForm" data-submit="saveEditedInstallment">
+        <input type="hidden" id="editInstId" />
+        <div class="form-group">
+          <label for="editInstDesc">Descrição</label>
+          <input type="text" id="editInstDesc" class="form-control" required />
         </div>
-        <form id="editInstallmentForm">
-          <input type="hidden" id="editInstId" />
+        <div class="form-group">
+          <label for="editInstTotalAmount">Valor TOTAL da compra (R$)</label>
+          <input type="text" inputmode="numeric" id="editInstTotalAmount" class="form-control smart-money" required />
+        </div>
+        <div class="grid-2">
           <div class="form-group">
-            <label>Descrição</label>
-            <input type="text" id="editInstDesc" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label>Valor TOTAL da Compra (R$)</label>
-            <input type="text" inputmode="numeric" id="editInstTotalAmount" class="form-control smart-money" required />
-          </div>
-          <div class="form-group">
-            <label>Número de Parcelas</label>
+            <label for="editInstCount">Nº de parcelas</label>
             <input type="number" id="editInstCount" class="form-control" min="1" max="120" required />
           </div>
           <div class="form-group">
-            <label>Data da 1ª Parcela</label>
+            <label for="editInstStartDate">1ª parcela</label>
             <input type="date" id="editInstStartDate" class="form-control" required />
           </div>
-          <div style="display: flex; gap: 8px; margin-top: 1rem">
-            <button type="submit" class="btn btn-primary" style="flex: 2">
-              Salvar Alterações
-            </button>
-            <button type="button" class="btn btn-danger" onclick="deleteInstallmentFromEditModal()" style="flex: 1">
-              🗑️ Apagar
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-  <div class="modal-overlay" id="expenseModal">
-      <div class="modal">
-        <div class="modal-header">
-          <h3 id="expenseModalTitle">➕ Novo Gasto</h3>
-          <button class="close-btn" id="closeExpenseBtn">&times;</button>
         </div>
-        <form id="expenseForm">
-          <input type="hidden" id="expenseIdInput" />
-
-          <div class="form-group">
-            <label for="expenseDescInput">Descrição</label>
-            <input type="text" id="expenseDescInput" class="form-control" placeholder="Ex: Almoço, Uber..." required />
+        <div class="toba-sheet-footer">
+          <div class="btn-row">
+            <button type="button" class="btn btn-danger btn-grow-1" data-click="deleteInstallmentFromEditModal">🗑️ Apagar</button>
+            <button type="submit" class="btn btn-primary btn-grow-2">Salvar</button>
           </div>
+        </div>
+      </form>
+    </div>
+  </div>
 
-          <div class="form-group" id="installmentCheckboxGroup">
-            <label class="switch-container">
-              <input type="checkbox" id="isInstallmentCheckbox" onchange="toggleInstallmentFields()" />
-              <span style="font-size: 0.88rem; font-weight: 600; color: #58a6ff">💳 É uma compra parcelada?</span>
-            </label>
+  <div class="toba-modal" id="expenseModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="expenseModalTitle">➕ Novo gasto</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form id="expenseForm" data-submit="saveExpense">
+        <input type="hidden" id="expenseIdInput" />
+
+        <div class="form-group">
+          <label for="expenseDescInput">Descrição</label>
+          <input type="text" id="expenseDescInput" class="form-control" placeholder="Ex: Almoço, Uber..." required />
+        </div>
+
+        <div class="form-group">
+          <label for="expenseAmountInput" id="amountLabel">Valor do gasto (R$)</label>
+          <input type="text" inputmode="numeric" id="expenseAmountInput" class="form-control smart-money" placeholder="0,00" required data-input="updateInstallmentPreview" />
+        </div>
+
+        <div class="form-group" id="installmentCheckboxGroup">
+          <label class="switch-container">
+            <input type="checkbox" id="isInstallmentCheckbox" data-change="toggleInstallmentFields" />
+            <span>💳 Foi parcelado?</span>
+          </label>
+        </div>
+
+        <div id="installmentFieldsContainer" class="installment-fields" hidden>
+          <div class="form-group" style="margin-bottom: 0.4rem">
+            <label for="installmentCountInput">Número de parcelas</label>
+            <input type="number" id="installmentCountInput" class="form-control" min="2" max="72" value="2" placeholder="Ex: 10" data-input="updateInstallmentPreview" />
           </div>
+          <div class="installment-preview" id="installmentCalcPreview">Valor de cada parcela: R$ 0,00</div>
+        </div>
 
-          <div class="form-group">
-            <label for="expenseAmountInput" id="amountLabel">Valor do Gasto (R$)</label>
-            <input type="text" inputmode="numeric" id="expenseAmountInput" class="form-control smart-money"
-              placeholder="0,00" required />
-          </div>
-
-          <div id="installmentFieldsContainer" style="
-                display: none;
-                background: #0d1117;
-                padding: 0.8rem;
-                border-radius: 10px;
-                border: 1px solid #21262d;
-                margin-bottom: 0.9rem;
-              ">
-            <div class="form-group">
-              <label for="installmentCountInput">Número de Parcelas</label>
-              <input type="number" id="installmentCountInput" class="form-control" min="2" max="72" value="2"
-                placeholder="Ex: 10" />
-            </div>
-            <div style="font-size: 0.78rem; color: #79c0ff; margin-top: 0.3rem" id="installmentCalcPreview">
-              Valor de cada parcela: R$ 0,00
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="expenseCategorySelect">Categoria</label>
-            <select id="expenseCategorySelect" class="form-control" required>
+        <div class="form-group">
+          <label for="expenseCategorySelect">Categoria</label>
+          <select id="expenseCategorySelect" class="form-control" required>
               <optgroup label="🏠 Casa & Moradia">
                 <option value="Moradia - Aluguel/Condomínio">
                   🏢 Aluguel / Condomínio
@@ -482,124 +401,115 @@
                 <option value="Outros">📦 Outros Gastos</option>
               </optgroup>
             </select>
-          </div>
-
-          <div class="form-group">
-            <label for="expenseDateInput">Data do Gasto / 1ª Parcela</label>
-            <input type="date" id="expenseDateInput" class="form-control" required />
-          </div>
-
-          <div style="display: flex; gap: 8px; margin-top: 1rem">
-            <button type="submit" class="btn btn-primary" style="flex: 2">
-              Salvar Gasto
-            </button>
-            <button type="button" class="btn btn-danger" id="deleteExpenseModalBtn" onclick="deleteExpenseFromModal()"
-              style="flex: 1; display: none">
-              🗑️ Apagar
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-  <div class="modal-overlay" id="configModal">
-      <div class="modal">
-        <div class="modal-header">
-          <h3>⚙️ Configurações</h3>
-          <button class="close-btn" id="closeConfigBtn">&times;</button>
         </div>
 
         <div class="form-group">
-          <label for="dailyBudgetInput">1. Orçamento Diário (R$)</label>
-          <input type="text" inputmode="decimal" id="dailyBudgetInput" class="form-control" placeholder="Ex: 100,00" />
-          <div style="
-                background: rgba(88, 166, 255, 0.1);
-                border-left: 3px solid #58a6ff;
-                padding: 0.6rem;
-                font-size: 0.8rem;
-                color: #79c0ff;
-                margin-top: 0.4rem;
-                border-radius: 0 6px 6px 0;
-              " id="monthlyProjection">
-            Informe um valor para calcular.
+          <label for="expenseDateInput">Data do gasto / 1ª parcela</label>
+          <input type="date" id="expenseDateInput" class="form-control" required />
+        </div>
+
+        <div class="toba-sheet-footer">
+          <div class="btn-row">
+            <button type="button" class="btn btn-danger btn-grow-1" id="deleteExpenseModalBtn" data-click="deleteExpenseFromModal" hidden>🗑️ Apagar</button>
+            <button type="submit" class="btn btn-primary btn-grow-2">Salvar gasto</button>
           </div>
         </div>
-
-        <div style="margin-bottom: 1.2rem">
-          <label style="
-                font-size: 0.85rem;
-                font-weight: 600;
-                color: #8b949e;
-                display: block;
-                margin-bottom: 6px;
-              ">2. Configuração Inicial</label>
-
-          <button type="button" onclick="toggleStartDateArea()" style="
-                width: 100%;
-                background: #21262d;
-                border: 1px solid #30363d;
-                color: #f0f6fc;
-                padding: 0.75rem 0.9rem;
-                border-radius: 10px;
-                cursor: pointer;
-                font-size: 0.85rem;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-              ">
-            <span>📅 Data do 1º Uso (Avançado)</span>
-            <span id="startDateArrow">🔒</span>
-          </button>
-
-          <div id="startDateHiddenArea" style="
-                display: none;
-                margin-top: 8px;
-                padding: 10px;
-                background: #0d1117;
-                border: 1px solid #30363d;
-                border-radius: 10px;
-              ">
-            <label style="
-                  font-size: 0.75rem;
-                  color: #8b949e;
-                  display: block;
-                  margin-bottom: 6px;
-                ">
-              ⚠️ <b>Atenção:</b> Alterar esta data afeta o cálculo acumulado do
-              cofre.
-            </label>
-            <input type="date" id="startDateInput" class="form-control" style="
-                  width: 100%;
-                  padding: 0.6rem;
-                  background: #161b22;
-                  border: 1px solid #30363d;
-                  border-radius: 8px;
-                  color: #fff;
-                " />
-          </div>
-        </div>
-
-        <hr style="border: 0; border-top: 1px solid #30363d; margin: 1.2rem 0" />
-
-        <div class="form-group">
-          <label>3. Dados</label>
-          <button class="btn btn-secondary" onclick="openDataModalFromConfig()">
-            💾 Backup e Zona de Perigo
-          </button>
-        </div>
-
-        <div style="
-              margin-top: 1.5rem;
-              border-top: 1px solid #30363d;
-              padding-top: 1rem;
-            ">
-          <button class="btn btn-secondary" id="bottomCloseConfigBtn">
-            Fechar
-          </button>
-        </div>
-      </div>
+      </form>
     </div>
+  </div>
 
+  <div class="toba-modal" id="editFixedModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🔄 Gasto fixo</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form id="editFixedForm" data-submit="saveFixedExpense">
+        <input type="hidden" id="editFixedId" />
+        <div class="form-group">
+          <label for="editFixedName">Nome</label>
+          <input type="text" id="editFixedName" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label for="editFixedAmount">Valor mensal (R$)</label>
+          <input type="text" inputmode="numeric" id="editFixedAmount" class="form-control smart-money" required />
+        </div>
+        <div class="form-group">
+          <label for="editFixedCategory">Categoria</label>
+          <select id="editFixedCategory" class="form-control">
+                  <optgroup label="🏠 Casa & Moradia">
+                    <option value="Moradia - Aluguel/Condomínio">
+                      🏢 Aluguel / Condomínio
+                    </option>
+                    <option value="Moradia - Contas Básicas (Luz/Água/Internet)">
+                      💡 Contas Básicas (Luz, Água, Internet)
+                    </option>
+                    <option value="Moradia - Manutenção/Eletro">
+                      🛠️ Manutenção / Eletro / Decoração
+                    </option>
+                    <option value="Mercado">
+                      🛒 Mercado / Feira / Limpeza
+                    </option>
+                  </optgroup>
+                  <optgroup label="🍔 Alimentação & Rolês">
+                    <option value="Alimentação">
+                      🍔 Rest. / Lanches / Ifood
+                    </option>
+                    <option value="Lazer">🎉 Festas / Rolês / Bares</option>
+                    <option value="Viagens">✈️ Viagens & Passeios</option>
+                    <option value="Presentes">🎁 Presentes</option>
+                  </optgroup>
+                  <optgroup label="🎮 Digital & Assinaturas">
+                    <option value="Assinaturas" selected>
+                      📺 Assinaturas & Streaming (Netflix, Spotify)
+                    </option>
+                    <option value="Games">
+                      🎮 Games (Passes, Jogos, Itens)
+                    </option>
+                  </optgroup>
+                  <optgroup label="🚗 Transporte">
+                    <option value="Transporte - Combustível">
+                      ⛽ Combustível
+                    </option>
+                    <option value="Transporte - Uber/App">
+                      🚕 Uber / Táxi
+                    </option>
+                    <option value="Transporte - Manutenção/IPVA">
+                      📄 Manutenção / IPVA / Seguro
+                    </option>
+                  </optgroup>
+                  <optgroup label="🩺 Saúde, Pets & Pessoal">
+                    <option value="Saúde & Bem-Estar">
+                      💊 Saúde / Terapia / Farmácia
+                    </option>
+                    <option value="Pet">🐱 Pets (Ração, Vet, Mimos)</option>
+                    <option value="Cuidados Pessoais">
+                      🧴 Cuidados Pessoais / Cosméticos
+                    </option>
+                    <option value="Vestuário">👕 Roupas & Acessórios</option>
+                    <option value="Educação">
+                      📚 Educação (Cursos, Livros, Materiais)
+                    </option>
+                  </optgroup>
+                  <optgroup label="📈 Outros">
+                    <option value="Investimentos & Pessoal">
+                      📈 Investimentos
+                    </option>
+                    <option value="Outros">📦 Outros Gastos</option>
+                  </optgroup>
+                </select>
+        </div>
+        <div class="toba-sheet-footer">
+          <div class="btn-row">
+            <button type="button" class="btn btn-danger btn-grow-1" data-click="deleteFixedFromModal">🗑️ Apagar</button>
+            <button type="submit" class="btn btn-primary btn-grow-2">Salvar</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../assets/toba-common.js"></script>
   <script src="js/bank-core.js"></script>
   <script src="js/bank-metrics.js"></script>
   <script src="js/gastos.js"></script>

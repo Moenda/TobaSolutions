@@ -1,5 +1,6 @@
 /* =====================================================================
  * Toba Health · núcleo compartilhado (Pesagem + Treinos)
+ * - Depende de ../assets/toba-common.js (datas, decimais, avisos, ⚙️).
  * - Banco único no localStorage ("TOBA_HEALTH_DB"): NÃO mude a chave nem o
  *   formato sem manter importação/exportação compatíveis.
  * - Cada página define onHealthDataReplaced() para redesenhar sua tela
@@ -94,114 +95,6 @@ const DEFAULT_METRICS_ORDER = [
     unit: "a",
   },
 ];
-
-function getLocalDateInputValue(date = new Date()) {
-  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return localDate.toISOString().slice(0, 10);
-}
-
-/* MÁSCARAS TOBA BANK */
-function initTobaDecimalMasks() {
-  const inputsDec = document.querySelectorAll(
-    ".toba-mask-dec1, .toba-mask-dec2",
-  );
-  inputsDec.forEach((input) => {
-    input.setAttribute("inputmode", "decimal");
-
-    input.addEventListener("input", (e) => {
-      // A máscara trata os dígitos como centavos/décimos e só então
-      // adiciona a vírgula, evitando depender do separador do teclado.
-      let digits = e.target.value.replace(/\D/g, "");
-      if (!digits) {
-        e.target.value = "";
-        return;
-      }
-
-      let isDec1 = e.target.classList.contains("toba-mask-dec1");
-      let divisor = isDec1 ? 10 : 100;
-      e.target.value = (parseInt(digits, 10) / divisor)
-        .toFixed(isDec1 ? 1 : 2)
-        .replace(".", ",");
-
-      if (e.inputType === "insertText" && e.data && !isNaN(e.data)) {
-        let limit = isDec1 ? 3 : 4;
-        if (digits.length >= limit) {
-          const formInputs = Array.from(
-            e.target
-              .closest("form")
-              .querySelectorAll('input:not([type="hidden"])'),
-          );
-          const nextIndex = formInputs.indexOf(e.target) + 1;
-          if (formInputs[nextIndex]) formInputs[nextIndex].focus();
-        }
-      }
-    });
-  });
-}
-
-function parseTobaDecimal(valStr) {
-  if (!valStr) return null;
-  let parsed = parseFloat(valStr.toString().replace(",", "."));
-  return isNaN(parsed) ? null : parsed;
-}
-
-function formatDec1(num) {
-  return num === null || num === undefined
-    ? "--"
-    : num.toFixed(1).replace(".", ",");
-}
-
-function formatDec2(num) {
-  return num === null || num === undefined
-    ? "--"
-    : num.toFixed(2).replace(".", ",");
-}
-
-let pageMessageReturnId = null;
-
-let pageMessageResolver = null;
-
-function showPageMessage(message, options = {}) {
-  const activePage = document.querySelector(".modal-overlay.active, .popup-overlay.active");
-  pageMessageReturnId = activePage?.id || null;
-  activePage?.classList.remove("active");
-  document.getElementById("pageMessageTitle").innerText = options.title || "Toba Health";
-  document.getElementById("pageMessageText").innerText = message;
-  const isConfirm = Boolean(options.confirm);
-  document.getElementById("pageMessageCancel").style.display = isConfirm ? "block" : "none";
-  document.getElementById("pageMessageConfirm").style.display = isConfirm ? "block" : "none";
-  document.getElementById("pageMessageOk").style.display = isConfirm ? "none" : "block";
-  document.getElementById("pageMessageConfirm").innerText = options.confirmLabel || "Confirmar";
-  document.getElementById("pageMessageModal").classList.add("active");
-  window.scrollTo(0, 0);
-  return new Promise((resolve) => { pageMessageResolver = resolve; });
-}
-
-function resolvePageMessage(confirmed) {
-  document.getElementById("pageMessageModal").classList.remove("active");
-  if (pageMessageReturnId) document.getElementById(pageMessageReturnId)?.classList.add("active");
-  const resolve = pageMessageResolver;
-  pageMessageResolver = null;
-  pageMessageReturnId = null;
-  resolve?.(confirmed);
-}
-
-function exportBackup() {
-  // Exporta o objeto completo, incluindo perfil, pesagens e configuração
-  // da balança, para que a restauração possa reconstruir o estado.
-  const dataStr =
-    "data:text/json;charset=utf-8," +
-    encodeURIComponent(JSON.stringify(healthDb, null, 2));
-  const anchor = document.createElement("a");
-  anchor.setAttribute("href", dataStr);
-  anchor.setAttribute(
-    "download",
-    `toba_health_backup_${new Date().toISOString().slice(0, 10)}.json`,
-  );
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-}
 
 function createEmptyHealthDb() {
   return {
@@ -302,14 +195,16 @@ function saveHealthDb() {
     localStorage.setItem(HEALTH_KEY, JSON.stringify(healthDb));
   } catch (err) {
     console.error("Erro ao gravar no localStorage:", err);
-    showPageMessage("Não consegui salvar os dados neste aparelho. Exporte um backup e libere espaço no navegador.", { title: "Erro ao salvar" });
+    showPageMessage("Não consegui salvar os dados neste aparelho. Exporte um backup e libere espaço no navegador.", { title: "Não salvou", icon: "💥" });
+    return;
   }
+  tobaSaved();
 }
 
 function showHealthDbLockedMessage() {
   showPageMessage(
-    "Não consegui ler os dados salvos do Toba Health, então nada novo será gravado para não apagar o original. Restaure um backup em ⚙️ → Dados & Backup → Importar (ou use Apagar Tudo para começar do zero).",
-    { title: "Dados protegidos" },
+    "Não consegui ler os dados salvos do Toba Health, então nada novo será gravado para não apagar o original. Restaure um backup em ⚙️ → Dados & Backup → Restaurar (ou use Apagar tudo para começar do zero).",
+    { title: "Dados protegidos", icon: "🛡️" },
   );
 }
 
@@ -331,84 +226,50 @@ function looksLikeHealthBackup(data) {
 }
 
 
-function importBackup(e) {
-  const fileReader = new FileReader();
-  fileReader.onload = function (event) {
-    try {
-      // O parse só confirma que é JSON; normalizeHealthDb garante os campos
-      // que o app espera encontrar.
-      const imported = JSON.parse(event.target.result);
-      if (!looksLikeHealthBackup(imported)) throw new Error("Não é backup do Toba Health");
-      healthDb = normalizeHealthDb(imported);
-      isHealthDbLoaded = true;
-      saveHealthDb();
-      closeDataModal();
-      onHealthDataReplaced();
-      showPageMessage("Backup restaurado com sucesso! (⁠⌐⁠■⁠-⁠■⁠)", { title: "Backup restaurado" });
-    } catch (err) {
-      showPageMessage("Não consegui ler esse arquivo JSON. Confira se ele é um backup válido do Toba Health.", { title: "Arquivo inválido" });
-    }
-  };
-  if (e.target.files[0]) fileReader.readAsText(e.target.files[0]);
-  e.target.value = "";
+function exportHealthBackup() {
+  // Exporta o objeto completo, incluindo perfil, pesagens e configuração
+  // da balança, para que a restauração possa reconstruir o estado.
+  tobaDownloadJson(healthDb, `toba_health_backup_${toIsoDate()}.json`);
 }
 
-async function clearAllData() {
-  const confirmed = await showPageMessage(
-    "Tem certeza que deseja APAGAR TUDO do Toba Health? Essa ação não pode ser desfeita!",
-    { title: "Apagar todos os dados", confirm: true, confirmLabel: "Apagar tudo" },
-  );
-  if (confirmed) {
-    // Limpa somente a chave deste módulo, sem afetar os demais aplicativos.
-    localStorage.removeItem(HEALTH_KEY);
-    healthDb = createEmptyHealthDb();
-    isHealthDbLoaded = true;
-    closeDataModal();
-    onHealthDataReplaced();
-    showPageMessage("Tudo limpo e zerado! ( ͡° 开启 ͡°)", { title: "Banco zerado" });
+async function importHealthBackup(text) {
+  try {
+    // O parse só confirma que é JSON; normalizeHealthDb garante os campos
+    // que o app espera encontrar.
+    const imported = JSON.parse(text);
+    if (!looksLikeHealthBackup(imported)) throw new Error("Não é backup do Toba Health");
+    healthDb = normalizeHealthDb(imported);
+  } catch (err) {
+    showPageMessage("Não consegui ler esse arquivo. Confira se ele é um backup do Toba Health (não do Bank nem o backup geral).", { title: "Arquivo inválido", icon: "🤨" });
+    return;
   }
+  isHealthDbLoaded = true;
+  saveHealthDb();
+  closeDataModal();
+  onHealthDataReplaced();
+  showPageMessage("Backup restaurado com sucesso! (⌐■_■)", { title: "Tudo de volta", icon: "✅" });
 }
 
-/* MODAIS COMPARTILHADOS (aviso/confirmação e Dados & Backup) */
-const SHARED_MODALS_HTML = `
-<div class="modal-overlay" id="pageMessageModal" aria-live="polite">
-  <div class="modal-body">
-    <div class="modal-header">
-      <div class="modal-title" id="pageMessageTitle">Toba Health</div>
-      <button class="close-btn" onclick="resolvePageMessage(false)" aria-label="Fechar aviso">✖</button>
-    </div>
-    <p id="pageMessageText" class="page-message-text"></p>
-    <div id="pageMessageActions" class="page-message-actions" style="display: flex; gap: 8px; margin-top: 1rem">
-      <button type="button" id="pageMessageCancel" class="btn btn-secondary" onclick="resolvePageMessage(false)">Cancelar</button>
-      <button type="button" id="pageMessageConfirm" class="btn btn-danger" onclick="resolvePageMessage(true)">Confirmar</button>
-      <button type="button" id="pageMessageOk" class="btn" onclick="resolvePageMessage(true)" style="display: none">Entendi</button>
-    </div>
-  </div>
-</div>
-
-<div class="popup-overlay" id="dataModal" onclick="if (event.target === this) closeDataModal()">
-  <div class="popup-panel" role="dialog" aria-modal="true" aria-labelledby="dataModalTitle">
-    <div class="modal-header">
-      <div class="modal-title" id="dataModalTitle">💾 Dados & Backup</div>
-      <button class="close-btn" onclick="closeDataModal()">✖</button>
-    </div>
-    <div style="display: flex; gap: 8px; margin-bottom: 10px">
-      <button class="btn btn-secondary" onclick="exportBackup()">Exportar Backup 📥</button>
-      <button class="btn btn-secondary" onclick="document.getElementById('importFileInput').click()">Importar 📤</button>
-      <input type="file" id="importFileInput" style="display: none" accept=".json" onchange="importBackup(event)" />
-    </div>
-    <button class="btn btn-danger" onclick="clearAllData()">⚠️ Apagar Tudo (Reset Total)</button>
-  </div>
-</div>`;
-
-function openDataModal() {
-  document.getElementById("dataModal").classList.add("active");
+async function clearHealthData() {
+  const confirmed = await showPageMessage(
+    "Isso apaga TUDO do Toba Health (pesagens, treinos e perfil). Não dá para desfazer!",
+    { title: "Apagar tudo?", icon: "🚨", confirm: true, confirmLabel: "Apagar tudo" },
+  );
+  if (!confirmed) return;
+  // Limpa somente a chave deste módulo, sem afetar os demais aplicativos.
+  localStorage.removeItem(HEALTH_KEY);
+  healthDb = createEmptyHealthDb();
+  isHealthDbLoaded = true;
+  closeDataModal();
+  onHealthDataReplaced();
+  showPageMessage("Tudo limpo e zerado! ( ͡° ͜ʖ ͡°)", { title: "Banco zerado", icon: "🧹" });
 }
 
-function closeDataModal() {
-  document.getElementById("dataModal").classList.remove("active");
-}
-
-document.body.insertAdjacentHTML("beforeend", SHARED_MODALS_HTML);
+tobaSetupApp({
+  name: "Toba Health",
+  exportBackup: exportHealthBackup,
+  importBackup: importHealthBackup,
+  resetData: clearHealthData,
+});
 
 if (!isHealthDbLoaded) showHealthDbLockedMessage();

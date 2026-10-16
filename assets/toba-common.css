@@ -1,0 +1,1415 @@
+/* =====================================================================
+ * Toba Solutions · estilos comuns de TODOS os apps (Bank, Health, ...)
+ * - Paleta, espaçamentos, cabeçalho, botões, cards, quadradinhos de info,
+ *   modais (folha que sobe de baixo), avisos, "Salvo ✓" e estados vazios.
+ * - Cada app só define a cor de destaque (--accent) no seu *-base.css e o
+ *   que for exclusivo dele. Componente novo que serve para mais de um app
+ *   entra AQUI, não no CSS do app.
+ * - Faixa de tela alvo: Galaxy S24 (360px) até S24+ (384px) em retrato.
+ * ===================================================================== */
+
+/* Avisa o navegador que o app já é escuro (evita o "modo escuro forçado") */
+:root {
+  color-scheme: dark;
+
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface-2: #0d1117;
+  --surface-3: #21262d;
+  --surface-hover: #1c2128;
+  --border: #30363d;
+  --border-soft: #21262d;
+
+  --text: #f0f6fc;
+  --text-2: #c9d1d9;
+  --muted: #8b949e;
+
+  --blue: #58a6ff;
+  --green: #3fb950;
+  --red: #f85149;
+  --gold: #d29922;
+  --gold-2: #e3b341;
+  --coral: #ff7b72;
+  --btn-green: #238636;
+  --btn-green-hover: #2ea043;
+  --btn-red: #da3633;
+
+  --accent: var(--blue);
+
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  --page-pad: 1.25rem;
+  --card-pad: 1rem;
+  --tap: 36px;
+}
+
+/* ---------------------------------------------------------------------
+ * Base
+ * ------------------------------------------------------------------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Trava a rolagem da página enquanto um modal está aberto */
+body:has(.toba-modal.active) {
+  overflow: hidden;
+}
+
+.container {
+  background: var(--surface);
+  padding: var(--page-pad);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  width: 100%;
+  max-width: 460px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------
+ * Cabeçalho padrão:  [‹] 🏦 Toba Bank / Gastos ......... [+ Ação] [⚙️]
+ * O "‹" sempre sobe um nível: módulo -> Hub -> Solutions.
+ * ------------------------------------------------------------------- */
+.toba-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1.1rem;
+  min-height: var(--tap);
+}
+
+.toba-back {
+  flex: 0 0 var(--tap);
+  width: var(--tap);
+  height: var(--tap);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  padding-bottom: 2px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.toba-back:hover {
+  background: var(--border);
+  border-color: var(--muted);
+}
+
+.toba-titles {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.15;
+  text-decoration: none;
+  color: inherit;
+}
+
+.toba-app {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toba-page {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toba-page:empty {
+  display: none;
+}
+
+.toba-header-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Engrenagem e demais botões quadrados do cabeçalho */
+.toba-icon-btn {
+  width: var(--tap);
+  height: var(--tap);
+  flex: 0 0 var(--tap);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.toba-icon-btn:hover {
+  background: var(--border);
+  border-color: var(--accent);
+}
+
+.toba-gear:hover {
+  transform: rotate(30deg);
+}
+
+/* Ação principal do cabeçalho (+ Gasto, + Pesagem...) */
+.toba-add-btn {
+  height: var(--tap);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 0.8rem;
+  border-radius: var(--radius);
+  background: var(--btn-green);
+  border: 1px solid var(--btn-green-hover);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.toba-add-btn:hover {
+  background: var(--btn-green-hover);
+}
+
+/* ---------------------------------------------------------------------
+ * Botões
+ * ------------------------------------------------------------------- */
+.btn {
+  width: 100%;
+  min-height: 42px;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-weight: 700;
+  font-size: 0.88rem;
+  line-height: 1.2;
+  cursor: pointer;
+  background: var(--btn-green);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn:hover,
+.btn-primary:hover {
+  background: var(--btn-green-hover);
+}
+
+.btn-primary {
+  background: var(--btn-green);
+  color: #fff;
+}
+
+.btn-secondary {
+  background: var(--surface-3);
+  border-color: var(--border);
+  color: var(--text-2);
+}
+
+.btn-secondary:hover {
+  background: var(--border);
+}
+
+.btn-secondary.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn-danger {
+  background: var(--btn-red);
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: var(--red);
+}
+
+/* Contorno colorido (Atualizar saldo, Finalizar, Reabrir...) */
+.btn-outline {
+  background: var(--surface-3);
+  border-color: currentColor;
+}
+
+.btn-outline:hover {
+  background: var(--border);
+}
+
+.btn-gold {
+  color: var(--gold);
+}
+
+.btn-blue {
+  color: var(--blue);
+}
+
+.btn-green {
+  color: var(--green);
+}
+
+.btn-coral {
+  color: var(--coral);
+}
+
+.btn-sm {
+  width: auto;
+  min-height: 32px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-row > .btn {
+  flex: 1;
+  width: auto;
+}
+
+/* Botão redondo pequeno (?, +) */
+.round-btn {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  color: var(--blue);
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.round-btn:hover {
+  transform: scale(1.06);
+  background: var(--border);
+}
+
+.round-btn.is-primary {
+  background: var(--btn-green);
+  border-color: var(--btn-green-hover);
+  color: #fff;
+  font-size: 1.15rem;
+}
+
+/* Botão pequeno de texto (📜 Histórico) */
+.history-mini-btn,
+.chip-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 0 10px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.history-mini-btn:hover,
+.chip-btn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+/* Voltar dentro de uma tela (‹ Tipos de treino, ‹ Voltar...) */
+.back-nav-btn {
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  height: 32px;
+  padding: 0 0.7rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.back-nav-btn:hover {
+  background: var(--border);
+  border-color: var(--muted);
+}
+
+.action-icon-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.action-icon-btn:hover {
+  color: var(--text);
+  background: var(--surface-3);
+}
+
+.action-icon-btn.delete:hover {
+  color: var(--red);
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.close-btn:hover {
+  color: var(--text);
+  background: var(--surface-3);
+}
+
+/* ---------------------------------------------------------------------
+ * Abas e seletores segmentados
+ * ------------------------------------------------------------------- */
+.tab-nav,
+.period-selector {
+  display: flex;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 1.1rem;
+}
+
+.tab-btn,
+.period-btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 8px 3px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.tab-btn.active,
+.period-btn.active {
+  background: var(--surface-3);
+  color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ---------------------------------------------------------------------
+ * Cards, títulos e textos
+ * ------------------------------------------------------------------- */
+.card {
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: var(--card-pad);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0.8rem;
+}
+
+.card-title {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.card-header .card-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.section-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 1.3rem 0 0.7rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title.is-first {
+  margin-top: 0.2rem;
+}
+
+.hint-box {
+  background: rgba(88, 166, 255, 0.08);
+  border-left: 3px solid var(--blue);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 0.6rem 0.7rem;
+  font-size: 0.8rem;
+  color: #79c0ff;
+  line-height: 1.45;
+}
+
+.hint-box.is-green {
+  background: rgba(63, 185, 80, 0.1);
+  border-left-color: var(--green);
+  color: #7ee787;
+}
+
+.divider {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 1.1rem 0;
+}
+
+
+/* ---------------------------------------------------------------------
+ * Quadradinhos de info (rótulo pequeno + valor + detalhe)
+ * <div class="toba-stats">  <div class="toba-stat">
+ *   <span class="toba-stat-label">Cofre</span>
+ *   <span class="toba-stat-value text-green">R$ 10,00</span>
+ *   <span class="toba-stat-sub">+2%</span>
+ * </div> </div>
+ * ------------------------------------------------------------------- */
+.toba-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.toba-stats.is-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.toba-stat {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.65rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  color: inherit;
+}
+
+.toba-stat.is-center {
+  align-items: center;
+  text-align: center;
+}
+
+.toba-stat.is-wide {
+  grid-column: 1 / -1;
+}
+
+.toba-stat.is-highlight {
+  border-color: var(--accent);
+}
+
+button.toba-stat,
+.toba-stat.is-clickable {
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+button.toba-stat:hover,
+.toba-stat.is-clickable:hover {
+  border-color: var(--accent);
+  background: var(--surface-hover);
+}
+
+.toba-stat-label {
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.toba-stat-value {
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  letter-spacing: -0.2px;
+}
+
+.toba-stat-sub {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+/* Linhas "rótulo ........ valor" (resumos e detalhes) */
+.kv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+
+.kv-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.kv-row > span:first-child {
+  color: var(--muted);
+}
+
+.kv-row > :last-child {
+  font-weight: 700;
+  text-align: right;
+}
+
+.kv-row.is-total {
+  border-top: 1px dashed var(--border);
+  padding-top: 6px;
+}
+
+/* Barra de progresso */
+.progress-track {
+  width: 100%;
+  height: 8px;
+  background: var(--surface-3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0;
+  background: var(--green);
+  border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease;
+}
+
+/* ---------------------------------------------------------------------
+ * Listas clicáveis (lançamentos, registros...)
+ * ------------------------------------------------------------------- */
+.toba-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toba-list-item {
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.toba-list-item:hover {
+  border-color: var(--border);
+  background: #12161f;
+}
+
+/* ---------------------------------------------------------------------
+ * Hub: cards de módulo / app
+ * ------------------------------------------------------------------- */
+.toba-hub-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toba-hub-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.95rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+.toba-hub-card:hover {
+  border-color: var(--accent);
+  background: #12161f;
+  transform: translateY(-2px);
+}
+
+.toba-hub-icon {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.45rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.toba-hub-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toba-hub-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.toba-hub-desc {
+  font-size: 0.76rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.toba-hub-chevron {
+  color: var(--muted);
+  font-size: 1.2rem;
+  flex: 0 0 auto;
+}
+
+.toba-kicker {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 700;
+  margin: 0.2rem 0 0.8rem;
+}
+
+/* ---------------------------------------------------------------------
+ * Formulários
+ * ------------------------------------------------------------------- */
+.form-group {
+  margin-bottom: 0.85rem;
+  text-align: left;
+  min-width: 0;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 0.3rem;
+}
+
+.form-control {
+  width: 100%;
+  min-height: 42px;
+  padding: 0.6rem 0.7rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.95rem;
+  outline: none;
+  color-scheme: dark;
+  transition: border-color 0.2s ease;
+}
+
+.form-control:focus {
+  border-color: var(--accent);
+}
+
+.form-row {
+  display: flex;
+  gap: 8px;
+}
+
+.form-row > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.check-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  flex: 0 0 auto;
+}
+
+/* ---------------------------------------------------------------------
+ * Modais: folha que sobe de baixo no celular, caixa central no PC.
+ * <div class="toba-modal" id="xModal">
+ *   <div class="toba-sheet">
+ *     <div class="toba-sheet-header"><h3>Título</h3><button class="close-btn" data-close>✕</button></div>
+ *     ...conteúdo...
+ *     <div class="toba-sheet-footer"><button class="btn">Salvar</button></div>
+ *   </div>
+ * </div>
+ * O rodapé fica preso embaixo (o teclado não esconde o botão principal).
+ * ------------------------------------------------------------------- */
+.toba-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(1, 4, 9, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.22s ease, visibility 0.22s ease;
+}
+
+.toba-modal.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.toba-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  max-height: 92vh;
+  max-height: 92dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 22px 22px 0 0;
+  padding: 0 1rem;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.6);
+  transform: translateY(24px);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Respiro no fim da folha (quando não tem rodapé fixo) */
+.toba-sheet::after {
+  content: "";
+  display: block;
+  height: calc(1rem + env(safe-area-inset-bottom));
+}
+
+.toba-sheet:has(.toba-sheet-footer)::after {
+  display: none;
+}
+
+.toba-modal.active .toba-sheet {
+  transform: translateY(0);
+}
+
+.toba-sheet-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 -1rem 1rem;
+  padding: 1.05rem 1rem 0.7rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+/* "Puxador" da folha */
+.toba-sheet-header::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: 36px;
+  height: 4px;
+  margin-left: -18px;
+  border-radius: 2px;
+  background: var(--border);
+}
+
+.toba-sheet-header h3,
+.toba-sheet-title {
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.25;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Rodapé preso embaixo: o botão principal nunca some atrás do teclado */
+.toba-sheet-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 1rem -1rem 0;
+  padding: 0.75rem 1rem calc(0.85rem + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--border-soft);
+}
+
+.toba-sheet-footer .btn-row > .btn {
+  flex: 1;
+}
+
+.toba-sheet-text {
+  font-size: 0.86rem;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.toba-sheet-text p + p {
+  margin-top: 0.6rem;
+}
+
+.toba-sheet-text ul {
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0.6rem 0;
+}
+
+/* Lista de opções do menu de configurações */
+.toba-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toba-menu-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.75rem 0.85rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.toba-menu-btn:hover {
+  border-color: var(--accent);
+  background: #12161f;
+}
+
+.toba-menu-icon {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.toba-menu-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.toba-menu-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.toba-menu-btn.is-danger {
+  border-color: rgba(248, 81, 73, 0.35);
+}
+
+.toba-menu-btn.is-danger:hover {
+  border-color: var(--red);
+  background: rgba(248, 81, 73, 0.08);
+}
+
+.toba-menu-btn.is-danger .toba-menu-title {
+  color: var(--red);
+}
+
+#tobaDataHint {
+  margin-bottom: 0.8rem;
+}
+
+#tobaDangerSection {
+  margin-top: 1.2rem;
+}
+
+.toba-menu-desc {
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.toba-settings-section + .toba-settings-section {
+  margin-top: 1.2rem;
+}
+
+.toba-settings-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 0.55rem;
+}
+
+.toba-settings-label.is-danger {
+  color: var(--red);
+}
+
+@media (min-width: 560px) {
+  .toba-modal {
+    align-items: center;
+    padding: 1rem;
+  }
+
+  .toba-sheet {
+    border-radius: var(--radius-xl);
+    border-bottom: 1px solid var(--border);
+    max-height: 88vh;
+    max-height: 88dvh;
+  }
+
+  .toba-sheet-header::before {
+    display: none;
+  }
+}
+
+/* Página de detalhe que ocupa o lugar da tela (gráfico da pesagem) */
+.toba-fullpage {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  display: none;
+}
+
+.toba-fullpage.active {
+  display: block;
+  animation: tobaFadeIn 0.25s ease;
+}
+
+body:has(> .toba-fullpage.active) > .container {
+  display: none;
+}
+
+.toba-fullpage-body {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--page-pad);
+  min-height: calc(100dvh - 2rem);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+}
+
+/* ---------------------------------------------------------------------
+ * Aviso / confirmação (showPageMessage) — fica acima de qualquer modal
+ * ------------------------------------------------------------------- */
+.toba-dialog {
+  z-index: 3000;
+  align-items: center;
+  padding: 1.2rem;
+}
+
+.toba-dialog-box {
+  width: 100%;
+  max-width: 360px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 1.3rem 1.1rem 1rem;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+  transform: scale(0.94);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toba-dialog.active .toba-dialog-box {
+  transform: scale(1);
+}
+
+.toba-dialog-icon {
+  font-size: 2rem;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.toba-dialog-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 0.45rem;
+}
+
+.toba-dialog-text {
+  color: var(--text-2);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  white-space: pre-line;
+  text-align: left;
+}
+
+.toba-dialog-text.is-short {
+  text-align: center;
+}
+
+.toba-dialog-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 1.1rem;
+}
+
+.toba-dialog-actions .btn {
+  flex: 1;
+  width: auto;
+}
+
+/* ---------------------------------------------------------------------
+ * "Salvo ✓"
+ * ------------------------------------------------------------------- */
+.toba-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(22px + env(safe-area-inset-bottom));
+  z-index: 4000;
+  transform: translate(-50%, 20px);
+  opacity: 0;
+  pointer-events: none;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  background: #1f3a26;
+  border: 1px solid rgba(63, 185, 80, 0.55);
+  color: #7ee787;
+  font-size: 0.85rem;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toba-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* ---------------------------------------------------------------------
+ * Estado vazio
+ * ------------------------------------------------------------------- */
+.toba-empty,
+.empty-state {
+  text-align: center;
+  color: var(--muted);
+  padding: 1.3rem 0.8rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.toba-empty {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: rgba(13, 17, 23, 0.4);
+}
+
+.toba-empty-icon {
+  display: block;
+  font-size: 1.7rem;
+  line-height: 1;
+  margin-bottom: 0.45rem;
+}
+
+.toba-empty-title {
+  display: block;
+  color: var(--text-2);
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.toba-empty-hint {
+  display: block;
+  margin-top: 2px;
+}
+
+.toba-empty.is-compact {
+  padding: 0.8rem;
+}
+
+/* ---------------------------------------------------------------------
+ * Telas internas
+ * ------------------------------------------------------------------- */
+.app-view,
+.view-section {
+  display: none;
+}
+
+.app-view.active,
+.view-section.active {
+  display: block;
+  animation: tobaFadeIn 0.25s ease;
+}
+
+@keyframes tobaFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------------------------------------------------------------------
+ * Celular (S24 = 360px · S24+ = 384px): menos borda, mais conteúdo
+ * ------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  :root {
+    --page-pad: 0.9rem;
+    --card-pad: 0.85rem;
+  }
+
+  body {
+    padding: 0.5rem;
+  }
+
+  .container {
+    border-radius: 18px;
+    margin-bottom: 1rem;
+  }
+
+  .toba-fullpage-body {
+    border-radius: 18px;
+    min-height: calc(100dvh - 1rem);
+  }
+}
+
+@media (max-width: 374px) {
+  .toba-app {
+    font-size: 0.98rem;
+  }
+
+  .toba-add-btn {
+    padding: 0 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .tab-btn,
+  .period-btn {
+    font-size: 0.74rem;
+  }
+
+  .tab-nav,
+  .period-selector {
+    gap: 2px;
+  }
+
+  .toba-stat-value {
+    font-size: 0.9rem;
+  }
+}
+
+.btn-row > .btn-grow-1 {
+  flex: 1;
+}
+
+.btn-row > .btn-grow-2 {
+  flex: 2;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* Utilitários de cor (no fim do arquivo para valer sobre os componentes) */
+.text-neutral {
+  color: var(--text);
+}
+
+.text-green {
+  color: var(--green);
+}
+
+.text-red {
+  color: var(--red);
+}
+
+.text-blue {
+  color: var(--blue);
+}
+
+.text-gold {
+  color: var(--gold);
+}
+
+.text-muted {
+  color: var(--muted);
+}
+
+.nowrap {
+  white-space: nowrap;
+}

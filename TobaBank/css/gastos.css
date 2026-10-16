@@ -1,191 +1,46 @@
 /* Toba Bank · estilos exclusivos de Gastos */
 
-.hero-pills-container {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  gap: 4px;
-  margin-top: 20px;
-  position: relative;
-  z-index: 2;
-  border-top: 1px dashed #30363d;
-  padding-top: 14px;
-  align-items: center;
-  width: 100%;
-}
-
-.pill-title {
-  font-size: 0.58rem;
-  color: #8b949e;
-  text-transform: uppercase;
-  font-weight: 700;
-  margin-bottom: 2px;
-  white-space: nowrap;
-}
-
-.pill-value {
-  font-size: 0.88rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.pill-facada {
-  font-size: 0.62rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-@media (max-width: 360px) {
-  .pill-title {
-    font-size: 0.5rem;
-  }
-
-  .pill-value {
-    font-size: 0.75rem;
-  }
-
-  .pill-facada {
-    font-size: 0.55rem;
-  }
-}
-
-.fixed-card {
-  background: #0d1117;
-  border: 1px solid #21262d;
-  border-radius: 14px;
-  margin-bottom: 0.8rem;
-  overflow: hidden;
-  transition: border-color 0.2s ease;
-}
-
-.fixed-header {
-  padding: 0.9rem 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  user-select: none;
-}
-
-.fixed-body {
-  display: none;
-  padding: 0 1rem 1rem 1rem;
-}
-
-.fixed-card.expanded .fixed-body {
-  display: block;
-}
-
-.fixed-arrow {
-  font-size: 0.75rem;
-  color: #8b949e;
-  transition: transform 0.2s;
-}
-
-.fixed-card.expanded .fixed-arrow {
-  transform: rotate(180deg);
-}
-
 .tab-content {
   display: none;
 }
 
 .tab-content.active {
   display: block;
-}
-
-.home-acc-card {
-  background: #0d1117;
-  border: 1px solid #21262d;
-  border-radius: 14px;
-  margin-bottom: 1rem;
-  overflow: hidden;
-  transition: border-color 0.2s ease;
-}
-
-.home-acc-header {
-  padding: 0.9rem 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  user-select: none;
-}
-
-.home-acc-title {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #f0f6fc;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.home-acc-arrow {
-  font-size: 0.75rem;
-  color: #8b949e;
-  transition: transform 0.2s;
-}
-
-.home-acc-card.expanded .home-acc-arrow {
-  transform: rotate(180deg);
-}
-
-.home-acc-body {
-  display: none;
-  padding: 0 1rem 1rem 1rem;
-}
-
-.home-acc-card.expanded .home-acc-body {
-  display: block;
+  animation: tobaFadeIn 0.25s ease;
 }
 
 .month-header-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  position: relative;
-  margin-bottom: 1rem;
+  gap: 10px;
+  margin-bottom: 0.9rem;
 }
 
 .month-badge {
   background: rgba(88, 166, 255, 0.15);
-  color: #58a6ff;
+  color: var(--blue);
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 800;
   padding: 4px 12px;
-  border-radius: 12px;
-  text-transform: capitalize;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
-.metrics-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 1.2rem;
-}
-
-.card-full {
-  grid-column: span 2;
-}
-
-.text-gold {
-  color: #d29922;
-}
-
-.sub-text {
-  font-size: 0.73rem;
-  color: #8b949e;
-  line-height: 1.35;
+.month-days {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .advice-banner {
   background: rgba(248, 81, 73, 0.1);
   border: 1px solid rgba(248, 81, 73, 0.3);
-  border-radius: 12px;
-  padding: 0.8rem 1rem;
-  margin-bottom: 1.2rem;
+  border-radius: var(--radius);
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 1rem;
   font-size: 0.82rem;
-  color: #ff7b72;
+  color: var(--coral);
   display: none;
   align-items: center;
   gap: 8px;
@@ -195,89 +50,220 @@
   display: flex;
 }
 
-.category-item {
-  margin-bottom: 0.8rem;
+/* Card principal (sobra prevista) */
+.hero-card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(145deg, #161b22 0%, #0d1117 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 1.1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
 }
 
-.category-info {
+.hero-glow {
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 180px;
+  height: 180px;
+  background: rgba(63, 185, 80, 0.12);
+  filter: blur(45px);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.hero-top {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.hero-main {
+  min-width: 0;
+}
+
+.hero-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+}
+
+.hero-value {
+  font-size: clamp(1.9rem, 9.5vw, 2.5rem);
+  font-weight: 800;
+  color: var(--green);
+  letter-spacing: -1.2px;
+  line-height: 1.1;
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+.hero-sub {
   font-size: 0.8rem;
+  color: var(--red);
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+.hero-progress {
+  position: relative;
+  z-index: 1;
+  margin-top: 1rem;
+}
+
+.hero-progress-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--text-2);
+  margin-bottom: 6px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.hero-progress-row b {
+  color: var(--text);
+}
+
+.hero-progress-row span:last-child {
+  color: var(--muted);
+}
+
+.hero-stats {
+  position: relative;
+  z-index: 1;
+  margin-top: 0.9rem;
+}
+
+.hero-stats .toba-stat {
+  background: rgba(13, 17, 23, 0.7);
+}
+
+/* Telas Parcelas / Fixos */
+.section-stats {
+  margin-bottom: 0.4rem;
+}
+
+.add-fixed-card {
+  margin: 0.9rem 0 0.2rem;
+}
+
+.add-fixed-card .card-header {
+  margin-bottom: 0.6rem;
+}
+
+.fixed-name {
+  flex: 1.6 !important;
+}
+
+.fixed-amount {
+  flex: 1 !important;
+}
+
+.installment-progress {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin-bottom: 4px;
 }
 
-.progress-bar-bg {
-  background: #21262d;
-  height: 8px;
-  border-radius: 4px;
-  overflow: hidden;
+.installment-progress b {
+  color: var(--blue);
 }
 
-.progress-bar-fill {
-  background: #58a6ff;
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.expense-amount {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-.installment-body,
-.history-body,
-.invest-body {
-  display: none;
-  padding: 0 1rem 1rem 1rem;
-}
-
-.installment-card.expanded .installment-body,
-.history-card.expanded .history-body,
-.invest-card.expanded .invest-body {
-  display: block;
-}
-
-.installment-arrow,
-.history-arrow,
-.invest-arrow {
-  font-size: 0.75rem;
-  color: #8b949e;
-  transition: transform 0.2s;
-}
-
-.installment-card.expanded .installment-arrow,
-.history-card.expanded .history-arrow,
-.invest-card.expanded .invest-arrow {
-  transform: rotate(180deg);
-}
-
-.installment-metrics {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  background: #161b22;
-  padding: 0.6rem 0.8rem;
-  border-radius: 10px;
-  border: 1px solid #21262d;
-  margin-top: 0.4rem;
-}
-
+/* Formulário de gasto */
 .switch-container {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #0d1117;
-  border: 1px solid #30363d;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   padding: 0.6rem 0.8rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--blue) !important;
+  margin-bottom: 0 !important;
 }
 
 .switch-container input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  accent-color: #238636;
+  accent-color: var(--btn-green);
   cursor: pointer;
+}
+
+.installment-fields {
+  background: var(--surface-2);
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  margin-bottom: 0.85rem;
+}
+
+.installment-preview {
+  font-size: 0.78rem;
+  color: #79c0ff;
+  font-weight: 600;
+}
+
+.start-date-area {
+  margin-top: 8px;
+  padding: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+/* Explicação da sobra */
+.sobra-block + .sobra-block {
+  margin-top: 0.8rem;
+}
+
+.sobra-facada {
+  padding: 0.7rem;
+  background: rgba(248, 81, 73, 0.1);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+}
+
+.sobra-facada-title {
+  color: var(--coral);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+
+.sobra-facada-total {
+  margin-top: 4px;
+  font-size: 1.05rem;
+  color: var(--red);
+  font-weight: 800;
+}
+
+.sobra-final {
+  margin-top: 0.4rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+/* Card de mês fechado */
+.history-stats {
+  padding: 0 0.95rem 0.95rem;
+}
+
+.acc-card.expanded .history-stats {
+  padding-bottom: 0.6rem;
 }

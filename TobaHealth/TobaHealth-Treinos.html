@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="color-scheme" content="dark" />
   <meta name="supported-color-schemes" content="dark" />
   <title>Toba Health | Treinos & Cargas</title>
@@ -13,146 +13,148 @@
   <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
   <link rel="stylesheet" href="css/health-base.css" />
   <link rel="stylesheet" href="css/treinos.css" />
 </head>
 
 <body>
   <div class="container">
-    <div class="top-header">
-      <div class="brand-title" onclick="window.location.href='TobaHealth-Index.html'" style="cursor: pointer"
-        title="Voltar ao Início">
-        <span>🥗 Toba Health</span>
+    <header class="toba-header">
+      <a class="toba-back" href="TobaHealth-Index.html" data-label="Voltar para o Toba Health" aria-label="Voltar para o Toba Health">‹</a>
+      <a class="toba-titles" href="TobaHealth-Index.html">
+        <span class="toba-app">🥗 Toba Health</span>
+        <span class="toba-page">🏋️ Treinos</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-add-btn" id="headerAddBtn" data-click="newWorkout">+ Treino</button>
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
       </div>
-      <div class="header-actions" id="headerActions">
-        <button class="gear-btn" onclick="openDataModal()" title="Configurações" aria-label="Configurações">⚙️</button>
-        <a class="back-nav-btn" href="TobaHealth-Index.html">Hub ›</a>
-      </div>
+    </header>
+
+    <div id="viewTraining" class="app-view active">
+      <button type="button" class="workout-hero-launch" data-click="openModule" data-view="viewHero">
+        <span class="workout-hero-launch-copy">
+          <span class="workout-hero-launch-title">🏆 Hall do Herói</span>
+          <span class="workout-hero-launch-detail">Seu legado de treino, distância e energia</span>
+        </span>
+        <span class="workout-hero-launch-arrow" aria-hidden="true">›</span>
+      </button>
+
+      <div class="section-title is-first" id="workoutMonthTitle">🏋️ Treinos do mês</div>
+      <div class="toba-stats" id="workoutSummary"></div>
+
+      <details class="card workout-history-card" open>
+        <summary class="workout-history-summary">
+          <span class="card-title">📜 Histórico mensal</span>
+          <span class="workout-history-count" id="workoutHistoryCount"></span>
+          <span class="workout-chevron" aria-hidden="true">›</span>
+        </summary>
+        <div class="workout-month-list" id="workoutHistory"></div>
+      </details>
     </div>
 
-    <div id="viewTraining" class="view-section active">
-          <button type="button" class="workout-hero-launch" onclick="openModule('viewHero')">
-            <span class="workout-hero-launch-copy">
-              <span class="workout-hero-launch-title">🏆 Hall do Herói</span>
-              <span class="workout-hero-launch-detail">Seu legado de treino, distância e energia queimada</span>
-            </span>
-            <span aria-hidden="true" style="font-size: 1.25rem; color: #e3b341">›</span>
-          </button>
+    <div id="viewMonth" class="app-view">
+      <h1 id="workoutMonthDetailTitle" hidden>🏆 Mês</h1>
+      <div class="card"><div id="workoutMonthContent"></div></div>
+      <div class="section-title">📜 Treinos do mês</div>
+      <div id="workoutMonthRecords" class="workout-records"></div>
+    </div>
 
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title" id="workoutMonthTitle">🏋️‍♂️ Treinos</span>
-              <button class="btn btn-sm" onclick="openWorkoutModal()">
-                + Registrar treino
-              </button>
-            </div>
-            <div class="workout-summary-grid" id="workoutSummary"></div>
-          </div>
+    <div id="viewDetail" class="app-view">
+      <h1 id="workoutDetailTitle" hidden>🏆 Detalhes</h1>
+      <div class="card"><div id="workoutDetailContent"></div></div>
+    </div>
 
-          <details class="card workout-history-card" open>
-            <summary class="workout-history-summary">
-              <span class="card-title">📜 Histórico mensal</span>
-              <span class="workout-history-count" id="workoutHistoryCount"></span>
-              <span class="workout-chevron" aria-hidden="true">›</span>
-            </summary>
-            <div class="workout-month-list" id="workoutHistory">
-              <span style="font-size: 0.8rem; color: #8b949e">Os meses anteriores aparecerão aqui.</span>
-            </div>
-          </details>
-        </div>
-
-    <div id="viewMonth" class="view-section">
-          <div class="workout-hero-heading">
-            <h1 id="workoutMonthDetailTitle" style="font-size: 1.05rem; color: #e3b341">🏆 Mês</h1>
-            <button type="button" class="back-nav-btn" onclick="openModule('viewTraining')">‹ Treinos</button>
-          </div>
-          <div class="card"><div id="workoutMonthContent"></div></div>
-          <div class="card" style="margin-top: 1rem">
-            <div class="card-title" style="margin-bottom: 0.5rem">📜 Treinos do mês</div>
-            <div id="workoutMonthRecords"></div>
-          </div>
-        </div>
-
-    <div id="viewDetail" class="view-section">
-          <div class="workout-hero-heading">
-            <h1 id="workoutDetailTitle" style="font-size: 1.05rem; color: #e3b341">🏆 Detalhes</h1>
-            <button type="button" class="back-nav-btn" onclick="closeWorkoutDetail()">‹ Voltar</button>
-          </div>
-          <div class="card"><div id="workoutDetailContent"></div></div>
-        </div>
-
-    <div id="viewHero" class="view-section">
-          <div class="workout-hero-heading">
-            <h1 style="font-size: 1.05rem; color: #e3b341">🏆 Hall do Herói</h1>
-            <button type="button" class="back-nav-btn" onclick="openModule('viewTraining')">‹ Treinos</button>
-          </div>
-          <div class="card"><div id="workoutHallContent"></div></div>
-        </div>
+    <div id="viewHero" class="app-view">
+      <h1 id="workoutHeroTitle" hidden>🏆 Hall do Herói</h1>
+      <div class="card"><div id="workoutHallContent"></div></div>
+    </div>
   </div>
 
-  <div class="modal-overlay" id="workoutModal">
-      <div class="modal-body">
-        <div class="modal-header">
-          <div class="modal-title" id="workoutModalTitle">🏋️ Registrar treino</div>
-          <button class="close-btn" onclick="closeWorkoutModal()">✖</button>
-        </div>
-
-        <div id="workoutTypePicker">
-          <div class="hub-title">Treinos prontos</div>
-          <button type="button" class="btn btn-secondary workout-type-option" onclick="selectWorkoutType('strength')">
-            <strong>💪 Treino de força</strong>
-            <span>Monte o treino por grupo muscular, salve como Treino A, B, C e veja quantas vezes você já fez.</span>
-          </button>
-          <button type="button" class="btn btn-secondary workout-type-option" onclick="selectWorkoutType('saitama')">
-            <strong>👊 Treino lendário do Mestre Saitama</strong>
-            <span>O herói do expediente registra o que conseguiu fazer hoje.</span>
-          </button>
-          <button type="button" class="btn btn-secondary workout-type-option" onclick="selectWorkoutType('walking')">
-            <strong>🚶 Caminhada / Corrida</strong>
-            <span>Do passeio contemplativo ao sprint para não perder o ônibus: registra km, tempo e calorias.</span>
-          </button>
-          <button type="button" class="btn btn-secondary workout-type-option" onclick="selectWorkoutType('bike')">
-            <strong>🚴 Bike</strong>
-            <span>Pedalando rumo ao shape — ou só fugindo da esteira. Anote distância, tempo e calorias.</span>
-          </button>
-          <button type="button" class="btn btn-secondary workout-type-option" onclick="selectWorkoutType('elliptical')">
-            <strong>🏃 Elíptico</strong>
-            <span>Corrida sem sair do lugar: o cardio trabalha e a academia continua no mesmo endereço.</span>
-          </button>
-
-          <div class="section-divider"></div>
-          <div class="hub-title">Do seu jeito</div>
-          <button type="button" class="btn btn-secondary workout-type-option" onclick="selectWorkoutType('custom')">
-            <strong>➕ Treino personalizado</strong>
-            <span>Registre outra atividade e escolha os dados para acompanhar.</span>
-          </button>
-        </div>
-
-        <form id="workoutForm" onsubmit="saveWorkout(event)" style="display: none">
-          <button type="button" class="back-nav-btn" onclick="backToWorkoutTypes()" style="margin-bottom: 0.8rem">
-            ‹ Tipos de treino
-          </button>
-          <div id="workoutFormFields"></div>
-          <button type="submit" class="btn">Salvar treino 💪</button>
-        </form>
-
-        <div id="strengthPanel" style="display: none"></div>
+  <div class="toba-modal" id="workoutModal" data-backdrop="static">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="workoutModalTitle">🏋️ Registrar treino</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
       </div>
-    </div>
 
-  <div class="popup-overlay" id="workoutChartModal" onclick="if (event.target === this) closeWorkoutChart()">
-      <div class="popup-panel" role="dialog" aria-modal="true" aria-labelledby="workoutChartTitle">
-        <div class="modal-header">
-          <div class="modal-title" id="workoutChartTitle">📊 Últimos 7 dias</div>
-          <button class="close-btn" onclick="closeWorkoutChart()" aria-label="Fechar gráfico">✖</button>
+      <div id="workoutTypePicker">
+        <div class="hub-title">Treinos prontos</div>
+        <div class="toba-menu">
+          <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="strength">
+            <span class="toba-menu-icon">💪</span>
+            <span class="toba-menu-text">
+              <span class="toba-menu-title">Treino de força</span>
+              <span class="toba-menu-desc">Monte por grupo muscular, salve como Treino A, B, C e repita.</span>
+            </span>
+          </button>
+          <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="saitama">
+            <span class="toba-menu-icon">👊</span>
+            <span class="toba-menu-text">
+              <span class="toba-menu-title">Treino do Mestre Saitama</span>
+              <span class="toba-menu-desc">O herói do expediente registra o que aguentou hoje.</span>
+            </span>
+          </button>
+          <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="walking">
+            <span class="toba-menu-icon">🚶</span>
+            <span class="toba-menu-text">
+              <span class="toba-menu-title">Caminhada / Corrida</span>
+              <span class="toba-menu-desc">Do passeio contemplativo ao sprint atrás do ônibus.</span>
+            </span>
+          </button>
+          <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="bike">
+            <span class="toba-menu-icon">🚴</span>
+            <span class="toba-menu-text">
+              <span class="toba-menu-title">Bike</span>
+              <span class="toba-menu-desc">Pedalando rumo ao shape, ou só fugindo da esteira.</span>
+            </span>
+          </button>
+          <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="elliptical">
+            <span class="toba-menu-icon">🏃</span>
+            <span class="toba-menu-text">
+              <span class="toba-menu-title">Elíptico</span>
+              <span class="toba-menu-desc">Corrida sem sair do lugar. A academia agradece.</span>
+            </span>
+          </button>
         </div>
-        <div id="workoutChartDescription" style="font-size: 0.78rem; color: #8b949e; margin-bottom: 0.5rem"></div>
-        <div class="workout-chart" id="workoutChart" role="img" aria-label="Comparativo dos últimos sete dias"></div>
-        <div id="workoutChartWeek" style="font-size: 0.7rem; color: #8b949e; text-align: center; margin-top: 0.7rem">
-        </div>
+
+        <div class="section-divider"></div>
+        <div class="hub-title">Do seu jeito</div>
+        <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="custom">
+          <span class="toba-menu-icon">➕</span>
+          <span class="toba-menu-text">
+            <span class="toba-menu-title">Treino personalizado</span>
+            <span class="toba-menu-desc">Outra atividade, com os dados que você quiser.</span>
+          </span>
+        </button>
       </div>
-    </div>
 
+      <form id="workoutForm" data-submit="saveWorkout" hidden>
+        <button type="button" class="back-nav-btn workout-back-types" data-click="backToWorkoutTypes">‹ Tipos de treino</button>
+        <div id="workoutFormFields"></div>
+        <div class="toba-sheet-footer">
+          <button type="submit" class="btn btn-primary">Salvar treino 💪</button>
+        </div>
+      </form>
+
+      <div id="strengthPanel" hidden></div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="workoutChartModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="workoutChartTitle">📊 Últimos 7 dias</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="workoutChartDescription" class="toba-sheet-text"></div>
+      <div class="workout-chart" id="workoutChart" role="img" aria-label="Comparativo dos últimos sete dias"></div>
+      <div id="workoutChartWeek" class="workout-chart-week"></div>
+    </div>
+  </div>
+
+  <script src="../assets/toba-common.js"></script>
   <script src="js/health-core.js"></script>
   <script src="js/hall.js"></script>
   <script src="js/forca.js"></script>

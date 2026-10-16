@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="color-scheme" content="dark" />
   <meta name="supported-color-schemes" content="dark" />
   <title>Toba Health | Pesagem & Bioimpedância</title>
@@ -13,251 +13,181 @@
   <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
   <link rel="stylesheet" href="css/health-base.css" />
   <link rel="stylesheet" href="css/pesagem.css" />
 </head>
 
 <body>
   <div class="container">
-    <div class="top-header">
-      <div class="brand-title" onclick="window.location.href='TobaHealth-Index.html'" style="cursor: pointer"
-        title="Voltar ao Início">
-        <span>🥗 Toba Health</span>
+    <header class="toba-header">
+      <a class="toba-back" href="TobaHealth-Index.html" data-label="Voltar para o Toba Health" aria-label="Voltar para o Toba Health">‹</a>
+      <a class="toba-titles" href="TobaHealth-Index.html">
+        <span class="toba-app">🥗 Toba Health</span>
+        <span class="toba-page">⚖️ Pesagem</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-add-btn" id="headerAddBtn" data-click="newWeighIn">+ Pesagem</button>
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
       </div>
-      <div class="header-actions" id="headerActions">
-        <button class="gear-btn" onclick="openSettingsModal()" title="Configurações" aria-label="Configurações">⚙️</button>
-        <a class="back-nav-btn" href="TobaHealth-Index.html">Hub ›</a>
+    </header>
+
+    <div class="app-view active" id="viewPesagem">
+      <div class="card weigh-hero">
+        <div id="latestWeightDisplay"></div>
+        <div class="toba-stats is-3" id="metricsGrid" hidden></div>
       </div>
+
+      <div class="section-title">📜 Histórico</div>
+      <div id="historyList" class="toba-list"></div>
     </div>
 
-    <div id="viewPesagem" class="view-section active">
-          <!-- CARD PRINCIPAL PESAGEM -->
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title">⚖️ Acompanhamento de Peso</span>
-              <button class="btn btn-sm" onclick="openAddWeighModal()">
-                + Nova Pesagem
-              </button>
-            </div>
-
-            <div id="latestWeightDisplay" class="latest-weight-box" onclick="
-                  openMetricCompareModal('weight', 'Peso (kg)', 'dec2', 'kg')
-                ">
-              <span style="font-size: 0.85rem; color: #8b949e">Nenhuma pesagem cadastrada</span>
-            </div>
-
-            <!-- INDICADORES DA BIOIMPEDÂNCIA CLICÁVEIS -->
-            <div class="grid-3" id="metricsGrid" style="display: none; margin-top: 10px"></div>
-          </div>
-
-          <!-- HISTÓRICO DE PESAGENS -->
-          <div class="card">
-            <div class="card-title" style="margin-bottom: 0.5rem">
-              📜 Histórico de Registros
-            </div>
-            <div id="historyList">
-              <span style="font-size: 0.8rem; color: #8b949e">Nenhum registro no histórico.</span>
-            </div>
-          </div>
+    <div class="app-view" id="viewCompare">
+      <div class="toba-stats is-3 compare-stats">
+        <div class="toba-stat is-center">
+          <span class="toba-stat-label">Média (5)</span>
+          <span class="toba-stat-value text-blue" id="thMedia5">--</span>
         </div>
+        <div class="toba-stat is-center">
+          <span class="toba-stat-label">vs Média</span>
+          <span class="toba-stat-value" id="thVsMediaVal">--</span>
+          <span class="toba-stat-sub" id="thVsMediaPct"></span>
+        </div>
+        <div class="toba-stat is-center">
+          <span class="toba-stat-label">vs Anterior</span>
+          <span class="toba-stat-value" id="thVsAntVal">--</span>
+          <span class="toba-stat-sub" id="thVsAntPct"></span>
+        </div>
+      </div>
+
+      <div class="card compare-chart-card">
+        <div class="card-title">📈 Últimas 5 pesagens</div>
+        <div id="svgChartContainer"></div>
+      </div>
+
+      <div id="metricExplanatoryBox"></div>
+
+      <div class="section-title">🗓️ Últimos registros</div>
+      <div id="compHistoryList" class="kv-list compare-history"></div>
+    </div>
   </div>
 
-  <div class="modal-overlay" id="metricCompareModal">
-      <div class="modal-body">
-        <div class="modal-header">
-          <div class="modal-title" id="compModalTitle">📊 Comparativo</div>
-          <button class="back-nav-btn" onclick="closeMetricCompareModal()">‹ Voltar</button>
-        </div>
-
-        <!-- CARDS DE MÉDIA, VS MÉDIA E VS ANTERIOR -->
-        <div style="display: flex; gap: 10px; margin-bottom: 1rem; justify-content: space-between;">
-
-          <!-- Quadrado 1: Média (5) -->
-          <div class="card"
-            style="flex: 1; text-align: center; padding: 12px; margin-bottom: 0; background: #0d1117; border: 1px solid #30363d; border-radius: 8px;">
-            <div style="font-size: 0.75rem; color: #8b949e; margin-bottom: 4px;">Média (5)</div>
-            <div id="thMedia5" style="font-size: 1.2rem; font-weight: bold; color: #58a6ff;">--</div>
-          </div>
-
-          <!-- Quadrado 2: vs Média -->
-          <div class="card"
-            style="flex: 1; text-align: center; padding: 12px; margin-bottom: 0; background: #0d1117; border: 1px solid #30363d; border-radius: 8px;">
-            <div style="font-size: 0.75rem; color: #8b949e; margin-bottom: 4px;">vs Média</div>
-            <div id="thVsMediaVal" style="font-size: 1.1rem; font-weight: bold;">--</div>
-            <div id="thVsMediaPct" style="font-size: 0.75rem; margin-top: 2px;">--</div>
-          </div>
-
-          <!-- Quadrado 3: vs Anterior -->
-          <div class="card"
-            style="flex: 1; text-align: center; padding: 12px; margin-bottom: 0; background: #0d1117; border: 1px solid #30363d; border-radius: 8px;">
-            <div style="font-size: 0.75rem; color: #8b949e; margin-bottom: 4px;">vs Anterior</div>
-            <div id="thVsAntVal" style="font-size: 1.1rem; font-weight: bold;">--</div>
-            <div id="thVsAntPct" style="font-size: 0.75rem; margin-top: 2px;">--</div>
-          </div>
-
-        </div>
-
-        <!-- GRÁFICO SVG NEON -->
-        <div style="
-              background: #0d1117;
-              border: 1px solid #21262d;
-              border-radius: 14px;
-              padding: 1.2rem 0.8rem 0.8rem 0.8rem;
-              margin-bottom: 1rem;
-            ">
-          <div style="
-                font-size: 0.72rem;
-                color: #8b949e;
-                text-transform: uppercase;
-                font-weight: 700;
-                text-align: center;
-                margin-bottom: 1rem;
-                letter-spacing: 0.5px;
-              ">
-            📈 Evolução das Últimas 5 Pesagens
-          </div>
-          <div id="svgChartContainer"></div>
-        </div>
-
-        <!-- CAIXA EXPLICATIVA E RÉGUA (MOTOR TOBERSON) -->
-        <div id="metricExplanatoryBox" style="margin-bottom: 1.5rem"></div>
-
-        <!-- LISTA DOS ÚLTIMOS 5 REGISTROS -->
-        <div style="
-              font-size: 0.75rem;
-              color: #8b949e;
-              margin-bottom: 6px;
-              font-weight: 700;
-              text-transform: uppercase;
-            ">
-          Últimos Registros
-        </div>
-        <div id="compHistoryList"></div>
-
-        <button class="btn btn-secondary" onclick="closeMetricCompareModal()" style="margin-top: 0.8rem">
-          ‹ Voltar
+  <div id="tobaSettingsExtra" hidden>
+    <div class="toba-settings-section">
+      <div class="toba-settings-label">⚖️ Pesagem</div>
+      <div class="toba-menu">
+        <button type="button" class="toba-menu-btn" data-click="openProfile">
+          <span class="toba-menu-icon">👤</span>
+          <span class="toba-menu-text">
+            <span class="toba-menu-title">Seu perfil</span>
+            <span class="toba-menu-desc">Idade, altura e sexo (calibra as réguas)</span>
+          </span>
+          <span class="toba-hub-chevron">›</span>
+        </button>
+        <button type="button" class="toba-menu-btn" data-click="openScaleConfig">
+          <span class="toba-menu-icon">🎛️</span>
+          <span class="toba-menu-text">
+            <span class="toba-menu-title">Sua balança</span>
+            <span class="toba-menu-desc">Quais métricas aparecem e em que ordem</span>
+          </span>
+          <span class="toba-hub-chevron">›</span>
         </button>
       </div>
     </div>
+  </div>
 
-  <div class="popup-overlay" id="metricAdviceModal" onclick="if (event.target === this) closeMetricAdviceModal()">
-      <div class="popup-panel" role="dialog" aria-modal="true" aria-labelledby="metricAdviceTitle">
-        <div class="modal-header">
-          <div class="modal-title" id="metricAdviceTitle">🍄 Plano de ação</div>
-          <button class="close-btn" onclick="closeMetricAdviceModal()" aria-label="Voltar ao gráfico">✖</button>
-        </div>
-        <div id="metricAdviceContent" class="page-message-text"></div>
-        <button class="btn btn-secondary" onclick="closeMetricAdviceModal()" style="margin-top: 1rem">
-          ‹ Voltar ao gráfico
-        </button>
+  <div class="toba-modal" id="metricAdviceModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="metricAdviceTitle">🍄 Plano de ação</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="metricAdviceContent" class="toba-sheet-text"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-secondary" data-close>Entendi 👍</button>
       </div>
     </div>
+  </div>
 
-  <div class="modal-overlay" id="addWeighModal">
-      <div class="modal-body">
-        <div class="modal-header">
-          <div class="modal-title" id="weighModalTitle">
-            ⚖️ Registrar Pesagem
-          </div>
-          <button class="close-btn" onclick="closeAddWeighModal()">✖</button>
-        </div>
+  <div class="toba-modal" id="weighModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="weighModalTitle">⚖️ Nova pesagem</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form data-submit="saveWeighIn">
+        <input type="hidden" id="editingWeighId" value="" />
 
-        <form onsubmit="saveWeighIn(event)">
-          <input type="hidden" id="editingWeighId" value="" />
-
-          <div class="form-group">
-            <label for="wDate">Data e Hora da Pesagem</label>
-            <input type="datetime-local" id="wDate" class="form-control" required />
-          </div>
-
+        <div class="grid-2">
           <div class="form-group">
             <label for="wWeight">Peso (kg) *</label>
-            <input type="text" id="wWeight" class="form-control toba-mask-dec2" placeholder="Ex: 82,50" required />
+            <input type="text" inputmode="decimal" id="wWeight" class="form-control toba-mask-dec2" placeholder="Ex: 82,50" required />
           </div>
+          <div class="form-group">
+            <label for="wDate">Data e hora</label>
+            <input type="datetime-local" id="wDate" class="form-control" required />
+          </div>
+        </div>
 
-          <!-- CAMPOS DINÂMICOS -->
-          <div id="dynamicFormFields" class="grid-2"></div>
+        <div id="dynamicFormFields" class="grid-2"></div>
 
-          <button type="submit" class="btn" style="margin-top: 1rem" id="btnSaveWeigh">
-            Salvar Pesagem 🚀
-          </button>
-          <button type="button" class="btn btn-danger" id="btnDeleteWeigh" style="display: none; margin-top: 8px"
-            onclick="deleteCurrentWeighIn()">
-            🗑️ Apagar Registro
-          </button>
-        </form>
+        <div class="toba-sheet-footer">
+          <div class="btn-row">
+            <button type="button" class="btn btn-danger btn-grow-1" id="btnDeleteWeigh" data-click="deleteCurrentWeighIn" hidden>🗑️ Apagar</button>
+            <button type="submit" class="btn btn-primary btn-grow-2" id="btnSaveWeigh">Salvar pesagem 🚀</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="scaleConfigModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🎛️ Métricas da balança</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <p class="toba-sheet-text">Marque o que a sua balança mede e ordene com ⬆️ ⬇️ igual à tela dela. Desmarcar só esconde: o valor já gravado fica guardado.</p>
+      <div id="scaleMetricsOrderList" class="order-list"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-primary" data-close>Concluído 👍</button>
       </div>
     </div>
+  </div>
 
-  <div class="popup-overlay" id="scaleConfigModal" onclick="if (event.target === this) closeScaleConfigModal()">
-      <div class="popup-panel" role="dialog" aria-modal="true" aria-labelledby="scaleConfigTitle">
-        <div class="modal-header">
-          <div class="modal-title" id="scaleConfigTitle">⚙️ Métricas da sua Balança</div>
-          <button class="close-btn" onclick="closeScaleConfigModal()">✖</button>
-        </div>
-
-        <p style="font-size: 0.8rem; color: #8b949e; margin-bottom: 1rem">
-          Marque quais métricas sua balança possui e ordene com as setas ⬆️ ⬇️
-          para bater com a tela da sua balança!
-        </p>
-
-        <div id="scaleMetricsOrderList"></div>
-
-        <button class="btn" onclick="closeScaleConfigModal()" style="margin-top: 1rem">
-          Concluído 👍
-        </button>
+  <div class="toba-modal" id="profileModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>👤 Seu perfil</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
       </div>
-    </div>
-
-  <div class="popup-overlay" id="settingsMenuModal" onclick="if (event.target === this) closeSettingsMenuModal()">
-      <div class="popup-panel" role="dialog" aria-modal="true" aria-labelledby="settingsMenuTitle">
-        <div class="modal-header">
-          <div class="modal-title" id="settingsMenuTitle">⚙️ Configurações</div>
-          <button class="close-btn" onclick="closeSettingsMenuModal()">✖</button>
+      <form data-submit="saveProfile">
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="cfgAge">Idade (anos)</label>
+            <input type="number" inputmode="numeric" id="cfgAge" class="form-control" placeholder="Ex: 30" />
+          </div>
+          <div class="form-group">
+            <label for="cfgHeight">Altura (cm)</label>
+            <input type="number" inputmode="numeric" id="cfgHeight" class="form-control" placeholder="Ex: 178" />
+          </div>
         </div>
-
-        <button class="btn btn-secondary" onclick="openProfileSettingsModal()" style="margin-bottom: 0.6rem">
-          👤 Perfil do Usuário
-        </button>
-        <button class="btn btn-secondary" onclick="openScaleSettingsFromMenu()" style="margin-bottom: 0.6rem">
-          ⚖️ Configuração da Balança
-        </button>
-        <button class="btn btn-secondary" onclick="openDataModalFromMenu()">
-          💾 Dados & Backup
-        </button>
-      </div>
-    </div>
-
-  <div class="popup-overlay" id="settingsModal" onclick="if (event.target === this) closeSettingsModal()">
-      <div class="popup-panel" role="dialog" aria-modal="true" aria-labelledby="profileSettingsTitle">
-        <div class="modal-header">
-          <div class="modal-title" id="profileSettingsTitle">👤 Perfil do Usuário</div>
-          <button class="close-btn" onclick="closeSettingsModal()">✖</button>
-        </div>
-
         <div class="form-group">
-          <label for="cfgAge">Idade (anos)</label>
-          <input type="number" id="cfgAge" class="form-control" placeholder="Ex: 30" />
-        </div>
-
-        <div class="form-group">
-          <label for="cfgHeight">Altura (cm)</label>
-          <input type="number" id="cfgHeight" class="form-control" placeholder="Ex: 178" />
-        </div>
-
-        <div class="form-group">
-          <label for="cfgGender">Sexo Biológico</label>
+          <label for="cfgGender">Sexo biológico</label>
           <select id="cfgGender" class="form-control">
             <option value="">Selecione...</option>
             <option value="Masculino">Masculino</option>
             <option value="Feminino">Feminino</option>
           </select>
         </div>
-
-        <button class="btn" onclick="saveSettings()">Salvar Perfil 💾</button>
-      </div>
+        <div class="toba-sheet-footer">
+          <button type="submit" class="btn btn-primary">Salvar perfil 💾</button>
+        </div>
+      </form>
     </div>
+  </div>
 
+  <script src="../assets/toba-common.js"></script>
   <script src="js/health-core.js"></script>
   <script src="js/pesagem.js"></script>
   <script src="../assets/pwa-register.js"></script>

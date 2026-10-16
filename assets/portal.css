@@ -1,0 +1,282 @@
+/* Portal Toba Solutions · a base vem de toba-common.css */
+
+:root {
+  --accent: var(--blue);
+}
+
+.portal-header {
+  align-items: flex-start;
+  margin-bottom: 1.2rem;
+}
+
+.portal-brand {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.portal-logo {
+  font-size: clamp(1.3rem, 6.6vw, 1.6rem);
+  font-weight: 900;
+  color: var(--blue);
+  letter-spacing: -0.6px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.portal-subtitle {
+  font-size: 0.76rem;
+  color: var(--muted);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.portal-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.app-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: 0.9rem 1rem;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.app-card:hover {
+  border-color: var(--blue);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(88, 166, 255, 0.1);
+}
+
+.app-card.is-soon {
+  opacity: 0.4;
+  filter: grayscale(100%);
+}
+
+.app-card.is-soon:hover {
+  transform: none;
+  border-color: var(--border-soft);
+  box-shadow: none;
+}
+
+.app-card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-icon {
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.app-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-desc {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.app-desc b {
+  color: var(--blue);
+  white-space: nowrap;
+}
+
+.badge {
+  font-size: 0.66rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-active {
+  background: rgba(63, 185, 80, 0.15);
+  color: var(--green);
+}
+
+.badge-beta {
+  background: rgba(88, 166, 255, 0.15);
+  color: var(--blue);
+}
+
+.badge-dev {
+  background: rgba(210, 153, 34, 0.15);
+  color: var(--gold);
+}
+
+/* Card do Bank com números */
+.card-custom-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.card-custom-body[hidden] {
+  display: none;
+}
+
+.eye-toggle-btn {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 5px 9px;
+  border-radius: 8px;
+  color: var(--blue);
+  background: rgba(88, 166, 255, 0.12);
+  border: 1px solid rgba(88, 166, 255, 0.35);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.quick-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border-radius: var(--radius);
+  border: 1px dashed rgba(88, 166, 255, 0.5);
+  background: rgba(88, 166, 255, 0.08);
+  color: var(--blue);
+  font-weight: 700;
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+.quick-add-btn[hidden] {
+  display: none;
+}
+
+.quick-add-btn:hover {
+  background: rgba(88, 166, 255, 0.16);
+}
+
+/* Configurações do portal */
+.toba-menu-btn.is-soon {
+  opacity: 0.55;
+}
+
+.card-type-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0.3rem 0 0.9rem;
+}
+
+.radio-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.radio-card.active {
+  border-color: var(--blue);
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.radio-card input {
+  accent-color: var(--blue);
+}
+
+.check-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 1rem;
+}
+
+.check-list .check-row {
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+}
+
+.order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 1rem;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0.45rem 0.5rem 0.45rem 0.75rem;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+}
+
+.order-item.is-hidden {
+  opacity: 0.55;
+}
+
+.order-item-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.order-item-left span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.order-btns {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.order-btns .action-icon-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.order-toggle {
+  min-width: 82px;
+}

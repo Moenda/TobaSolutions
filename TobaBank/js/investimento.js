@@ -1,6 +1,6 @@
 /* =====================================================================
  * Toba Bank · Investimentos (carteira, cofrinhos, gráficos)
- * Depende de bank-core.js e Chart.js
+ * Depende de ../assets/toba-common.js, bank-core.js e Chart.js
  * ===================================================================== */
 let cofrinhosVisible = false;
 
@@ -22,17 +22,9 @@ function toggleAlignMode() {
   chartAlignMode = !chartAlignMode;
   const btn = document.getElementById("chartModeAlign");
   if (btn) {
-    if (chartAlignMode) {
-      btn.style.borderColor = "#3fb950";
-      btn.style.color = "#3fb950";
-      btn.style.background = "rgba(63, 185, 80, 0.1)";
-      btn.innerText = "🏁 Alinhado na Partida (On)";
-    } else {
-      btn.style.borderColor = "#30363d";
-      btn.style.color = "#8b949e";
-      btn.style.background = "#0d1117";
-      btn.innerText = "🏁 Alinhado na Partida (Off)";
-    }
+    // "Alinhar" põe todos os ativos começando juntos no mês 0
+    btn.classList.toggle("active", chartAlignMode);
+    btn.setAttribute("aria-pressed", String(chartAlignMode));
   }
   renderPatrimonyChart(currentChartPeriod);
 }
@@ -135,10 +127,8 @@ function switchChartTab(tab) {
     .getElementById("tabChartFutureBtn")
     ?.classList.toggle("active", tab === "future");
 
-  document.getElementById("chartPastContainer").style.display =
-    tab === "past" ? "block" : "none";
-  document.getElementById("chartFutureContainer").style.display =
-    tab === "future" ? "block" : "none";
+  document.getElementById("chartPastContainer").hidden = tab !== "past";
+  document.getElementById("chartFutureContainer").hidden = tab !== "future";
 
   if (tab === "past") {
     renderPatrimonyChart(currentChartPeriod);
@@ -260,23 +250,18 @@ function openFinishedActionPopup(id) {
   document.getElementById("popupFinishedIr").innerText =
     `-${formatCurrency(ir)}`;
 
-  document.getElementById("finishedActionPopup").classList.add("active");
+  openTobaModal("finishedActionPopup");
 }
 
 function reactivateFundFromPopup() {
   const id = document.getElementById("popupFinishedIdInput").value;
-  document
-    .getElementById("finishedActionPopup")
-    .classList.remove("active");
+  closeTobaModal("finishedActionPopup");
   toggleFinishFund(id);
 }
 
-function deleteFinishedFundFromPopup() {
+async function deleteFinishedFundFromPopup() {
   const id = document.getElementById("popupFinishedIdInput").value;
-  document
-    .getElementById("finishedActionPopup")
-    .classList.remove("active");
-  deleteFund(id);
+  if (await deleteFund(id)) closeTobaModal("finishedActionPopup");
 }
 
 function renderInvestmentsScreen() {
@@ -310,9 +295,11 @@ function renderInvestmentsScreen() {
     document.getElementById("finishedSearchInput")?.value || ""
   ).toLowerCase();
 
+  const emptyInvest = tobaEmpty("🌱", "Nenhum investimento ainda", "Toque em <b>+ Investimento</b> e deixe os juros trabalharem.");
+  const emptyCofrinho = tobaEmpty("🐷", "Nenhum cofrinho ainda", "Toque no <b>+</b> ali em cima pra criar.", { compact: true });
   if (activeFunds.length === 0) {
-    investContainer.innerHTML = `<div class="empty-state">Nenhum fundo de investimento ativo. Clique acima para criar!</div>`;
-    cofrinhosContainer.innerHTML = `<div class="empty-state">Nenhum cofrinho criado.</div>`;
+    investContainer.innerHTML = emptyInvest;
+    cofrinhosContainer.innerHTML = emptyCofrinho;
   } else {
     let hasInvestments = false;
     let hasCofrinhos = false;
@@ -368,24 +355,17 @@ function renderInvestmentsScreen() {
         globalTotalDeposited += stats.netInvested;
       }
 
-      const card = document.createElement("div");
-      card.className = "invest-card";
-      card.id = `investCard-${fund.id}`;
-      card.innerHTML = createCardHtml(fund);
-
       if (fund.isCofrinho) {
-        cofrinhosContainer.appendChild(card);
+        cofrinhosContainer.insertAdjacentHTML("beforeend", createCardHtml(fund));
         hasCofrinhos = true;
       } else {
-        investContainer.appendChild(card);
+        investContainer.insertAdjacentHTML("beforeend", createCardHtml(fund));
         hasInvestments = true;
       }
     });
 
-    if (!hasInvestments)
-      investContainer.innerHTML = `<div class="empty-state">Nenhum investimento longo prazo.</div>`;
-    if (!hasCofrinhos)
-      cofrinhosContainer.innerHTML = `<div class="empty-state">Nenhum cofrinho ativo.</div>`;
+    if (!hasInvestments) investContainer.innerHTML = emptyInvest;
+    if (!hasCofrinhos) cofrinhosContainer.innerHTML = emptyCofrinho;
   }
 
   globalProjectedProfitSum += cofrinhosProjectedProfitSum;
@@ -405,8 +385,8 @@ function renderInvestmentsScreen() {
 
   if (totalWEl && avgYEl && projElCof) {
     totalWEl.innerText = formatCurrency(cofrinhosWithdrawalsSum);
-    avgYEl.innerText = `+${cofrinhosAvgYield.toFixed(2)}%`;
-    projElCof.innerText = `${formatCurrency(cofrinhosProjectedProfitSum)} (+${cofrinhosProjectedYieldPct.toFixed(2)}%)`;
+    avgYEl.innerText = `+${formatPct(cofrinhosAvgYield)}`;
+    projElCof.innerText = `${formatCurrency(cofrinhosProjectedProfitSum)} (+${formatPct(cofrinhosProjectedYieldPct)})`;
   }
 
   finishedFunds.sort((a, b) => {
@@ -430,7 +410,7 @@ function renderInvestmentsScreen() {
   let totalLiquidProfit = 0;
 
   if (finishedFunds.length === 0) {
-    finishedContainer.innerHTML = `<div class="empty-state">Nenhum investimento resgatado no histórico.</div>`;
+    finishedContainer.innerHTML = tobaEmpty("🏁", "Nada resgatado ainda", "Quando finalizar um investimento, o lucro dele aparece aqui.", { compact: true });
   } else {
     finishedFunds.forEach((fund) => {
       const totalDeposited = (fund.deposits || []).reduce(
@@ -486,43 +466,33 @@ function renderInvestmentsScreen() {
       if (searchTerm && !titleText.toLowerCase().includes(searchTerm))
         return;
 
-      const card = document.createElement("div");
-      card.className = "invest-card";
-      card.style.opacity = "0.9";
-      card.style.cursor = "pointer";
-      card.onclick = () => openFinishedActionPopup(fund.id);
-      card.innerHTML = `
-                    <div class="invest-header" style="cursor: pointer;">
-                        <div class="invest-header-top">
-                            <span class="invest-title" style="color:#58a6ff;">${escapeBankHtml(titleText)}</span>
-                        </div>
-                        <div style="font-size: 0.78rem; color: #8b949e; line-height: 1.6; margin-top: 4px;">
-                            <div style="display: flex; justify-content: space-between;">
-                                <span>Período:</span> <b>${startDateStr} a ${finalDateStr}</b>
-                            </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span>Aporte Total:</span> <b>${formatCurrency(totalDeposited)}</b>
-                            </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span>Saque Total:</span> <b>${formatCurrency(allOut)}</b>
-                            </div>
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #30363d;">
-                                <span>Lucro: <span class="${profitClass}" style="font-weight:700;">${realProfitNet >= 0 ? "+" : ""}${formatCurrency(realProfitNet)} (${realProfitNet >= 0 ? "+" : ""}${profitPercentageNet.toFixed(2)}%)</span></span>
-                                <span style="color:#f85149; font-weight:700;">IR: -${formatCurrency(ir)}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-      finishedContainer.appendChild(card);
+      const sign = realProfitNet >= 0 ? "+" : "";
+      finishedContainer.insertAdjacentHTML("beforeend", `
+        <div class="bank-card is-done" role="button" tabindex="0" data-click="openFinishedFund" data-id="${escapeHtml(fund.id)}">
+          <div class="bank-card-top">
+            <span class="bank-card-title">${escapeHtml(titleText)}</span>
+            <span class="bank-card-side">
+              <span class="bank-card-side-label">Lucro</span>
+              <span class="bank-card-side-value ${profitClass}">${sign}${formatCurrency(realProfitNet)}</span>
+            </span>
+          </div>
+          <div class="kv-list">
+            <div class="kv-row"><span>Período</span><span>${startDateStr} a ${finalDateStr}</span></div>
+            <div class="kv-row"><span>Aportou</span><span>${formatCurrency(totalDeposited)}</span></div>
+            <div class="kv-row"><span>Sacou</span><span>${formatCurrency(allOut)}</span></div>
+            <div class="kv-row"><span>Rendeu • IR</span><span><span class="${profitClass}">${sign}${formatPct(profitPercentageNet)}</span> • <span class="text-red">-${formatCurrency(ir)}</span></span></div>
+          </div>
+        </div>`);
     });
+    if (!finishedContainer.children.length) {
+      finishedContainer.innerHTML = tobaEmpty("🔍", "Nada com esse nome", "", { compact: true });
+    }
   }
 
   const profitValEl = document.getElementById("finishedTotalProfitVal");
   if (profitValEl) {
     profitValEl.innerText = formatCurrency(totalLiquidProfit);
-    profitValEl.style.color =
-      totalLiquidProfit >= 0 ? "#3fb950" : "#f85149";
+    profitValEl.className = `finished-summary-value ${totalLiquidProfit >= 0 ? "text-green" : "text-red"}`;
   }
 
   const globalRealProfit = globalTotalBalance - globalTotalDeposited;
@@ -540,24 +510,32 @@ function renderInvestmentsScreen() {
   document.getElementById("invTotalDeposited").innerText =
     formatCurrency(globalTotalDeposited);
 
+  const profitClass = globalRealProfit >= 0 ? "text-green" : "text-red";
   const profitEl = document.getElementById("invRealProfit");
-  profitEl.innerText = `${formatCurrency(globalRealProfit)} (${globalRealProfit >= 0 ? "+" : ""}${globalProfitPct.toFixed(2)}%)`;
-  profitEl.className = `history-metric-val ${globalRealProfit >= 0 ? "text-green" : "text-red"}`;
+  profitEl.innerText = formatCurrency(globalRealProfit);
+  profitEl.className = `toba-stat-value ${profitClass}`;
+  const profitPctEl = document.getElementById("invRealProfitPct");
+  profitPctEl.innerText = `${globalRealProfit >= 0 ? "+" : ""}${formatPct(globalProfitPct)}`;
+  profitPctEl.className = `toba-stat-sub ${profitClass}`;
 
   const histProfitEl = document.getElementById("invHistoryProfit");
   histProfitEl.innerText = formatCurrency(totalLiquidProfit);
-  histProfitEl.className = `history-metric-val ${totalLiquidProfit >= 0 ? "text-green" : "text-red"}`;
+  histProfitEl.className = `toba-stat-value ${totalLiquidProfit >= 0 ? "text-green" : "text-red"}`;
 
   const totalLifeProfit = globalRealProfit + totalLiquidProfit;
   const totalLifeEl = document.getElementById("invTotalLifeProfit");
   totalLifeEl.innerText = formatCurrency(totalLifeProfit);
-  totalLifeEl.className = `history-metric-val ${totalLifeProfit >= 0 ? "text-blue" : "text-red"}`;
+  totalLifeEl.className = `toba-stat-value ${totalLifeProfit >= 0 ? "text-blue" : "text-red"}`;
 
   const globalProjSign = globalProjectedProfitSum >= 0 ? "+" : "";
   const projEl = document.getElementById("invGlobalProjection");
-  projEl.innerText = `${globalProjSign}${formatCurrency(globalProjectedProfitSum)} (${globalProjSign}${globalProjPct.toFixed(2)}%)`;
-  projEl.style.color =
-    globalProjectedProfitSum >= 0 ? "#3fb950" : "#f85149";
+  projEl.innerText = `${globalProjSign}${formatCurrency(globalProjectedProfitSum)} (${globalProjSign}${formatPct(globalProjPct)})`;
+  projEl.className = globalProjectedProfitSum >= 0 ? "text-green" : "text-red";
+}
+
+// "12,34%" (vírgula, 2 casas)
+function formatPct(value) {
+  return `${(Number(value) || 0).toFixed(2).replace(".", ",")}%`;
 }
 
 function createCardHtml(fund) {
@@ -590,44 +568,33 @@ function createCardHtml(fund) {
     const avgYieldMonthly = yieldPct / monthsElapsed;
 
     return `
-                <div class="invest-header" onclick="openInvestActionPopup('${fund.id}')" style="cursor: pointer;">
-                    <div class="invest-header-top">
-                        <span class="invest-title" style="font-size: 1rem; font-weight: 700; color: #58a6ff;">
-                            ${escapeBankHtml(fund.name)}
-                        </span>
-                    </div>
-                    
-                    <div style="margin: 10px 0; display: flex; justify-content: space-between; align-items: center; background: #161b22; padding: 8px 12px; border-radius: 8px; border: 1px solid #21262d;">
-                        <div style="display: flex; flex-direction: column;">
-                            <span style="font-size: 0.65rem; color: #8b949e; text-transform: uppercase;">Saldo Base (Imobilizado)</span>
-                            <span style="font-size: 1rem; font-weight: 700; color: #f0f6fc;">${formatCurrency(totalDeposited)}</span>
-                        </div>
-                        <div style="display: flex; flex-direction: column; align-items: flex-end;">
-                            <span style="font-size: 0.65rem; color: #8b949e; text-transform: uppercase;">Saques Realizados</span>
-                            <span style="font-size: 1rem; font-weight: 700; color: #3fb950;">${formatCurrency(totalWithdrawn)}</span>
-                        </div>
-                    </div>
-
-                    <div class="invest-metrics">
-                        <div class="invest-metric-box">
-                            <span class="invest-metric-label">Início</span>
-                            <span class="invest-metric-val text-neutral" style="font-size: 0.75rem;">${startDateStr}</span>
-                        </div>
-                        <div class="invest-metric-box">
-                            <span class="invest-metric-label">Lucro Total</span>
-                            <span class="invest-metric-val text-green">+${yieldPct.toFixed(2)}%</span>
-                        </div>
-                        <div class="invest-metric-box">
-                            <span class="invest-metric-label">Média Mensal</span>
-                            <span class="invest-metric-val text-blue">+${avgYieldMonthly.toFixed(2)}%</span>
-                        </div>
-                    </div>
-                </div>
-            `;
+      <div class="bank-card" role="button" tabindex="0" data-click="openFund" data-id="${escapeHtml(fund.id)}">
+        <div class="bank-card-top">
+          <span class="bank-card-title">${escapeHtml(fund.name)}</span>
+          <span class="bank-card-side">
+            <span class="bank-card-side-label">Saldo base</span>
+            <span class="bank-card-side-value">${formatCurrency(totalDeposited)}</span>
+          </span>
+        </div>
+        <div class="toba-stats is-3 invest-card-stats">
+          <div class="toba-stat">
+            <span class="toba-stat-label">Saques</span>
+            <span class="toba-stat-value text-green">${formatCurrency(totalWithdrawn)}</span>
+          </div>
+          <div class="toba-stat">
+            <span class="toba-stat-label">Lucro</span>
+            <span class="toba-stat-value text-green">+${formatPct(yieldPct)}</span>
+          </div>
+          <div class="toba-stat">
+            <span class="toba-stat-label">Por mês</span>
+            <span class="toba-stat-value text-blue">+${formatPct(avgYieldMonthly)}</span>
+          </div>
+        </div>
+        <div class="bank-card-note"><span>Desde ${startDateStr}</span></div>
+      </div>`;
   }
 
   const stats = getFundStats(fund);
-  const latestBalance = stats.balance;
   const proj = stats.projection;
   const profitClass = stats.profit >= 0 ? "text-green" : "text-red";
   const profitSign = stats.profit >= 0 ? "+" : "";
@@ -635,32 +602,30 @@ function createCardHtml(fund) {
   const projSign = proj.profitAmount >= 0 ? "+" : "";
 
   return `
-            <div class="invest-header" onclick="openInvestActionPopup('${fund.id}')" style="cursor: pointer;">
-                <div class="invest-header-top">
-                    <span class="invest-title" style="font-size: 1rem; font-weight: 700; color: #58a6ff;">
-                        ${escapeBankHtml(fund.name)}
-                    </span>
-                </div>
-                <div class="invest-metrics" style="margin-top: 8px;">
-                    <div class="invest-metric-box">
-                        <span class="invest-metric-label">Saldo Atual</span>
-                        <span class="invest-metric-val text-neutral">${formatCurrency(latestBalance)}</span>
-                    </div>
-                    <div class="invest-metric-box">
-                        <span class="invest-metric-label">Investido</span>
-                        <span class="invest-metric-val text-neutral" style="font-size:0.78rem; opacity:0.8;">${formatCurrency(stats.netInvested)}</span>
-                    </div>
-                    <div class="invest-metric-box">
-                        <span class="invest-metric-label">Rendimento</span>
-                        <span class="invest-metric-val ${profitClass}">${profitSign}${formatCurrency(stats.profit)}</span>
-                        <span class="${profitClass}" style="font-size:0.7rem;">${profitSign}${stats.profitPct.toFixed(2)}%</span>
-                    </div>
-                </div>
-                <div style="margin-top: 8px; font-size: 0.75rem; background: rgba(88, 166, 255, 0.08); padding: 5px 8px; border-radius: 6px;">
-                    🚀 Projeção 12 meses <b class="${projClass}">${projSign}${formatCurrency(proj.profitAmount)} (${projSign}${proj.projectedPct.toFixed(2)}%)</b>
-                </div>
-            </div>
-        `;
+    <div class="bank-card" role="button" tabindex="0" data-click="openFund" data-id="${escapeHtml(fund.id)}">
+      <div class="bank-card-top">
+        <span class="bank-card-title">${escapeHtml(fund.name)}</span>
+        <span class="bank-card-side">
+          <span class="bank-card-side-label">Saldo atual</span>
+          <span class="bank-card-side-value">${formatCurrency(stats.balance)}</span>
+        </span>
+      </div>
+      <div class="toba-stats invest-card-stats">
+        <div class="toba-stat">
+          <span class="toba-stat-label">Investido</span>
+          <span class="toba-stat-value">${formatCurrency(stats.netInvested)}</span>
+        </div>
+        <div class="toba-stat">
+          <span class="toba-stat-label">Rendimento</span>
+          <span class="toba-stat-value ${profitClass}">${profitSign}${formatCurrency(stats.profit)}</span>
+          <span class="toba-stat-sub ${profitClass}">${profitSign}${formatPct(stats.profitPct)}</span>
+        </div>
+      </div>
+      <div class="invest-card-projection">
+        <span>🚀 Em 12 meses</span>
+        <b class="${projClass}">${projSign}${formatCurrency(proj.profitAmount)} (${projSign}${formatPct(proj.projectedPct)})</b>
+      </div>
+    </div>`;
 }
 
 function openInvestActionPopup(fundId) {
@@ -679,96 +644,25 @@ function openInvestActionPopup(fundId) {
     "popupNormalInvestActions",
   );
   const withdrawAccordion = document.getElementById("accWithdraw");
-  const historyAccHeader = document.querySelector(
-    "#accHistory .invest-action-header span:first-child",
-  );
+  const historyAccHeader = document.getElementById("accHistoryLabel");
 
+  const withdrawBtn = document.getElementById("popupWithdrawBtn");
+  // Cofrinho: só tem saque (já aberto) e o histórico de saques.
+  headerInvest.hidden = fund.isCofrinho;
+  headerCofrinho.hidden = !fund.isCofrinho;
+  normalActions.hidden = fund.isCofrinho;
+  withdrawAccordion.classList.toggle("is-open-plain", fund.isCofrinho);
+  historyAccHeader.innerText = fund.isCofrinho ? "📜 Histórico de saques" : "📜 Histórico de lançamentos";
+  withdrawBtn.innerText = fund.isCofrinho ? "💸 Efetuar saque" : "Efetuar retirada";
+  withdrawBtn.className = fund.isCofrinho ? "btn btn-primary" : "btn btn-outline btn-gold";
+
+  const totalDeposited = sumAmounts(fund.deposits);
   if (fund.isCofrinho) {
-    if (headerInvest) headerInvest.style.display = "none";
-    if (headerCofrinho) headerCofrinho.style.display = "flex";
-    if (normalActions) normalActions.style.display = "none";
-    if (historyAccHeader)
-      historyAccHeader.innerText = "📜 Histórico de Saques";
-
-    if (withdrawAccordion) {
-      withdrawAccordion.style.display = "block";
-      withdrawAccordion.className = "invest-action-accordion expanded";
-      withdrawAccordion.style.border = "none";
-      withdrawAccordion.style.background = "transparent";
-      withdrawAccordion.style.marginBottom = "0";
-
-      const accHeader = withdrawAccordion.querySelector(
-        ".invest-action-header",
-      );
-      if (accHeader) accHeader.style.display = "none";
-
-      const accBody = withdrawAccordion.querySelector(
-        ".invest-action-body",
-      );
-      if (accBody) accBody.style.padding = "0";
-
-      const btn = document.getElementById("popupWithdrawBtn");
-      if (btn) {
-        btn.innerText = "💸 Efetuar Saque";
-        btn.style.background = "#238636";
-        btn.style.color = "#fff";
-        btn.style.borderColor = "#2ea043";
-      }
-    }
-
-    const totalDeposited = (fund.deposits || []).reduce(
-      (acc, d) => acc + d.amount,
-      0,
-    );
-    const totalWithdrawn = (fund.withdrawals || []).reduce(
-      (acc, w) => acc + w.amount,
-      0,
-    );
     document.getElementById("popupHeaderCofrinhoBase").innerText =
       formatCurrency(totalDeposited);
     document.getElementById("popupHeaderCofrinhoWithdrawn").innerText =
-      formatCurrency(totalWithdrawn);
+      formatCurrency(sumAmounts(fund.withdrawals));
   } else {
-    if (headerInvest) headerInvest.style.display = "flex";
-    if (headerCofrinho) headerCofrinho.style.display = "none";
-    if (normalActions) normalActions.style.display = "block";
-    if (historyAccHeader)
-      historyAccHeader.innerText = "📜 Histórico de Lançamentos";
-
-    if (withdrawAccordion) {
-      withdrawAccordion.style.display = "block";
-      withdrawAccordion.className = "invest-action-accordion";
-      withdrawAccordion.style.border = "1px solid #21262d";
-      withdrawAccordion.style.background = "#0d1117";
-      withdrawAccordion.style.marginBottom = "0.8rem";
-
-      const accHeader = withdrawAccordion.querySelector(
-        ".invest-action-header",
-      );
-      if (accHeader) {
-        accHeader.style.display = "flex";
-        accHeader.innerHTML =
-          '<span style="color: #f0f6fc;">🪙 Retirar Saldo</span><span class="invest-action-arrow">▼</span>';
-      }
-
-      const accBody = withdrawAccordion.querySelector(
-        ".invest-action-body",
-      );
-      if (accBody) accBody.style.padding = "0 1rem 1rem 1rem";
-
-      const btn = document.getElementById("popupWithdrawBtn");
-      if (btn) {
-        btn.innerText = "Efetuar Retirada";
-        btn.style.background = "#21262d";
-        btn.style.borderColor = "#d29922";
-        btn.style.color = "#d29922";
-      }
-    }
-
-    const totalDeposited = (fund.deposits || []).reduce(
-      (acc, d) => acc + d.amount,
-      0,
-    );
     let startDateStr = "N/A";
     if (fund.deposits && fund.deposits.length > 0) {
       const sortedDeps = [...fund.deposits].sort(
@@ -782,12 +676,12 @@ function openInvestActionPopup(fundId) {
       startDateStr;
   }
 
-  document.getElementById("popupBalDate").value = getTodayIsoDateStr();
+  document.getElementById("popupBalDate").value = toIsoDate();
   document.getElementById("popupBalAmount").value = "";
-  document.getElementById("popupDepDate").value = getTodayIsoDateStr();
+  document.getElementById("popupDepDate").value = toIsoDate();
   document.getElementById("popupDepAmount").value = "";
   document.getElementById("popupWithdrawDate").value =
-    getTodayIsoDateStr();
+    toIsoDate();
   document.getElementById("popupWithdrawAmount").value = "";
 
   ["accUpdateBal", "accNewDep", "accHistory"].forEach((id) => {
@@ -843,8 +737,7 @@ function openInvestActionPopup(fundId) {
     ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
   if (allLogs.length === 0) {
-    historyList.innerHTML =
-      '<div style="font-size:0.75rem; color:#8b949e; text-align:center; padding:10px;">Nenhum lançamento registrado.</div>';
+    historyList.innerHTML = tobaEmpty("📭", "Nenhum lançamento ainda", "", { compact: true });
   } else {
     allLogs.forEach((log) => {
       let logIcon = "🔄",
@@ -871,24 +764,23 @@ function openInvestActionPopup(fundId) {
       const item = document.createElement("div");
       item.className = "log-item";
       item.innerHTML = `
-                    <span>${logIcon} ${label} • ${isoToBrDate(log.date)}</span>
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <span style="font-weight:700; color: ${color};">${sign}${formatCurrency(log.amount)}</span>
-                        <button class="action-icon-btn delete" onclick="deleteInvestLogFromPopup('${fund.id}', '${log.id}', '${log.type}')" title="Apagar">🗑️</button>
-                    </div>
-                `;
+        <span>${logIcon} ${label} • ${isoToBrDate(log.date)}</span>
+        <span class="log-item-right">
+          <span style="color: ${color}">${sign}${formatCurrency(log.amount)}</span>
+          <button type="button" class="action-icon-btn delete" data-click="deleteInvestLog" data-fund="${escapeHtml(fund.id)}" data-log="${escapeHtml(log.id)}" data-type="${log.type}" aria-label="Apagar">🗑️</button>
+        </span>`;
       historyList.appendChild(item);
     });
   }
 
-  document.getElementById("investActionPopup").classList.add("active");
+  openTobaModal("investActionPopup");
 }
 
 function openEditFundNameModalFromPopup() {
   const fundId = document.getElementById("popupFundIdInput").value;
   const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (!fund) return;
-  document.getElementById("investActionPopup").classList.remove("active");
+  closeTobaModal("investActionPopup");
   openEditFundNameModal(fund.id, fund.name);
 }
 
@@ -902,19 +794,17 @@ function submitPopupBalance() {
   const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (!fund) return;
   const date =
-    document.getElementById("popupBalDate").value || getTodayIsoDateStr();
+    document.getElementById("popupBalDate").value || toIsoDate();
   // Campo vazio não é "saldo zero": sem essa trava, tocar no botão com o
   // campo em branco zerava o saldo do investimento.
   if (!document.getElementById("popupBalAmount").value.trim())
-    return alert("Informe o saldo atual do investimento.");
+    return showPageMessage("Informe o saldo atual do investimento.", { title: "Faltou o saldo", icon: "✍️" });
   const amount = getMoney("popupBalAmount");
   if (amount >= 0) {
     if (!fund.balanceLogs) fund.balanceLogs = [];
     fund.balanceLogs.push({ id: Date.now().toString(), date, amount });
     saveDatabase();
-    document
-      .getElementById("investActionPopup")
-      .classList.remove("active");
+    closeTobaModal("investActionPopup");
     renderInvestmentsScreen();
   }
 }
@@ -924,15 +814,17 @@ function submitPopupDeposit() {
   const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (!fund) return;
   const date =
-    document.getElementById("popupDepDate").value || getTodayIsoDateStr();
+    document.getElementById("popupDepDate").value || toIsoDate();
   const amount = getMoney("popupDepAmount");
-  if (amount > 0) {
+  if (amount <= 0) {
+    showPageMessage("Informe o valor do aporte.", { title: "Faltou o valor", icon: "✍️" });
+    return;
+  }
+  {
     if (!fund.deposits) fund.deposits = [];
     fund.deposits.push({ id: Date.now().toString(), date, amount });
     saveDatabase();
-    document
-      .getElementById("investActionPopup")
-      .classList.remove("active");
+    closeTobaModal("investActionPopup");
     renderInvestmentsScreen();
   }
 }
@@ -942,24 +834,29 @@ function submitPopupWithdraw() {
   const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (!fund) return;
   const date =
-    document.getElementById("popupWithdrawDate").value || getTodayIsoDateStr();
+    document.getElementById("popupWithdrawDate").value || toIsoDate();
   const amount = getMoney("popupWithdrawAmount");
-  if (amount > 0) {
+  if (amount <= 0) {
+    showPageMessage("Informe o valor da retirada.", { title: "Faltou o valor", icon: "✍️" });
+    return;
+  }
+  {
     // Nos investimentos, o saldo depois da retirada é derivado em getFundStats.
     if (!fund.withdrawals) fund.withdrawals = [];
     fund.withdrawals.push({ id: Date.now().toString(), date, amount });
     saveDatabase();
-    document
-      .getElementById("investActionPopup")
-      .classList.remove("active");
+    closeTobaModal("investActionPopup");
     renderInvestmentsScreen();
   }
 }
 
-function deleteInvestLogFromPopup(fundId, logId, type) {
+async function deleteInvestLogFromPopup(fundId, logId, type) {
   const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (!fund) return;
-  if (confirm("Deseja apagar este registro?")) {
+  const confirmed = await showPageMessage("Esse lançamento sai do histórico e das contas.", {
+    title: "Apagar lançamento?", icon: "🗑️", confirm: true, confirmLabel: "Apagar",
+  });
+  if (confirmed) {
     if (type === "aporte")
       fund.deposits = fund.deposits.filter((d) => String(d.id) !== String(logId));
     else if (type === "resgate" || type === "saque")
@@ -972,15 +869,9 @@ function deleteInvestLogFromPopup(fundId, logId, type) {
   }
 }
 
-function openFinishFundModalFromPopup() {
-  const fundId = document.getElementById("popupFundIdInput").value;
-  document.getElementById("investActionPopup").classList.remove("active");
-  openFinishFundModal(fundId);
-}
-
 function openTotalFinishFundModalFromPopup() {
   const fundId = document.getElementById("popupFundIdInput").value;
-  document.getElementById("investActionPopup").classList.remove("active");
+  closeTobaModal("investActionPopup");
   openFinishFundModal(fundId);
   const rescueSelect = document.getElementById("rescueTypeSelect");
   if (rescueSelect) {
@@ -989,27 +880,16 @@ function openTotalFinishFundModalFromPopup() {
   }
 }
 
-function deleteFundFromPopup() {
+async function deleteFundFromPopup() {
   const fundId = document.getElementById("popupFundIdInput").value;
-  document.getElementById("investActionPopup").classList.remove("active");
-  deleteFund(fundId);
-}
-
-function toggleInvestCard(fundId) {
-  const card = document.getElementById(`investCard-${fundId}`);
-  if (card) card.classList.toggle("expanded");
+  if (await deleteFund(fundId)) closeTobaModal("investActionPopup");
 }
 
 function toggleCofrinhosView() {
   cofrinhosVisible = !cofrinhosVisible;
-  document.getElementById("cofrinhosWrapper").style.display =
-    cofrinhosVisible ? "block" : "none";
+  document.getElementById("cofrinhosWrapper").hidden = !cofrinhosVisible;
   document.getElementById("btnToggleCofrinhos").innerText =
-    cofrinhosVisible ? "🐷 Ocultar Cofrinhos" : "🐷 Ver Cofrinhos";
-}
-
-function openCofrinhoHelpModal() {
-  document.getElementById("cofrinhoHelpModal")?.classList.add("active");
+    cofrinhosVisible ? "🐷 Esconder cofrinhos" : "🐷 Ver cofrinhos";
 }
 
 function openInvestmentsHistoryModal() {
@@ -1190,8 +1070,7 @@ function openInvestmentsHistoryModal() {
     b.localeCompare(a),
   );
   if (sortedKeys.length === 0) {
-    content.innerHTML =
-      '<div class="empty-state">Nenhum rendimento registrado até o momento.</div>';
+    content.innerHTML = tobaEmpty("📭", "Nenhum rendimento ainda", "Atualize o saldo de um investimento e o mês aparece aqui.");
   } else {
     sortedKeys.forEach((mKey) => {
       const [y, m] = mKey.split("-");
@@ -1209,36 +1088,28 @@ function openInvestmentsHistoryModal() {
 
       const invPctStr =
         data.investBase > 0
-          ? ` <span style="font-size: 0.75rem; opacity: 0.85;">(${data.investYield >= 0 ? "+" : ""}${invPct.toFixed(2).replace(".", ",")}%)</span>`
+          ? ` <small>(${data.investYield >= 0 ? "+" : ""}${formatPct(invPct)})</small>`
           : "";
       const cofPctStr =
         data.cofrinhoBase > 0
-          ? ` <span style="font-size: 0.75rem; opacity: 0.85;">(${data.cofrinhoYield >= 0 ? "+" : ""}${cofPct.toFixed(2).replace(".", ",")}%)</span>`
+          ? ` <small>(${data.cofrinhoYield >= 0 ? "+" : ""}${formatPct(cofPct)})</small>`
           : "";
 
-      const el = document.createElement("div");
-      el.style.background = "#0d1117";
-      el.style.border = "1px solid #21262d";
-      el.style.borderRadius = "10px";
-      el.style.padding = "10px";
-      el.innerHTML = `
-                    <div style="font-weight:700; color:#58a6ff; font-size:0.9rem; margin-bottom:6px; border-bottom:1px solid #21262d; padding-bottom:4px;">${mName}</div>
-                    <div style="font-size:0.8rem; line-height:1.6;">
-                        ${data.investBase > 0 ? `<div style="display:flex; justify-content:space-between;"><span>📈 Lucro Longo Prazo:</span> <b class="${data.investYield >= 0 ? "text-green" : "text-red"}">${data.investYield >= 0 ? "+" : ""}${formatCurrency(data.investYield)}${invPctStr}</b></div>` : ""}
-                        ${data.cofrinhoBase > 0 ? `<div style="display:flex; justify-content:space-between;"><span>🐷 Saques Cofrinho:</span> <b class="text-green">+${formatCurrency(data.cofrinhoYield)}${cofPctStr}</b></div>` : ""}
-                        <div style="display:flex; justify-content:space-between; margin-top:4px; padding-top:4px; border-top:1px dashed #30363d; font-weight:700;">
-                            <span>Total do Mês:</span>
-                            <span style="color:#58a6ff;">+${formatCurrency(data.investYield + data.cofrinhoYield)}</span>
-                        </div>
-                    </div>
-                `;
-      content.appendChild(el);
+      content.insertAdjacentHTML("beforeend", `
+        <div class="card">
+          <div class="card-header" style="margin-bottom: 0.5rem">
+            <span class="bank-card-title">${mName}</span>
+          </div>
+          <div class="kv-list">
+            ${data.investBase > 0 ? `<div class="kv-row"><span>📈 Longo prazo</span><span class="${data.investYield >= 0 ? "text-green" : "text-red"}">${data.investYield >= 0 ? "+" : ""}${formatCurrency(data.investYield)}${invPctStr}</span></div>` : ""}
+            ${data.cofrinhoBase > 0 ? `<div class="kv-row"><span>🐷 Cofrinhos</span><span class="text-green">+${formatCurrency(data.cofrinhoYield)}${cofPctStr}</span></div>` : ""}
+            <div class="kv-row is-total"><span>Total do mês</span><span class="text-blue">+${formatCurrency(data.investYield + data.cofrinhoYield)}</span></div>
+          </div>
+        </div>`);
     });
   }
 
-  document
-    .getElementById("investmentsHistoryModal")
-    .classList.add("active");
+  openTobaModal("investmentsHistoryModal");
 }
 
 function openNewFundModal(isCofrinho = false) {
@@ -1246,19 +1117,20 @@ function openNewFundModal(isCofrinho = false) {
     ? "true"
     : "false";
   document.getElementById("newFundModalTitle").innerText = isCofrinho
-    ? "🐷 Novo Cofrinho (Giro Rápido)"
-    : "📈 Novo Card de Investimento";
+    ? "🐷 Novo cofrinho"
+    : "📈 Novo investimento";
   document.getElementById("fundNameInput").value = "";
   document.getElementById("fundInitialAmountInput").value = "";
   document.getElementById("fundInitialDateInput").value =
-    getTodayIsoDateStr();
-  document.getElementById("newFundModal").classList.add("active");
+    toIsoDate();
+  openTobaModal("newFundModal");
+  setTimeout(() => document.getElementById("fundNameInput").focus(), 100);
 }
 
 function openEditFundNameModal(fundId, currentName) {
   document.getElementById("editFundNameId").value = fundId;
   document.getElementById("editFundNameInput").value = currentName;
-  document.getElementById("editFundNameModal").classList.add("active");
+  openTobaModal("editFundNameModal");
   setTimeout(
     () => document.getElementById("editFundNameInput").focus(),
     100,
@@ -1274,85 +1146,7 @@ function saveFundName() {
   if (fund && newName) {
     fund.name = newName;
     saveDatabase();
-    document
-      .getElementById("editFundNameModal")
-      .classList.remove("active");
-  }
-}
-
-function addFundDeposit(fundId) {
-  event?.stopPropagation();
-  const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
-  if (!fund) return;
-  const date = document.getElementById(`depDate-${fundId}`).value;
-  const amount = getMoney(`depAmount-${fundId}`);
-  if (amount > 0) {
-    if (!fund.deposits) fund.deposits = [];
-    fund.deposits.push({ id: Date.now().toString(), date, amount });
-    saveDatabase();
-    renderInvestmentsScreen();
-    setTimeout(() => toggleInvestCard(fundId), 50);
-  }
-}
-
-function addFundBalanceLog(fundId) {
-  event?.stopPropagation();
-  const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
-  if (!fund) return;
-  const date = document.getElementById(`balDate-${fundId}`).value;
-  const amount = getMoney(`balAmount-${fundId}`);
-  if (amount >= 0) {
-    if (!fund.balanceLogs) fund.balanceLogs = [];
-    fund.balanceLogs.push({ id: Date.now().toString(), date, amount });
-    saveDatabase();
-    renderInvestmentsScreen();
-    setTimeout(() => toggleInvestCard(fundId), 50);
-  }
-}
-
-function deleteInvestLog(fundId, logId, type) {
-  event?.stopPropagation();
-  const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
-  if (!fund) return;
-  if (confirm("Deseja apagar este registro?")) {
-    if (type === "aporte")
-      fund.deposits = fund.deposits.filter((d) => String(d.id) !== String(logId));
-    else if (type === "resgate" || type === "saque")
-      fund.withdrawals = fund.withdrawals.filter((w) => String(w.id) !== String(logId));
-    else
-      fund.balanceLogs = fund.balanceLogs.filter((b) => String(b.id) !== String(logId));
-    saveDatabase();
-    renderInvestmentsScreen();
-    setTimeout(() => toggleInvestCard(fundId), 50);
-  }
-}
-
-function addCofrinhoWithdrawal(fundId) {
-  event?.stopPropagation();
-  const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
-  if (!fund) return;
-  const date = document.getElementById(`saqueDate-${fundId}`).value;
-  const amount = getMoney(`saqueAmount-${fundId}`);
-  if (amount > 0) {
-    if (!fund.withdrawals) fund.withdrawals = [];
-    fund.withdrawals.push({ id: Date.now().toString(), date, amount });
-    saveDatabase();
-    renderInvestmentsScreen();
-    setTimeout(() => toggleInvestCard(fundId), 50);
-  }
-}
-
-function deleteCofrinhoWithdrawal(fundId, withdrawalId) {
-  event?.stopPropagation();
-  const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
-  if (!fund) return;
-  if (confirm("Deseja apagar este saque?")) {
-    fund.withdrawals = fund.withdrawals.filter(
-      (w) => String(w.id) !== String(withdrawalId),
-    );
-    saveDatabase();
-    renderInvestmentsScreen();
-    setTimeout(() => toggleInvestCard(fundId), 50);
+    closeTobaModal("editFundNameModal");
   }
 }
 
@@ -1381,11 +1175,11 @@ function openFinishFundModal(fundId) {
     formatMoneyInput(latestBalance);
   document.getElementById("finishIrAmount").value =
     formatMoneyInput(estimatedIr);
-  document.getElementById("finishDateInput").value = getTodayIsoDateStr();
+  document.getElementById("finishDateInput").value = toIsoDate();
   document.getElementById("rescueAmountInput").value = "";
 
   updateFinishNetPreview();
-  document.getElementById("finishFundModal").classList.add("active");
+  openTobaModal("finishFundModal");
 }
 
 function toggleRescueType() {
@@ -1397,14 +1191,11 @@ function toggleRescueType() {
     document.getElementById("totalRescueSection") ||
     document.getElementById("rescueTotalBox");
   if (partialBox && totalBox) {
-    if (type === "partial") {
-      partialBox.style.display = "block";
-      totalBox.style.display = "none";
-    } else {
-      partialBox.style.display = "none";
-      totalBox.style.display = "block";
-    }
+    partialBox.hidden = type !== "partial";
+    totalBox.hidden = type === "partial";
   }
+  const btn = document.getElementById("confirmRescueBtn");
+  if (btn) btn.innerText = type === "partial" ? "Confirmar retirada" : "💀 Encerrar investimento";
   updateFinishNetPreview();
 }
 
@@ -1413,7 +1204,7 @@ function updateFinishNetPreview() {
   const ir = getMoney("finishIrAmount");
   const net = Math.max(gross - ir, 0);
   document.getElementById("finishNetPreview").innerText =
-    `Valor Líquido no Bolso: ${formatCurrency(net)}`;
+    `Valor líquido no bolso: ${formatCurrency(net)}`;
 }
 
 function confirmFinishFund() {
@@ -1421,14 +1212,14 @@ function confirmFinishFund() {
   const rescueType = document.getElementById("rescueTypeSelect").value;
   const rescueDate =
     document.getElementById("finishDateInput").value ||
-    getTodayIsoDateStr();
+    toIsoDate();
   const fund = db.investmentFunds.find((f) => String(f.id) === String(fundId));
   if (!fund) return;
 
   if (rescueType === "partial") {
     const withdrawAmount = getMoney("rescueAmountInput");
     if (withdrawAmount <= 0)
-      return alert("Informe um valor de resgate válido!");
+      return showPageMessage("Informe um valor de resgate válido!", { title: "Faltou o valor", icon: "✍️" });
 
     // O saldo depois da retirada é derivado em getFundStats.
     if (!fund.withdrawals) fund.withdrawals = [];
@@ -1439,7 +1230,7 @@ function confirmFinishFund() {
     });
 
     saveDatabase();
-    document.getElementById("finishFundModal").classList.remove("active");
+    closeTobaModal("finishFundModal");
   } else {
     const finalGrossAmount = getMoney("finishGrossAmount");
     const irAmount = getMoney("finishIrAmount");
@@ -1457,7 +1248,7 @@ function confirmFinishFund() {
     });
 
     saveDatabase();
-    document.getElementById("finishFundModal").classList.remove("active");
+    closeTobaModal("finishFundModal");
   }
 }
 
@@ -1469,17 +1260,29 @@ function toggleFinishFund(fundId) {
   renderInvestmentsScreen();
 }
 
-function deleteFund(fundId) {
-  if (confirm("Tem certeza que deseja apagar este investimento?")) {
-    db.investmentFunds = db.investmentFunds.filter(
-      (f) => String(f.id) !== String(fundId),
-    );
-    saveDatabase();
-    renderInvestmentsScreen();
-  }
+// Devolve true se apagou (o popup só fecha depois da confirmação).
+async function deleteFund(fundId) {
+  const confirmed = await showPageMessage("O investimento e todo o histórico dele somem. Sem volta!", {
+    title: "Apagar investimento?", icon: "🗑️", confirm: true, confirmLabel: "Apagar",
+  });
+  if (!confirmed) return false;
+  db.investmentFunds = db.investmentFunds.filter(
+    (f) => String(f.id) !== String(fundId),
+  );
+  saveDatabase();
+  renderInvestmentsScreen();
+  return true;
+}
+
+// Chart.js vem da internet: na primeira abertura sem sinal ele não existe.
+function isChartAvailable() {
+  if (typeof Chart !== "undefined") return true;
+  showPageMessage("Os gráficos precisam de internet na primeira vez. Conecta e tenta de novo!", { title: "Sem sinal", icon: "📡" });
+  return false;
 }
 
 function openPatrimonyChart() {
+  if (!isChartAvailable()) return;
   chartVisibleAssets.clear();
   switchView("patrimonyChart");
   switchChartTab("past");
@@ -1550,17 +1353,15 @@ function renderPatrimonyChart(period) {
     const isCofrinho = fund.isCofrinho;
     const isDisabledInMode = isCofrinho && chartMode === "brl";
     const disabledAttr = isDisabledInMode ? "disabled" : "";
-    const opacityStyle = isDisabledInMode ? "opacity: 0.5;" : "";
 
     const li = document.createElement("li");
-    li.style.cssText = opacityStyle;
+    if (isDisabledInMode) li.className = "is-disabled";
     li.innerHTML = `
-                <label style="display:flex; align-items:center; gap:8px; cursor:${isDisabledInMode ? "not-allowed" : "pointer"};">
-                    <input type="checkbox" ${!chartVisibleAssets.has(String(fund.id)) && !isDisabledInMode ? "checked" : ""} ${disabledAttr} onchange="toggleChartAsset('${fund.id}')">
-                    <span style="display:inline-block; width:12px; height:12px; background-color:${color}; border-radius:50%;"></span>
-                    <span>${isCofrinho ? "🐷 " : "📈 "}${escapeBankHtml(fund.name)} ${isDisabledInMode ? "(Apenas %)" : ""}</span>
-                </label>
-            `;
+      <label>
+        <input type="checkbox" ${!chartVisibleAssets.has(String(fund.id)) && !isDisabledInMode ? "checked" : ""} ${disabledAttr} data-change="toggleChartAsset" data-id="${escapeHtml(fund.id)}">
+        <span class="asset-dot" style="background-color: ${color}"></span>
+        <span>${isCofrinho ? "🐷 " : "📈 "}${escapeHtml(fund.name)} ${isDisabledInMode ? "(só em %)" : ""}</span>
+      </label>`;
     assetListEl.appendChild(li);
 
     if (chartVisibleAssets.has(String(fund.id)) || isDisabledInMode) return;
@@ -1839,10 +1640,9 @@ function renderProjectionChart(period) {
       : months + " meses";
 
   document.getElementById("projectionSummaryBox").innerHTML = `
-            <div style="font-size: 0.8rem; color: #8b949e; text-transform: uppercase;">Projeção para ${yearsStr}</div>
-            <div style="font-size: 1.4rem; font-weight: 700; color: #3fb950; margin: 4px 0;">${formatCurrency(parseFloat(finalVal))}</div>
-            <div style="font-size: 0.85rem; color: #58a6ff;">Lucro estimado: +${formatCurrency(profit)} (+${profitPct.toFixed(2)}%)</div>
-        `;
+    <div class="card-title">Projeção para ${yearsStr}</div>
+    <div class="finished-summary-value">${formatCurrency(parseFloat(finalVal))}</div>
+    <div class="text-blue" style="font-size: 0.82rem">Lucro estimado: +${formatCurrency(profit)} (+${formatPct(profitPct)})</div>`;
 }
 
 /* NAVEGAÇÃO ENTRE AS TELAS DO MÓDULO */
@@ -1856,18 +1656,13 @@ function switchView(viewName) {
     patrimonyChart: "viewPatrimonyChart",
   };
   document.getElementById(viewMap[viewName])?.classList.add("active");
+  window.scrollTo(0, 0);
 
-  const actionsContainer = document.getElementById("headerActionsContainer");
   if (viewName === "investments") {
-    actionsContainer.innerHTML = `
-      <button class="config-btn" onclick="openDataModal()" title="Dados & Backup">⚙️</button>
-      <a class="back-nav-btn" href="TobaBank-Index.html" style="text-decoration: none;">Hub ›</a>
-    `;
+    tobaSetHeader({ page: "📈 Investimentos" });
     renderInvestmentsScreen();
   } else if (viewName === "patrimonyChart") {
-    actionsContainer.innerHTML = `
-      <button class="back-nav-btn" onclick="switchView('investments')"><span style="color: #8b949e; font-weight: 900; font-size: 1.1rem; line-height: 1; margin-right: 4px;">‹</span> Investimentos</button>
-    `;
+    tobaSetHeader({ page: "📊 Gráficos", back: "backToInvestments" });
   }
 }
 
@@ -1877,75 +1672,84 @@ function onBankDataSaved() {
     renderInvestmentsScreen();
 }
 
-function setupInvestEvents() {
-  document
-    .getElementById("newFundForm")
-    ?.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const name = document.getElementById("fundNameInput").value;
-      const initialAmount = getMoney("fundInitialAmountInput");
-      const initialDate = document.getElementById(
-        "fundInitialDateInput",
-      ).value;
-      const isCofrinho =
-        document.getElementById("fundIsCofrinhoValue").value === "true";
+function createFund() {
+  const name = document.getElementById("fundNameInput").value.trim();
+  const initialAmount = getMoney("fundInitialAmountInput");
+  const initialDate = document.getElementById("fundInitialDateInput").value;
+  const isCofrinho =
+    document.getElementById("fundIsCofrinhoValue").value === "true";
 
-      const newFund = {
+  if (!name || initialAmount <= 0 || !initialDate) {
+    showPageMessage("Preencha o nome, o aporte inicial e a data.", { title: "Quase lá", icon: "✍️" });
+    return;
+  }
+
+  const newFund = {
+    id: Date.now().toString(),
+    name: name,
+    isCofrinho: isCofrinho,
+    deposits: [
+      {
         id: Date.now().toString(),
-        name: name,
-        isCofrinho: isCofrinho,
-        deposits: [
-          {
-            id: Date.now().toString(),
-            date: initialDate,
-            amount: initialAmount,
-          },
-        ],
-        balanceLogs: isCofrinho
-          ? []
-          : [
-            {
-              id: (Date.now() + 1).toString(),
-              date: initialDate,
-              amount: initialAmount,
-              isSystem: true,
-            },
-          ],
-        withdrawals: [],
-        isFinished: false,
-      };
+        date: initialDate,
+        amount: initialAmount,
+      },
+    ],
+    balanceLogs: isCofrinho
+      ? []
+      : [
+        {
+          id: (Date.now() + 1).toString(),
+          date: initialDate,
+          amount: initialAmount,
+          isSystem: true,
+        },
+      ],
+    withdrawals: [],
+    isFinished: false,
+  };
 
-      if (!db.investmentFunds) db.investmentFunds = [];
-      db.investmentFunds.push(newFund);
-      saveDatabase();
-      document.getElementById("newFundModal").classList.remove("active");
-      renderInvestmentsScreen();
-    });
-
-  document
-    .getElementById("editFundNameForm")
-    ?.addEventListener("submit", (e) => {
-      e.preventDefault();
-      saveFundName();
-    });
-
-  document
-    .getElementById("finishFundForm")
-    ?.addEventListener("submit", (e) => {
-      e.preventDefault();
-      confirmFinishFund();
-    });
-
-  // No document (e depois do setupCoreEvents) para ler o valor já com a máscara.
-  document.addEventListener("input", (e) => {
-    if (e.target.id === "finishGrossAmount" || e.target.id === "finishIrAmount")
-      updateFinishNetPreview();
-  });
+  if (!db.investmentFunds) db.investmentFunds = [];
+  db.investmentFunds.push(newFund);
+  saveDatabase();
+  closeTobaModal("newFundModal");
+  renderInvestmentsScreen();
 }
+
+tobaActions({
+  openFund: (el) => openInvestActionPopup(el.dataset.id),
+  openFinishedFund: (el) => openFinishedActionPopup(el.dataset.id),
+  newFund: () => openNewFundModal(false),
+  newCofrinho: () => openNewFundModal(true),
+  toggleCofrinhosView,
+  openInvestmentsHistoryModal,
+  openPatrimonyChart,
+  backToInvestments: () => switchView("investments"),
+  renderInvestmentsScreen,
+  switchChartTab: (el) => switchChartTab(el.dataset.tab),
+  changeChartMode: (el) => changeChartMode(el.dataset.mode),
+  toggleAlignMode,
+  changeChartPeriod: (el) => changeChartPeriod(el.dataset.period),
+  changeProjPeriod: (el) => changeProjPeriod(el.dataset.period),
+  toggleChartAsset: (el) => toggleChartAsset(el.dataset.id),
+  toggleInvestActionAcc: (el) => toggleInvestActionAcc(el.dataset.target),
+  openEditFundNameModalFromPopup,
+  submitPopupBalance,
+  submitPopupDeposit,
+  submitPopupWithdraw,
+  deleteInvestLog: (el) => deleteInvestLogFromPopup(el.dataset.fund, el.dataset.log, el.dataset.type),
+  openTotalFinishFundModalFromPopup,
+  deleteFundFromPopup,
+  reactivateFundFromPopup,
+  deleteFinishedFundFromPopup,
+  toggleRescueType,
+  updateFinishNetPreview,
+  confirmFinishFund,
+  saveFundName,
+  createFund,
+});
 
 document.addEventListener("DOMContentLoaded", () => {
   loadDatabase();
-  setupCoreEvents();
-  setupInvestEvents();
   switchView("investments");
 });

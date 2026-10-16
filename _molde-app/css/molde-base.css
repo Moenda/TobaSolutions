@@ -1,0 +1,19 @@
+/* Toba Molde · só o que é do app. A base vem de ../assets/toba-common.css. */
+
+:root {
+  --accent: var(--coral); /* cor do app: --blue (Bank), --green (Health), --gold, --coral... */
+}
+
+.molde-item-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.molde-item-name.is-done {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.molde-item-date {
+  font-size: 0.74rem;
+}

@@ -1,10 +1,10 @@
 /* =====================================================================
  * Toba Bank · Raxador (divisão de contas)
- * Depende de bank-core.js
+ * Depende de ../assets/toba-common.js e bank-core.js
  * ===================================================================== */
 let currentShares = {};
 // Ordem dos participantes nas linhas de divisão: os botões usam o índice,
-// porque um nome com aspas ("D'Ávila") quebraria o onclick.
+// porque um nome com aspas ("D'Ávila") não serve de identificador seguro.
 let currentShareMembers = [];
 
 // Lista de participantes digitada ("Ana, Beto, Ana") sem vazios nem repetidos:
@@ -20,9 +20,10 @@ function parseSplitterMembers(rawMembers) {
 
 function openNewSplitterGroupModal() {
   document.getElementById("newSplitterName").value = "";
-  document.getElementById("newSplitterDate").value = getTodayIsoDateStr();
+  document.getElementById("newSplitterDate").value = toIsoDate();
   document.getElementById("newSplitterMembers").value = "";
-  document.getElementById("newSplitterModal").classList.add("active");
+  openTobaModal("newSplitterModal");
+  setTimeout(() => document.getElementById("newSplitterName").focus(), 100);
 }
 
 function renderSplitterScreen() {
@@ -38,11 +39,11 @@ function renderSplitterScreen() {
   finishedContainer.innerHTML = "";
 
   const groups = db.splitterGroups || [];
+  const emptyActive = tobaEmpty("🍕", "Nenhum rolê rolando", "Toque em <b>+ Rolê</b> e pare de fazer conta no guardanapo.");
+  const emptyFinished = tobaEmpty("🏁", "Nenhum rolê finalizado", "", { compact: true });
   if (groups.length === 0) {
-    activeContainer.innerHTML =
-      '<div class="empty-state">Nenhum rolê ou viagem em andamento. Crie um novo grupo acima!</div>';
-    finishedContainer.innerHTML =
-      '<div class="empty-state">Nenhum rolê finalizado no histórico.</div>';
+    activeContainer.innerHTML = emptyActive;
+    finishedContainer.innerHTML = emptyFinished;
     return;
   }
 
@@ -57,37 +58,29 @@ function renderSplitterScreen() {
     const membersCount = (g.members || []).length;
     const catEmoji = g.category ? g.category.trim().split(" ")[0] : "🍕";
 
-    const card = document.createElement("div");
-    card.className = "splitter-card";
-    card.onclick = () => openSplitterGroupView(g.id);
-    card.innerHTML = `
-        <div class="splitter-header" style="padding: 0.8rem;">
-            <div class="splitter-header-top" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
-                <span class="splitter-title" style="font-size: 0.9rem; word-break: break-word; max-width: 70%;">${escapeBankHtml(catEmoji)} ${escapeBankHtml(g.name)}</span>
-                <span style="font-size: 0.7rem; color: #8b949e; white-space: nowrap;">${isoToBrDate(g.date)}</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:0.78rem; flex-wrap: wrap; gap: 4px;">
-                <span style="color:#8b949e;">👥 ${membersCount} participantes</span>
-                <span>Total: <b style="color:#58a6ff;">${formatCurrency(totalSpent)}</b></span>
-            </div>
+    const cardHtml = `
+      <div class="bank-card${g.isFinished ? " is-done" : ""}" role="button" tabindex="0" data-click="openGroup" data-id="${escapeHtml(g.id)}">
+        <div class="bank-card-top" style="margin-bottom: 0">
+          <span class="bank-card-title">${escapeHtml(catEmoji)} ${escapeHtml(g.name)}</span>
+          <span class="bank-card-side">
+            <span class="bank-card-side-label">${isoToBrDate(g.date)}</span>
+            <span class="bank-card-side-value text-blue">${formatCurrency(totalSpent)}</span>
+          </span>
         </div>
-    `;
+        <div class="bank-card-note"><span>👥 ${membersCount} ${membersCount === 1 ? "participante" : "participantes"}</span></div>
+      </div>`;
 
     if (g.isFinished) {
-      finishedContainer.appendChild(card);
+      finishedContainer.insertAdjacentHTML("beforeend", cardHtml);
       hasFinished = true;
     } else {
-      activeContainer.appendChild(card);
+      activeContainer.insertAdjacentHTML("beforeend", cardHtml);
       hasActive = true;
     }
   });
 
-  if (!hasActive)
-    activeContainer.innerHTML =
-      '<div class="empty-state">Nenhum rolê ativo no momento.</div>';
-  if (!hasFinished)
-    finishedContainer.innerHTML =
-      '<div class="empty-state">Nenhum rolê finalizado.</div>';
+  if (!hasActive) activeContainer.innerHTML = emptyActive;
+  if (!hasFinished) finishedContainer.innerHTML = emptyFinished;
 }
 
 function openSplitterGroupView(groupId) {
@@ -106,7 +99,7 @@ function openSplitterGroupView(groupId) {
   ).join(", ");
 
   const metaCard = document.getElementById("splitterMetaCard");
-  if (metaCard) metaCard.style.display = "none";
+  if (metaCard) metaCard.hidden = true;
 
   const finishBtn = document.getElementById(
     "splitterToggleFinishBtnView",
@@ -116,19 +109,10 @@ function openSplitterGroupView(groupId) {
     "openAddSplitterExpenseBtn",
   );
 
-  if (g.isFinished) {
-    finishBtn.innerText = "🔄 Reabrir";
-    finishBtn.style.borderColor = "#58a6ff";
-    finishBtn.style.color = "#58a6ff";
-    openExpenseBtn.style.display = "none";
-    editingFields.forEach((f) => (f.style.display = "none"));
-  } else {
-    finishBtn.innerText = "🏁 Finalizar";
-    finishBtn.style.borderColor = "#3fb950";
-    finishBtn.style.color = "#3fb950";
-    openExpenseBtn.style.display = "inline-block";
-    editingFields.forEach((f) => (f.style.display = "block"));
-  }
+  finishBtn.innerText = g.isFinished ? "🔄 Reabrir" : "🏁 Finalizar";
+  finishBtn.className = `btn btn-outline ${g.isFinished ? "btn-blue" : "btn-green"}`;
+  openExpenseBtn.hidden = g.isFinished;
+  editingFields.forEach((f) => (f.hidden = g.isFinished));
 
   renderSplitterExpensesAndSettlement(g);
   switchView("splitterDetail");
@@ -137,8 +121,7 @@ function openSplitterGroupView(groupId) {
 function toggleSplitterMetaCard() {
   const card = document.getElementById("splitterMetaCard");
   if (card) {
-    const isHidden = card.style.display === "none" || !card.style.display;
-    card.style.display = isHidden ? "block" : "none";
+    card.hidden = !card.hidden;
   }
 }
 
@@ -154,7 +137,7 @@ function updateSplitterGroupMeta() {
   saveDatabase();
 }
 
-function saveSplitterMembers() {
+async function saveSplitterMembers() {
   const id = document.getElementById("splitterGroupIdInput").value;
   const g = db.splitterGroups.find((item) => String(item.id) === String(id));
   if (!g) return;
@@ -176,9 +159,10 @@ function saveSplitterMembers() {
   );
   if (
     removedWithExpenses.length > 0 &&
-    !confirm(
-      `${removedWithExpenses.join(", ")} já tem gastos neste rolê. Se tirar da lista, a divisão deixa de contar essa pessoa. Continuar?`,
-    )
+    !(await showPageMessage(
+      `${removedWithExpenses.join(", ")} já tem gastos neste rolê. Se tirar da lista, a divisão deixa de contar essa pessoa.`,
+      { title: "Tirar do rolê?", icon: "👀", confirm: true, confirmLabel: "Tirar mesmo" },
+    ))
   ) {
     document.getElementById("splitterMembersInput").value = (
       g.members || []
@@ -217,7 +201,7 @@ function openSplitterExpenseModal(expenseId = null) {
   if (expenseId) {
     const exp = g.expenses.find((e) => String(e.id) === String(expenseId));
     if (!exp) return;
-    title.innerText = "✏️ Editar Gasto no Rolê";
+    title.innerText = "✏️ Editar gasto";
     idInput.value = exp.id;
     descInput.value = exp.desc;
     amountInput.value = formatMoneyInput(exp.amount);
@@ -226,8 +210,8 @@ function openSplitterExpenseModal(expenseId = null) {
     if (exp.payer && !(g.members || []).includes(exp.payer))
       addPayerOption(exp.payer);
     payerSelect.value = exp.payer;
-    dateInput.value = exp.date || g.date || getTodayIsoDateStr();
-    deleteBtn.style.display = "inline-block";
+    dateInput.value = exp.date || g.date || toIsoDate();
+    deleteBtn.hidden = false;
 
     if (exp.shares) {
       (g.members || []).forEach((m) => {
@@ -246,12 +230,12 @@ function openSplitterExpenseModal(expenseId = null) {
       });
     }
   } else {
-    title.innerText = "💸 Adicionar Gasto no Rolê";
+    title.innerText = "💸 Novo gasto no rolê";
     idInput.value = "";
     descInput.value = "";
     amountInput.value = "";
-    dateInput.value = g.date || getTodayIsoDateStr();
-    deleteBtn.style.display = "none";
+    dateInput.value = g.date || toIsoDate();
+    deleteBtn.hidden = true;
 
     const equalPct = g.members.length > 0 ? 100 / g.members.length : 0;
     (g.members || []).forEach((m) => {
@@ -260,9 +244,7 @@ function openSplitterExpenseModal(expenseId = null) {
   }
 
   renderShareRows(g.members || []);
-  document
-    .getElementById("newSplitterExpenseModal")
-    .classList.add("active");
+  openTobaModal("newSplitterExpenseModal");
   setTimeout(() => descInput.focus(), 100);
 }
 
@@ -282,7 +264,7 @@ function renderShareRows(allMembers) {
   const titleEl = document.getElementById("splitterSharesTitleLabel");
   if (titleEl) {
     const isExact = Math.abs(totalPct - 100) < 0.1;
-    titleEl.innerHTML = `⚖️ Divisão por Participante (<b style="color:${isExact ? "#3fb950" : "#f85149"}">${totalPct.toFixed(1)}%</b>)`;
+    titleEl.innerHTML = `⚖️ Divisão por participante (<b class="${isExact ? "text-green" : "text-red"}">${totalPct.toFixed(1)}%</b>)`;
   }
 
   currentShareMembers = [...allMembers];
@@ -290,26 +272,17 @@ function renderShareRows(allMembers) {
     const pct = currentShares[m] !== undefined ? currentShares[m] : 0;
     const isChecked = pct > 0;
 
-    const row = document.createElement("div");
-    row.style.display = "flex";
-    row.style.justifyContent = "space-between";
-    row.style.alignItems = "center";
-    row.style.background = "#0d1117";
-    row.style.padding = "6px 10px";
-    row.style.borderRadius = "8px";
-    row.style.border = "1px solid #21262d";
-
-    row.innerHTML = `
-                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; cursor:pointer; flex:1;">
-                    <input type="checkbox" id="chk-member-${index}" ${isChecked ? "checked" : ""} onchange="toggleMemberShare(${index})">
-                    <span style="color:${isChecked ? "#f0f6fc" : "#8b949e"}">${escapeBankHtml(m)}</span>
-                </label>
-                <div style="display:flex; align-items:center; gap:4px; width:90px;">
-                    <input type="number" step="0.1" min="0" max="100" class="form-control" style="padding:4px; font-size:0.8rem; text-align:right;" value="${pct.toFixed(1)}" onchange="updateShareValue(${index}, this.value)">
-                    <span style="font-size:0.75rem; color:#8b949e;">%</span>
-                </div>
-            `;
-    container.appendChild(row);
+    container.insertAdjacentHTML("beforeend", `
+      <div class="share-row${isChecked ? "" : " is-off"}">
+        <label>
+          <input type="checkbox" id="chk-member-${index}" ${isChecked ? "checked" : ""} data-change="toggleMemberShare" data-index="${index}">
+          <span>${escapeHtml(m)}</span>
+        </label>
+        <div class="share-pct">
+          <input type="number" step="0.1" min="0" max="100" inputmode="decimal" class="form-control" value="${pct.toFixed(1)}" data-change="updateShareValue" data-index="${index}">
+          <span>%</span>
+        </div>
+      </div>`);
   });
 }
 
@@ -336,7 +309,7 @@ function saveSplitterExpense() {
   const date = document.getElementById("splitterExpenseDate").value;
 
   if (!desc || amount <= 0 || !payer) {
-    return alert("Preencha a descrição, valor e quem pagou!");
+    return showPageMessage("Preencha a descrição, o valor e quem pagou!", { title: "Quase lá", icon: "✍️" });
   }
 
   const totalPct = Object.values(currentShares).reduce(
@@ -344,8 +317,9 @@ function saveSplitterExpense() {
     0,
   );
   if (Math.abs(totalPct - 100) > 0.5) {
-    return alert(
-      `A soma das fatias percentuais deve ser exatamente 100%! Atualmente está em ${totalPct.toFixed(1)}%`,
+    return showPageMessage(
+      `A soma das fatias tem que dar 100%. Agora está em ${totalPct.toFixed(1)}%.`,
+      { title: "A conta não fecha", icon: "🧮" },
     );
   }
 
@@ -374,9 +348,7 @@ function saveSplitterExpense() {
   }
 
   saveDatabase();
-  document
-    .getElementById("newSplitterExpenseModal")
-    .classList.remove("active");
+  closeTobaModal("newSplitterExpenseModal");
   renderSplitterExpensesAndSettlement(g);
 }
 
@@ -403,7 +375,7 @@ function toggleMemberShare(memberIndex) {
   renderShareRows(allMembers);
 }
 
-function deleteSplitterExpenseFromModal() {
+async function deleteSplitterExpenseFromModal() {
   const groupId = document.getElementById("splitterGroupIdInput").value;
   const expenseId = document.getElementById(
     "splitterExpenseIdInput",
@@ -411,12 +383,13 @@ function deleteSplitterExpenseFromModal() {
   const g = db.splitterGroups.find((item) => String(item.id) === String(groupId));
   if (!g) return;
 
-  if (confirm("Deseja mesmo apagar esse gasto do rolê?")) {
+  const confirmed = await showPageMessage("Esse gasto sai da divisão do rolê.", {
+    title: "Apagar gasto?", icon: "🗑️", confirm: true, confirmLabel: "Apagar",
+  });
+  if (confirmed) {
     g.expenses = (g.expenses || []).filter((e) => String(e.id) !== String(expenseId));
     saveDatabase();
-    document
-      .getElementById("newSplitterExpenseModal")
-      .classList.remove("active");
+    closeTobaModal("newSplitterExpenseModal");
     renderSplitterExpensesAndSettlement(g);
   }
 }
@@ -428,8 +401,7 @@ function renderSplitterExpensesAndSettlement(g) {
   const members = g.members || [];
 
   if (expenses.length === 0) {
-    listEl.innerHTML =
-      '<div class="empty-state" style="font-size:0.75rem;">Nenhum gasto lançado ainda.</div>';
+    listEl.innerHTML = tobaEmpty("🧾", "Nenhum gasto no rolê", g.isFinished ? "" : "Toque em <b>💸 + Gasto</b> quando alguém pagar algo.", { compact: true });
   } else {
     [...expenses]
       .sort((a, b) => {
@@ -439,27 +411,20 @@ function renderSplitterExpensesAndSettlement(g) {
         return parseInt(b.id || 0) - parseInt(a.id || 0);
       })
       .forEach((e) => {
-        const item = document.createElement("div");
-        item.className = "expense-item";
-        item.style.cursor = "pointer";
-        item.onclick = () => openSplitterExpenseModal(e.id);
-        item.innerHTML = `
-                    <div class="expense-details">
-                        <span class="expense-desc">${escapeBankHtml(e.desc)}</span>
-                        <span class="expense-meta">Pago por: <i>${escapeBankHtml(e.payer)}</i> • ${isoToBrDate(e.date || g.date)}</span>
-                    </div>
-                    <div class="expense-right">
-                        <span class="expense-amount-value" style="font-size: 0.85rem;">${formatCurrency(e.amount)}</span>
-                    </div>
-                `;
-        listEl.appendChild(item);
+        listEl.insertAdjacentHTML("beforeend", `
+          <div class="expense-item" role="button" tabindex="0" data-click="editSplitterExpense" data-id="${escapeHtml(e.id)}">
+            <div class="expense-details">
+              <span class="expense-desc">${escapeHtml(e.desc)}</span>
+              <span class="expense-meta">Pago por <i>${escapeHtml(e.payer)}</i> • ${isoToBrDate(e.date || g.date)}</span>
+            </div>
+            <span class="expense-amount-value text-neutral">${formatCurrency(e.amount)}</span>
+          </div>`);
       });
   }
 
   const settlementBox = document.getElementById("splitterSettlementBox");
   if (members.length === 0) {
-    settlementBox.innerHTML =
-      "Adicione participantes para calcular a divisão.";
+    settlementBox.innerHTML = tobaEmpty("👥", "Rolê sem ninguém?", "Toque no ✏️ e adicione os participantes.", { compact: true });
     return;
   }
 
@@ -508,33 +473,32 @@ function renderSplitterExpensesAndSettlement(g) {
   });
 
   let htmlTxt = `
-            <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #30363d;">
-                <div style="font-size: 0.9rem; color: #58a6ff; font-weight: 700; margin-bottom: 8px;">📊 Resumo Individual</div>`;
+    <div class="settlement-summary">
+      <div class="settlement-title">📊 Quem pagou × quem consumiu</div>
+      <div class="kv-list">`;
 
   members.forEach((m) => {
     if (paidMap[m] > 0 || consumedMap[m] > 0) {
       htmlTxt += `
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-top:4px;">
-                    <span><b>${escapeBankHtml(m)}</b> pagou ${formatCurrency(paidMap[m])}</span>
-                    <span style="color:#8b949e;">Consumiu: ${formatCurrency(consumedMap[m])}</span>
-                </div>`;
+        <div class="kv-row"><span><b class="text-neutral">${escapeHtml(m)}</b> pagou ${formatCurrency(paidMap[m])}</span><span class="text-muted" style="font-weight: 600">usou ${formatCurrency(consumedMap[m])}</span></div>`;
     }
   });
 
   htmlTxt += `
-                <div style="margin-top: 10px; font-size: 0.9rem;"><b>Total do Rolê:</b> <span style="color:#58a6ff;">${formatCurrency(totalSpent)}</span></div>
-            </div>`;
+        <div class="kv-row is-total"><span>Total do rolê</span><span class="text-blue">${formatCurrency(totalSpent)}</span></div>
+      </div>
+    </div>`;
 
   if (debtors.length === 0 && creditors.length === 0) {
     htmlTxt +=
-      '<span style="color:#3fb950; font-weight:600;">Tudo quitado ou sem gastos! 🍻</span>';
+      '<span class="text-green" style="font-weight: 700">Tudo quitado (ou ninguém gastou nada)! 🍻</span>';
   } else {
-    htmlTxt += "<b>🤑 Faz o Pix:</b><br>";
+    htmlTxt += '<div class="settlement-title">🤑 Faz o Pix</div>';
     debtors.forEach((d) => {
       creditors.forEach((c) => {
         if (d.amount > 0.01 && c.amount > 0.01) {
           const transfer = Math.min(d.amount, c.amount);
-          htmlTxt += `<div style="margin-top: 4px; padding: 6px; background: rgba(88, 166, 255, 0.1); border-radius: 6px;">👉 <b>${escapeBankHtml(d.name)}</b> paga <span style="color:#58a6ff; font-weight:700;">${formatCurrency(transfer)}</span> para <b>${escapeBankHtml(c.name)}</b></div>`;
+          htmlTxt += `<div class="pix-row">👉 <b>${escapeHtml(d.name)}</b> paga <b class="text-blue">${formatCurrency(transfer)}</b> para <b>${escapeHtml(c.name)}</b></div>`;
           d.amount -= transfer;
           c.amount -= transfer;
         }
@@ -553,12 +517,11 @@ function toggleSplitterFinished() {
   openSplitterGroupView(g.id);
 }
 
-function deleteSplitterGroup() {
-  if (
-    confirm(
-      "Tem certeza que deseja apagar este grupo de gastos por completo?",
-    )
-  ) {
+async function deleteSplitterGroup() {
+  const confirmed = await showPageMessage("O rolê e todos os gastos dele somem. Sem volta!", {
+    title: "Apagar rolê?", icon: "🗑️", confirm: true, confirmLabel: "Apagar",
+  });
+  if (confirmed) {
     const id = document.getElementById("splitterGroupIdInput").value;
     db.splitterGroups = db.splitterGroups.filter(
       (item) => String(item.id) !== String(id),
@@ -579,18 +542,15 @@ function switchView(viewName) {
     splitterDetail: "viewSplitterDetail",
   };
   document.getElementById(viewMap[viewName])?.classList.add("active");
+  window.scrollTo(0, 0);
 
-  const actionsContainer = document.getElementById("headerActionsContainer");
+  // "+ Rolê" só faz sentido na lista; no detalhe o "‹" volta para ela.
+  document.getElementById("headerAddBtn").hidden = viewName !== "splitter";
   if (viewName === "splitter") {
-    actionsContainer.innerHTML = `
-      <button class="config-btn" onclick="openDataModal()" title="Dados & Backup">⚙️</button>
-      <a class="back-nav-btn" href="TobaBank-Index.html" style="text-decoration: none;">Hub ›</a>
-    `;
+    tobaSetHeader({ page: "🍕 Raxador" });
     renderSplitterScreen();
   } else if (viewName === "splitterDetail") {
-    actionsContainer.innerHTML = `
-      <button class="back-nav-btn" onclick="switchView('splitter')"><span style="color: #8b949e; font-weight: 900; font-size: 1.1rem; line-height: 1; margin-right: 4px;">‹</span> Raxador</button>
-    `;
+    tobaSetHeader({ page: "🍕 Raxador › Rolê", back: "backToSplitter" });
   }
 }
 
@@ -600,47 +560,59 @@ function onBankDataSaved() {
     renderSplitterScreen();
 }
 
-function setupRaxadorEvents() {
-  const newSplitterForm = document.getElementById("newSplitterForm");
-  if (newSplitterForm) {
-    newSplitterForm.onsubmit = (e) => {
-      e.preventDefault();
-      const name = document.getElementById("newSplitterName").value;
-      const category = document.getElementById(
-        "newSplitterCategory",
-      ).value;
-      const date = document.getElementById("newSplitterDate").value;
-      const rawMembers =
-        document.getElementById("newSplitterMembers").value;
-      const members = parseSplitterMembers(rawMembers);
+function createSplitterGroup() {
+  const name = document.getElementById("newSplitterName").value.trim();
+  const category = document.getElementById("newSplitterCategory").value;
+  const date = document.getElementById("newSplitterDate").value;
+  const members = parseSplitterMembers(
+    document.getElementById("newSplitterMembers").value,
+  );
 
-      if (members.length === 0)
-        return alert("Adicione pelo menos 1 participante!");
-
-      const newGroup = {
-        id: Date.now().toString(),
-        name: name,
-        category: category,
-        date: date,
-        members: members,
-        expenses: [],
-        isFinished: false,
-      };
-
-      if (!db.splitterGroups) db.splitterGroups = [];
-      db.splitterGroups.push(newGroup);
-      saveDatabase();
-      document
-        .getElementById("newSplitterModal")
-        .classList.remove("active");
-      openSplitterGroupView(newGroup.id);
-    };
+  if (!name) {
+    showPageMessage("Dá um nome pro rolê!", { title: "Quase lá", icon: "✍️" });
+    return;
   }
+  if (members.length === 0) {
+    showPageMessage("Adicione pelo menos 1 participante!", { title: "Rolê de um só?", icon: "🥲" });
+    return;
+  }
+
+  const newGroup = {
+    id: Date.now().toString(),
+    name: name,
+    category: category,
+    date: date,
+    members: members,
+    expenses: [],
+    isFinished: false,
+  };
+
+  if (!db.splitterGroups) db.splitterGroups = [];
+  db.splitterGroups.push(newGroup);
+  saveDatabase();
+  closeTobaModal("newSplitterModal");
+  openSplitterGroupView(newGroup.id);
 }
+
+tobaActions({
+  newSplitterGroup: openNewSplitterGroupModal,
+  createSplitterGroup,
+  openGroup: (el) => openSplitterGroupView(el.dataset.id),
+  backToSplitter: () => switchView("splitter"),
+  toggleSplitterMetaCard,
+  updateSplitterGroupMeta,
+  saveSplitterMembers,
+  toggleSplitterFinished,
+  deleteSplitterGroup,
+  newSplitterExpense: () => openSplitterExpenseModal(),
+  editSplitterExpense: (el) => openSplitterExpenseModal(el.dataset.id),
+  toggleMemberShare: (el) => toggleMemberShare(Number(el.dataset.index)),
+  updateShareValue: (el) => updateShareValue(Number(el.dataset.index), el.value),
+  saveSplitterExpense,
+  deleteSplitterExpenseFromModal,
+});
 
 document.addEventListener("DOMContentLoaded", () => {
   loadDatabase();
-  setupCoreEvents();
-  setupRaxadorEvents();
   switchView("splitter");
 });
