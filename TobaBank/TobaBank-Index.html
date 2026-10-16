@@ -2,11 +2,11 @@
 <html lang="pt-BR">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="color-scheme" content="dark" />
-    <meta name="supported-color-schemes" content="dark" />
-    <title>Toba Bank 🚀</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
+  <title>Toba Bank 🚀</title>
   <meta name="theme-color" content="#0d1117" />
   <link rel="manifest" href="../manifest.webmanifest" />
   <link rel="icon" href="../icons/icon-192.png" />
@@ -14,167 +14,58 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Toba" />
-    <style>
-    :root {
-      color-scheme: dark;
-    }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: system-ui, -apple-system, sans-serif;
-        }
-
-        html,
-        body {
-            overflow-x: hidden;
-            max-width: 100vw;
-            width: 100%;
-        }
-
-        body {
-            background-color: #0d1117;
-            color: #f0f6fc;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            padding: 1rem;
-        }
-
-        .container {
-            background: #161b22;
-            padding: 1.25rem;
-            border-radius: 20px;
-            border: 1px solid #30363d;
-            width: 100%;
-            max-width: 460px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            margin-bottom: 2rem;
-        }
-
-        .top-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            margin-bottom: 1.2rem;
-            width: 100%;
-        }
-
-        .brand-title {
-            font-size: 1.1rem;
-            font-weight: 800;
-            color: #58a6ff;
-            white-space: nowrap;
-        }
-
-        .back-nav-btn {
-            background: #21262d;
-            border: 1px solid #30363d;
-            color: #f0f6fc;
-            font-size: 0.85rem;
-            font-weight: 600;
-            border-radius: 10px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            height: 32px;
-            line-height: 1;
-            padding: 0 0.65rem;
-            text-decoration: none;
-        }
-
-        .section-title {
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: #f0f6fc;
-            margin: 0.25rem 0 1rem;
-        }
-
-        .tools-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-        }
-
-        .tool-card {
-            background: #0d1117;
-            border: 1px solid #21262d;
-            border-radius: 16px;
-            padding: 1.1rem;
-            color: inherit;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .tool-card:hover {
-            border-color: #58a6ff;
-            transform: translateY(-2px);
-            background: #12161f;
-        }
-
-        .tool-icon {
-            font-size: 1.8rem;
-            background: #161b22;
-            padding: 0.5rem;
-            border-radius: 12px;
-            border: 1px solid #30363d;
-            flex-shrink: 0;
-        }
-
-        .tool-title {
-            display: block;
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: #f0f6fc;
-        }
-
-        .tool-desc {
-            display: block;
-            font-size: 0.75rem;
-            color: #8b949e;
-            margin-top: 2px;
-        }
-    </style>
+  <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="css/bank-base.css" />
 </head>
 
 <body>
-    <main class="container">
-        <header class="top-header">
-            <div class="brand-title">🏦 Toba Bank</div>
-            <a href="../index.html" class="back-nav-btn">Portal ›</a>
-        </header>
+  <main class="container">
+    <header class="toba-header">
+      <a class="toba-back" href="../index.html" aria-label="Voltar para o Toba Solutions">‹</a>
+      <a class="toba-titles" href="../index.html">
+        <span class="toba-app">🏦 Toba Bank</span>
+        <span class="toba-page">Hub</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
+      </div>
+    </header>
 
-        <div class="section-title">Módulos Financeiros</div>
-        <nav class="tools-grid" aria-label="Módulos do Toba Bank">
-            <a class="tool-card" href="TobaBank-Gastos.html">
-                <span class="tool-icon">💸</span>
-                <span>
-                    <span class="tool-title">Controle de Gastos</span>
-                    <span class="tool-desc">Painel de orçamento, parcelas e custos fixos.</span>
-                </span>
-            </a>
-            <a class="tool-card" href="TobaBank-Investimento.html">
-                <span class="tool-icon">📈</span>
-                <span>
-                    <span class="tool-title">Investimentos</span>
-                    <span class="tool-desc">Carteira, rendimentos e cofrinhos inteligentes.</span>
-                </span>
-            </a>
-            <a class="tool-card" href="TobaBank-Raxador.html">
-                <span class="tool-icon">🍕</span>
-                <span>
-                    <span class="tool-title">Raxador (Tricount)</span>
-                    <span class="tool-desc">Divisão de rolês, viagens e contas da galera.</span>
-                </span>
-            </a>
-        </nav>
-    </main>
+    <div class="toba-kicker">Qual vai ser hoje, magnata?</div>
+    <nav class="toba-hub-list" aria-label="Módulos do Toba Bank">
+      <a class="toba-hub-card" href="TobaBank-Gastos.html">
+        <span class="toba-hub-icon">💸</span>
+        <span class="toba-hub-text">
+          <span class="toba-hub-title">Controle de Gastos</span>
+          <span class="toba-hub-desc">Orçamento do dia, parcelas e contas fixas.</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </a>
+      <a class="toba-hub-card" href="TobaBank-Investimento.html">
+        <span class="toba-hub-icon">📈</span>
+        <span class="toba-hub-text">
+          <span class="toba-hub-title">Investimentos</span>
+          <span class="toba-hub-desc">Carteira, rendimentos e cofrinhos.</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </a>
+      <a class="toba-hub-card" href="TobaBank-Raxador.html">
+        <span class="toba-hub-icon">🍕</span>
+        <span class="toba-hub-text">
+          <span class="toba-hub-title">Raxador</span>
+          <span class="toba-hub-desc">Divide rolês, viagens e a conta da galera.</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/toba-common.js"></script>
+  <script src="js/bank-core.js"></script>
+  <script>
+    // O Hub não tem tela de dados; só carrega o banco para a ⚙️ (backup).
+    document.addEventListener("DOMContentLoaded", loadDatabase);
+  </script>
   <script src="../assets/pwa-register.js"></script>
 </body>
 

@@ -1,5 +1,6 @@
 /* =====================================================================
  * Toba Bank · núcleo compartilhado (Gastos + Investimentos + Raxador)
+ * - Depende de ../assets/toba-common.js (datas, dinheiro, avisos, ⚙️).
  * - Banco único no localStorage ("TOBA_BANK_DB"). NÃO mude a chave nem o
  *   formato sem manter importação/exportação compatíveis.
  * - Cada página define onBankDataSaved() para redesenhar a própria tela
@@ -14,7 +15,7 @@ let isDbLoaded = false;
 let db = {
   version: 29,
   config: {
-    startDate: getTodayIsoDateStr(),
+    startDate: toIsoDate(),
     fixedExpenses: [],
   },
   months: {},
@@ -45,7 +46,7 @@ function loadDatabase() {
       if (!parsed.installments) parsed.installments = [];
       if (!parsed.config)
         parsed.config = {
-          startDate: getTodayIsoDateStr(),
+          startDate: toIsoDate(),
           fixedExpenses: [],
         };
       if (!parsed.months) parsed.months = {};
@@ -100,17 +101,19 @@ function loadDatabase() {
       isDbLoaded = true;
     } catch (e) {
       console.error("Erro crítico ao carregar banco de dados:", e);
-      alert(
-        "⚠️ Atenção: Houve um erro ao ler seus dados salvos. O banco não foi sobrescrito para proteger suas informações.",
+      showPageMessage(
+        "Houve um erro ao ler seus dados salvos. Nada foi sobrescrito, para proteger suas informações. Restaure um backup em ⚙️ → Dados & Backup.",
+        { title: "Dados protegidos", icon: "🛡️" },
       );
     }
   } else {
     isDbLoaded = true;
-    saveDatabase();
+    saveDatabase({ silent: true });
   }
 }
 
-function saveDatabase() {
+// options.silent: grava sem mostrar o "Salvo ✓" (gravações automáticas).
+function saveDatabase(options = {}) {
   if (!isDbLoaded) {
     console.warn(
       "Gravação bloqueada: O banco de dados ainda não foi carregado com segurança.",
@@ -134,135 +137,70 @@ function saveDatabase() {
   } catch (err) {
     // Sem esse aviso o app parecia ter salvo, e a mudança sumia ao recarregar.
     console.error("Erro ao gravar dados no localStorage:", err);
-    alert(
-      "⚠️ Não consegui salvar neste aparelho (memória do navegador cheia?). Baixe um backup em ⚙️ → Dados & Backup antes de continuar.",
+    showPageMessage(
+      "Não consegui salvar neste aparelho (memória do navegador cheia?). Baixe um backup em ⚙️ → Dados & Backup antes de continuar.",
+      { title: "Não salvou", icon: "💥" },
     );
+    onBankDataSaved();
+    return;
   }
 
+  if (!options.silent) tobaSaved();
   onBankDataSaved();
 }
 
-function exportBackup() {
-  const dataStr =
-    "data:text/json;charset=utf-8," +
-    encodeURIComponent(JSON.stringify(db, null, 2));
-  const downloadAnchor = document.createElement("a");
-  downloadAnchor.setAttribute("href", dataStr);
-  downloadAnchor.setAttribute(
-    "download",
-    `toba_bank_backup_${getTodayIsoDateStr()}.json`,
-  );
-  document.body.appendChild(downloadAnchor);
-  downloadAnchor.click();
-  downloadAnchor.remove();
+function exportBankBackup() {
+  tobaDownloadJson(db, `toba_bank_backup_${toIsoDate()}.json`);
 }
 
-function importBackup(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function (e) {
-    try {
-      const importedDb = JSON.parse(e.target.result);
-      if (
-        importedDb &&
-        typeof importedDb === "object" &&
-        !Array.isArray(importedDb) &&
-        (importedDb.version || Array.isArray(importedDb.transactions))
-      ) {
-        // Grava direto e recarrega: o loadDatabase() da próxima abertura
-        // completa os campos que faltarem. Redesenhar a tela aqui, com o
-        // backup ainda sem normalizar, podia travar antes do reload.
-        try {
-          const currentStored = localStorage.getItem(STORAGE_KEY);
-          // Banco ilegível não substitui o último auto-backup bom.
-          if (currentStored) {
-            JSON.parse(currentStored);
-            localStorage.setItem(BACKUP_KEY, currentStored);
-          }
-        } catch (backupErr) {
-          console.warn("Aviso ao atualizar auto-backup:", backupErr);
-        }
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(importedDb));
-        } catch (saveErr) {
-          alert("❌ Não consegui gravar o backup neste aparelho (memória cheia?).");
-          return;
-        }
-        alert("✅ Backup restaurado com sucesso!");
-        location.reload();
-      } else {
-        alert("❌ Arquivo de backup inválido.");
-      }
-    } catch (err) {
-      alert("❌ Erro ao ler o arquivo JSON.");
-    }
-  };
-  reader.readAsText(file);
-  // Permite escolher o mesmo arquivo de novo depois de um erro.
-  event.target.value = "";
-}
-
-function resetAllData() {
+// Backup do Bank tem "version" ou a lista de gastos. Grava direto e
+// recarrega: o loadDatabase() da próxima abertura completa os campos que
+// faltarem (toda migração mora lá).
+async function importBankBackup(text) {
+  let importedDb;
+  try {
+    importedDb = JSON.parse(text);
+  } catch (err) {
+    await showPageMessage("Esse arquivo não é um JSON válido.", { title: "Arquivo ilegível", icon: "😵" });
+    return;
+  }
   if (
-    confirm(
-      "🚨 Tem certeza que deseja apagar TODOS os dados do Toba Bank? Esta ação não pode ser desfeita!",
-    )
+    !importedDb ||
+    typeof importedDb !== "object" ||
+    Array.isArray(importedDb) ||
+    !(importedDb.version || Array.isArray(importedDb.transactions))
   ) {
-    localStorage.removeItem(STORAGE_KEY);
-    location.reload();
+    await showPageMessage("Esse arquivo não é um backup do Toba Bank.", { title: "Backup inválido", icon: "🤨" });
+    return;
   }
-}
-
-function getMoney(id) {
-  const el = document.getElementById(id);
-  if (!el) return 0;
-  let val = el.value;
-  if (!val) return 0;
-
-  if (el.classList.contains("smart-money")) {
-    val = val.replace(/\./g, "").replace(",", ".");
-    return parseFloat(val) || 0;
-  }
-
-  val = val.toString().trim();
-  if (val.includes(",") && val.includes(".")) {
-    if (val.indexOf(",") > val.indexOf(".")) {
-      val = val.replace(/\./g, "").replace(",", ".");
-    } else {
-      val = val.replace(/,/g, "");
+  try {
+    const currentStored = localStorage.getItem(STORAGE_KEY);
+    // Banco ilegível não substitui o último auto-backup bom.
+    if (currentStored) {
+      JSON.parse(currentStored);
+      localStorage.setItem(BACKUP_KEY, currentStored);
     }
-  } else {
-    val = val.replace(",", ".");
+  } catch (backupErr) {
+    console.warn("Aviso ao atualizar auto-backup:", backupErr);
   }
-  return parseFloat(val) || 0;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(importedDb));
+  } catch (saveErr) {
+    await showPageMessage("Não consegui gravar o backup neste aparelho (memória cheia?).", { title: "Não salvou", icon: "💥" });
+    return;
+  }
+  await showPageMessage("Backup restaurado! A página vai recarregar.", { title: "Tudo de volta", icon: "✅" });
+  location.reload();
 }
 
-function formatMoneyInput(value) {
-  if (value === null || value === undefined || isNaN(value)) return "";
-  return parseFloat(value).toLocaleString("pt-BR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-function formatCurrency(val) {
-  return (val || 0).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
-}
-
-// Todo texto digitado pelo usuário (descrição, nome, participante) passa por
-// aqui antes de entrar num innerHTML: "Pizza <b>" aparece como texto.
-function escapeBankHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  })[ch]);
+async function resetBankData() {
+  const confirmed = await showPageMessage(
+    "Isso apaga TODOS os dados do Toba Bank (gastos, investimentos e rachas). Não dá para desfazer!",
+    { title: "Apagar tudo?", icon: "🚨", confirm: true, confirmLabel: "Apagar tudo" },
+  );
+  if (!confirmed) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
 }
 
 // Categoria sem o grupo ("Moradia - Aluguel" -> "Aluguel"); tolera gasto
@@ -272,97 +210,12 @@ function getCleanCategory(category) {
   return category.includes(" - ") ? category.split(" - ")[1] : category;
 }
 
-function isoToBrDate(isoStr) {
-  if (!isoStr || !isoStr.includes("-")) return isoStr || "";
-  const [y, m, d] = isoStr.split("-");
-  return `${d}/${m}/${y}`;
-}
-
-function formatMonthYearLabel(yearStr, monthIndex) {
-  const date = new Date(yearStr, monthIndex, 1);
-  const rawMonthName = date.toLocaleDateString("pt-BR", {
-    month: "long",
-  });
-  const capitalizedMonth =
-    rawMonthName.charAt(0).toUpperCase() + rawMonthName.slice(1);
-  const shortYear = String(yearStr).slice(-2);
-  return `${capitalizedMonth}/${shortYear}`;
-}
-
-function getCurrentMonthKey() {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  return `${year}-${month}`;
-}
-
-function getTodayIsoDateStr() {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function getDaysInMonth(year, monthIndex) {
-  return new Date(year, monthIndex + 1, 0).getDate();
-}
-
 // As páginas sobrescrevem esta função para redesenhar a própria tela.
 function onBankDataSaved() {}
 
-/* MODAL COMPARTILHADO: Dados & Backup */
-const DATA_MODAL_HTML = `
-<div class="modal-overlay" id="dataModal">
-  <div class="modal">
-    <div class="modal-header">
-      <h3>💾 Dados & Backup</h3>
-      <button class="close-btn" onclick="closeDataModal()">&times;</button>
-    </div>
-
-    <div class="form-group">
-      <label>Backups</label>
-      <div style="display: flex; gap: 10px">
-        <button class="btn btn-secondary" onclick="exportBackup()">📥 Baixar Backup</button>
-        <button class="btn btn-secondary" onclick="document.getElementById('importFileInput').click()">📤 Restaurar</button>
-      </div>
-      <input type="file" id="importFileInput" accept=".json" style="display: none" onchange="importBackup(event)" />
-    </div>
-
-    <div class="form-group" style="margin-top: 1.5rem">
-      <label style="color: #f85149">Zona de Perigo</label>
-      <button class="btn btn-danger" onclick="resetAllData()">🗑️ Zerar Todos os Dados</button>
-    </div>
-
-    <div style="margin-top: 1.5rem; border-top: 1px solid #30363d; padding-top: 1rem">
-      <button class="btn btn-secondary" onclick="closeDataModal()">Fechar</button>
-    </div>
-  </div>
-</div>`;
-
-function openDataModal() {
-  document.getElementById("dataModal").classList.add("active");
-}
-
-function closeDataModal() {
-  document.getElementById("dataModal").classList.remove("active");
-}
-
-// Máscara dos campos de dinheiro (classe "smart-money")
-function setupCoreEvents() {
-  document.body.insertAdjacentHTML("beforeend", DATA_MODAL_HTML);
-  document.addEventListener("input", function (e) {
-    if (e.target.classList.contains("smart-money")) {
-      let val = e.target.value.replace(/\D/g, "");
-      if (val === "") {
-        e.target.value = "";
-        return;
-      }
-      let num = parseInt(val, 10) / 100;
-      e.target.value = num.toLocaleString("pt-BR", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
-    }
-  });
-}
+tobaSetupApp({
+  name: "Toba Bank",
+  exportBackup: exportBankBackup,
+  importBackup: importBankBackup,
+  resetData: resetBankData,
+});

@@ -165,7 +165,7 @@ function getStrengthChips(workout) {
 function renderStrengthExerciseList(workout) {
   if (workout.type !== "strength" || !Array.isArray(workout.exercises) || !workout.exercises.length) return "";
   return `<ul class="workout-record-exercises">${workout.exercises.map((exercise) => `
-    <li><span>${escapeWorkoutHtml(exercise.name)}</span><span class="workout-record-exercise-sets">${describeStrengthSets(exercise.sets)}</span></li>`).join("")}</ul>`;
+    <li><span>${escapeHtml(exercise.name)}</span><span class="workout-record-exercise-sets">${describeStrengthSets(exercise.sets)}</span></li>`).join("")}</ul>`;
 }
 
 function getStrengthRoutineStats(routineId) {
@@ -204,14 +204,14 @@ function newStrengthExercise(exerciseId, sets) {
 
 function hideStrengthPanel() {
   const panel = document.getElementById("strengthPanel");
-  if (panel) panel.style.display = "none";
+  if (panel) panel.hidden = true;
   strengthState = null;
 }
 
 function openStrengthPanel(workout = null) {
-  document.getElementById("workoutTypePicker").style.display = "none";
-  document.getElementById("workoutForm").style.display = "none";
-  document.getElementById("strengthPanel").style.display = "block";
+  document.getElementById("workoutTypePicker").hidden = true;
+  document.getElementById("workoutForm").hidden = true;
+  document.getElementById("strengthPanel").hidden = false;
 
   if (workout) {
     strengthState = {
@@ -219,7 +219,7 @@ function openStrengthPanel(workout = null) {
       editing: true,
       routineId: workout.routineId || "",
       name: workout.title || "",
-      date: workout.date || getLocalDateInputValue(),
+      date: workout.date || toIsoDate(),
       duration: workout.durationMinutes ?? "",
       calories: workout.calories ?? "",
       notes: workout.notes || "",
@@ -235,7 +235,7 @@ function openStrengthPanel(workout = null) {
       editing: false,
       routineId: "",
       name: "",
-      date: getLocalDateInputValue(),
+      date: toIsoDate(),
       duration: "",
       calories: "",
       notes: "",
@@ -286,23 +286,23 @@ function renderStrengthRoutines() {
           .map((exercise) => getStrengthExercise(exercise.exerciseId)?.group)
           .filter(Boolean))].map(getStrengthGroupName);
         return `
-          <div class="strength-routine" role="button" tabindex="0" data-action="start-routine" data-routine="${escapeWorkoutHtml(routine.id)}">
+          <div class="strength-routine" role="button" tabindex="0" data-action="start-routine" data-routine="${escapeHtml(routine.id)}">
             <div class="strength-routine-main">
-              <strong>${escapeWorkoutHtml(routine.name)}</strong>
-              <span class="strength-routine-groups">${escapeWorkoutHtml(groups.join(" · ") || "Sem exercícios")}</span>
+              <strong>${escapeHtml(routine.name)}</strong>
+              <span class="strength-routine-groups">${escapeHtml(groups.join(" · ") || "Sem exercícios")}</span>
               <span class="strength-routine-meta">${routine.exercises.length} ${routine.exercises.length === 1 ? "exercício" : "exercícios"} · feito ${stats.count}× ${stats.lastDate ? `· última vez ${formatWorkoutDate(stats.lastDate)}` : ""}</span>
             </div>
-            <button type="button" class="workout-icon-btn workout-icon-btn-danger" data-action="delete-routine" data-routine="${escapeWorkoutHtml(routine.id)}" title="Apagar treino salvo" aria-label="Apagar treino salvo">${WORKOUT_ICON_DELETE}</button>
+            <button type="button" class="workout-icon-btn workout-icon-btn-danger" data-action="delete-routine" data-routine="${escapeHtml(routine.id)}" title="Apagar treino salvo" aria-label="Apagar treino salvo">${WORKOUT_ICON_DELETE}</button>
           </div>`;
       }).join("")
     : '<p class="strength-empty">Você ainda não salvou nenhum treino. Monte um e toque em <strong>Salvar treino</strong> para virar o seu Treino A, B, C... e o app passa a contar quantas vezes você fez.</p>';
 
   return `
-    <button type="button" class="back-nav-btn" data-action="back-types" style="margin-bottom: 0.8rem">‹ Tipos de treino</button>
+    <button type="button" class="back-nav-btn workout-back-types" data-action="back-types">‹ Tipos de treino</button>
     <div class="hub-title">Seus treinos</div>
     <div class="strength-routines">${cards}</div>
     <div class="section-divider"></div>
-    <button type="button" class="btn" data-action="new-workout">➕ Montar treino do zero</button>
+    <button type="button" class="btn btn-primary" data-action="new-workout">➕ Montar treino do zero</button>
   `;
 }
 
@@ -335,7 +335,7 @@ function renderStrengthBuilder() {
           <div class="strength-exercise-card">
             <div class="strength-exercise-head">
               <div>
-                <div class="strength-exercise-name">${exercise ? exercise.name : escapeWorkoutHtml(entry.exerciseId)}</div>
+                <div class="strength-exercise-name">${exercise ? exercise.name : escapeHtml(entry.exerciseId)}</div>
                 <div class="strength-exercise-group">${exercise ? getStrengthGroupName(exercise.group) : ""}${last ? ` · última vez ${describeStrengthSets(last)}` : ""}</div>
               </div>
               <button type="button" class="workout-icon-btn workout-icon-btn-danger" data-action="remove-exercise" data-ex="${index}" title="Tirar exercício" aria-label="Tirar exercício">${WORKOUT_ICON_DELETE}</button>
@@ -347,28 +347,28 @@ function renderStrengthBuilder() {
     : '<p class="strength-hint">Nenhum exercício ainda. Escolha um grupo e toque nos exercícios para montar o treino.</p>';
 
   return `
-    ${state.editing ? "" : '<button type="button" class="back-nav-btn" data-action="back-routines" style="margin-bottom: 0.8rem">‹ Seus treinos</button>'}
+    ${state.editing ? "" : '<button type="button" class="back-nav-btn workout-back-types" data-action="back-routines">‹ Seus treinos</button>'}
     <div class="grid-2">
       <div class="form-group">
         <label for="strength-name">Nome do treino</label>
-        <input id="strength-name" class="form-control" type="text" maxlength="40" placeholder="Ex: Treino A" value="${escapeWorkoutHtml(state.name)}" data-field="name" />
+        <input id="strength-name" class="form-control" type="text" maxlength="40" placeholder="Ex: Treino A" value="${escapeHtml(state.name)}" data-field="name" />
       </div>
       <div class="form-group">
         <label for="strength-date">Data</label>
-        <input id="strength-date" class="form-control" type="date" value="${escapeWorkoutHtml(state.date)}" data-field="date" />
+        <input id="strength-date" class="form-control" type="date" value="${escapeHtml(state.date)}" data-field="date" />
       </div>
     </div>
 
     <div class="hub-title">1. Grupo muscular</div>
     <div class="strength-chips">${groupChips}</div>
-    <div class="hub-title" style="margin-top: 0.9rem">2. Exercício</div>
+    <div class="hub-title strength-step-title">2. Exercício</div>
     <div class="strength-options">${options}</div>
 
     <div class="section-divider"></div>
     <div class="hub-title">Seu treino</div>
     ${exerciseCards}
 
-    <div class="grid-2" style="margin-top: 0.9rem">
+    <div class="grid-2 strength-step-title">
       <div class="form-group">
         <label for="strength-duration">Duração (min)</label>
         <input id="strength-duration" class="form-control" type="number" inputmode="numeric" min="0" step="1" value="${state.duration}" data-field="duration" />
@@ -380,11 +380,15 @@ function renderStrengthBuilder() {
     </div>
     <div class="form-group">
       <label for="strength-notes">Observações (opcional)</label>
-      <input id="strength-notes" class="form-control" type="text" maxlength="160" placeholder="Como foi o treino?" value="${escapeWorkoutHtml(state.notes)}" data-field="notes" />
+      <input id="strength-notes" class="form-control" type="text" maxlength="160" placeholder="Como foi o treino?" value="${escapeHtml(state.notes)}" data-field="notes" />
     </div>
 
-    <button type="button" class="btn btn-secondary" data-action="save-routine" style="margin-bottom: 0.6rem">💾 Salvar treino (para repetir depois)</button>
-    <button type="button" class="btn" data-action="register-workout">${state.editing ? "Salvar alterações 💪" : "Registrar treino de hoje 💪"}</button>
+    <div class="toba-sheet-footer">
+      <div class="btn-row">
+        <button type="button" class="btn btn-secondary btn-grow-1" data-action="save-routine">💾 Salvar modelo</button>
+        <button type="button" class="btn btn-primary btn-grow-2" data-action="register-workout">${state.editing ? "Salvar 💪" : "Registrar treino 💪"}</button>
+      </div>
+    </div>
   `;
 }
 

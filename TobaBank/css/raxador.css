@@ -1,3 +1,107 @@
 /* Toba Bank · estilos exclusivos do Raxador */
 
+.splitter-detail-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 0.9rem;
+}
 
+.splitter-detail-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.splitter-meta-card {
+  margin-bottom: 1rem;
+}
+
+.settlement-box {
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.settlement-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 0.5rem;
+}
+
+.settlement-summary {
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.pix-row {
+  margin-top: 6px;
+  padding: 0.5rem 0.6rem;
+  background: rgba(88, 166, 255, 0.1);
+  border-radius: var(--radius-sm);
+}
+
+.pix-row b.text-blue {
+  white-space: nowrap;
+}
+
+.share-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.share-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-2);
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-soft);
+}
+
+.share-row label {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.86rem !important;
+  color: var(--text) !important;
+  margin: 0 !important;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+
+.share-row.is-off label {
+  color: var(--muted) !important;
+}
+
+.share-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--btn-green);
+}
+
+.share-pct {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 88px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.share-pct .form-control {
+  min-height: 34px;
+  padding: 4px 6px;
+  font-size: 0.84rem;
+  text-align: right;
+}

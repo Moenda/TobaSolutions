@@ -1,6 +1,6 @@
 /* =====================================================================
  * Toba Health · Treinos & Cargas
- * Depende de health-core.js (healthDb, saveHealthDb, showPageMessage...)
+ * Depende de ../assets/toba-common.js e health-core.js (healthDb, saveHealthDb).
  * ===================================================================== */
 function getMonday(date) {
   const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -13,19 +13,6 @@ function formatWorkoutDate(dateValue) {
   return Number.isNaN(date.getTime())
     ? "Data inválida"
     : date.toLocaleDateString("pt-BR");
-}
-
-function escapeWorkoutHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (character) => {
-    const entities = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    };
-    return entities[character];
-  });
 }
 
 function formatWorkoutNumber(value, maximumFractionDigits = 1) {
@@ -53,14 +40,14 @@ function getWorkoutMonthStats(workouts, monthKey, referenceDate = new Date()) {
   const [year, month] = monthKey.split("-").map(Number);
   const daysInMonth = new Date(year, month, 0).getDate();
   const isCurrentMonth =
-    monthKey === getWorkoutMonthKey(getLocalDateInputValue(referenceDate));
+    monthKey === getWorkoutMonthKey(toIsoDate(referenceDate));
   const elapsedDays = isCurrentMonth
     ? referenceDate.getDate()
     : daysInMonth;
   const monthWorkouts = workouts.filter(
     (workout) =>
       getWorkoutMonthKey(workout.date) === monthKey &&
-      (!isCurrentMonth || workout.date <= getLocalDateInputValue(referenceDate)),
+      (!isCurrentMonth || workout.date <= toIsoDate(referenceDate)),
   );
   const saitamaWorkouts = monthWorkouts.filter(
     (workout) => workout.type === "saitama",
@@ -120,7 +107,7 @@ function renderWorkoutRecord(workout) {
     chips.push(`💪 ${formatWorkoutNumber(lift.kg, 0)} kg levantados`);
   }
   const weekday = new Date(`${workout.date}T12:00:00`).toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
-  const id = escapeWorkoutHtml(workout.id);
+  const id = escapeHtml(workout.id);
 
   return `
     <article class="workout-record">
@@ -128,17 +115,17 @@ function renderWorkoutRecord(workout) {
       <div class="workout-record-body">
         <div class="workout-record-top">
           <div class="workout-record-heading">
-            <div class="workout-record-title">${escapeWorkoutHtml(workout.title)}</div>
+            <div class="workout-record-title">${escapeHtml(workout.title)}</div>
             <div class="workout-record-meta">${formatWorkoutDate(workout.date)} · ${weekday}</div>
           </div>
           <div class="workout-record-actions">
-            <button type="button" class="workout-icon-btn" data-workout-edit="${id}" title="Editar treino" aria-label="Editar treino">${WORKOUT_ICON_EDIT}</button>
-            <button type="button" class="workout-icon-btn workout-icon-btn-danger" data-workout-delete="${id}" title="Excluir registro" aria-label="Excluir registro">${WORKOUT_ICON_DELETE}</button>
+            <button type="button" class="workout-icon-btn" data-click="editWorkout" data-id="${id}" title="Editar treino" aria-label="Editar treino">${WORKOUT_ICON_EDIT}</button>
+            <button type="button" class="workout-icon-btn workout-icon-btn-danger" data-click="deleteWorkout" data-id="${id}" title="Excluir registro" aria-label="Excluir registro">${WORKOUT_ICON_DELETE}</button>
           </div>
         </div>
         ${chips.length ? `<div class="workout-record-chips">${chips.map((chip) => `<span class="workout-chip">${chip}</span>`).join("")}</div>` : ""}
         ${renderStrengthExerciseList(workout)}
-        ${workout.notes ? `<div class="workout-record-note">${escapeWorkoutHtml(workout.notes)}</div>` : ""}
+        ${workout.notes ? `<div class="workout-record-note">${escapeHtml(workout.notes)}</div>` : ""}
       </div>
     </article>
   `;
@@ -214,17 +201,17 @@ function renderWorkoutHeroCards(stats, workoutCount, { monthKey = "", intro = ""
     ${intro ? `<p class="workout-legacy-intro">${intro}</p>` : ""}
     <div class="workout-legacy-grid">
       <div class="workout-legacy-stat">
-        <span class="workout-legacy-label">⏱️ Tempo de treino</span>
+        <span class="workout-legacy-label">⏱️ Tempo</span>
         <strong class="workout-legacy-value">${formatWorkoutNumber(stats.durationMinutes, 0)} minutos</strong>
-        <span class="workout-legacy-detail">em ${formatWorkoutNumber(workoutCount, 0)} treinos registrados</span>
+        <span class="workout-legacy-detail">em ${formatWorkoutNumber(workoutCount, 0)} treinos</span>
       </div>
-      <div class="workout-legacy-stat workout-legacy-action" role="button" tabindex="0" data-hero-detail="energy"${monthAttr} aria-label="Ver equivalências de energia queimada">
-        <span class="workout-legacy-label">🔥 Energia queimada</span>
+      <div class="workout-legacy-stat workout-legacy-action" role="button" tabindex="0" data-click="openHallDetail" data-hero-detail="energy"${monthAttr} aria-label="Ver equivalências de energia queimada">
+        <span class="workout-legacy-label">🔥 Energia</span>
         <strong class="workout-legacy-value">${formatWorkoutNumber(stats.calories, 0)} kcal</strong>
         <span class="workout-legacy-detail workout-legacy-detail-compact">Ver equivalências ↗</span>
       </div>
-      <div class="workout-legacy-stat workout-legacy-stat-wide workout-legacy-action" role="button" tabindex="0" data-hero-detail="distance"${monthAttr} aria-label="Ver distâncias percorridas e rotas">
-        <span class="workout-legacy-label">🌍 Distância percorrida · ${formatWorkoutNumber(stats.distance, 2)} km</span>
+      <div class="workout-legacy-stat workout-legacy-stat-wide workout-legacy-action" role="button" tabindex="0" data-click="openHallDetail" data-hero-detail="distance"${monthAttr} aria-label="Ver distâncias percorridas e rotas">
+        <span class="workout-legacy-label">🌍 Distância · ${formatWorkoutNumber(stats.distance, 2)} km</span>
         <div class="workout-distance-breakdown">
           <div class="workout-distance-mode"><span class="workout-distance-mode-label">A pé</span><strong class="workout-distance-mode-value">${formatWorkoutNumber(stats.walkDistance, 2)} km</strong></div>
           <div class="workout-distance-mode"><span class="workout-distance-mode-label">De bike</span><strong class="workout-distance-mode-value">${formatWorkoutNumber(stats.bikeDistance, 2)} km</strong></div>
@@ -236,42 +223,18 @@ function renderWorkoutHeroCards(stats, workoutCount, { monthKey = "", intro = ""
         </div>
         <span class="workout-legacy-detail">Toque para ver as cidades que essa distância alcança</span>
       </div>
-      <div class="workout-legacy-stat workout-legacy-stat-wide workout-legacy-action" role="button" tabindex="0" data-hero-detail="lifted"${monthAttr} aria-label="Ver equivalências do peso levantado">
+      <div class="workout-legacy-stat workout-legacy-stat-wide workout-legacy-action" role="button" tabindex="0" data-click="openHallDetail" data-hero-detail="lifted"${monthAttr} aria-label="Ver equivalências do peso levantado">
         <span class="workout-legacy-label">🏋️ Peso levantado</span>
         <strong class="workout-legacy-value">${formatWorkoutNumber(stats.liftKg, 0)} kg em ${formatWorkoutNumber(stats.liftReps, 0)} repetições</strong>
         <span class="workout-legacy-detail">Toque para comparar com elefantes, Boeings e Titanics</span>
       </div>
-      <div class="workout-legacy-stat workout-legacy-stat-wide workout-legacy-action" role="button" tabindex="0" data-hero-detail="saitama"${monthAttr} aria-label="Comparar repetições e distância com Saitama">
-        <span class="workout-legacy-label">💪 Repetições do treino Saitama</span>
-        <strong class="workout-legacy-value">${formatWorkoutNumber(stats.situps, 0)} abdominais · ${formatWorkoutNumber(stats.pushups, 0)} flexões · ${formatWorkoutNumber(stats.squats, 0)} agachamentos</strong>
+      <div class="workout-legacy-stat workout-legacy-stat-wide workout-legacy-action" role="button" tabindex="0" data-click="openHallDetail" data-hero-detail="saitama"${monthAttr} aria-label="Comparar repetições e distância com Saitama">
+        <span class="workout-legacy-label">👊 Treino Saitama</span>
+        <strong class="workout-legacy-value">${formatWorkoutNumber(stats.situps, 0)} abd · ${formatWorkoutNumber(stats.pushups, 0)} flex · ${formatWorkoutNumber(stats.squats, 0)} agach</strong>
         <span class="workout-legacy-detail">Toque para descobrir quanto falta para o careca fictício</span>
       </div>
     </div>
   `;
-}
-
-function bindWorkoutHeroDetails(container) {
-  container.onclick = (event) => {
-    const detailCard = event.target.closest("[data-hero-detail]");
-    if (detailCard) openWorkoutHallDetail(detailCard.dataset.heroDetail, detailCard.dataset.heroMonth || "");
-  };
-  container.onkeydown = (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    const detailCard = event.target.closest("[data-hero-detail]");
-    if (!detailCard) return;
-    event.preventDefault();
-    openWorkoutHallDetail(detailCard.dataset.heroDetail, detailCard.dataset.heroMonth || "");
-  };
-}
-
-function handleWorkoutRecordClick(event) {
-  const editButton = event.target.closest("[data-workout-edit]");
-  if (editButton) {
-    editWorkout(editButton.dataset.workoutEdit);
-    return;
-  }
-  const deleteButton = event.target.closest("[data-workout-delete]");
-  if (deleteButton) deleteWorkout(deleteButton.dataset.workoutDelete);
 }
 
 /* ---------------------------------------------------------------------
@@ -282,7 +245,6 @@ let selectedHistoryMonth = "";
 function openWorkoutMonth(monthKey) {
   selectedHistoryMonth = monthKey;
   openModule("viewMonth");
-  window.scrollTo({ top: 0 });
 }
 
 function renderWorkoutMonth(workouts, today) {
@@ -299,12 +261,10 @@ function renderWorkoutMonth(workouts, today) {
       intro: `Seu Hall do Herói só de ${formatWorkoutMonth(selectedHistoryMonth)}:`,
     },
   );
-  bindWorkoutHeroDetails(content);
   const records = document.getElementById("workoutMonthRecords");
   records.innerHTML = month.workouts.length
     ? month.workouts.map(renderWorkoutRecord).join("")
-    : '<span style="font-size: 0.8rem; color: #8b949e">Nenhum treino registrado neste mês ainda.</span>';
-  records.onclick = handleWorkoutRecordClick;
+    : tobaEmpty("🛋️", "Nenhum treino neste mês", "O sofá agradece, o shape nem tanto.", { compact: true });
 }
 
 function renderWorkoutScreen() {
@@ -312,7 +272,7 @@ function renderWorkoutScreen() {
     String(b.date).localeCompare(String(a.date)),
   );
   const today = new Date();
-  const currentMonthKey = getWorkoutMonthKey(getLocalDateInputValue(today));
+  const currentMonthKey = getWorkoutMonthKey(toIsoDate(today));
   const currentMonth = getWorkoutMonthStats(workouts, currentMonthKey, today);
   const allTimeStats = getWorkoutLifetimeStats(workouts);
   const dailyAverage = (value) =>
@@ -324,49 +284,37 @@ function renderWorkoutScreen() {
     Number(monthNumber) - 1,
     1,
   ).toLocaleDateString("pt-BR", { month: "long" });
-  document.getElementById("workoutMonthTitle").innerText =
+  document.getElementById("workoutMonthTitle").textContent =
     `🏋️ ${monthShortLabel.charAt(0).toUpperCase()}${monthShortLabel.slice(1)}/${monthYear.slice(-2)}`;
 
   const saitama = currentMonth.saitama;
   const saitamaTotal = saitama.pushups + saitama.situps + saitama.squats;
   const summary = document.getElementById("workoutSummary");
-  summary.innerHTML = `
-    <button type="button" class="workout-summary-item workout-summary-item-wide" data-workout-metric="workouts" aria-haspopup="dialog">
-      <span class="workout-summary-label">Treinos neste mês</span>
-      <span class="workout-summary-value">${currentMonth.count} TREINOS <span class="workout-summary-duration">(${formatWorkoutNumber(currentMonth.durationMinutes, 0)} MINUTOS TREINANDO!)</span></span>
-      <span class="workout-summary-secondary">Treinou em ${currentMonth.activeDays} de ${currentMonth.elapsedDays} dias · eficiência de ${formatWorkoutNumber(currentMonth.efficiency)}%</span>
-    </button>
-    <button type="button" class="workout-summary-item" data-workout-metric="calories" aria-haspopup="dialog">
-      <span class="workout-summary-label">Calorias no mês</span>
-      <span class="workout-summary-value">${formatWorkoutNumber(currentMonth.calories, 0)} kcal</span>
-      <span class="workout-summary-secondary">Média: ${formatWorkoutNumber(dailyAverage(currentMonth.calories), 0)} kcal/dia</span>
-    </button>
-    <button type="button" class="workout-summary-item" data-workout-metric="distance" aria-haspopup="dialog">
-      <span class="workout-summary-label">Distância no mês</span>
-      <span class="workout-summary-value">${formatWorkoutNumber(currentMonth.distance, 2)} km</span>
-      <span class="workout-summary-secondary">Média: ${formatWorkoutNumber(dailyAverage(currentMonth.distance), 2)} km/dia</span>
-    </button>
-    <button type="button" class="workout-summary-item" data-workout-metric="saitamaReps" aria-haspopup="dialog">
-      <span class="workout-summary-label">👊 Saitama</span>
-      <span class="workout-summary-value">${formatWorkoutNumber(saitamaTotal, 0)} reps</span>
-      <span class="workout-summary-secondary">Abd ${formatWorkoutNumber(saitama.situps, 0)} · Flex ${formatWorkoutNumber(saitama.pushups, 0)} · Agach ${formatWorkoutNumber(saitama.squats, 0)}</span>
-    </button>
-    <button type="button" class="workout-summary-item" data-workout-metric="lifted" aria-haspopup="dialog">
-      <span class="workout-summary-label">🏋️ Peso levantado</span>
-      <span class="workout-summary-value">${formatWorkoutNumber(currentMonth.lift.kg, 0)} kg</span>
-      <span class="workout-summary-secondary">em ${formatWorkoutNumber(currentMonth.lift.reps, 0)} repetições</span>
+  const tile = (metric, label, value, sub, extraClass = "") => `
+    <button type="button" class="toba-stat${extraClass}" data-click="openWorkoutChart" data-metric="${metric}" aria-haspopup="dialog">
+      <span class="toba-stat-label">${label}</span>
+      <span class="toba-stat-value">${value}</span>
+      <span class="toba-stat-sub">${sub}</span>
     </button>
   `;
-  summary.onclick = (event) => {
-    const metricCard = event.target.closest("[data-workout-metric]");
-    if (metricCard) openWorkoutChart(metricCard.dataset.workoutMetric);
-  };
+  summary.innerHTML = [
+    tile(
+      "workouts",
+      "🏋️ Treinos no mês",
+      `<span class="text-green">${currentMonth.count} ${currentMonth.count === 1 ? "treino" : "treinos"}</span> · ${formatWorkoutNumber(currentMonth.durationMinutes, 0)} min`,
+      `Treinou em ${currentMonth.activeDays} de ${currentMonth.elapsedDays} dias · ${formatWorkoutNumber(currentMonth.efficiency)}% de constância`,
+      " is-wide is-highlight",
+    ),
+    tile("calories", "🔥 Calorias", `${formatWorkoutNumber(currentMonth.calories, 0)} kcal`, `${formatWorkoutNumber(dailyAverage(currentMonth.calories), 0)} kcal/dia`),
+    tile("distance", "📍 Distância", `${formatWorkoutNumber(currentMonth.distance, 2)} km`, `${formatWorkoutNumber(dailyAverage(currentMonth.distance), 2)} km/dia`),
+    tile("saitamaReps", "👊 Saitama", `${formatWorkoutNumber(saitamaTotal, 0)} reps`, `${formatWorkoutNumber(saitama.situps, 0)} abd · ${formatWorkoutNumber(saitama.pushups, 0)} flex · ${formatWorkoutNumber(saitama.squats, 0)} agach`),
+    tile("lifted", "🏋️ Levantado", `${formatWorkoutNumber(currentMonth.lift.kg, 0)} kg`, `em ${formatWorkoutNumber(currentMonth.lift.reps, 0)} repetições`),
+  ].join("");
 
   const heroContent = document.getElementById("workoutHallContent");
   heroContent.innerHTML = renderWorkoutHeroCards(allTimeStats, workouts.length, {
     intro: "O shape não veio por carta registrada. Olha o que você já construiu:",
   });
-  bindWorkoutHeroDetails(heroContent);
 
   const historyMonths = [...new Set([
     currentMonthKey,
@@ -388,7 +336,7 @@ function renderWorkoutScreen() {
       ];
       if (month.lift.kg > 0) chips.push(`💪 ${formatWorkoutNumber(month.lift.kg, 0)} kg`);
       return `
-        <button type="button" class="workout-month-card" data-workout-month="${monthKey}" aria-label="Abrir ${formatWorkoutMonth(monthKey)}">
+        <button type="button" class="workout-month-card" data-click="openWorkoutMonth" data-month="${monthKey}" aria-label="Abrir ${formatWorkoutMonth(monthKey)}">
           <span class="workout-month-card-head">
             <span class="workout-month-title">${formatWorkoutMonth(monthKey)}</span>
             ${monthKey === currentMonthKey ? '<span class="workout-badge">Atual</span>' : ""}
@@ -399,10 +347,6 @@ function renderWorkoutScreen() {
       `;
     })
     .join("");
-  history.onclick = (event) => {
-    const monthCard = event.target.closest("[data-workout-month]");
-    if (monthCard) openWorkoutMonth(monthCard.dataset.workoutMonth);
-  };
 
   renderWorkoutMonth(workouts, today);
 }
@@ -476,7 +420,7 @@ function openWorkoutChart(metric) {
   const days = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(monday);
     date.setDate(monday.getDate() + index);
-    const dateKey = getLocalDateInputValue(date);
+    const dateKey = toIsoDate(date);
     const dayWorkouts = healthDb.workouts.filter(
       (workout) => workout.date === dateKey,
     );
@@ -517,12 +461,8 @@ function openWorkoutChart(metric) {
     })
     .join("");
   document.getElementById("workoutChartWeek").innerText =
-    `Semana de ${formatWorkoutDate(getLocalDateInputValue(days[0].date))} a ${formatWorkoutDate(getLocalDateInputValue(days[6].date))} · unidade: ${selectedMetric.unit}`;
-  document.getElementById("workoutChartModal").classList.add("active");
-}
-
-function closeWorkoutChart() {
-  document.getElementById("workoutChartModal").classList.remove("active");
+    `Semana de ${formatWorkoutDate(toIsoDate(days[0].date))} a ${formatWorkoutDate(toIsoDate(days[6].date))} · unidade: ${selectedMetric.unit}`;
+  openTobaModal("workoutChartModal");
 }
 
 let selectedWorkoutType = "";
@@ -535,21 +475,27 @@ function openWorkoutModal() {
   editingWorkoutId = null;
   document.getElementById("workoutModalTitle").innerText =
     "🏋️ Registrar treino";
-  document.getElementById("workoutTypePicker").style.display = "block";
-  document.getElementById("workoutForm").style.display = "none";
-  document.getElementById("workoutModal").classList.add("active");
+  document.getElementById("workoutTypePicker").hidden = false;
+  document.getElementById("workoutForm").hidden = true;
+  openTobaModal("workoutModal");
 }
 
 function closeWorkoutModal() {
-  hideStrengthPanel();
-  document.getElementById("workoutModal").classList.remove("active");
+  closeTobaModal("workoutModal");
 }
+
+// Fechar pelo ✕ ou depois de salvar limpa o treino de força em andamento.
+document.getElementById("workoutModal").addEventListener("toba:close", () => {
+  hideStrengthPanel();
+  editingWorkoutId = null;
+});
 
 function backToWorkoutTypes() {
   selectedWorkoutType = "";
   hideStrengthPanel();
-  document.getElementById("workoutTypePicker").style.display = "block";
-  document.getElementById("workoutForm").style.display = "none";
+  document.getElementById("workoutTypePicker").hidden = false;
+  document.getElementById("workoutForm").hidden = true;
+  document.getElementById("workoutModalTitle").textContent = "🏋️ Registrar treino";
 }
 
 function workoutNumberField(id, label, step = "1", placeholder = "") {
@@ -570,7 +516,7 @@ function selectWorkoutType(type) {
   const cardioFields = (dateLabel) => `
     <div class="form-group">
       <label for="workout-date">${dateLabel}</label>
-      <input id="workout-date" class="form-control" type="date" required value="${getLocalDateInputValue()}" />
+      <input id="workout-date" class="form-control" type="date" required value="${toIsoDate()}" />
     </div>
     <div class="grid-2">
       ${workoutNumberField("distanceKm", "Distância (km)", "0.01")}
@@ -584,7 +530,7 @@ function selectWorkoutType(type) {
       fields: `
         <div class="form-group">
           <label for="workout-date">Data do treino</label>
-          <input id="workout-date" class="form-control" type="date" required value="${getLocalDateInputValue()}" />
+          <input id="workout-date" class="form-control" type="date" required value="${toIsoDate()}" />
         </div>
         <div class="grid-2">
           ${workoutNumberField("pushups", "Flexões feitas", "1")}
@@ -620,7 +566,7 @@ function selectWorkoutType(type) {
         </div>
         <div class="form-group">
           <label for="workout-date">Data do treino</label>
-          <input id="workout-date" class="form-control" type="date" required value="${getLocalDateInputValue()}" />
+          <input id="workout-date" class="form-control" type="date" required value="${toIsoDate()}" />
         </div>
         <div class="grid-2">
           ${workoutNumberField("durationMinutes", "Duração (min)", "1")}
@@ -642,9 +588,9 @@ function selectWorkoutType(type) {
 
   selectedWorkoutType = type;
   document.getElementById("workoutModalTitle").innerText = form.title;
-  document.getElementById("workoutTypePicker").style.display = "none";
+  document.getElementById("workoutTypePicker").hidden = true;
   document.getElementById("workoutFormFields").innerHTML = form.fields;
-  document.getElementById("workoutForm").style.display = "block";
+  document.getElementById("workoutForm").hidden = false;
 }
 
 function editWorkout(workoutId) {
@@ -658,7 +604,6 @@ function editWorkout(workoutId) {
   if (workout.type === "strength") {
     selectedWorkoutType = "strength";
     openStrengthPanel(workout);
-    document.getElementById("workoutModal").classList.add("active");
     return;
   }
   selectWorkoutType(workout.type);
@@ -686,8 +631,6 @@ function editWorkout(workoutId) {
       input.value = workout[field];
     }
   });
-
-  document.getElementById("workoutModal").classList.add("active");
 }
 
 function readWorkoutNumber(id) {
@@ -697,8 +640,7 @@ function readWorkoutNumber(id) {
   return Number.isFinite(number) && number >= 0 ? number : null;
 }
 
-function saveWorkout(event) {
-  event.preventDefault();
+function saveWorkout() {
   if (!selectedWorkoutType) return;
 
   const workout = {
@@ -756,7 +698,6 @@ function saveWorkout(event) {
   } else {
     healthDb.workouts.push(workout);
   }
-  editingWorkoutId = null;
   saveHealthDb();
   closeWorkoutModal();
   renderWorkoutScreen();
@@ -772,18 +713,49 @@ async function deleteWorkout(workoutId) {
   renderWorkoutScreen();
 }
 
-/* NAVEGAÇÃO ENTRE AS TELAS DO MÓDULO (Treinos / Hall do Herói) */
+/* NAVEGAÇÃO ENTRE AS TELAS DO MÓDULO (Treinos / Hall do Herói / mês / detalhe)
+ * O "‹" do cabeçalho sobe um nível: detalhe -> Hall/mês -> Treinos -> Hub. */
+const WORKOUT_VIEW_BACK = {
+  viewHero: "backToTraining",
+  viewMonth: "backToTraining",
+  viewDetail: "closeWorkoutDetail",
+};
+
 function openModule(viewId) {
   document
-    .querySelectorAll(".view-section")
-    .forEach((v) => v.classList.remove("active"));
-  document.getElementById(viewId).classList.add("active");
+    .querySelectorAll(".app-view")
+    .forEach((v) => v.classList.toggle("active", v.id === viewId));
   if (["viewTraining", "viewHero", "viewMonth"].includes(viewId)) renderWorkoutScreen();
+
+  const titles = {
+    viewTraining: "🏋️ Treinos",
+    viewHero: "🏆 Hall do Herói",
+    viewMonth: document.getElementById("workoutMonthDetailTitle").textContent,
+    viewDetail: document.getElementById("workoutDetailTitle").textContent,
+  };
+  tobaSetHeader({ page: titles[viewId], back: WORKOUT_VIEW_BACK[viewId] });
+  document.getElementById("headerAddBtn").hidden = viewId !== "viewTraining";
+  window.scrollTo(0, 0);
 }
 
 function onHealthDataReplaced() {
-  renderWorkoutScreen();
+  openModule("viewTraining");
 }
+
+tobaActions({
+  newWorkout: openWorkoutModal,
+  openModule: (el) => openModule(el.dataset.view),
+  backToTraining: () => openModule("viewTraining"),
+  closeWorkoutDetail,
+  openWorkoutMonth: (el) => openWorkoutMonth(el.dataset.month),
+  openHallDetail: (el) => openWorkoutHallDetail(el.dataset.heroDetail, el.dataset.heroMonth || ""),
+  openWorkoutChart: (el) => openWorkoutChart(el.dataset.metric),
+  editWorkout: (el) => editWorkout(el.dataset.id),
+  deleteWorkout: (el) => deleteWorkout(el.dataset.id),
+  selectWorkoutType: (el) => selectWorkoutType(el.dataset.type),
+  backToWorkoutTypes,
+  saveWorkout,
+});
 
 initTobaDecimalMasks();
 openModule("viewTraining");

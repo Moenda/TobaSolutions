@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="icon" href="../icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="css/molde-base.css" />
+  <title>Toba Molde 🧪</title>
+</head>
+
+<body>
+  <main class="container">
+    <!-- Cabeçalho padrão: ‹ volta um nível, título = app + página, ⚙️ à direita -->
+    <header class="toba-header">
+      <a class="toba-back" href="../index.html" aria-label="Voltar para o Toba Solutions">‹</a>
+      <a class="toba-titles" href="../index.html">
+        <span class="toba-app">🧪 Toba Molde</span>
+        <span class="toba-page">Hub</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
+      </div>
+    </header>
+
+    <div class="toba-kicker">Frase de efeito do app aqui</div>
+    <nav class="toba-hub-list" aria-label="Módulos do Toba Molde">
+      <a class="toba-hub-card" href="TobaMolde-Modulo.html">
+        <span class="toba-hub-icon">📋</span>
+        <span class="toba-hub-text">
+          <span class="toba-hub-title">Módulo de exemplo</span>
+          <span class="toba-hub-desc">Uma linha dizendo o que ele faz.</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/toba-common.js"></script>
+  <script src="js/molde-core.js"></script>
+  <script src="../assets/pwa-register.js"></script>
+</body>
+
+</html>

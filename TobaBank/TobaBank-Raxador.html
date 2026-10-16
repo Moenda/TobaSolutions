@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="color-scheme" content="dark" />
   <meta name="supported-color-schemes" content="dark" />
   <title>Toba Bank | Raxador</title>
@@ -13,254 +13,145 @@
   <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
   <link rel="stylesheet" href="css/bank-base.css" />
   <link rel="stylesheet" href="css/raxador.css" />
 </head>
 
 <body>
   <div class="container">
-    <div class="top-header">
-      <div class="brand-title" onclick="window.location.href='TobaBank-Index.html'" title="Voltar para Início"
-        style="cursor: pointer">
-        <span>🏦 Toba Bank</span>
+    <header class="toba-header">
+      <a class="toba-back" href="TobaBank-Index.html" data-label="Voltar para o Toba Bank" aria-label="Voltar para o Toba Bank">‹</a>
+      <a class="toba-titles" href="TobaBank-Index.html">
+        <span class="toba-app">🏦 Toba Bank</span>
+        <span class="toba-page">🍕 Raxador</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-add-btn" id="headerAddBtn" data-click="newSplitterGroup">+ Rolê</button>
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
       </div>
-      <div class="header-actions" id="headerActionsContainer">
-
-      </div>
-    </div>
+    </header>
 
     <div class="app-view active" id="viewSplitter">
-          <div class="section-title" style="
-                margin-top: 0.5rem;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-              ">
-            <span>🍕 Raxador de Rolês</span>
-            <button class="btn btn-primary" onclick="openNewSplitterGroupModal()"
-              style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.8rem">
-              + Novo Grupo
-            </button>
-          </div>
+      <div class="section-title is-first text-gold">🏃 Em andamento</div>
+      <div id="splitterActiveContainer"></div>
 
-          <div style="
-                font-size: 0.85rem;
-                font-weight: 700;
-                color: #d29922;
-                margin: 1rem 0 0.5rem 0;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-              ">
-            <span>🏃 Em Andamento</span>
-          </div>
-          <div id="splitterActiveContainer"></div>
-
-          <div style="
-                font-size: 0.85rem;
-                font-weight: 700;
-                color: #3fb950;
-                margin: 1.5rem 0 0.5rem 0;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-              ">
-            <span>🏁 Finalizados</span>
-          </div>
-          <div id="splitterFinishedContainer"></div>
-        </div>
+      <div class="section-title text-green">🏁 Finalizados</div>
+      <div id="splitterFinishedContainer"></div>
+    </div>
 
     <div class="app-view" id="viewSplitterDetail">
-          <div class="section-title" style="
-                margin-top: 0.5rem;
-                display: flex;
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 12px;
-              ">
-            <div style="
-                  display: flex;
-                  justify-content: space-between;
-                  align-items: flex-start;
-                  width: 100%;
-                ">
-              <span id="detailSplitterTitle" style="font-size: 1.3rem; font-weight: 700; line-height: 1.2">🍕 Detalhes do
-                Rolê</span>
-              <!-- O Lápis Mágico do Toba Bank aqui 👇 -->
-              <button class="action-icon-btn" onclick="toggleSplitterMetaCard()" style="
-                    font-size: 1rem;
-                    padding: 6px;
-                    background: #21262d;
-                    border-radius: 8px;
-                    border: 1px solid #30363d;
-                    transition: all 0.2s;
-                  " title="Editar Configurações">
-                ✏️
-              </button>
-            </div>
-            <div style="display: flex; gap: 8px; width: 100%">
-              <button class="btn btn-secondary" id="splitterToggleFinishBtnView" onclick="toggleSplitterFinished()" style="
-                    flex: 1;
-                    padding: 0.5rem 0.8rem;
-                    font-size: 0.85rem;
-                    border-color: #3fb950;
-                    color: #3fb950;
-                  ">
-                🏁 Finalizar
-              </button>
-              <button class="btn btn-danger" onclick="deleteSplitterGroup()"
-                style="flex: 1; padding: 0.5rem 0.8rem; font-size: 0.85rem">
-                🗑️ Excluir
-              </button>
-            </div>
-          </div>
+      <input type="hidden" id="splitterGroupIdInput" />
 
-          <input type="hidden" id="splitterGroupIdInput" />
+      <div class="splitter-detail-top">
+        <h2 id="detailSplitterTitle" class="splitter-detail-title">🍕 Detalhes do rolê</h2>
+        <button type="button" class="toba-icon-btn" data-click="toggleSplitterMetaCard" aria-label="Editar rolê">✏️</button>
+      </div>
 
-          <div class="card" style="margin-bottom: 1.5rem; padding: 1rem; display: none" id="splitterMetaCard">
-            <div class="form-group splitter-edit-field">
-              <label>Nome do Rolê</label>
-              <input type="text" id="editSplitterName" class="form-control" onchange="updateSplitterGroupMeta()" />
-            </div>
-            <div class="form-group splitter-edit-field">
-              <label>Categoria</label>
-              <select id="editSplitterCategory" class="form-control" onchange="updateSplitterGroupMeta()">
-                <option value="✈️ Viagem">✈️ Viagem</option>
-                <option value="🥩 Churrasco">🥩 Churrasco</option>
-                <option value="🎉 Festinha / Rolê">🎉 Festinha / Rolê</option>
-                <option value="🛒 Compras / Outros">🛒 Compras / Outros</option>
-              </select>
-            </div>
-            <div class="form-group splitter-edit-field">
-              <label>Data</label>
-              <input type="date" id="editSplitterDate" class="form-control" onchange="updateSplitterGroupMeta()" />
-            </div>
-            <div class="form-group splitter-edit-field" style="margin-bottom: 0">
-              <label>👥 Participantes (separados por vírgula)</label>
-              <div style="display: flex; gap: 6px">
-                <input type="text" id="splitterMembersInput" class="form-control" placeholder="Ex: Toba, Gon..." />
-                <button class="btn btn-secondary" onclick="saveSplitterMembers()" style="width: auto">
-                  Add
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div style="
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 0.8rem;
-              ">
-            <div class="section-title" style="margin: 0; font-size: 0.9rem; color: #58a6ff">
-              ⚖️ Quem deve para quem
-            </div>
-            <button class="btn btn-primary" id="openAddSplitterExpenseBtn" onclick="openSplitterExpenseModal()"
-              style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.8rem">
-              💸 Add Gasto
-            </button>
-          </div>
-
-          <div id="splitterSettlementBox" style="
-                background: #0d1117;
-                padding: 12px;
-                border-radius: 12px;
-                border: 1px solid #21262d;
-                font-size: 0.85rem;
-                margin-bottom: 1.5rem;
-                line-height: 1.6;
-              "></div>
-
-          <div class="section-title" style="
-                font-size: 0.85rem;
-                margin-top: 0;
-                margin-bottom: 0.5rem;
-                color: #f0f6fc;
-              ">
-            📜 Histórico de Gastos do Rolê
-          </div>
-          <div id="splitterExpensesList" class="expense-list" style="margin-bottom: 1rem"></div>
+      <div class="card splitter-meta-card" id="splitterMetaCard" hidden>
+        <div class="form-group splitter-edit-field">
+          <label for="editSplitterName">Nome do rolê</label>
+          <input type="text" id="editSplitterName" class="form-control" data-change="updateSplitterGroupMeta" />
         </div>
+        <div class="grid-2 splitter-edit-field">
+          <div class="form-group">
+            <label for="editSplitterCategory">Categoria</label>
+            <select id="editSplitterCategory" class="form-control" data-change="updateSplitterGroupMeta">
+              <option value="✈️ Viagem">✈️ Viagem</option>
+              <option value="🥩 Churrasco">🥩 Churrasco</option>
+              <option value="🎉 Festinha / Rolê">🎉 Festinha / Rolê</option>
+              <option value="🛒 Compras / Outros">🛒 Compras / Outros</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editSplitterDate">Data</label>
+            <input type="date" id="editSplitterDate" class="form-control" data-change="updateSplitterGroupMeta" />
+          </div>
+        </div>
+        <div class="form-group splitter-edit-field">
+          <label for="splitterMembersInput">👥 Participantes (separados por vírgula)</label>
+          <div class="form-row">
+            <input type="text" id="splitterMembersInput" class="form-control" placeholder="Ex: Toba, Gon..." />
+            <button type="button" class="btn btn-secondary btn-sm" data-click="saveSplitterMembers">Salvar</button>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn btn-outline btn-green" id="splitterToggleFinishBtnView" data-click="toggleSplitterFinished">🏁 Finalizar</button>
+          <button type="button" class="btn btn-danger" data-click="deleteSplitterGroup">🗑️ Excluir</button>
+        </div>
+      </div>
+
+      <div class="section-title is-first">
+        <span class="text-blue">⚖️ Quem deve pra quem</span>
+        <button type="button" class="btn btn-primary btn-sm" id="openAddSplitterExpenseBtn" data-click="newSplitterExpense">💸 + Gasto</button>
+      </div>
+
+      <div id="splitterSettlementBox" class="card settlement-box"></div>
+
+      <div class="section-title">📜 Gastos do rolê</div>
+      <div id="splitterExpensesList" class="expense-list"></div>
+    </div>
   </div>
 
-  <div class="modal-overlay" id="newSplitterExpenseModal">
-      <div class="modal">
-        <div class="modal-header">
-          <h3 id="splitterExpenseModalTitle">💸 Adicionar Gasto no Rolê</h3>
-          <button class="close-btn" onclick="
-                document
-                  .getElementById('newSplitterExpenseModal')
-                  .classList.remove('active')
-              ">
-            &times;
-          </button>
-        </div>
+  <div class="toba-modal" id="newSplitterExpenseModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="splitterExpenseModalTitle">💸 Gasto no rolê</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form data-submit="saveSplitterExpense">
         <input type="hidden" id="splitterExpenseIdInput" />
 
         <div class="form-group">
-          <label>Descrição do Gasto</label>
+          <label for="splitterExpenseDesc">Descrição</label>
           <input type="text" id="splitterExpenseDesc" class="form-control" placeholder="Ex: Cerveja, Uber, Mercado" />
         </div>
 
-        <div style="display: flex; gap: 8px">
-          <div class="form-group" style="flex: 1">
-            <label>Valor (R$)</label>
-            <input type="text" inputmode="numeric" id="splitterExpenseAmount" class="form-control smart-money"
-              placeholder="0,00" />
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="splitterExpenseAmount">Valor (R$)</label>
+            <input type="text" inputmode="numeric" id="splitterExpenseAmount" class="form-control smart-money" placeholder="0,00" />
           </div>
-          <div class="form-group" style="flex: 1">
-            <label>Quem Pagou?</label>
+          <div class="form-group">
+            <label for="splitterExpensePayer">Quem pagou?</label>
             <select id="splitterExpensePayer" class="form-control"></select>
           </div>
         </div>
 
         <div class="form-group">
-          <label>Data do Gasto</label>
+          <label for="splitterExpenseDate">Data do gasto</label>
           <input type="date" id="splitterExpenseDate" class="form-control" />
         </div>
 
         <div class="form-group">
-          <label id="splitterSharesTitleLabel">⚖️ Divisão por Participante (%)</label>
-          <div id="splitterExpenseSharesContainer" style="
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-                margin-top: 6px;
-              "></div>
+          <label id="splitterSharesTitleLabel">⚖️ Divisão por participante (%)</label>
+          <div id="splitterExpenseSharesContainer" class="share-rows"></div>
         </div>
 
-        <div style="display: flex; gap: 8px; margin-top: 1rem">
-          <button class="btn btn-primary" id="saveSplitterExpenseBtn" onclick="saveSplitterExpense()" style="flex: 2">
-            Salvar Gasto
-          </button>
-          <button class="btn btn-danger" id="deleteSplitterExpenseBtn" onclick="deleteSplitterExpenseFromModal()"
-            style="flex: 1; display: none">
-            🗑️ Apagar
-          </button>
-        </div>
-      </div>
-    </div>
-
-  <div class="modal-overlay" id="newSplitterModal">
-      <div class="modal">
-        <div class="modal-header">
-          <h3>🍕 Novo Raxador de Gastos</h3>
-          <button class="close-btn" onclick="
-                document
-                  .getElementById('newSplitterModal')
-                  .classList.remove('active')
-              ">
-            &times;
-          </button>
-        </div>
-        <form id="newSplitterForm">
-          <div class="form-group">
-            <label>Nome do Grupo / Rolê</label>
-            <input type="text" id="newSplitterName" class="form-control"
-              placeholder="Ex: Churrasco dos Cria, Viagem Praia" required />
+        <div class="toba-sheet-footer">
+          <div class="btn-row">
+            <button type="button" class="btn btn-danger btn-grow-1" id="deleteSplitterExpenseBtn" data-click="deleteSplitterExpenseFromModal" hidden>🗑️ Apagar</button>
+            <button type="submit" class="btn btn-primary btn-grow-2" id="saveSplitterExpenseBtn">Salvar gasto</button>
           </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="newSplitterModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🍕 Novo rolê</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form id="newSplitterForm" data-submit="createSplitterGroup">
+        <div class="form-group">
+          <label for="newSplitterName">Nome do grupo / rolê</label>
+          <input type="text" id="newSplitterName" class="form-control" placeholder="Ex: Churrasco dos Cria, Viagem Praia" required />
+        </div>
+        <div class="grid-2">
           <div class="form-group">
-            <label>Categoria</label>
+            <label for="newSplitterCategory">Categoria</label>
             <select id="newSplitterCategory" class="form-control">
               <option value="✈️ Viagem">✈️ Viagem</option>
               <option value="🥩 Churrasco">🥩 Churrasco</option>
@@ -269,19 +160,22 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Data</label>
+            <label for="newSplitterDate">Data</label>
             <input type="date" id="newSplitterDate" class="form-control" required />
           </div>
-          <div class="form-group">
-            <label>Participantes (separados por vírgula)</label>
-            <input type="text" id="newSplitterMembers" class="form-control" placeholder="Ex: Toba, Gon, Killua, Naruto"
-              required />
-          </div>
-          <button type="submit" class="btn btn-primary">Criar Grupo</button>
-        </form>
-      </div>
+        </div>
+        <div class="form-group">
+          <label for="newSplitterMembers">Participantes (separados por vírgula)</label>
+          <input type="text" id="newSplitterMembers" class="form-control" placeholder="Ex: Toba, Gon, Killua, Naruto" required />
+        </div>
+        <div class="toba-sheet-footer">
+          <button type="submit" class="btn btn-primary">Criar rolê</button>
+        </div>
+      </form>
     </div>
+  </div>
 
+  <script src="../assets/toba-common.js"></script>
   <script src="js/bank-core.js"></script>
   <script src="js/raxador.js"></script>
   <script src="../assets/pwa-register.js"></script>

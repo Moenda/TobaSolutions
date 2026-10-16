@@ -1,6 +1,6 @@
 /* =====================================================================
  * Toba Bank · Controle de Gastos
- * Depende de bank-core.js
+ * Depende de ../assets/toba-common.js e bank-core.js
  * ===================================================================== */
 /* As contas do mês ficam em bank-metrics.js (mesmo cálculo do card do portal). */
 function getEffectiveDaysInMonth(year, monthIndex) {
@@ -43,23 +43,18 @@ function getActiveInstallmentsForMonth(monthKey) {
 function switchTab(tabName) {
   document
     .querySelectorAll(".tab-btn")
-    .forEach((btn) => btn.classList.remove("active"));
+    .forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === tabName));
   document
     .querySelectorAll(".tab-content")
     .forEach((tab) => tab.classList.remove("active"));
 
   if (tabName === "current") {
-    document.getElementById("tabBtnCurrent")?.classList.add("active");
     document.getElementById("tabCurrent")?.classList.add("active");
     renderDashboard();
   } else if (tabName === "installments") {
-    document
-      .getElementById("tabBtnInstallments")
-      ?.classList.add("active");
     document.getElementById("tabInstallments")?.classList.add("active");
     renderInstallments();
   } else if (tabName === "fixed") {
-    document.getElementById("tabBtnFixed")?.classList.add("active");
     document.getElementById("tabFixed")?.classList.add("active");
     renderFixedExpenses();
   } else if (tabName === "history") {
@@ -113,12 +108,13 @@ function renderDashboard() {
   document.getElementById("heroGlow").style.background = sobraPrevista >= 0 ? 'rgba(63, 185, 80, 0.12)' : 'rgba(248, 81, 73, 0.12)';
 
   // Subtexto da Sobra e Dias Restantes no Topo
-  document.getElementById("dashSobraSubHero").innerText = `Média Gasto Diário: ${formatCurrency(mediaDiariaTotal)}`;
-  document.getElementById("dashHeaderRestantes").innerText = `Restam: ${diasRestantes} dias`;
+  document.getElementById("dashSobraSubHero").innerText = `Gasto médio: ${formatCurrency(mediaDiariaTotal)}/dia`;
+  document.getElementById("dashHeaderRestantes").innerText =
+    diasRestantes === 1 ? "último dia do mês!" : `${diasRestantes} dias pela frente`;
 
   // 2. Barra de Progresso (Orçamento Total)
   document.getElementById("dashVarSpentHero").innerText = formatCurrency(totalMonthlySpent);
-  document.getElementById("dashLimitHero").innerText = `Orçamento: ${formatCurrency(grossMonthlyBudget)}`;
+  document.getElementById("dashLimitHero").innerText = `de ${formatCurrency(grossMonthlyBudget)}`;
 
   const percentGasto = grossMonthlyBudget > 0 ? (totalMonthlySpent / grossMonthlyBudget) * 100 : 0;
   const barraEl = document.getElementById("heroProgressBar");
@@ -137,24 +133,24 @@ function renderDashboard() {
   const availableHeroEl = document.getElementById("dashAvailableHero");
   if (availableHeroEl) {
     availableHeroEl.innerText = formatCurrency(todayAvailable);
-    availableHeroEl.style.color = todayAvailable >= 0 ? '#f0f6fc' : '#f85149';
+    availableHeroEl.className = `toba-stat-value ${todayAvailable >= 0 ? "text-neutral" : "text-red"}`;
   }
 
   // Facada Diária com números em vermelho e rótulos brancos em PT-BR
   const dailyInstEl = document.getElementById("dashDailyInstHero");
   if (dailyInstEl) {
-    dailyInstEl.innerText = `-${formatCurrency(dailyInstallmentDeduction)}/dia`;
+    dailyInstEl.innerText = `-${formatCurrency(dailyInstallmentDeduction)}`;
   }
 
   const dailyFixedEl = document.getElementById("dashDailyFixedHero");
   if (dailyFixedEl) {
-    dailyFixedEl.innerText = `-${formatCurrency(dailyFixedDeduction)}/dia`;
+    dailyFixedEl.innerText = `-${formatCurrency(dailyFixedDeduction)}`;
   }
 
   const vaultHeroEl = document.getElementById("dashVaultHero");
   if (vaultHeroEl) {
     vaultHeroEl.innerText = formatCurrency(vaultBalance);
-    vaultHeroEl.style.color = vaultBalance >= 0 ? '#3fb950' : '#f85149';
+    vaultHeroEl.className = `toba-stat-value ${vaultBalance >= 0 ? "text-green" : "text-red"}`;
   }
 
   // RENDERIZAÇÃO OBRIGATÓRIA DAS SANFONAS E HISTÓRICOS ABAIXO
@@ -172,8 +168,7 @@ function renderCategoryBars(
   container.innerHTML = "";
 
   if (!transactions || transactions.length === 0 || totalSpent <= 0) {
-    container.innerHTML =
-      '<div class="empty-state">Nenhum gasto lançado para exibir categorias.</div>';
+    container.innerHTML = tobaEmpty("📊", "Sem categorias por aqui", "Lance um gasto e o gráfico aparece.", { compact: true });
     return;
   }
 
@@ -194,11 +189,11 @@ function renderCategoryBars(
       itemEl.className = "category-item";
       itemEl.innerHTML = `
                 <div class="category-info">
-                    <span>${escapeBankHtml(category)}</span>
+                    <span>${escapeHtml(category)}</span>
                     <span>${formatCurrency(amount)} (${percentage}%)</span>
                 </div>
-                <div class="progress-bar-bg">
-                    <div class="progress-bar-fill" style="width: ${percentage}%;"></div>
+                <div class="progress-track">
+                    <div class="progress-fill" style="width: ${percentage}%;"></div>
                 </div>
             `;
       container.appendChild(itemEl);
@@ -214,63 +209,59 @@ function renderExpenseListWithInstallments(
     "homeInstallmentsListContainer",
   );
 
+  setText("homeTransCount", transactions.length);
+  setText("homeInstCount", activeInstallments.length);
+
   if (transContainer) {
-    transContainer.innerHTML = "";
     if (transactions.length === 0) {
-      transContainer.innerHTML =
-        '<div class="empty-state">Nenhum lançamento à vista neste mês.</div>';
-    } else {
-      const sortedTransactions = [...transactions].sort(
-        (a, b) => new Date(b.date) - new Date(a.date),
+      transContainer.innerHTML = tobaEmpty(
+        "🧾",
+        "Nenhum gasto ainda",
+        "Toque em <b>+ Gasto</b> para começar. Seu bolso agradece.",
       );
-      sortedTransactions.forEach((t) => {
-        let cleanCat = getCleanCategory(t.category);
-        const itemEl = document.createElement("div");
-        itemEl.className = "expense-item";
-        itemEl.onclick = () => openExpenseModal(t.id);
-        itemEl.innerHTML = `
-                        <div class="expense-details">
-                            <span class="expense-desc">${escapeBankHtml(t.description)}</span>
-                            <span class="expense-meta">${escapeBankHtml(cleanCat)} • ${isoToBrDate(t.date)}</span>
-                        </div>
-                        <div class="expense-right">
-                            <div class="expense-amount">
-                                <span class="expense-amount-value">-${formatCurrency(t.amount)}</span>
-                            </div>
-                        </div>
-                    `;
-        transContainer.appendChild(itemEl);
-      });
+    } else {
+      transContainer.innerHTML = [...transactions]
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .map(transactionItemHtml)
+        .join("");
     }
   }
 
   if (instContainer) {
-    instContainer.innerHTML = "";
-    if (activeInstallments.length === 0) {
-      instContainer.innerHTML =
-        '<div class="empty-state">Nenhuma parcela ativa neste mês.</div>';
-    } else {
-      activeInstallments.forEach((p) => {
-        let cleanCat = getCleanCategory(p.category);
-        const itemEl = document.createElement("div");
-        itemEl.className = "expense-item";
-        itemEl.style.borderLeft = "3px solid #d29922";
-        itemEl.onclick = () => openEditInstallmentModal(p.id);
-        itemEl.innerHTML = `
-                        <div class="expense-details">
-                            <span class="expense-desc">${escapeBankHtml(p.description)}</span>
-                            <span class="expense-meta">${escapeBankHtml(cleanCat)} • Parcela ${p.currentParcel}/${p.totalInstallments}</span>
-                        </div>
-                        <div class="expense-right">
-                            <div class="expense-amount">
-                                <span class="expense-amount-value" style="color: #d29922;">-${formatCurrency(p.amount)}</span>
-                            </div>
-                        </div>
-                    `;
-        instContainer.appendChild(itemEl);
-      });
-    }
+    instContainer.innerHTML =
+      activeInstallments.length === 0
+        ? tobaEmpty("💳", "Nenhuma parcela neste mês", "Cartão de férias. Aproveite!", { compact: true })
+        : activeInstallments.map(installmentItemHtml).join("");
   }
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+// Linha de um gasto à vista (abre a edição ao tocar)
+function transactionItemHtml(t) {
+  return `
+    <div class="expense-item" role="button" tabindex="0" data-click="editExpense" data-id="${escapeHtml(t.id)}">
+      <div class="expense-details">
+        <span class="expense-desc">${escapeHtml(t.description)}</span>
+        <span class="expense-meta">${escapeHtml(getCleanCategory(t.category))} • ${isoToBrDate(t.date)}</span>
+      </div>
+      <span class="expense-amount-value">-${formatCurrency(t.amount)}</span>
+    </div>`;
+}
+
+// Linha da parcela do mês (abre a edição da compra parcelada)
+function installmentItemHtml(p) {
+  return `
+    <div class="expense-item is-installment" role="button" tabindex="0" data-click="editInstallment" data-id="${escapeHtml(p.id)}">
+      <div class="expense-details">
+        <span class="expense-desc">${escapeHtml(p.description)}</span>
+        <span class="expense-meta">${escapeHtml(getCleanCategory(p.category))} • Parcela ${p.currentParcel}/${p.totalInstallments}</span>
+      </div>
+      <span class="expense-amount-value">-${formatCurrency(p.amount)}</span>
+    </div>`;
 }
 
 function renderInstallments() {
@@ -328,15 +319,19 @@ function renderInstallments() {
   document.getElementById("instMonthlyTotal").innerText =
     formatCurrency(instMonthlyTotal);
   document.getElementById("instDailyDeductionSub").innerText =
-    `Impacto diário:\n-${formatCurrency(dailyDeduction)}/dia`;
+    `-${formatCurrency(dailyDeduction)}/dia`;
   document.getElementById("instTotalRemaining").innerText =
     formatCurrency(totalFutureRemaining);
   document.getElementById("instActiveCountSub").innerText =
-    `${activeList.length} compras no total\n${endingThisMonthCount} terminam este mês`;
+    `${activeList.length} ${activeList.length === 1 ? "compra" : "compras"}` +
+    (endingThisMonthCount > 0 ? ` • ${endingThisMonthCount} acaba${endingThisMonthCount === 1 ? "" : "m"} já` : "");
 
   if (activeList.length === 0) {
-    activeContainer.innerHTML =
-      '<div class="empty-state">Nenhuma compra parcelada ativa no momento!</div>';
+    activeContainer.innerHTML = tobaEmpty(
+      "🎉",
+      "Nenhuma compra parcelada",
+      "Comprou parcelado? Em <b>+ Gasto</b>, marque “Foi parcelado?”.",
+    );
   } else {
     activeList.forEach((inst) => {
       const [sYear, sMonth] = inst.startDate.split("-").map(Number);
@@ -351,66 +346,42 @@ function renderInstallments() {
         100,
       );
 
-      const card = document.createElement("div");
-      card.className = "installment-card";
-      card.id = `instCard-${inst.id}`;
-      card.onclick = () => openEditInstallmentModal(inst.id);
-      card.innerHTML = `
-                    <div class="installment-header">
-                        <div class="installment-header-top">
-                            <span class="installment-title">${escapeBankHtml(inst.description)}</span>
-                        </div>
-                        <div class="category-info" style="margin-top: 6px;">
-                            <span>Progresso: Parcela ${currentParcelNum} de ${inst.totalInstallments}</span>
-                            <span style="font-weight:700; color:#58a6ff;">${progressPct}%</span>
-                        </div>
-                        <div class="progress-bar-bg" style="margin-top: 4px;">
-                            <div class="progress-bar-fill" style="width: ${progressPct}%; background: #3fb950;"></div>
-                        </div>
-                        <div class="installment-metrics">
-                            <div class="installment-metric-box">
-                                <span class="installment-metric-label">Parcela do Mês</span>
-                                <span class="installment-metric-val text-red">-${formatCurrency(inst.totalAmount / inst.totalInstallments)}</span>
-                            </div>
-                            <div class="installment-metric-box">
-                                <span class="installment-metric-label">Valor Total</span>
-                                <span class="installment-metric-val text-neutral">${formatCurrency(inst.totalAmount)}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-      activeContainer.appendChild(card);
+      activeContainer.insertAdjacentHTML("beforeend", `
+        <div class="bank-card" role="button" tabindex="0" data-click="editInstallment" data-id="${escapeHtml(inst.id)}">
+          <div class="bank-card-top">
+            <span class="bank-card-title">${escapeHtml(inst.description)}</span>
+            <span class="bank-card-side">
+              <span class="bank-card-side-label">Parcela</span>
+              <span class="bank-card-side-value text-red">-${formatCurrency(inst.totalAmount / inst.totalInstallments)}</span>
+            </span>
+          </div>
+          <div class="installment-progress">
+            <span>Parcela ${currentParcelNum} de ${inst.totalInstallments} • total ${formatCurrency(inst.totalAmount)}</span>
+            <b>${progressPct}%</b>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width: ${progressPct}%;"></div>
+          </div>
+        </div>`);
     });
   }
 
   if (finishedList.length === 0) {
-    finishedContainer.innerHTML =
-      '<div class="empty-state">Nenhum parcelamento quitado ainda.</div>';
+    finishedContainer.innerHTML = tobaEmpty("⏳", "Nada quitado ainda", "Quando a última parcela passar, ela aparece aqui.", { compact: true });
   } else {
     finishedList.forEach((inst) => {
-      const card = document.createElement("div");
-      card.className = "installment-card";
-      card.id = `instCard-${inst.id}`;
-      card.onclick = () => openEditInstallmentModal(inst.id);
-      card.style.opacity = "0.75";
-      card.innerHTML = `
-                    <div class="installment-header">
-                        <div class="installment-header-top">
-                            <span class="installment-title" style="color: #8b949e;">✅ ${escapeBankHtml(inst.description)} (Quitado)</span>
-                        </div>
-                        <div style="font-size: 0.78rem; color: #8b949e; margin-top: 4px;">
-                            Total pago: <b style="color: #f0f6fc;">${formatCurrency(inst.totalAmount)}</b> em <b>${inst.totalInstallments}x</b>
-                        </div>
-                    </div>
-                `;
-      finishedContainer.appendChild(card);
+      finishedContainer.insertAdjacentHTML("beforeend", `
+        <div class="bank-card is-done" role="button" tabindex="0" data-click="editInstallment" data-id="${escapeHtml(inst.id)}">
+          <div class="bank-card-top" style="margin-bottom: 0">
+            <span class="bank-card-title text-muted">✅ ${escapeHtml(inst.description)}</span>
+            <span class="bank-card-side">
+              <span class="bank-card-side-label">Pago em ${inst.totalInstallments}x</span>
+              <span class="bank-card-side-value">${formatCurrency(inst.totalAmount)}</span>
+            </span>
+          </div>
+        </div>`);
     });
   }
-}
-
-function toggleInstallmentCard(instId) {
-  const card = document.getElementById(`instCard-${instId}`);
-  if (card) card.classList.toggle("expanded");
 }
 
 function openExpenseModal(id = null, presetDateIso = null) {
@@ -428,44 +399,47 @@ function openExpenseModal(id = null, presetDateIso = null) {
   if (id) {
     const item = db.transactions.find((t) => String(t.id) === String(id));
     if (!item) return;
-    title.innerText = "✏️ Editar Gasto";
+    title.innerText = "✏️ Editar gasto";
     idInput.value = item.id;
     descInput.value = item.description;
     amountInput.value = formatMoneyInput(item.amount);
     catSelect.value = item.category;
     dateInput.value = item.date;
-    instGroupEl.style.display = "none";
+    instGroupEl.hidden = true;
     isInstCheckbox.checked = false;
-    if (deleteBtn) deleteBtn.style.display = "block";
+    if (deleteBtn) deleteBtn.hidden = false;
   } else {
-    title.innerText = "➕ Novo Gasto";
+    title.innerText = "➕ Novo gasto";
     idInput.value = "";
     descInput.value = "";
     amountInput.value = "";
     catSelect.value = "Alimentação";
-    dateInput.value = presetDateIso || getTodayIsoDateStr();
-    instGroupEl.style.display = "block";
+    dateInput.value = presetDateIso || toIsoDate();
+    instGroupEl.hidden = false;
     isInstCheckbox.checked = false;
-    if (deleteBtn) deleteBtn.style.display = "none";
+    if (deleteBtn) deleteBtn.hidden = true;
   }
 
   toggleInstallmentFields();
-  modal.classList.add("active");
+  openTobaModal(modal.id);
   setTimeout(() => descInput.focus(), 100);
 }
 
-function deleteExpenseFromModal() {
+async function deleteExpenseFromModal() {
   const id = document.getElementById("expenseIdInput").value;
-  if (id && confirm("Deseja realmente apagar esta despesa?")) {
-    db.transactions = db.transactions.filter(
-      (t) => String(t.id) !== String(id),
-    );
-    saveDatabase();
-    document.getElementById("expenseModal").classList.remove("active");
-  }
+  if (!id) return;
+  const confirmed = await showPageMessage("Esse gasto vai sumir do mês. Bora?", {
+    title: "Apagar gasto?", icon: "🗑️", confirm: true, confirmLabel: "Apagar",
+  });
+  if (!confirmed) return;
+  db.transactions = db.transactions.filter(
+    (t) => String(t.id) !== String(id),
+  );
+  saveDatabase();
+  closeTobaModal("expenseModal");
 }
 
-function toggleHomeAcc(cardId) {
+function toggleCard(cardId) {
   const card = document.getElementById(cardId);
   if (card) card.classList.toggle("expanded");
 }
@@ -480,7 +454,10 @@ function saveExpense() {
     "isInstallmentCheckbox",
   ).checked;
 
-  if (!desc || rawAmount <= 0 || !startDate) return;
+  if (!desc || rawAmount <= 0 || !startDate) {
+    showPageMessage("Faltou a descrição, o valor ou a data.", { title: "Quase lá", icon: "✍️" });
+    return;
+  }
 
   if (isInstallment && !id) {
     const totalInstallments =
@@ -522,16 +499,7 @@ function saveExpense() {
   }
 
   saveDatabase();
-  document.getElementById("expenseModal").classList.remove("active");
-}
-
-function deleteExpense(id) {
-  if (confirm("Deseja realmente apagar este gasto?")) {
-    db.transactions = db.transactions.filter(
-      (t) => String(t.id) !== String(id),
-    );
-    saveDatabase();
-  }
+  closeTobaModal("expenseModal");
 }
 
 function openEditInstallmentModal(instId) {
@@ -546,7 +514,7 @@ function openEditInstallmentModal(instId) {
   );
   document.getElementById("editInstCount").value = inst.totalInstallments;
   document.getElementById("editInstStartDate").value = inst.startDate;
-  document.getElementById("editInstallmentModal").classList.add("active");
+  openTobaModal("editInstallmentModal");
 }
 
 function saveEditedInstallment() {
@@ -561,35 +529,22 @@ function saveEditedInstallment() {
     inst.totalInstallments = totalCount;
     inst.startDate = document.getElementById("editInstStartDate").value;
     saveDatabase();
-    document
-      .getElementById("editInstallmentModal")
-      .classList.remove("active");
+    closeTobaModal("editInstallmentModal");
   }
 }
 
-function deleteInstallmentGroup(instId) {
-  if (confirm("Deseja realmente apagar esta compra parcelada inteira?")) {
-    db.installments = db.installments.filter(
-      (i) => String(i.id) !== String(instId),
-    );
-    saveDatabase();
-  }
-}
-
-function deleteInstallmentFromEditModal() {
+async function deleteInstallmentFromEditModal() {
   const id = document.getElementById("editInstId").value;
-  if (
-    id &&
-    confirm("Deseja realmente apagar esta compra parcelada inteira?")
-  ) {
-    db.installments = db.installments.filter(
-      (i) => String(i.id) !== String(id),
-    );
-    saveDatabase();
-    document
-      .getElementById("editInstallmentModal")
-      .classList.remove("active");
-  }
+  if (!id) return;
+  const confirmed = await showPageMessage("Apaga a compra parcelada inteira (todas as parcelas, inclusive as que já passaram).", {
+    title: "Apagar parcelamento?", icon: "🗑️", confirm: true, confirmLabel: "Apagar",
+  });
+  if (!confirmed) return;
+  db.installments = db.installments.filter(
+    (i) => String(i.id) !== String(id),
+  );
+  saveDatabase();
+  closeTobaModal("editInstallmentModal");
 }
 
 function renderFixedExpenses() {
@@ -603,8 +558,11 @@ function renderFixedExpenses() {
   totalDisplay.innerText = formatCurrency(total);
 
   if (expenses.length === 0) {
-    listContainer.innerHTML =
-      '<div class="empty-state">Nenhum gasto fixo cadastrado ainda.</div>';
+    listContainer.innerHTML = tobaEmpty(
+      "🔄",
+      "Nenhum gasto fixo ainda",
+      "Aluguel, Spotify, academia... cadastre acima e o app divide por dia.",
+    );
     return;
   }
 
@@ -614,77 +572,58 @@ function renderFixedExpenses() {
     now.getMonth(),
   );
 
-  expenses.forEach((item) => {
-    let cleanCat = getCleanCategory(item.category);
-    const dailyItemRate =
-      totalDaysInMonth > 0 ? item.amount / totalDaysInMonth : 0;
-
-    const el = document.createElement("div");
-    el.className = "fixed-card";
-    el.id = `fixedCard-${item.id}`;
-    el.innerHTML = `
-                <div class="fixed-header" onclick="toggleFixedCard('${item.id}')">
-                    <div style="display: flex; flex-direction: column;">
-                        <span style="font-weight: 600; font-size: 0.88rem; color: #f0f6fc;">🔄 ${escapeBankHtml(item.name)}</span>
-                        <span style="font-size: 0.73rem; color: #8b949e; margin-top: 2px;">${escapeBankHtml(cleanCat)}</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="display: flex; flex-direction: column; align-items: flex-end;">
-                            <span style="font-weight: 700; color: #f85149; font-size: 0.88rem;">-${formatCurrency(item.amount)}</span>
-                            <span style="font-size: 0.68rem; color: #58a6ff; margin-top: 2px;">-${formatCurrency(dailyItemRate)}/dia</span>
-                        </div>
-                        <span class="fixed-arrow">▼</span>
-                    </div>
-                </div>
-                <div class="fixed-body">
-                    <div style="display: flex; gap: 8px; margin-top: 4px;">
-                        <button class="btn" style="flex: 1; background: #d29922; color: #fff; font-size: 0.78rem; padding: 0.5rem;" onclick="editFixedExpense('${item.id}')">✏️ Editar</button>
-                        <button class="btn btn-danger" style="flex: 1; font-size: 0.78rem; padding: 0.5rem;" onclick="deleteFixedExpense('${item.id}')">🗑️ Apagar</button>
-                    </div>
-                </div>
-            `;
-    listContainer.appendChild(el);
-  });
+  listContainer.innerHTML = expenses
+    .map((item) => {
+      const dailyItemRate =
+        totalDaysInMonth > 0 ? item.amount / totalDaysInMonth : 0;
+      return `
+        <div class="expense-item" role="button" tabindex="0" data-click="editFixedExpense" data-id="${escapeHtml(item.id)}">
+          <div class="expense-details">
+            <span class="expense-desc">${escapeHtml(item.name)}</span>
+            <span class="expense-meta">${escapeHtml(getCleanCategory(item.category))} • -${formatCurrency(dailyItemRate)}/dia</span>
+          </div>
+          <span class="expense-amount-value">-${formatCurrency(item.amount)}</span>
+        </div>`;
+    })
+    .join("");
 }
 
 function editFixedExpense(id) {
-  event?.stopPropagation();
-  const expenses = db.config.fixedExpenses || [];
-  const item = expenses.find((e) => String(e.id) === String(id));
+  const item = (db.config.fixedExpenses || []).find((e) => String(e.id) === String(id));
   if (!item) return;
-
-  const newName = prompt("Editar nome do gasto fixo:", item.name);
-  if (newName === null) return;
-  const newAmountStr = prompt(
-    "Editar valor (R$):",
-    formatMoneyInput(item.amount),
-  );
-  if (newAmountStr === null) return;
-
-  const parsedAmount =
-    parseFloat(newAmountStr.replace(/\./g, "").replace(",", ".")) || 0;
-  if (newName.trim() && parsedAmount > 0) {
-    item.name = newName.trim();
-    item.amount = parsedAmount;
-    saveDatabase();
-    renderFixedExpenses();
-  } else {
-    alert("Nome ou valor inválido!");
-  }
+  document.getElementById("editFixedId").value = item.id;
+  document.getElementById("editFixedName").value = item.name;
+  document.getElementById("editFixedAmount").value = formatMoneyInput(item.amount);
+  document.getElementById("editFixedCategory").value = item.category || "Outros";
+  openTobaModal("editFixedModal");
 }
 
-function toggleFixedCard(id) {
-  const card = document.getElementById(`fixedCard-${id}`);
-  if (card) card.classList.toggle("expanded");
+function saveFixedExpense() {
+  const id = document.getElementById("editFixedId").value;
+  const item = (db.config.fixedExpenses || []).find((e) => String(e.id) === String(id));
+  if (!item) return;
+  const newName = document.getElementById("editFixedName").value.trim();
+  const newAmount = getMoney("editFixedAmount");
+  if (!newName || newAmount <= 0) {
+    showPageMessage("Nome ou valor inválido!", { title: "Opa", icon: "🤨" });
+    return;
+  }
+  item.name = newName;
+  item.amount = newAmount;
+  item.category = document.getElementById("editFixedCategory").value;
+  saveDatabase();
+  closeTobaModal("editFixedModal");
 }
 
 function addFixedExpense() {
-  const name = document.getElementById("fixedNameInput").value;
+  const name = document.getElementById("fixedNameInput").value.trim();
   const amount = getMoney("fixedAmountInput");
   const category = document.getElementById("fixedCategorySelect").value;
 
-  if (!name || amount <= 0)
-    return alert("Informe o nome e um valor válido!");
+  if (!name || amount <= 0) {
+    showPageMessage("Informe o nome e um valor válido!", { title: "Quase lá", icon: "✍️" });
+    return;
+  }
 
   if (!db.config.fixedExpenses) db.config.fixedExpenses = [];
   db.config.fixedExpenses.push({
@@ -699,13 +638,17 @@ function addFixedExpense() {
   saveDatabase();
 }
 
-function deleteFixedExpense(id) {
-  if (confirm("Deseja excluir este gasto fixo?")) {
-    db.config.fixedExpenses = (db.config.fixedExpenses || []).filter(
-      (item) => String(item.id) !== String(id),
-    );
-    saveDatabase();
-  }
+async function deleteFixedFromModal() {
+  const id = document.getElementById("editFixedId").value;
+  const confirmed = await showPageMessage("Os meses que já passaram continuam com ele no histórico.", {
+    title: "Apagar gasto fixo?", icon: "🗑️", confirm: true, confirmLabel: "Apagar",
+  });
+  if (!confirmed) return;
+  db.config.fixedExpenses = (db.config.fixedExpenses || []).filter(
+    (item) => String(item.id) !== String(id),
+  );
+  saveDatabase();
+  closeTobaModal("editFixedModal");
 }
 
 function renderHistory() {
@@ -725,8 +668,11 @@ function renderHistory() {
     .sort((a, b) => b.localeCompare(a));
 
   if (pastMonthKeys.length === 0) {
-    container.innerHTML =
-      '<div class="empty-state">Nenhum mês anterior fechado para exibir no histórico.</div>';
+    container.innerHTML = tobaEmpty(
+      "📂",
+      "Nenhum mês fechado ainda",
+      "Quando o mês virar, o resumo dele fica guardado aqui.",
+    );
     return;
   }
 
@@ -756,40 +702,35 @@ function renderHistory() {
     const vaultBalance = monthlyBudget - totalSpent;
 
     const card = document.createElement("div");
-    card.className = "history-card";
+    card.className = "acc-card";
     card.id = `historyCard-${mKey}`;
     card.innerHTML = `
-                <div class="history-header" onclick="toggleHistoryCard('${mKey}')">
-                    <div class="history-header-top">
-                        <span class="history-title">📂 ${monthFormatted}</span>
-                        <span class="history-arrow">▼</span>
-                    </div>
-                    <div class="history-metrics">
-                        <div class="history-metric-box">
-                            <span class="history-metric-label">Gasto Total</span>
-                            <span class="history-metric-val text-neutral">${formatCurrency(totalSpent)}</span>
-                        </div>
-                        <div class="history-metric-box">
-                            <span class="history-metric-label">Orçamento</span>
-                            <span class="history-metric-val text-neutral">${formatCurrency(monthlyBudget)}</span>
-                        </div>
-                        <div class="history-metric-box">
-                            <span class="history-metric-label">Saldo Cofre</span>
-                            <span class="history-metric-val ${vaultBalance >= 0 ? "text-green" : "text-red"}">${formatCurrency(vaultBalance)}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="history-body">
-                    <div class="section-title" style="margin: 0.5rem 0 0.5rem 0; font-size: 0.8rem;">📊 Categorias (${monthFormatted})</div>
-                    <div id="catBars-${mKey}"></div>
-
-                    <div class="section-title" style="margin: 1rem 0 0.5rem 0; font-size: 0.8rem; color: #58a6ff;">💸 Lançamentos do Mês</div>
-                    <div class="expense-list" id="historyTransList-${mKey}"></div>
-
-                    <div class="section-title" style="margin: 1rem 0 0.5rem 0; font-size: 0.8rem; color: #d29922;">💳 Parcelas do Mês</div>
-                    <div class="expense-list" id="historyInstList-${mKey}"></div>
-                </div>
-            `;
+      <button type="button" class="acc-header" data-click="toggleCard" data-target="historyCard-${mKey}">
+        <span class="acc-title">📂 ${monthFormatted}</span>
+        <span class="bank-card-side">
+          <span class="bank-card-side-label">Cofre</span>
+          <span class="bank-card-side-value ${vaultBalance >= 0 ? "text-green" : "text-red"}">${formatCurrency(vaultBalance)}</span>
+        </span>
+      </button>
+      <div class="toba-stats history-stats">
+        <div class="toba-stat">
+          <span class="toba-stat-label">Gasto total</span>
+          <span class="toba-stat-value">${formatCurrency(totalSpent)}</span>
+        </div>
+        <div class="toba-stat">
+          <span class="toba-stat-label">Orçamento</span>
+          <span class="toba-stat-value">${formatCurrency(monthlyBudget)}</span>
+        </div>
+      </div>
+      <div class="acc-body">
+        <div class="section-title is-first">📊 Categorias</div>
+        <div id="catBars-${mKey}"></div>
+        <div class="section-title">💸 Lançamentos</div>
+        <div class="expense-list" id="historyTransList-${mKey}"></div>
+        <div class="section-title">💳 Parcelas</div>
+        <div class="expense-list" id="historyInstList-${mKey}"></div>
+      </div>
+    `;
     container.appendChild(card);
 
     const combined = [...mTransactions];
@@ -798,62 +739,19 @@ function renderHistory() {
     );
     renderCategoryBars(combined, totalSpent, `catBars-${mKey}`);
 
-    const transListEl = document.getElementById(
-      `historyTransList-${mKey}`,
-    );
-    if (mTransactions.length === 0) {
-      transListEl.innerHTML =
-        '<div class="empty-state" style="font-size:0.75rem;">Nenhum gasto à vista.</div>';
-    } else {
-      [...mTransactions]
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .forEach((t) => {
-          let cleanCat = getCleanCategory(t.category);
-          const itemEl = document.createElement("div");
-          itemEl.className = "expense-item";
-          itemEl.onclick = () => openExpenseModal(t.id);
-          itemEl.innerHTML = `
-                        <div class="expense-details">
-                            <span class="expense-desc">${escapeBankHtml(t.description)}</span>
-                            <span class="expense-meta">${escapeBankHtml(cleanCat)} • ${isoToBrDate(t.date)}</span>
-                        </div>
-                        <div class="expense-right">
-                            <span class="expense-amount-value">-${formatCurrency(t.amount)}</span>
-                        </div>
-                    `;
-          transListEl.appendChild(itemEl);
-        });
-    }
+    document.getElementById(`historyTransList-${mKey}`).innerHTML =
+      mTransactions.length === 0
+        ? tobaEmpty("🧾", "Nenhum gasto à vista", "", { compact: true })
+        : [...mTransactions]
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .map(transactionItemHtml)
+          .join("");
 
-    const instListEl = document.getElementById(`historyInstList-${mKey}`);
-    if (mActiveInstallments.length === 0) {
-      instListEl.innerHTML =
-        '<div class="empty-state" style="font-size:0.75rem;">Nenhuma parcela ativa.</div>';
-    } else {
-      mActiveInstallments.forEach((p) => {
-        let cleanCat = getCleanCategory(p.category);
-        const itemEl = document.createElement("div");
-        itemEl.className = "expense-item";
-        itemEl.style.borderLeft = "3px solid #d29922";
-        itemEl.onclick = () => openEditInstallmentModal(p.id);
-        itemEl.innerHTML = `
-                        <div class="expense-details">
-                            <span class="expense-desc">${escapeBankHtml(p.description)}</span>
-                            <span class="expense-meta">${escapeBankHtml(cleanCat)} • Parcela ${p.currentParcel}/${p.totalInstallments}</span>
-                        </div>
-                        <div class="expense-right">
-                            <span class="expense-amount-value" style="color: #d29922;">-${formatCurrency(p.amount)}</span>
-                        </div>
-                    `;
-        instListEl.appendChild(itemEl);
-      });
-    }
+    document.getElementById(`historyInstList-${mKey}`).innerHTML =
+      mActiveInstallments.length === 0
+        ? tobaEmpty("💳", "Nenhuma parcela", "", { compact: true })
+        : mActiveInstallments.map(installmentItemHtml).join("");
   });
-}
-
-function toggleHistoryCard(mKey) {
-  const card = document.getElementById(`historyCard-${mKey}`);
-  if (card) card.classList.toggle("expanded");
 }
 
 function toggleInstallmentFields() {
@@ -863,13 +761,12 @@ function toggleInstallmentFields() {
   const container = document.getElementById("installmentFieldsContainer");
   const amountLabel = document.getElementById("amountLabel");
 
+  container.hidden = !isChecked;
   if (isChecked) {
-    container.style.display = "block";
-    amountLabel.innerText = "Valor TOTAL da Compra (R$)";
+    amountLabel.innerText = "Valor TOTAL da compra (R$)";
     updateInstallmentPreview();
   } else {
-    container.style.display = "none";
-    amountLabel.innerText = "Valor do Gasto (R$)";
+    amountLabel.innerText = "Valor do gasto (R$)";
   }
 }
 
@@ -890,34 +787,26 @@ function updateInstallmentPreview() {
     `Valor de cada parcela: ${formatCurrency(parcelVal)}`;
 }
 
-function openConfigModalHandler() {
-  const configModal = document.getElementById("configModal");
+// Preenche os campos do Gastos dentro da ⚙️ antes de abrir.
+function openGastosSettings() {
   const dailyInput = document.getElementById("dailyBudgetInput");
   const startDateInput = document.getElementById("startDateInput");
   const currentMonthKey = getCurrentMonthKey();
 
   const dailyB = (db.months[currentMonthKey] || {}).dailyBudget || 0;
   dailyInput.value = dailyB > 0 ? formatMoneyInput(dailyB) : "";
-  startDateInput.value = db.config.startDate || getTodayIsoDateStr();
+  startDateInput.value = db.config.startDate || toIsoDate();
 
   updateMonthlyProjection();
-  if (document.getElementById("startDateHiddenArea")) {
-    document.getElementById("startDateHiddenArea").style.display = "none";
-    document.getElementById("startDateArrow").innerText = "🔒";
-  }
-  configModal.classList.add("active");
+  document.getElementById("startDateHiddenArea").hidden = true;
+  document.getElementById("startDateArrow").innerText = "🔒";
+  openDataModal();
 }
 
 function toggleStartDateArea() {
   const area = document.getElementById("startDateHiddenArea");
-  const arrow = document.getElementById("startDateArrow");
-  if (area.style.display === "none" || !area.style.display) {
-    area.style.display = "block";
-    arrow.innerText = "🔓";
-  } else {
-    area.style.display = "none";
-    arrow.innerText = "🔒";
-  }
+  area.hidden = !area.hidden;
+  document.getElementById("startDateArrow").innerText = area.hidden ? "🔒" : "🔓";
 }
 
 function updateMonthlyProjection() {
@@ -936,55 +825,40 @@ function updateMonthlyProjection() {
     `Orçamento previsto de ${monthFormatted} (${effectiveDays} dias): ${formatCurrency(monthlyTotal)}`;
 }
 
-function abrirModalSobra() {
-  // Puxa os dados que o dashboard calculou!
+function openSobraHelp() {
+  // Usa os números que o painel acabou de calcular.
   if (!window.dadosSobra) return;
   const d = window.dadosSobra;
 
-  const htmlConta = `
-    <div style="margin-bottom: 12px;">
-      <p style="margin: 4px 0;"><strong>💸 Gastos à Vista (Var.):</strong> ${formatCurrency(d.monthlySpentVista)}</p>
-      <p style="margin: 4px 0;"><strong>📅 Dias Passados:</strong> ${d.diasPassados} dias</p>
-      <p style="margin: 4px 0;"><strong>📊 Média Var. Pura:</strong> ${formatCurrency(d.mediaDiariaVista)}/dia</p>
+  document.getElementById("detalhesMathSobra").innerHTML = `
+    <div class="sobra-block kv-list">
+      <div class="kv-row"><span>💸 Gastos à vista</span><span>${formatCurrency(d.monthlySpentVista)}</span></div>
+      <div class="kv-row"><span>📅 Dias que passaram</span><span>${d.diasPassados}</span></div>
+      <div class="kv-row"><span>📊 Média à vista</span><span>${formatCurrency(d.mediaDiariaVista)}/dia</span></div>
     </div>
 
-    <div style="margin-bottom: 12px; padding: 10px; background: rgba(248, 81, 73, 0.1); border-radius: 8px; border: 1px solid rgba(248, 81, 73, 0.3);">
-      <p style="margin: 4px 0; color: #ff7b72; font-size: 0.8rem; text-transform: uppercase; font-weight: 700;">A Verdadeira Facada Diária</p>
-      <p style="margin: 4px 0; font-size: 0.8rem; color: #c9d1d9;">Var: ${formatCurrency(d.mediaDiariaVista)} + Fixo: ${formatCurrency(d.dailyFixedDeduction)} + Parc: ${formatCurrency(d.dailyInstallmentDeduction)}</p>
-      <p style="margin: 6px 0 0 0; font-size: 1.1rem; color: #f85149; font-weight: 700;">Gasto Total: ${formatCurrency(d.mediaDiariaTotal)} / dia</p>
+    <div class="sobra-block sobra-facada">
+      <div class="sobra-facada-title">🔪 A verdadeira facada diária</div>
+      <div class="text-muted" style="font-size: 0.78rem; margin-top: 4px">À vista ${formatCurrency(d.mediaDiariaVista)} + fixos ${formatCurrency(d.dailyFixedDeduction)} + parcelas ${formatCurrency(d.dailyInstallmentDeduction)}</div>
+      <div class="sobra-facada-total">${formatCurrency(d.mediaDiariaTotal)}/dia</div>
     </div>
-    
-    <div style="margin-bottom: 12px;">
-      <p style="margin: 4px 0;"><strong>⏳ Dias Restantes:</strong> ${d.diasRestantes} dias</p>
-      <p style="margin: 4px 0;"><strong>🔮 Projeção Var. Restante:</strong> ${formatCurrency(d.projecaoRestanteVista)}</p>
+
+    <div class="sobra-block kv-list">
+      <div class="kv-row"><span>⏳ Dias pela frente</span><span>${d.diasRestantes}</span></div>
+      <div class="kv-row"><span>🔮 À vista até o fim do mês</span><span>${formatCurrency(d.projecaoRestanteVista)}</span></div>
     </div>
-    
-    <hr style="border-color: #30363d; margin: 15px 0;">
-    
-    <div>
-      <p style="margin: 4px 0; color: #58a6ff;"><strong>💰 Orçamento Base:</strong> ${formatCurrency(d.grossMonthlyBudget)}</p>
-      <p style="margin: 4px 0;"><strong>📉 Variável (Real + Proj.):</strong> -${formatCurrency(d.monthlySpentVista + d.projecaoRestanteVista)}</p>
-      <p style="margin: 4px 0;"><strong>💳 Parcelas do Mês:</strong> -${formatCurrency(d.monthInstallmentsTotal)}</p>
-      <p style="margin: 4px 0;"><strong>🔒 Contas Fixas:</strong> -${formatCurrency(d.fixedTotal)}</p>
-      
-      <h4 style="margin: 10px 0 0 0; color: ${d.sobraPrevista >= 0 ? '#3fb950' : '#f85149'}; font-size: 1.2rem; border-top: 1px dashed #30363d; padding-top: 10px;">
-        Sobra Final Estimada: ${formatCurrency(d.sobraPrevista)}
-      </h4>
+
+    <hr class="divider" />
+
+    <div class="sobra-block kv-list">
+      <div class="kv-row"><span class="text-blue">💰 Orçamento do mês</span><span class="text-blue">${formatCurrency(d.grossMonthlyBudget)}</span></div>
+      <div class="kv-row"><span>📉 À vista (real + previsto)</span><span>-${formatCurrency(d.monthlySpentVista + d.projecaoRestanteVista)}</span></div>
+      <div class="kv-row"><span>💳 Parcelas do mês</span><span>-${formatCurrency(d.monthInstallmentsTotal)}</span></div>
+      <div class="kv-row"><span>🔒 Contas fixas</span><span>-${formatCurrency(d.fixedTotal)}</span></div>
+      <div class="kv-row is-total sobra-final ${d.sobraPrevista >= 0 ? "text-green" : "text-red"}"><span>Sobra prevista</span><span>${formatCurrency(d.sobraPrevista)}</span></div>
     </div>
   `;
-
-  document.getElementById('detalhesMathSobra').innerHTML = htmlConta;
-  const modal = document.getElementById('modalSobra');
-  modal.style.display = 'flex';
-  modal.style.opacity = '1';
-  modal.style.pointerEvents = 'all';
-}
-
-function fecharModalSobra() {
-  const modal = document.getElementById('modalSobra');
-  modal.style.opacity = '0';
-  modal.style.pointerEvents = 'none';
-  setTimeout(() => { modal.style.display = 'none'; }, 300);
+  openTobaModal("modalSobra");
 }
 
 // Redesenha a tela depois de cada gravação no banco.
@@ -998,66 +872,46 @@ function onBankDataSaved() {
     renderFixedExpenses();
 }
 
-function openDataModalFromConfig() {
-  document.getElementById("configModal").classList.remove("active");
-  openDataModal();
+function saveDailyBudget(input) {
+  const val = parseFloat(input.value.replace(/\./g, "").replace(",", ".")) || 0;
+  const currentMonthKey = getCurrentMonthKey();
+  if (!db.months[currentMonthKey]) db.months[currentMonthKey] = {};
+  db.months[currentMonthKey].dailyBudget = val;
+  updateMonthlyProjection();
+  saveDatabase();
 }
 
-function setupGastosEvents() {
-  const configModal = document.getElementById("configModal");
-  const closeConfigBtn = document.getElementById("closeConfigBtn");
-  const bottomCloseConfigBtn = document.getElementById(
-    "bottomCloseConfigBtn",
-  );
-  const dailyInput = document.getElementById("dailyBudgetInput");
-  const startDateInput = document.getElementById("startDateInput");
-
-  const closeConfig = () => configModal?.classList.remove("active");
-  closeConfigBtn?.addEventListener("click", closeConfig);
-  bottomCloseConfigBtn?.addEventListener("click", closeConfig);
-
-  dailyInput?.addEventListener("input", () => {
-    let rawVal = dailyInput.value.replace(/\./g, "").replace(",", ".");
-    const val = parseFloat(rawVal) || 0;
-
-    const currentMonthKey = getCurrentMonthKey();
-    if (!db.months[currentMonthKey]) db.months[currentMonthKey] = {};
-    db.months[currentMonthKey].dailyBudget = val;
-
-    updateMonthlyProjection();
-    saveDatabase();
-  });
-
-  startDateInput?.addEventListener("change", () => {
-    db.config.startDate = startDateInput.value;
-    updateMonthlyProjection();
-    saveDatabase();
-  });
-
-  const expenseModal = document.getElementById("expenseModal");
-  const closeExpenseBtn = document.getElementById("closeExpenseBtn");
-  const expenseForm = document.getElementById("expenseForm");
-
-  const closeExpense = () => expenseModal?.classList.remove("active");
-  closeExpenseBtn?.addEventListener("click", closeExpense);
-
-  expenseForm?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    saveExpense();
-  });
-
-  document
-    .getElementById("editInstallmentForm")
-    ?.addEventListener("submit", (e) => {
-      e.preventDefault();
-      saveEditedInstallment();
-    });
+function saveStartDate(input) {
+  db.config.startDate = input.value;
+  updateMonthlyProjection();
+  saveDatabase();
 }
+
+tobaActions({
+  newExpense: () => openExpenseModal(),
+  editExpense: (el) => openExpenseModal(el.dataset.id),
+  editInstallment: (el) => openEditInstallmentModal(el.dataset.id),
+  editFixedExpense: (el) => editFixedExpense(el.dataset.id),
+  switchTab: (el) => switchTab(el.dataset.tab),
+  toggleCard: (el) => toggleCard(el.dataset.target),
+  openSobraHelp,
+  openSettings: openGastosSettings,
+  toggleStartDateArea,
+  saveDailyBudget,
+  saveStartDate,
+  saveExpense,
+  deleteExpenseFromModal,
+  saveEditedInstallment,
+  deleteInstallmentFromEditModal,
+  saveFixedExpense,
+  deleteFixedFromModal,
+  addFixedExpense,
+  toggleInstallmentFields,
+  updateInstallmentPreview,
+});
 
 document.addEventListener("DOMContentLoaded", () => {
   loadDatabase();
-  setupCoreEvents();
-  setupGastosEvents();
   renderDashboard();
 
   // Atalho do portal: TobaBank-Gastos.html?action=add_expense

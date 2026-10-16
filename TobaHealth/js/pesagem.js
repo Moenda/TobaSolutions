@@ -1,6 +1,6 @@
 /* =====================================================================
  * Toba Health · Pesagem & Bioimpedância
- * Depende de health-core.js (healthDb, saveHealthDb, showPageMessage...)
+ * Depende de ../assets/toba-common.js e health-core.js (healthDb, saveHealthDb).
  * ===================================================================== */
 /* MOTOR DE DEMOGRAFIA E TEXTOS TOBERSON */
 const TobaRules = {
@@ -195,74 +195,6 @@ const TobaRules = {
   },
 };
 
-/* CONSTRUTOR DA RÉGUA DE MÉTRICAS */
-function buildRulerHTML(key, val, type, unit) {
-  const rule = TobaRules[key];
-  if (!rule) return "";
-
-  const gender = healthDb.gender || "Masculino";
-  const age = healthDb.age || 30;
-
-  let demoStr = rule.demo;
-  if (!demoStr) {
-    let ageGroup = age <= 25 ? "15 a 25" : age <= 35 ? "26 a 35" : "36+";
-    demoStr = `Para ${gender === "Masculino" ? "Homens" : "Mulheres"} de ${ageGroup} anos`;
-  }
-
-  const segments = rule.getSegments(gender, age);
-  const totalSpan = rule.max - rule.min;
-  let htmlBars = "",
-    htmlLabels = "";
-  let prevLimit = rule.min;
-
-  segments.forEach((seg) => {
-    // Cada faixa começa onde a faixa anterior terminou; a largura visual
-    // é proporcional ao intervalo numérico da régua.
-    let span = seg.l - prevLimit;
-    if (span <= 0) span = 1;
-    let pct = (span / totalSpan) * 100;
-    htmlBars += `<div style="width: ${pct}%; background: ${seg.c}; height: 8px;"></div>`;
-    htmlLabels += `<div style="width: ${pct}%; text-align: center; font-size: 0.65rem; color: #8b949e; font-weight: 700; text-transform: uppercase; margin-top: 4px;">${seg.n}</div>`;
-    prevLimit = seg.l;
-  });
-
-  let valPct = ((val - rule.min) / totalSpan) * 100;
-  if (valPct < 0) valPct = 0;
-  if (valPct > 100) valPct = 100;
-
-  const valStr =
-    type === "dec2"
-      ? formatDec2(val)
-      : type === "dec1"
-        ? formatDec1(val)
-        : val;
-
-  return `
-            <div style="background: #161b22; border: 1px solid #30363d; border-radius: 14px; padding: 1.2rem; margin-bottom: 1rem;">
-                <div class="ruler-explanation-row">
-                  <div class="ruler-explanation-copy">
-                    <div style="font-size: 0.7rem; font-weight: 800; color: #58a6ff; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">${demoStr}</div>
-                    <div style="font-size: 0.85rem; color: #c9d1d9; line-height: 1.4;">${rule.title}</div>
-                  </div>
-                  <button type="button" class="ruler-advice-btn" onclick="openMetricAdviceModal('${key}')" title="Ver dica prática" aria-label="Ver dica prática sobre ${demoStr}">🍄</button>
-                </div>
-                
-                <div style="position: relative; padding-top: 25px; padding-bottom: 5px;">
-                    <div style="display: flex; width: 100%; border-radius: 4px; overflow: hidden; background: #21262d;">
-                        ${htmlBars}
-                    </div>
-                    <div style="display: flex; width: 100%;">
-                        ${htmlLabels}
-                    </div>
-                    <div style="position: absolute; top: -2px; left: ${valPct}%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 10;">
-                        <div style="background: #f0f6fc; color: #0d1117; font-size: 0.7rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">Você: ${valStr}${unit}</div>
-                        <div style="width: 2px; height: 16px; background: #f0f6fc; margin-top: 3px;"></div>
-                    </div>
-                </div>
-            </div>
-        `;
-}
-
 const metricAdvice = {
   bmi: { title: "IMC: a régua não sabe se você é forte ou só alto", text: "O IMC é um sinal grosseiro, não um diagnóstico. Ele não distingue músculo de gordura, então não deixe um número sozinho mandar na sua autoestima.\n\nPara melhorar a tendência: mantenha refeições consistentes, caminhe mais e faça treino de força. Se o resultado preocupa ou não combina com sua saúde, converse com um profissional em vez de brigar com a calculadora." },
   weight: { title: "Peso: a balança não é boletim escolar", text: "Peso muda com água, comida, sal e horário. Uma pesagem isolada pode fazer drama; acompanhe a tendência em condições parecidas.\n\nSe seu objetivo é reduzir: procure um déficit calórico moderado, priorize comida que sustenta e some caminhadas com treino de força. Nada de dieta-relâmpago: ela costuma voltar com juros." },
@@ -277,11 +209,113 @@ const metricAdvice = {
   bodyAge: { title: "Idade corporal: ficção científica com uma pitada de balança", text: "Essa idade é uma estimativa do algoritmo do aparelho, não sua idade biológica comprovada. Veja como ela evolui no mesmo aparelho e não cancele seu aniversário por causa dela.\n\nMovimento, força, sono e alimentação consistente são hábitos que ajudam a saúde de verdade. Não existe botão de voltar no tempo, mas existe o de sair do sofá." },
 };
 
-/* MODAL DE COMPARATIVO */
-function openMetricCompareModal(metricKey, label, type, unit = "") {
-  if (healthDb.weighIns.length === 0) return;
 
-  document.getElementById("compModalTitle").innerText = `📊 ${label}`;
+/* CONSTRUTOR DA RÉGUA DE MÉTRICAS */
+function buildRulerHTML(key, val, type, unit) {
+  const rule = TobaRules[key];
+  if (!rule) return "";
+
+  const gender = healthDb.gender || "Masculino";
+  const age = healthDb.age || 30;
+
+  let demoStr = rule.demo;
+  if (!demoStr) {
+    let ageGroup = age <= 25 ? "15 a 25" : age <= 35 ? "26 a 35" : "36+";
+    demoStr = `Para ${gender === "Masculino" ? "homens" : "mulheres"} de ${ageGroup} anos`;
+  }
+
+  const segments = rule.getSegments(gender, age);
+  const totalSpan = rule.max - rule.min;
+  let htmlBars = "",
+    htmlLabels = "";
+  let prevLimit = rule.min;
+
+  segments.forEach((seg) => {
+    // Cada faixa começa onde a faixa anterior terminou; a largura visual
+    // é proporcional ao intervalo numérico da régua.
+    let span = seg.l - prevLimit;
+    if (span <= 0) span = 1;
+    let pct = (span / totalSpan) * 100;
+    htmlBars += `<div style="width: ${pct}%; background: ${seg.c}"></div>`;
+    htmlLabels += `<div style="width: ${pct}%">${seg.n}</div>`;
+    prevLimit = seg.l;
+  });
+
+  let valPct = ((val - rule.min) / totalSpan) * 100;
+  if (valPct < 0) valPct = 0;
+  if (valPct > 100) valPct = 100;
+
+  const valStr = formatMetricValue(val, type);
+  const advice = metricAdvice[key]
+    ? `<button type="button" class="ruler-advice-btn" data-click="openMetricAdvice" data-key="${key}" aria-label="Ver dica prática">🍄</button>`
+    : "";
+
+  return `
+    <div class="card ruler-card">
+      <div class="ruler-explanation-row">
+        <div class="ruler-explanation-copy">
+          <div class="ruler-demo">${demoStr}</div>
+          <div class="ruler-text">${rule.title}</div>
+        </div>
+        ${advice}
+      </div>
+      <div class="ruler">
+        <div class="ruler-bars">${htmlBars}</div>
+        <div class="ruler-labels">${htmlLabels}</div>
+        <div class="ruler-pin" style="left: ${Math.min(90, Math.max(10, valPct))}%">
+          <div class="ruler-pin-tag">Você: ${valStr}${unit}</div>
+          <div class="ruler-pin-line"></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* METADADOS DE CADA MÉTRICA (peso, IMC e as da balança) */
+// Nome curto para os quadradinhos (cabe em 1 linha no S24).
+const METRIC_SHORT_LABELS = {
+  score: "Nota",
+  fat: "Gordura",
+  muscle: "Músculo",
+  water: "Água",
+  bmr: "Basal",
+  visceral: "Visceral",
+  protein: "Proteína",
+  bone: "Ossos",
+  bodyAge: "Idade",
+};
+
+function getMetricMeta(key) {
+  if (key === "weight") return { key, label: "Peso", type: "dec2", unit: " kg" };
+  if (key === "bmi") return { key, label: "IMC", type: "dec1", unit: "" };
+  const m = healthDb.metricsOrder.find((item) => item.key === key);
+  if (!m) return null;
+  const label = m.label.split(" (")[0];
+  return { key, label, short: METRIC_SHORT_LABELS[key] || label, type: m.type, unit: m.unit || "", color: m.color };
+}
+
+function formatMetricValue(val, type) {
+  if (val === null || val === undefined) return "--";
+  if (type === "dec2") return formatDec2(val);
+  if (type === "dec1") return formatDec1(val);
+  return String(val);
+}
+
+function getBmi(weight) {
+  if (!healthDb.height || healthDb.height <= 0 || !weight) return null;
+  const hM = healthDb.height / 100;
+  return parseFloat((weight / (hM * hM)).toFixed(1));
+}
+
+function formatWeighDate(dateStr) {
+  return new Date(dateStr).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+}
+
+/* TELA DE COMPARATIVO (abre como "página" dentro do app) */
+function openMetricCompare(metricKey) {
+  const meta = getMetricMeta(metricKey);
+  if (!meta || healthDb.weighIns.length === 0) return;
+  const { type, unit } = meta;
 
   const sorted = [...healthDb.weighIns].sort(
     (a, b) => new Date(b.date) - new Date(a.date),
@@ -291,16 +325,9 @@ function openMetricCompareModal(metricKey, label, type, unit = "") {
 
   sorted.forEach((w) => {
     let val = null;
-    if (metricKey === "weight") {
-      val = w.weight;
-    } else if (metricKey === "bmi") {
-      if (healthDb.height && healthDb.height > 0) {
-        const hM = healthDb.height / 100;
-        val = parseFloat((w.weight / (hM * hM)).toFixed(1));
-      }
-    } else {
-      val = w[metricKey];
-    }
+    if (metricKey === "weight") val = w.weight;
+    else if (metricKey === "bmi") val = getBmi(w.weight);
+    else val = w[metricKey];
 
     if (val !== null && val !== undefined) {
       dataPoints.push({ date: new Date(w.date), val: val });
@@ -309,7 +336,10 @@ function openMetricCompareModal(metricKey, label, type, unit = "") {
 
   const last5 = dataPoints.slice(0, 5);
   if (last5.length === 0) {
-    showPageMessage("Ainda não há registros para essa métrica. Cadastre esse campo em uma pesagem e volte para conferir a evolução.", { title: "Sem dados nessa métrica" });
+    const hint = metricKey === "bmi"
+      ? "Pra calcular o IMC eu preciso da sua altura. Coloque em ⚙️ > Seu perfil."
+      : "Ainda não há registros para essa métrica. Preencha esse campo numa pesagem e volte aqui.";
+    showPageMessage(hint, { title: "Sem dados aqui", icon: "🤷" });
     return;
   }
 
@@ -317,120 +347,93 @@ function openMetricCompareModal(metricKey, label, type, unit = "") {
   const sum = last5.reduce((acc, curr) => acc + curr.val, 0);
   const avg = sum / last5.length;
   const ultima = last5[0].val;
+  const decType = type === "dec2" ? "dec2" : "dec1";
 
-  // 1. Seta a Média no Quadrado 1
-  document.getElementById("thMedia5").innerText = `${type === "dec2" ? formatDec2(avg) : formatDec1(avg)}${unit}`;
+  document.getElementById("thMedia5").textContent = `${formatMetricValue(avg, decType)}${unit}`;
 
-  // 2. Regra de Cores Toba: O que é bom subir? (O resto, cair é bom)
+  // Regra de cores Toba: o que é bom subir? (o resto, cair é bom)
   const upIsGood = ["muscle", "water", "protein", "bone", "score"].includes(metricKey);
 
-  // 3. Função ninja pra calcular e pintar a tela
   const formataEvolucao = (valorBase, valorComp, idVal, idPct) => {
     const elVal = document.getElementById(idVal);
     const elPct = document.getElementById(idPct);
+    elVal.className = "toba-stat-value";
+    elPct.className = "toba-stat-sub";
 
     if (valorComp === null || valorComp === undefined) {
-      elVal.innerHTML = '<span style="color: #8b949e;">--</span>';
-      elPct.innerText = '';
+      elVal.textContent = "--";
+      elVal.classList.add("text-muted");
+      elPct.textContent = "";
       return;
     }
 
     const diff = valorBase - valorComp;
     const pct = valorComp !== 0 ? (diff / valorComp) * 100 : 0;
 
-    let cor = "#8b949e";
-    let sinal = "";
-
-    if (diff > 0.001) {
-      // Subiu: Verde se for músculo/água/score, Vermelho se for gordura/peso/idade
-      cor = upIsGood ? "#3fb950" : "#f85149";
-      sinal = "+";
-    } else if (diff < -0.001) {
-      // Caiu: Vermelho se for músculo/água, Verde se for gordura/peso
-      cor = upIsGood ? "#f85149" : "#3fb950";
-      sinal = "-";
-    }
-
-    const formattedDiff = type === "dec2" ? formatDec2(Math.abs(diff)) : formatDec1(Math.abs(diff));
-
-    elVal.innerHTML = `<span style="color: ${cor};">${sinal}${formattedDiff}${unit}</span>`;
-
     if (diff > -0.001 && diff < 0.001) {
-      elVal.innerHTML = `<span style="color: #8b949e;">0,0${type === "dec1" ? "" : "0"}${unit}</span>`;
-      elPct.innerText = `(0%)`;
-      elPct.style.color = "#8b949e";
-    } else {
-      elPct.innerText = `(${sinal}${Math.abs(pct).toFixed(1).replace('.', ',')}%)`;
-      elPct.style.color = cor;
+      elVal.textContent = `${formatMetricValue(0, decType)}${unit}`;
+      elPct.textContent = "(0%)";
+      elVal.classList.add("text-muted");
+      elPct.classList.add("text-muted");
+      return;
     }
+
+    const subiu = diff > 0;
+    const colorClass = subiu === upIsGood ? "text-green" : "text-red";
+    const sinal = subiu ? "+" : "-";
+    elVal.textContent = `${sinal}${formatMetricValue(Math.abs(diff), decType)}${unit}`;
+    elPct.textContent = `(${sinal}${Math.abs(pct).toFixed(1).replace(".", ",")}%)`;
+    elVal.classList.add(colorClass);
+    elPct.classList.add(colorClass);
   };
 
-  // 4. Calculando e preenchendo as métricas
-  // Quadrado 2: vs Média
-  formataEvolucao(ultima, avg, 'thVsMediaVal', 'thVsMediaPct');
-
-  // Quadrado 3: vs Anterior
-  if (last5.length >= 2) {
-    formataEvolucao(ultima, last5[1].val, 'thVsAntVal', 'thVsAntPct');
-  } else {
-    formataEvolucao(ultima, null, 'thVsAntVal', 'thVsAntPct');
-  }
+  formataEvolucao(ultima, avg, "thVsMediaVal", "thVsMediaPct");
+  formataEvolucao(ultima, last5.length >= 2 ? last5[1].val : null, "thVsAntVal", "thVsAntPct");
 
   const chrono5 = [...last5].reverse();
-  document.getElementById("svgChartContainer").innerHTML = renderSvgChart(
-    chrono5,
-    type,
-    unit,
-  );
+  document.getElementById("svgChartContainer").innerHTML = renderSvgChart(chrono5, type, unit);
 
-  const latestVal = last5[0].val;
   document.getElementById("metricExplanatoryBox").innerHTML =
-    buildRulerHTML(metricKey, latestVal, type, unit);
+    buildRulerHTML(metricKey, ultima, type, unit);
 
   document.getElementById("compHistoryList").innerHTML = last5
-    .map((item) => {
-      const dt = item.date.toLocaleString("pt-BR", {
-        dateStyle: "short",
-        timeStyle: "short",
-      });
-      const valStr =
-        type === "dec2" ? formatDec2(item.val) : formatDec1(item.val);
-      return `
-                <div class="comp-list-item">
-                    <span style="color: #8b949e;">${dt}</span>
-                    <span style="font-weight: 700; color: #3fb950;">${valStr}${unit}</span>
-                </div>
-            `;
-    })
+    .map((item) => `
+      <div class="kv-row">
+        <span>${item.date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
+        <b class="text-green">${formatMetricValue(item.val, type)}${unit}</b>
+      </div>
+    `)
     .join("");
 
-  document.getElementById("metricCompareModal").classList.add("active");
+  switchPesagemView("compare", meta.label);
+}
+
+function closeMetricCompare() {
+  switchPesagemView("main");
+}
+
+function switchPesagemView(viewName, label = "") {
+  const isCompare = viewName === "compare";
+  document.getElementById("viewPesagem").classList.toggle("active", !isCompare);
+  document.getElementById("viewCompare").classList.toggle("active", isCompare);
+  document.getElementById("headerAddBtn").hidden = isCompare;
+  if (isCompare) tobaSetHeader({ page: `📊 ${label}`, back: "closeMetricCompare" });
+  else tobaSetHeader({ page: "⚖️ Pesagem" });
   window.scrollTo(0, 0);
 }
 
-function closeMetricCompareModal() {
-  document
-    .getElementById("metricCompareModal")
-    .classList.remove("active");
-  window.scrollTo(0, 0);
-}
-
-function openMetricAdviceModal(metricKey) {
+function openMetricAdvice(metricKey) {
   const advice = metricAdvice[metricKey];
   if (!advice) return;
-  document.getElementById("metricAdviceTitle").innerText = `🍄 ${advice.title}`;
-  document.getElementById("metricAdviceContent").innerText = advice.text;
-  document.getElementById("metricAdviceModal").classList.add("active");
-}
-
-function closeMetricAdviceModal() {
-  document.getElementById("metricAdviceModal").classList.remove("active");
+  document.getElementById("metricAdviceTitle").textContent = `🍄 ${advice.title}`;
+  document.getElementById("metricAdviceContent").textContent = advice.text;
+  openTobaModal("metricAdviceModal");
 }
 
 /* GRÁFICO SVG */
 function renderSvgChart(points, type, unit) {
   if (points.length < 2)
-    return `<div style="padding: 1rem 0; font-size: 0.8rem; color: #8b949e; text-align: center;">Mínimo de 2 pesagens para o gráfico.</div>`;
+    return tobaEmpty("📉", "Gráfico precisa de 2 pesagens", "Registre mais uma e a linha aparece aqui.", { compact: true });
 
   const w = 320,
     h = 100,
@@ -458,14 +461,13 @@ function renderSvgChart(points, type, unit) {
 
   const pointsStr = coords.map((c) => `${c.x},${c.y}`).join(" ");
 
-  let svg = `<svg viewBox="0 0 ${w} ${h}" style="width: 100%; height: auto; overflow: visible;">
+  let svg = `<svg class="weigh-chart" viewBox="0 0 ${w} ${h}">
             <defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#3fb950" flood-opacity="0.5"/></filter></defs>
             <polyline fill="none" stroke="#3fb950" stroke-width="3" points="${pointsStr}" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
         `;
 
   coords.forEach((c) => {
-    const valFormatted =
-      type === "dec2" ? formatDec2(c.val) : formatDec1(c.val);
+    const valFormatted = formatMetricValue(c.val, type === "dec2" ? "dec2" : "dec1");
     svg += `
                 <circle cx="${c.x}" cy="${c.y}" r="4" fill="#3fb950" stroke="#161b22" stroke-width="2"/>
                 <text x="${c.x}" y="${c.y - 8}" fill="#f0f6fc" font-size="10" font-weight="800" text-anchor="middle">${valFormatted}${unit}</text>
@@ -475,30 +477,26 @@ function renderSvgChart(points, type, unit) {
   return svg;
 }
 
-/* REORDENAÇÃO DA BALANÇA */
-function openScaleConfigModal() {
+/* MÉTRICAS DA BALANÇA (quais aparecem e em que ordem) */
+function openScaleConfig() {
   renderScaleConfigList();
-  document.getElementById("scaleConfigModal").classList.add("active");
-}
-
-function closeScaleConfigModal() {
-  document.getElementById("scaleConfigModal").classList.remove("active");
-  updateUI();
+  openTobaModal("scaleConfigModal");
 }
 
 function renderScaleConfigList() {
+  const last = healthDb.metricsOrder.length - 1;
   document.getElementById("scaleMetricsOrderList").innerHTML =
     healthDb.metricsOrder
       .map(
         (m, idx) => `
             <div class="order-item">
-                <div class="order-item-left">
-                    <input type="checkbox" id="chk_${m.key}" ${m.active ? "checked" : ""} onchange="toggleMetricActive(${idx}, this.checked)">
-                    <label for="chk_${m.key}">${m.label}</label>
-                </div>
+                <label class="order-item-left" for="chk_${m.key}">
+                    <input type="checkbox" id="chk_${m.key}" ${m.active ? "checked" : ""} data-change="toggleMetricActive" data-index="${idx}">
+                    <span>${escapeHtml(m.label)}</span>
+                </label>
                 <div class="order-btns">
-                    <button class="btn-icon" onclick="moveMetric(${idx}, -1)" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ""}>⬆️</button>
-                    <button class="btn-icon" onclick="moveMetric(${idx}, 1)" ${idx === healthDb.metricsOrder.length - 1 ? 'disabled style="opacity:0.3;"' : ""}>⬇️</button>
+                    <button type="button" class="action-icon-btn" data-click="moveMetric" data-index="${idx}" data-dir="-1" ${idx === 0 ? "disabled" : ""} aria-label="Subir">⬆️</button>
+                    <button type="button" class="action-icon-btn" data-click="moveMetric" data-index="${idx}" data-dir="1" ${idx === last ? "disabled" : ""} aria-label="Descer">⬇️</button>
                 </div>
             </div>
         `,
@@ -532,9 +530,13 @@ function renderWeighIns() {
   const metricsGrid = document.getElementById("metricsGrid");
 
   if (healthDb.weighIns.length === 0) {
-    latestDisplay.innerHTML = `<span style="font-size: 0.85rem; color: #8b949e;">Nenhuma pesagem cadastrada ainda.</span>`;
-    metricsGrid.style.display = "none";
-    historyList.innerHTML = `<span style="font-size: 0.8rem; color: #8b949e;">Nenhum registro no histórico.</span>`;
+    latestDisplay.innerHTML = tobaEmpty(
+      "⚖️",
+      "Nenhuma pesagem ainda",
+      "Sobe na balança (com coragem) e toque em + Pesagem.",
+    );
+    metricsGrid.hidden = true;
+    historyList.innerHTML = "";
     return;
   }
 
@@ -544,108 +546,92 @@ function renderWeighIns() {
     (a, b) => new Date(b.date) - new Date(a.date),
   );
   const latest = sortedWeighIns[0];
-  const dateFormatted = new Date(latest.date).toLocaleString("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-  });
+  const previous = sortedWeighIns[1];
+
+  let trend = "";
+  if (previous && previous.weight) {
+    const diff = latest.weight - previous.weight;
+    if (Math.abs(diff) >= 0.005) {
+      const cls = diff < 0 ? "text-green" : "text-red";
+      trend = `<span class="${cls}">${diff < 0 ? "▼" : "▲"} ${formatDec2(Math.abs(diff))} kg</span> vs anterior • `;
+    }
+  }
 
   latestDisplay.innerHTML = `
-            <div style="font-size: 2.2rem; font-weight: 800; color: #3fb950; letter-spacing: -1px;">${formatDec2(latest.weight)} <span style="font-size: 1rem;">kg</span></div>
-            <div style="font-size: 0.75rem; color: #8b949e;">Registrado em: ${dateFormatted} • <b style="color: #58a6ff;">Ver gráfico ›</b></div>
-        `;
+    <div class="latest-weight-box" role="button" tabindex="0" data-click="openMetric" data-key="weight" aria-label="Ver evolução do peso">
+      <div class="card-title">Peso atual</div>
+      <div class="latest-weight-value">${formatDec2(latest.weight)}<small> kg</small></div>
+      <div class="latest-weight-meta">${trend}${formatWeighDate(latest.date)}</div>
+      <div class="latest-weight-link">Ver evolução ›</div>
+    </div>
+  `;
 
-  let bmiVal = null;
-  if (healthDb.height && healthDb.height > 0) {
-    const heightM = healthDb.height / 100;
-    bmiVal = (latest.weight / (heightM * heightM))
-      .toFixed(1)
-      .replace(".", ",");
-  }
+  const tile = (key, label, value, colorStyle = "") => `
+    <button type="button" class="toba-stat is-center" data-click="openMetric" data-key="${key}">
+      <span class="toba-stat-label">${escapeHtml(label)}</span>
+      <span class="toba-stat-value"${colorStyle}>${value}</span>
+    </button>
+  `;
 
   let activeGridHtml = "";
-  if (bmiVal) {
-    activeGridHtml += `
-                <div class="metric-box clickable" onclick="openMetricCompareModal('bmi', 'IMC', 'dec1', '')">
-                    <span class="metric-label">IMC</span>
-                    <div class="metric-val" style="color: #c9d1d9;">${bmiVal}</div>
-                </div>
-            `;
-  }
+  const bmiVal = getBmi(latest.weight);
+  if (bmiVal !== null) activeGridHtml += tile("bmi", "IMC", formatDec1(bmiVal));
 
   healthDb.metricsOrder.forEach((m) => {
-    if (m.active) {
-      const metricLabel = m.label.split(" (")[0];
-      let valDisplay = "--";
-      if (latest[m.key] !== null && latest[m.key] !== undefined) {
-        if (m.type === "dec1") valDisplay = formatDec1(latest[m.key]);
-        else if (m.type === "dec2")
-          valDisplay = formatDec2(latest[m.key]);
-        else valDisplay = latest[m.key];
-        valDisplay += m.unit || "";
-      }
-      activeGridHtml += `
-                    <div class="metric-box clickable" onclick="openMetricCompareModal('${m.key}', '${metricLabel}', '${m.type}', '${m.unit || ""}')">
-                        <span class="metric-label">${metricLabel}</span>
-                        <div class="metric-val" style="color: ${m.color || "#f0f6fc"};">${valDisplay}</div>
-                    </div>
-                `;
-    }
+    if (!m.active) return;
+    const meta = getMetricMeta(m.key);
+    const raw = latest[m.key];
+    const has = raw !== null && raw !== undefined;
+    const valDisplay = has ? `${formatMetricValue(raw, m.type)}${m.unit || ""}` : "--";
+    const colorStyle = has && m.color ? ` style="color: ${m.color}"` : "";
+    activeGridHtml += tile(m.key, meta.short, valDisplay, colorStyle);
   });
 
-  if (activeGridHtml) {
-    metricsGrid.innerHTML = activeGridHtml;
-    metricsGrid.style.display = "grid";
-  } else {
-    metricsGrid.style.display = "none";
-  }
+  metricsGrid.innerHTML = activeGridHtml;
+  metricsGrid.hidden = !activeGridHtml;
 
   const fatMetric = healthDb.metricsOrder.find((m) => m.key === "fat");
   historyList.innerHTML = sortedWeighIns
     .map((w) => {
-      const dt = new Date(w.date).toLocaleString("pt-BR", {
-        dateStyle: "short",
-        timeStyle: "short",
-      });
+      const fatInfo = w.fat && fatMetric && fatMetric.active ? `${formatDec1(w.fat)}% gordura` : "";
       return `
-                <div class="history-item" onclick="openEditWeighModal('${w.id}')">
-                    <div>
-                        <div class="history-weight">${formatDec2(w.weight)} kg</div>
-                        <div class="history-date">${dt} ${w.fat && fatMetric && fatMetric.active ? `• ${formatDec1(w.fat)}% gordura` : ""}</div>
-                    </div>
-                </div>
-            `;
+        <div class="toba-list-item" role="button" tabindex="0" data-click="editWeighIn" data-id="${escapeHtml(String(w.id))}">
+          <div class="history-info">
+            <div class="history-date">${formatWeighDate(w.date)}</div>
+            ${fatInfo ? `<div class="history-extra">${fatInfo}</div>` : ""}
+          </div>
+          <div class="history-weight">${formatDec2(w.weight)} kg</div>
+        </div>
+      `;
     })
     .join("");
 }
 
 /* CRUD DE PESAGEM */
 function openAddWeighModal() {
-  document.getElementById("weighModalTitle").innerText =
-    "⚖️ Registrar Pesagem";
+  document.getElementById("weighModalTitle").textContent = "⚖️ Nova pesagem";
   document.getElementById("editingWeighId").value = "";
-  document.getElementById("btnSaveWeigh").innerText = "Salvar Pesagem 🚀";
-  document.getElementById("btnDeleteWeigh").style.display = "none";
+  document.getElementById("btnSaveWeigh").textContent = "Salvar pesagem 🚀";
+  document.getElementById("btnDeleteWeigh").hidden = true;
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   document.getElementById("wDate").value = now.toISOString().slice(0, 16);
   document.getElementById("wWeight").value = "";
   renderDynamicFields({});
-  document.getElementById("addWeighModal").classList.add("active");
+  openTobaModal("weighModal");
 }
 
 function openEditWeighModal(weighId) {
   const entry = healthDb.weighIns.find((w) => String(w.id) === String(weighId));
   if (!entry) return;
-  document.getElementById("weighModalTitle").innerText =
-    "✏️ Editar Pesagem";
+  document.getElementById("weighModalTitle").textContent = "✏️ Editar pesagem";
   document.getElementById("editingWeighId").value = entry.id;
-  document.getElementById("btnSaveWeigh").innerText =
-    "Salvar Alterações 💾";
-  document.getElementById("btnDeleteWeigh").style.display = "block";
+  document.getElementById("btnSaveWeigh").textContent = "Salvar 💾";
+  document.getElementById("btnDeleteWeigh").hidden = false;
   document.getElementById("wDate").value = entry.date;
   document.getElementById("wWeight").value = formatDec2(entry.weight);
   renderDynamicFields(entry);
-  document.getElementById("addWeighModal").classList.add("active");
+  openTobaModal("weighModal");
 }
 
 function renderDynamicFields(entryData) {
@@ -655,9 +641,7 @@ function renderDynamicFields(entryData) {
       .map((m) => {
         let val = "";
         if (entryData[m.key] !== undefined && entryData[m.key] !== null) {
-          if (m.type === "dec1") val = formatDec1(entryData[m.key]);
-          else if (m.type === "dec2") val = formatDec2(entryData[m.key]);
-          else val = entryData[m.key];
+          val = formatMetricValue(entryData[m.key], m.type);
         }
         const maskClass =
           m.type === "dec1"
@@ -666,10 +650,11 @@ function renderDynamicFields(entryData) {
               ? "toba-mask-dec2"
               : "";
         const inputType = m.type === "int" ? "number" : "text";
+        const inputMode = m.type === "int" ? "numeric" : "decimal";
         return `
                 <div class="form-group">
-                    <label for="w_${m.key}">${m.label}</label>
-                    <input type="${inputType}" id="w_${m.key}" class="form-control ${maskClass}" placeholder="${m.placeholder || ""}" value="${val}">
+                    <label for="w_${m.key}">${escapeHtml(m.label)}</label>
+                    <input type="${inputType}" inputmode="${inputMode}" id="w_${m.key}" class="form-control ${maskClass}" placeholder="${escapeHtml(m.placeholder || "")}" value="${escapeHtml(String(val))}">
                 </div>
             `;
       })
@@ -677,18 +662,13 @@ function renderDynamicFields(entryData) {
   initTobaDecimalMasks();
 }
 
-function closeAddWeighModal() {
-  document.getElementById("addWeighModal").classList.remove("active");
-}
-
-function saveWeighIn(e) {
-  e.preventDefault();
+function saveWeighIn() {
   const editingId = document.getElementById("editingWeighId").value;
   const weightVal = parseTobaDecimal(
     document.getElementById("wWeight").value,
   );
   if (!weightVal) {
-    showPageMessage("Preencha pelo menos o peso, meu consagrado!", { title: "Faltou o peso" });
+    showPageMessage("Preencha pelo menos o peso, meu consagrado!", { title: "Faltou o peso", icon: "⚖️" });
     return;
   }
 
@@ -703,9 +683,6 @@ function saveWeighIn(e) {
     date: document.getElementById("wDate").value,
     weight: weightVal,
   };
-
-  // A gravação percorre todas as métricas configuradas; campos que não
-  // existem no formulário (por estarem inativos) acabam salvos como null.
 
   healthDb.metricsOrder.forEach((m) => {
     const el = document.getElementById(`w_${m.key}`);
@@ -727,72 +704,65 @@ function saveWeighIn(e) {
   else healthDb.weighIns.push(entry);
 
   saveHealthDb();
-  closeAddWeighModal();
+  closeTobaModal("weighModal");
   updateUI();
 }
 
 async function deleteCurrentWeighIn() {
   const editingId = document.getElementById("editingWeighId").value;
   if (!editingId) return;
-  const confirmed = await showPageMessage("Tem certeza que deseja apagar este registro de pesagem?", { title: "Excluir pesagem", confirm: true, confirmLabel: "Excluir" });
-  if (confirmed) {
-    healthDb.weighIns = healthDb.weighIns.filter(
-      (w) => String(w.id) !== String(editingId),
-    );
-    saveHealthDb();
-    closeAddWeighModal();
-    updateUI();
-  }
+  const confirmed = await showPageMessage("Apagar esta pesagem? Não tem volta.", { title: "Excluir pesagem", confirm: true, confirmLabel: "Excluir" });
+  if (!confirmed) return;
+  healthDb.weighIns = healthDb.weighIns.filter(
+    (w) => String(w.id) !== String(editingId),
+  );
+  saveHealthDb();
+  closeTobaModal("weighModal");
+  updateUI();
 }
 
-/* ROLDANA & CONFIGS GERAIS */
-function openSettingsModal() {
-  document.getElementById("settingsMenuModal").classList.add("active");
-}
-
-function closeSettingsMenuModal() {
-  document.getElementById("settingsMenuModal").classList.remove("active");
-}
-
-function openProfileSettingsModal() {
-  closeSettingsMenuModal();
+/* PERFIL */
+function openProfile() {
   document.getElementById("cfgAge").value = healthDb.age || "";
   document.getElementById("cfgHeight").value = healthDb.height || "";
   document.getElementById("cfgGender").value = healthDb.gender || "";
-  document.getElementById("settingsModal").classList.add("active");
+  openTobaModal("profileModal");
 }
 
-function openScaleSettingsFromMenu() {
-  closeSettingsMenuModal();
-  openScaleConfigModal();
-}
-
-function closeSettingsModal() {
-  document.getElementById("settingsModal").classList.remove("active");
-}
-
-function saveSettings() {
+function saveProfile() {
   healthDb.age =
     parseInt(document.getElementById("cfgAge").value) || null;
   healthDb.height =
     parseInt(document.getElementById("cfgHeight").value) || null;
   healthDb.gender = document.getElementById("cfgGender").value || null;
   saveHealthDb();
-  closeSettingsModal();
+  closeTobaModal("profileModal");
   updateUI();
-  showPageMessage("Perfil salvo com sucesso! (⁠⁠👍⁠￣⁠🏽⁠￣⁠)⁠👍", { title: "Perfil atualizado" });
-}
-
-/* A tela de Pesagem é a única do módulo: o ⚙️ abre o menu de configurações. */
-function openDataModalFromMenu() {
-  closeSettingsMenuModal();
-  openDataModal();
 }
 
 function onHealthDataReplaced() {
-  closeSettingsModal();
+  closeTobaModal("profileModal");
+  switchPesagemView("main");
   updateUI();
 }
+
+tobaActions({
+  newWeighIn: openAddWeighModal,
+  editWeighIn: (el) => openEditWeighModal(el.dataset.id),
+  saveWeighIn,
+  deleteCurrentWeighIn,
+  openMetric: (el) => openMetricCompare(el.dataset.key),
+  closeMetricCompare,
+  openMetricAdvice: (el) => openMetricAdvice(el.dataset.key),
+  openProfile,
+  saveProfile,
+  openScaleConfig,
+  toggleMetricActive: (el) => toggleMetricActive(Number(el.dataset.index), el.checked),
+  moveMetric: (el) => moveMetric(Number(el.dataset.index), Number(el.dataset.dir)),
+});
+
+// Fechar a balança redesenha a tela (métricas ligadas/desligadas).
+document.getElementById("scaleConfigModal").addEventListener("toba:close", updateUI);
 
 initTobaDecimalMasks();
 updateUI();

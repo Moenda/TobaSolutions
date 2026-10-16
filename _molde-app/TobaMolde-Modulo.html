@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="icon" href="../icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="css/molde-base.css" />
+  <title>Toba Molde | Módulo</title>
+</head>
+
+<body>
+  <div class="container">
+    <header class="toba-header">
+      <a class="toba-back" href="TobaMolde-Index.html" data-label="Voltar para o Toba Molde" aria-label="Voltar para o Toba Molde">‹</a>
+      <a class="toba-titles" href="TobaMolde-Index.html">
+        <span class="toba-app">🧪 Toba Molde</span>
+        <span class="toba-page">📋 Módulo</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-add-btn" data-click="newItem">+ Item</button>
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Quadradinhos de info padrão -->
+    <div class="toba-stats">
+      <div class="toba-stat">
+        <span class="toba-stat-label">📦 Itens</span>
+        <span class="toba-stat-value" id="statTotal">0</span>
+      </div>
+      <div class="toba-stat">
+        <span class="toba-stat-label">✅ Feitos</span>
+        <span class="toba-stat-value text-green" id="statDone">0</span>
+      </div>
+    </div>
+
+    <div class="section-title">📋 Lista</div>
+    <div class="toba-list" id="itemList"></div>
+  </div>
+
+  <!-- Itens só desta página dentro da ⚙️ (opcional; apague se não usar) -->
+  <div id="tobaSettingsExtra" hidden></div>
+
+  <!-- Folha (sheet) padrão: botão principal no rodapé fixo, acima do teclado -->
+  <div class="toba-modal" id="itemSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="itemSheetTitle">➕ Novo item</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form data-submit="saveItem">
+        <input type="hidden" id="itemId" />
+        <div class="form-group">
+          <label for="itemName">Nome</label>
+          <input type="text" id="itemName" class="form-control" placeholder="Ex: Comprar café" />
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="itemDate">Data</label>
+            <input type="date" id="itemDate" class="form-control" />
+          </div>
+          <label class="check-row" style="margin-top: 1.4rem"><input type="checkbox" id="itemDone" /> Feito</label>
+        </div>
+        <div class="toba-sheet-footer">
+          <div class="btn-row">
+            <button type="button" class="btn btn-danger btn-grow-1" id="deleteItemBtn" data-click="deleteItem" hidden>🗑️ Apagar</button>
+            <button type="submit" class="btn btn-primary btn-grow-2">Salvar</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../assets/toba-common.js"></script>
+  <script src="js/molde-core.js"></script>
+  <script src="js/modulo.js"></script>
+  <script src="../assets/pwa-register.js"></script>
+</body>
+
+</html>

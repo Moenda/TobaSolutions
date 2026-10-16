@@ -1,193 +1,209 @@
 /* Toba Bank · estilos exclusivos de Investimentos */
 
-.invest-popup-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.75);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-  z-index: 150;
+.invest-summary-card {
+  margin-bottom: 1rem;
+  border-color: var(--border);
 }
 
-.invest-popup-overlay.active {
-  opacity: 1;
-  pointer-events: all;
-}
-
-.invest-popup {
-  background: #161b22;
-  border: 1px solid #30363d;
-  border-radius: 18px;
-  padding: 1.4rem;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.invest-action-accordion {
-  background: #0d1117;
-  border: 1px solid #21262d;
-  border-radius: 12px;
-  margin-bottom: 0.8rem;
-  overflow: hidden;
-}
-
-.invest-action-header {
-  padding: 0.8rem 1rem;
+.invest-summary-top {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #58a6ff;
-  user-select: none;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 0.8rem;
 }
 
-.invest-action-body {
-  display: none;
-  padding: 0 1rem 1rem 1rem;
-}
-
-.invest-action-accordion.expanded .invest-action-body {
-  display: block;
-}
-
-.invest-action-arrow {
-  font-size: 0.7rem;
-  color: #8b949e;
-  transition: transform 0.2s;
-}
-
-.invest-action-accordion.expanded .invest-action-arrow {
-  transform: rotate(180deg);
-}
-
-.text-blue {
-  color: #58a6ff;
-}
-
-.invest-summary-card {
-  background: #0d1117;
-  border: 1px solid #30363d;
-  border-radius: 14px;
-  padding: 1rem;
-  margin-bottom: 1.2rem;
-  position: relative;
+.invest-total {
+  font-size: clamp(1.5rem, 7.5vw, 1.9rem);
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  white-space: nowrap;
+  line-height: 1.15;
+  margin-top: 2px;
 }
 
 .btn-open-chart {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  width: 40px;
-  height: 40px;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
   background: #1f6feb;
   border: none;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 1.2rem;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(31, 111, 235, 0.4);
-  transition: transform 0.2s;
+  transition: transform 0.2s ease;
 }
 
 .btn-open-chart:hover {
-  transform: scale(1.05);
+  transform: scale(1.06);
 }
 
-.btn-open-chart span {
-  font-size: 1.2rem;
+.invest-projection-row {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border-soft);
+  font-size: 0.78rem;
 }
 
-.invest-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.invest-projection-row > :last-child {
+  white-space: nowrap;
+}
+
+/* Cofrinhos */
+.cofrinhos-wrapper {
+  background: rgba(255, 123, 114, 0.05);
+  padding: 0.65rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 123, 114, 0.2);
+  margin-bottom: 1rem;
+}
+
+.cofrinhos-summary {
+  background: var(--surface);
+  border: 1px solid rgba(255, 123, 114, 0.3);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  display: flex;
   gap: 10px;
-  margin-top: 10px;
+  align-items: flex-start;
 }
 
-.invest-item-box {
-  background: #161b22;
-  padding: 0.6rem;
-  border-radius: 8px;
-  border: 1px solid #21262d;
-}
-
-.log-list {
+.cofrinhos-actions {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: 0.5rem;
+  gap: 8px;
 }
 
-.log-item {
-  font-size: 0.75rem;
-  background: #0d1117;
-  padding: 0.5rem 0.7rem;
+.cofrinhos-wrapper .section-title {
+  margin-top: 0.9rem;
+}
+
+/* Card de investimento */
+.invest-card-stats .toba-stat {
+  background: var(--surface);
+}
+
+.invest-card-projection {
+  margin-top: 0.6rem;
+  font-size: 0.74rem;
+  background: rgba(88, 166, 255, 0.08);
+  padding: 0.35rem 0.55rem;
   border-radius: 6px;
+  color: var(--text-2);
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.invest-card-projection b {
+  white-space: nowrap;
+}
+
+/* Resgatados */
+.finished-summary {
+  background: rgba(63, 185, 80, 0.08);
+  border: 1px solid rgba(63, 185, 80, 0.2);
+  border-radius: var(--radius);
+  padding: 0.85rem;
+  margin-bottom: 0.9rem;
+  text-align: center;
+}
+
+.finished-summary-value {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--green);
+  margin-top: 2px;
+}
+
+/* Popup do investimento */
+.popup-stats {
+  margin-bottom: 0.8rem;
+}
+
+.invest-action-accordion {
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  margin-bottom: 0.65rem;
+  overflow: hidden;
+}
+
+.invest-action-header {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid #21262d;
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-align: left;
+  user-select: none;
 }
 
-.period-selector {
+.invest-action-body {
+  display: none;
+  padding: 0 0.9rem 0.9rem;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invest-action-accordion.expanded .invest-action-body {
   display: flex;
-  background: #0d1117;
-  padding: 4px;
-  border-radius: 10px;
-  margin-bottom: 16px;
-  border: 1px solid #21262d;
 }
 
-.period-btn {
-  flex: 1;
+.invest-action-arrow {
+  font-size: 0.7rem;
+  color: var(--muted);
+  transition: transform 0.2s ease;
+}
+
+.invest-action-accordion.expanded .invest-action-arrow {
+  transform: rotate(180deg);
+}
+
+/* Cofrinho: só o saque, já aberto e sem cabeçalho */
+.invest-action-accordion.is-open-plain {
   background: transparent;
   border: none;
-  color: #8b949e;
-  padding: 8px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.85rem;
+}
+
+.invest-action-accordion.is-open-plain .invest-action-header {
+  display: none;
+}
+
+.invest-action-accordion.is-open-plain .invest-action-body {
+  display: flex;
+  padding: 0;
+}
+
+#popupHistoryLogsList {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+/* Gráficos */
+.chart-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: 0.8rem;
+  margin-bottom: 0.9rem;
+  height: 260px;
+  position: relative;
 }
 
 .period-btn.active {
-  background: #238636;
+  background: var(--btn-green);
   color: #fff;
-}
-
-.chart-card {
-  background: #0d1117;
-  border: 1px solid #21262d;
-  border-radius: 14px;
-  padding: 16px;
-  margin-bottom: 16px;
-}
-
-.active-assets-list {
-  background: #0d1117;
-  border: 1px solid #21262d;
-  border-radius: 14px;
-  padding: 16px;
-}
-
-.active-assets-list h3 {
-  font-size: 0.95rem;
-  color: #f0f6fc;
-  margin-bottom: 10px;
 }
 
 #assetColorList {
@@ -199,8 +215,28 @@
 
 #assetColorList li {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.86rem;
+}
+
+#assetColorList label {
   display: flex;
   align-items: center;
   gap: 8px;
+  cursor: pointer;
+}
+
+#assetColorList li.is-disabled {
+  opacity: 0.5;
+}
+
+#assetColorList li.is-disabled label {
+  cursor: not-allowed;
+}
+
+.asset-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: 0 0 12px;
 }
