@@ -877,7 +877,7 @@ button.toba-stat:hover,
 }
 
 /* ---------------------------------------------------------------------
- * Modais: folha que sobe de baixo no celular, caixa central no PC.
+ * Modais: caixa no meio da tela (celular e PC).
  * <div class="toba-modal" id="xModal">
  *   <div class="toba-sheet">
  *     <div class="toba-sheet-header"><h3>Título</h3><button class="close-btn" data-close>✕</button></div>
@@ -885,15 +885,17 @@ button.toba-stat:hover,
  *     <div class="toba-sheet-footer"><button class="btn">Salvar</button></div>
  *   </div>
  * </div>
- * O rodapé fica preso embaixo (o teclado não esconde o botão principal).
+ * O rodapé fica preso embaixo da caixa (o teclado não esconde o botão principal:
+ * com interactive-widget=resizes-content a tela encolhe e a caixa encolhe junto).
  * ------------------------------------------------------------------- */
 .toba-modal {
   position: fixed;
   inset: 0;
   z-index: 1000;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
+  padding: 1rem;
   background: rgba(1, 4, 9, 0.72);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -913,17 +915,16 @@ button.toba-stat:hover,
   position: relative;
   width: 100%;
   max-width: 480px;
-  max-height: 92vh;
-  max-height: 92dvh;
+  max-height: 88vh;
+  max-height: 88dvh;
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-bottom: none;
-  border-radius: 22px 22px 0 0;
+  border-radius: var(--radius-xl);
   padding: 0 1rem;
-  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.6);
-  transform: translateY(24px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  transform: translateY(12px) scale(0.98);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -931,7 +932,7 @@ button.toba-stat:hover,
 .toba-sheet::after {
   content: "";
   display: block;
-  height: calc(1rem + env(safe-area-inset-bottom));
+  height: 1rem;
 }
 
 .toba-sheet:has(.toba-sheet-footer)::after {
@@ -939,7 +940,7 @@ button.toba-stat:hover,
 }
 
 .toba-modal.active .toba-sheet {
-  transform: translateY(0);
+  transform: none;
 }
 
 .toba-sheet-header {
@@ -951,22 +952,9 @@ button.toba-stat:hover,
   justify-content: space-between;
   gap: 10px;
   margin: 0 -1rem 1rem;
-  padding: 1.05rem 1rem 0.7rem;
+  padding: 0.85rem 1rem 0.7rem;
   background: var(--surface);
   border-bottom: 1px solid var(--border-soft);
-}
-
-/* "Puxador" da folha */
-.toba-sheet-header::before {
-  content: "";
-  position: absolute;
-  top: 6px;
-  left: 50%;
-  width: 36px;
-  height: 4px;
-  margin-left: -18px;
-  border-radius: 2px;
-  background: var(--border);
 }
 
 .toba-sheet-header h3,
@@ -990,7 +978,7 @@ button.toba-stat:hover,
   flex-direction: column;
   gap: 8px;
   margin: 1rem -1rem 0;
-  padding: 0.75rem 1rem calc(0.85rem + env(safe-area-inset-bottom));
+  padding: 0.75rem 1rem 0.85rem;
   background: var(--surface);
   border-top: 1px solid var(--border-soft);
 }
@@ -1096,7 +1084,8 @@ button.toba-stat:hover,
   color: var(--muted);
 }
 
-.toba-settings-section + .toba-settings-section {
+.toba-settings-section + .toba-settings-section,
+#tobaSettingsSlot:not(:empty) + .toba-settings-section {
   margin-top: 1.2rem;
 }
 
@@ -1111,24 +1100,6 @@ button.toba-stat:hover,
 
 .toba-settings-label.is-danger {
   color: var(--red);
-}
-
-@media (min-width: 560px) {
-  .toba-modal {
-    align-items: center;
-    padding: 1rem;
-  }
-
-  .toba-sheet {
-    border-radius: var(--radius-xl);
-    border-bottom: 1px solid var(--border);
-    max-height: 88vh;
-    max-height: 88dvh;
-  }
-
-  .toba-sheet-header::before {
-    display: none;
-  }
 }
 
 /* Página de detalhe que ocupa o lugar da tela (gráfico da pesagem) */

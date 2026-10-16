@@ -202,3 +202,22 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 - Treino de força: registrar Flexão 2×10 com 0 kg e conferir que o levantado não fica zerado.
 
 **Commit sugerido:** `v1.23 - Flexao, agachamento e abdominal contam no peso levantado (com grupo muscular)`
+
+---
+
+## v1.24 — Janelas no meio da tela
+
+**Arquivos alterados:** `assets/toba-common.css`, `_molde-app/README.md`, `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **Janelas no meio da tela:** todas as janelas (Configurações, cadastro de gasto, pesagem, treino, gráficos, backup...) abrem centralizadas, como uma caixa, em vez de grudadas no fundo da tela do celular. O botão de salvar continua preso no rodapé da caixa, então o teclado não esconde ele.
+2. **Respiro no ⚙️:** o título "💾 Dados" das Configurações ganhou o mesmo espaço que os outros títulos (não fica mais colado nos cards de cima).
+
+**Dados:** "Nenhuma mudança no banco."
+
+**Como testar:**
+- Abrir a ⚙️ na Pesagem: a janela aparece no meio e o "DADOS" tem espaço igual ao "PESAGEM".
+- Treinos → + Treino → Caminhada: tocar num campo, o teclado sobe e o "Salvar treino" continua visível.
+- Gastos → + Gasto e Investimentos → Retirada: mesmo teste do teclado.
+
+**Commit sugerido:** `v1.24 - Janelas centralizadas e espaco no titulo Dados das configuracoes`
+
