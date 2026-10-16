@@ -817,3 +817,182 @@
   padding: 0.5rem;
   font-size: 0.78rem;
 }
+
+/* ---- Telas de detalhe do Hall (energia, distância, peso, Saitama) ---- */
+.eq-scope {
+  display: inline-block;
+  color: #8b949e;
+  background: #161b22;
+  border: 1px solid #21262d;
+  border-radius: 999px;
+  padding: 2px 10px;
+  margin-bottom: 8px;
+  font-size: 0.72rem;
+}
+
+.eq-summary {
+  text-align: center;
+  background: #161b22;
+  border: 1px solid #21262d;
+  border-radius: 14px;
+  padding: 0.9rem 0.8rem;
+  margin-bottom: 4px;
+}
+
+.eq-summary-big {
+  color: #e3b341;
+  font-size: 1.7rem;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.eq-summary-sub {
+  color: #8b949e;
+  font-size: 0.74rem;
+  margin-top: 2px;
+}
+
+.eq-tagline {
+  color: #c9d1d9;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  margin-top: 8px;
+}
+
+.eq-intro {
+  color: #8b949e;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  margin: 10px 0 0;
+}
+
+.eq-intro strong {
+  color: #c9d1d9;
+}
+
+.eq-section-title {
+  color: #8b949e;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin: 14px 0 6px;
+}
+
+.eq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.eq-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #161b22;
+  border: 1px solid #21262d;
+  border-radius: 12px;
+  padding: 0.5rem 0.7rem;
+}
+
+.eq-icon {
+  flex-shrink: 0;
+  width: 30px;
+  text-align: center;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.eq-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.eq-body strong {
+  color: #f0f6fc;
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.eq-note {
+  color: #8b949e;
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.eq-challenge-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.eq-percent {
+  color: #e3b341;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.eq-bar {
+  height: 7px;
+  background: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 3px 0;
+}
+
+.eq-bar-fill {
+  height: 100%;
+  min-width: 3px;
+  background: linear-gradient(90deg, #bf8700, #e3b341);
+  border-radius: 999px;
+}
+
+.eq-empty {
+  color: #8b949e;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  margin-top: 12px;
+}
+
+.eq-more {
+  margin-top: 6px;
+}
+
+.eq-more summary {
+  color: #58a6ff;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 6px 2px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.eq-more summary::-webkit-details-marker {
+  display: none;
+}
+
+.eq-more summary::before {
+  content: "＋ ";
+}
+
+.eq-more[open] summary::before {
+  content: "－ ";
+}
+
+.eq-more .eq-list {
+  margin-top: 4px;
+}
+
+.eq-footer {
+  color: #8b949e;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  margin-top: 14px;
+}

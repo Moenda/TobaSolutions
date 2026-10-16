@@ -49,7 +49,7 @@
             <div class="workout-summary-grid" id="workoutSummary"></div>
           </div>
 
-          <details class="card workout-history-card">
+          <details class="card workout-history-card" open>
             <summary class="workout-history-summary">
               <span class="card-title">📜 Histórico mensal</span>
               <span class="workout-history-count" id="workoutHistoryCount"></span>
@@ -73,6 +73,14 @@
           </div>
         </div>
 
+    <div id="viewDetail" class="view-section">
+          <div class="workout-hero-heading">
+            <h1 id="workoutDetailTitle" style="font-size: 1.05rem; color: #e3b341">🏆 Detalhes</h1>
+            <button type="button" class="back-nav-btn" onclick="closeWorkoutDetail()">‹ Voltar</button>
+          </div>
+          <div class="card"><div id="workoutDetailContent"></div></div>
+        </div>
+
     <div id="viewHero" class="view-section">
           <div class="workout-hero-heading">
             <h1 style="font-size: 1.05rem; color: #e3b341">🏆 Hall do Herói</h1>
@@ -81,18 +89,6 @@
           <div class="card"><div id="workoutHallContent"></div></div>
         </div>
   </div>
-
-  <div class="popup-overlay" id="workoutHallDetailModal" onclick="if (event.target === this) closeWorkoutHallDetail()">
-      <div class="popup-panel" role="dialog" aria-modal="true" aria-labelledby="workoutHallDetailTitle">
-        <div class="modal-header">
-          <div class="modal-title" id="workoutHallDetailTitle">🏆 Detalhes do legado</div>
-          <button type="button" class="close-btn" onclick="closeWorkoutHallDetail()" aria-label="Fechar">✖</button>
-        </div>
-        <div id="workoutHallDetailContent" class="page-message-text"></div>
-        <button type="button" class="btn btn-secondary" onclick="closeWorkoutHallDetail()"
-          style="margin-top: 1rem">Fechar</button>
-      </div>
-    </div>
 
   <div class="modal-overlay" id="workoutModal">
       <div class="modal-body">
@@ -158,6 +154,7 @@
     </div>
 
   <script src="js/health-core.js"></script>
+  <script src="js/hall.js"></script>
   <script src="js/forca.js"></script>
   <script src="js/treinos.js"></script>
   <script src="../assets/pwa-register.js"></script>

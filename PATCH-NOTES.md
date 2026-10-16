@@ -1,3 +1,7 @@
+# Toba — Patch Notes
+
+> Cada patch novo entra no final deste arquivo.
+
 # Toba — versão reorganizada
 
 ## Antes de publicar (2 minutos, não pule)
@@ -64,9 +68,28 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 
 ---
 
-## v1.18 — Rendimento dos investimentos com retiradas
+## v1.18 — Hall do Herói em páginas
 
-**Arquivos novos/alterados:** `TobaBank/js/investimento.js`, `TobaBank/TobaBank-Investimento.html`, `PATCH-NOTES.md` (antigo `LEIA-ME.md`, renomeado), `CLAUDE.md`
+**Arquivos novos/alterados:** `TobaHealth/js/hall.js` (NOVO), `TobaHealth/js/treinos.js`, `TobaHealth/css/treinos.css`, `TobaHealth/TobaHealth-Treinos.html`, `sw.js`, `PATCH-NOTES.md` (era o `LEIA-ME.md`), `CLAUDE.md`.
+
+1. **Sem pop-up:** Energia, Distância, Peso levantado e Saitama agora abrem como página inteira, com botão **‹ Voltar** (volta ao Hall geral ou ao resumo do mês, de onde você veio).
+2. **Menos poluição:** cada tela tem um resumo com número grande e uma frase do Toba, depois **🏅 Conquistado** (cards compactos com a frase e uma piada) e **🎯 Próximos desafios** (só 3 barras; o resto fica em "Ver os outros N desafios").
+3. **Energia:** 12 comidas (brigadeiro, pão de queijo, cerveja, temaki, coxinha, pizza, pastel, açaí, Big Mac, feijoada, X-tudo e rodízio de japonês).
+4. **Distância:** ganhou Buenos Aires e Lisboa. **Saitama:** layout compacto.
+5. **Histórico mensal** agora abre já aberto: cada mês é um clique para o resumo do mês.
+6. **Notas de versão:** o `LEIA-ME.md` virou este `PATCH-NOTES.md`; cada patch novo entra aqui no final.
+
+**Dados:** nenhuma mudança no banco. As telas novas só leem os treinos que já existem.
+
+**Como testar:** Treinos → Hall do Herói → tocar em Energia, Distância, Peso levantado e Saitama: cada um abre como página, e o **‹ Voltar** retorna para onde você estava. Repetir pelo resumo de um mês no Histórico mensal. Depois de publicar, feche e abra o app uma vez (o `sw.js` mudou para `toba-v2`).
+
+**Commit sugerido:** `v1.18 - Hall do Heroi em paginas (sem pop-up) e patch notes`
+
+---
+
+## v1.19 — Rendimento dos investimentos com retiradas
+
+**Arquivos novos/alterados:** `TobaBank/js/investimento.js`, `TobaBank/TobaBank-Investimento.html`, `PATCH-NOTES.md`, `CLAUDE.md`
 
 1. **Retiradas agora contam no rendimento:** antes o app comparava o saldo só com o total de aportes, ignorando o que foi retirado. Ex.: Caixinha com R$ 52.000 aportados, R$ 8.650 retirados e saldo de R$ 52.028 aparecia com +0,05%; agora mostra **Investido R$ 43.350** e **Rendimento +R$ 8.678 (+20,02%)**.
 2. **Card do investimento:** "Aportado" virou **"Investido"** (aportes − retiradas) e o Rendimento mostra o valor em R$ e o %, embaixo.
@@ -78,4 +101,4 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 
 **Como testar:** abrir Investimentos → card da Caixinha: Investido = aportes − retiradas e Rendimento = Saldo − Investido. Fazer uma retirada: Saldo e Investido caem o mesmo valor e o Rendimento em R$ não muda. Conferir os gráficos (Patrimônio e Projeção) e o Histórico mensal.
 
-**Commit sugerido:** `v1.18 - Rendimento dos investimentos considera retiradas`
+**Commit sugerido:** `v1.19 - Rendimento dos investimentos considera retiradas`

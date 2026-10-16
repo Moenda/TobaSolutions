@@ -71,13 +71,13 @@ TobaBank/
 TobaHealth/
   TobaHealth-Index.html    Hub do Health (sem banco)
   TobaHealth-Pesagem.html    -> js/health-core.js + js/pesagem.js
-  TobaHealth-Treinos.html    -> js/health-core.js + js/forca.js + js/treinos.js
+  TobaHealth-Treinos.html    -> js/health-core.js + js/hall.js + js/forca.js + js/treinos.js
   css/health-base.css + 1 css por módulo
 PATCH-NOTES.md             Notas de cada patch (antigo LEIA-ME.md — ver seção 0.1)
 CLAUDE.md                  Este guia
 ```
 
-- Tudo é **global** (funções e variáveis no `window`). A ordem dos `<script>` importa: o `*-core.js` sempre vem antes do módulo; em Treinos a ordem é `health-core.js` → `forca.js` → `treinos.js`; `forca.js` (e qualquer arquivo novo carregado antes de `treinos.js`) só chama funções de `treinos.js` dentro de funções (nunca na carga do arquivo). Arquivo JS novo: acrescente o `<script>` na ordem certa **e** no `PRECACHE` do `sw.js`.
+- Tudo é **global** (funções e variáveis no `window`). A ordem dos `<script>` importa: o `*-core.js` sempre vem antes do módulo; em Treinos a ordem é `health-core.js` → `hall.js` (páginas de detalhe do Hall do Herói, view `viewDetail`; só leitura do banco) → `forca.js` → `treinos.js`; `hall.js`, `forca.js` (e qualquer arquivo novo carregado antes de `treinos.js`) só chama funções de `treinos.js` dentro de funções (nunca na carga do arquivo). Arquivo JS novo: acrescente o `<script>` na ordem certa **e** no `PRECACHE` do `sw.js`.
 - **Nunca carregue `bank-core.js` e `health-core.js` na mesma página**: os dois definem globais com o mesmo nome (`exportBackup`, `importBackup`, `openDataModal`, `closeDataModal`).
 - Os nomes dos arquivos HTML **não podem mudar** (links, favoritos, atalhos do manifest e o atalho `?action=add_expense` dependem deles).
 
@@ -253,7 +253,7 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 ## 4. Service worker / PWA
 
 - [sw.js](sw.js): páginas/JS/CSS **network-first** (timeout 4 s, cai no cache); jsdelivr **cache-first**.
-- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v1"` → `"toba-v2"`…). Sem isso, o app offline fica sem o arquivo.
+- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v2"` → `"toba-v3"`…). Sem isso, o app offline fica sem o arquivo.
 - Atualizar a versão do Chart.js exige trocar a URL nos HTML **e** no `PRECACHE`.
 - Toda página nova deve incluir `<script src="../assets/pwa-register.js"></script>` (ou `assets/...` na raiz), as metas de `color-scheme: dark` e o link do manifest, como as existentes.
 
