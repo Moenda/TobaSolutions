@@ -61,7 +61,8 @@ index.html                 Portal (cards, config dos cards, backup GERAL) -> ass
 manifest.webmanifest       PWA (atalhos: add_expense, Pesagem, Treinos)
 sw.js                      Service worker (lista PRECACHE + VERSION)
 assets/toba-common.js      Base de TODOS os apps: datas, dinheiro, decimais, escapeHtml, ações
-                           (data-click...), folhas/modais, avisos, "Salvo ✓", estado vazio, ⚙️ e backup
+                           (data-click...), folhas/modais, avisos, "Salvo ✓", estado vazio, ⚙️, backup
+                           e a régua de arrastar tobaWheelPicker
 assets/toba-common.css     Base visual de TODOS os apps: cores, botões, cards, quadradinhos, folhas, cabeçalho
 assets/portal.js / .css    Só do portal
 assets/pwa-register.js     Registra o sw.js (caminho relativo ao próprio script)
@@ -76,13 +77,13 @@ TobaBank/
 TobaHealth/
   TobaHealth-Index.html    Hub do Health (carrega o health-core só para a ⚙️/backup)
   TobaHealth-Pesagem.html    -> js/health-core.js + js/pesagem.js
-  TobaHealth-Treinos.html    -> js/health-core.js + js/hall.js + js/forca.js + js/treinos.js
+  TobaHealth-Treinos.html    -> js/health-core.js + js/hall.js + js/forca.js + js/sessao.js + js/treinos.js
   css/health-base.css + 1 css por módulo
 PATCH-NOTES.md             Notas de cada patch (antigo LEIA-ME.md — ver seção 0.1)
 CLAUDE.md                  Este guia
 ```
 
-- Tudo é **global** (funções e variáveis no `window`). A ordem dos `<script>` importa: `../assets/toba-common.js` vem **primeiro** em toda página, depois o `*-core.js`, depois o módulo; em Treinos a ordem é `health-core.js` → `hall.js` (páginas de detalhe do Hall do Herói, view `viewDetail`; só leitura do banco) → `forca.js` → `treinos.js`; `hall.js`, `forca.js` (e qualquer arquivo novo carregado antes de `treinos.js`) só chama funções de `treinos.js` dentro de funções (nunca na carga do arquivo). Arquivo JS novo: acrescente o `<script>` na ordem certa **e** no `PRECACHE` do `sw.js`.
+- Tudo é **global** (funções e variáveis no `window`). A ordem dos `<script>` importa: `../assets/toba-common.js` vem **primeiro** em toda página, depois o `*-core.js`, depois o módulo; em Treinos a ordem é `health-core.js` → `hall.js` (páginas de detalhe do Hall do Herói, view `viewDetail`; só leitura do banco) → `forca.js` → `sessao.js` (treino ao vivo, view `viewSession`) → `treinos.js`; `hall.js`, `forca.js`, `sessao.js` (e qualquer arquivo novo carregado antes de `treinos.js`) só chama funções de `treinos.js` dentro de funções (nunca na carga do arquivo). Arquivo JS novo: acrescente o `<script>` na ordem certa **e** no `PRECACHE` do `sw.js`.
 - Desde a v1.22 os cores não repetem mais helpers (tudo comum está no `toba-common.js`) e cada um tem nomes próprios (`exportBankBackup`/`exportHealthBackup`...). Ainda assim cada página registra **um** app em `tobaSetupApp` (a ⚙️ faz backup de um app só); não misture dois cores numa página sem necessidade.
 - Os nomes dos arquivos HTML **não podem mudar** (links, favoritos, atalhos do manifest e o atalho `?action=add_expense` dependem deles).
 
@@ -111,6 +112,7 @@ CLAUDE.md                  Este guia
 | `TOBA_HEALTH_DB_PRE_REFACTOR_BACKUP` | `health-core.js` | Cópia única, mesma regra acima |
 | `TOBA_HEALTH_DB_AUTO_BACKUP` | `health-core.js` | Cópia do valor **anterior** do banco, atualizada a cada `saveHealthDb()` e no load (desde v1.21) |
 | `TOBA_HEALTH_DB_CORRUPT_<timestamp>` | `health-core.js` | Texto original quando o JSON do Health não pôde ser lido (uma cópia por conteúdo) |
+| `TOBA_HEALTH_ACTIVE_SESSION` | `TobaHealth/js/sessao.js` | Treino ao vivo em andamento (desde v1.27): `{ v: 1, id, startedAt (ms), date, routineId, title, current, exercises: [{ exerciseId, skipped, sets: [{ reps, kg, done }] }], rest: { duration, startedAt, endsAt, alerted }, restDefault, updatedAt }`. Temporário: apagado ao finalizar (vira um treino `strength` normal em `workouts`, só com as séries `done`) ou descartar. Ilegível = só oferece "Descartar". Não é lido por backup do módulo nem por `normalizeHealthDb` |
 | `toba_modules_config` | `assets/portal.js` | `[{ id, visible }]` — ordem/visibilidade dos cards do portal |
 | `toba_bank_card_config` | `assets/portal.js` | `{ type: "personalizado"\|"simples", orcamento, cofre, gastos, sobra, addGasto, privacy }` (mesclado com defaults) |
 
@@ -227,6 +229,7 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
   - Pode renomear o `name` exibido; o `id` fica.
 - **Peso levantado com peso do corpo** (só cálculo, nada gravado): os campos `pushups/squats/situps` (Saitama) e os exercícios do catálogo com `bodyweight` somam `reps × peso do corpo × fração` (`BODYWEIGHT_FIELDS` em treinos.js; `bodyweight` em `STRENGTH_EXERCISES`). O peso do corpo é a pesagem mais recente até a data do treino (`getBodyWeightOn`, padrão 75 kg). `BODYWEIGHT_FIELDS` também dá o **grupo muscular** desses campos; `getWorkoutMuscleWork(workout)` devolve `[{ group, exerciseId, reps, kg }]` de qualquer treino e é a base do futuro mapa de calor. Campo novo de exercício de peso do corpo precisa entrar ali com grupo.
 - Treinos `custom` antigos usam `sets/reps/weightKg` soltos; treinos `strength` usam `exercises[]` e deixam esses campos `null`. `getWorkoutLift()` trata os dois casos — qualquer métrica nova de treino precisa tratar os dois também.
+- **Treino ao vivo** ([sessao.js](TobaHealth/js/sessao.js)): grava só na chave `TOBA_HEALTH_ACTIVE_SESSION` enquanto acontece; no fim monta o treino no **mesmo formato** do `registerStrengthWorkout` e só apaga a sessão depois de conferir que o `TOBA_HEALTH_DB` gravou. Tempos (cronômetro e descanso) são horários `Date.now()`, nunca contagem de `setInterval` (o celular congela a aba). Frases de descanso são só de tela.
 - Todo treino precisa ter `type` conhecido; tipos novos precisam de ícone em `WORKOUT_TYPE_ICONS` (senão cai no 🏅) e de tratamento nos cálculos (distância, reps do Saitama etc.).
 
 ### 3.6 Leitores "fora do dono" (precisam acompanhar mudanças de formato)
@@ -261,7 +264,7 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 ## 4. Service worker / PWA
 
 - [sw.js](sw.js): páginas/JS/CSS **network-first** (timeout 4 s, cai no cache); jsdelivr **cache-first**. O network-first usa `fetch(..., { cache: "no-cache" })` de propósito: o GitHub Pages manda `max-age=600`, e sem isso o celular misturava HTML novo com JS antigo logo depois de publicar. Não tire.
-- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v5"` → `"toba-v6"`…). Sem isso, o app offline fica sem o arquivo.
+- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v6"` → `"toba-v7"`…). Sem isso, o app offline fica sem o arquivo.
 - Atualizar a versão do Chart.js exige trocar a URL nos HTML **e** no `PRECACHE`.
 - Toda página nova deve incluir `<script src="../assets/pwa-register.js"></script>` (ou `assets/...` na raiz), as metas de `color-scheme: dark` e o link do manifest, como as existentes.
 
@@ -270,6 +273,7 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 - JS puro, funções globais, `const`/`let`, aspas duplas, ponto e vírgula, indentação de 2 espaços.
 - HTML gerado via template string; escapar texto do usuário antes de inserir no DOM com `escapeHtml()` (toba-common). Passe id/índice em `data-id`/`data-index` e busque o dado na função.
 - **Nada de `onclick=`/`onchange=`/`onsubmit=`/`on*=` no HTML (nem no gerado por JS).** Use `data-click`, `data-change`, `data-input` ou `data-submit` com o nome de uma função registrada em `tobaActions({ nome(el, event) {...} })`. `data-close` fecha a folha onde está; `data-open="id"` abre uma. Ação com nome errado aparece no console. (O Treino de Força usa `data-action` com handler próprio no painel; não reaproveite esse nome.)
+- **Número sem teclado:** `tobaWheelPicker(el, { min, max, step, value, majorEvery, unit, label, onChange })` (toba-common) cria a régua de arrastar. Não redesenhe a régua dentro do próprio `onChange` (o dedo perde o arraste); atualize só textos.
 - **Avisos e confirmações:** só `showPageMessage(msg, { title, icon, confirm, confirmLabel })` (retorna Promise). Proibido `alert`/`confirm`/`prompt`.
 - **Feedback:** gravou → "Salvo ✓" (`tobaSaved()`, já chamado pelos cores). Lista vazia → `tobaEmpty(icone, titulo, dica)`.
 - **Padrão de tela** (igual em todos os apps): cabeçalho `.toba-header` com `‹` à esquerda (sobe um nível: módulo → hub do app → portal), título do app + página no meio, botão "+" e ⚙️ à direita. "Subpáginas" no mesmo HTML usam `tobaSetHeader({ page, back: "acao" })`. Números em quadradinhos `.toba-stats > .toba-stat`.
