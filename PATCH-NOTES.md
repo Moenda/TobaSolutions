@@ -239,3 +239,17 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 **Como testar:** Treinos → + Treino → Treino de força → abrir um treino salvo, aumentar a carga de um exercício e tocar em Registrar treino: deve abrir o resumo com o recorde em destaque. Tocar em Fechar (ou no ‹) volta para Treinos. Abrir o mês no Histórico mensal → botão 🏆 de um treino de força. Editar um treino e salvar não abre o resumo. Conferir o grupo Antebraço e as duas remadas baixas em Costas.
 
 **Commit sugerido:** `v1.25 - Resumo do treino de forca com recordes, antebraco e remada baixa unilateral`
+
+---
+
+## v1.26 — App sempre pega a versão nova depois de publicar
+
+**Arquivos novos/alterados:** `sw.js`, `CLAUDE.md`
+
+1. **Atualização sem "meio a meio":** logo depois de publicar, o celular podia abrir a página nova junto com arquivos antigos guardados pelo navegador (o GitHub Pages deixa cada arquivo guardado por até 10 minutos). Era isso que fazia o resumo do treino da v1.25 não aparecer. Agora o app sempre confere com o site se cada arquivo mudou antes de usar o guardado; offline continua funcionando igual.
+
+**Dados:** Nenhuma mudança no banco.
+
+**Como testar:** depois de publicar, feche e abra o app no celular uma vez (ou recarregue a página). Registre um treino de força: o resumo deve aparecer.
+
+**Commit sugerido:** `v1.26 - Service worker sempre confere a versao nova dos arquivos`
