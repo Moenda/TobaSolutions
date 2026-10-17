@@ -221,3 +221,21 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 
 **Commit sugerido:** `v1.24 - Janelas centralizadas e espaco no titulo Dados das configuracoes`
 
+---
+
+## v1.25 — Resumo do treino de força, antebraço e remada baixa
+
+**Arquivos novos/alterados:** `TobaHealth/js/forca.js`, `TobaHealth/js/treinos.js`, `TobaHealth/css/treinos.css`, `TobaHealth/TobaHealth-Treinos.html`
+
+1. **Resumo do treino:** ao tocar em **Registrar treino** no treino de força, abre uma tela de resumo feita para tirar print e mandar no GymRats: peso levantado no treino (com a comparação divertida, tipo "≈ 2,9 hipopótamos"), exercícios, séries, repetições, tempo e calorias, quanto você levantou a mais ou a menos que da última vez naquele mesmo treino (A, B, C...) e os grupos musculares.
+2. **Recordes pessoais (PR):** o resumo mostra em destaque cada exercício em que você bateu o seu recorde — maior carga, ou mais repetições com a mesma carga — comparando com todo o seu histórico, com o "antes" embaixo. Exercícios feitos pela primeira vez aparecem como 🆕.
+3. **Rever o resumo depois:** os treinos de força no histórico ganharam o botão 🏆, que abre o resumo daquele dia.
+4. **Observações mais visíveis:** no histórico, a observação do treino agora aparece com 📝, num quadrinho e com letra mais clara (antes era um texto cinza miúdo embaixo da lista de exercícios).
+5. **Antebraço:** novo grupo muscular com 5 exercícios: rosca de punho (flexão), rosca de punho inversa (extensão), rosca inversa (pegada pronada), rosca Zottman e rolo de punho.
+6. **Remada baixa:** agora tem as duas versões, **Remada baixa normal (polia)** e **Remada baixa unilateral (polia)**. Os treinos antigos com "Remada baixa (polia)" continuam contando como a normal.
+
+**Dados:** Nenhuma mudança no banco. O resumo e os recordes são calculados na hora a partir dos treinos que já existem.
+
+**Como testar:** Treinos → + Treino → Treino de força → abrir um treino salvo, aumentar a carga de um exercício e tocar em Registrar treino: deve abrir o resumo com o recorde em destaque. Tocar em Fechar (ou no ‹) volta para Treinos. Abrir o mês no Histórico mensal → botão 🏆 de um treino de força. Editar um treino e salvar não abre o resumo. Conferir o grupo Antebraço e as duas remadas baixas em Costas.
+
+**Commit sugerido:** `v1.25 - Resumo do treino de forca com recordes, antebraco e remada baixa unilateral`

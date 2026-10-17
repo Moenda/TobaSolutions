@@ -24,6 +24,7 @@ const STRENGTH_GROUPS = [
   { id: "ombros", name: "Ombros" },
   { id: "biceps", name: "Bíceps" },
   { id: "triceps", name: "Tríceps" },
+  { id: "antebraco", name: "Antebraço" },
   { id: "quadriceps", name: "Quadríceps" },
   { id: "posterior", name: "Posterior de coxa" },
   { id: "gluteos", name: "Glúteos" },
@@ -48,7 +49,8 @@ const STRENGTH_EXERCISES = [
   { id: "puxada-triangulo", name: "Puxada com triângulo", group: "costas" },
   { id: "barra-fixa", name: "Barra fixa", group: "costas", bodyweight: 0.95 },
   { id: "remada-curvada", name: "Remada curvada (barra)", group: "costas" },
-  { id: "remada-baixa", name: "Remada baixa (polia)", group: "costas" },
+  { id: "remada-baixa", name: "Remada baixa normal (polia)", group: "costas" },
+  { id: "remada-baixa-unilateral", name: "Remada baixa unilateral (polia)", group: "costas" },
   { id: "remada-unilateral", name: "Remada unilateral (halter)", group: "costas" },
   { id: "remada-maquina", name: "Remada na máquina", group: "costas" },
   { id: "pulldown", name: "Pulldown (braço reto)", group: "costas" },
@@ -77,6 +79,12 @@ const STRENGTH_EXERCISES = [
   { id: "triceps-coice", name: "Tríceps coice", group: "triceps" },
   { id: "mergulho", name: "Mergulho (paralelas)", group: "triceps", bodyweight: 0.9 },
   { id: "supino-fechado", name: "Supino fechado", group: "triceps" },
+  // Antebraço
+  { id: "rosca-punho", name: "Rosca de punho (flexão)", group: "antebraco" },
+  { id: "rosca-punho-inversa", name: "Rosca de punho inversa (extensão)", group: "antebraco" },
+  { id: "rosca-inversa", name: "Rosca inversa (pegada pronada)", group: "antebraco" },
+  { id: "rosca-zottman", name: "Rosca Zottman", group: "antebraco" },
+  { id: "rolo-punho", name: "Rolo de punho", group: "antebraco" },
   // Quadríceps
   { id: "agachamento-livre", name: "Agachamento livre", group: "quadriceps" },
   { id: "agachamento-corpo", name: "Agachamento (peso do corpo)", group: "quadriceps", bodyweight: 0.7 },
@@ -482,6 +490,7 @@ function registerStrengthWorkout() {
     routineId: state.routineId || "",
     exercises,
   };
+  const isNew = !editingWorkoutId;
   if (editingWorkoutId) {
     const index = healthDb.workouts.findIndex((item) => String(item.id) === String(editingWorkoutId));
     if (index === -1) return;
@@ -494,6 +503,148 @@ function registerStrengthWorkout() {
   hideStrengthPanel();
   closeWorkoutModal();
   renderWorkoutScreen();
+  if (isNew) openStrengthSummary(workout.id, "viewTraining");
+}
+
+/* ---------------------------------------------------------------------
+ * Resumo do treino (tela pensada para printar e compartilhar)
+ * Recordes: compara com os treinos de força até a data deste (sem ele).
+ * ------------------------------------------------------------------- */
+let strengthSummaryReturnView = "viewTraining";
+
+// Melhor série: maior carga; com a mesma carga, mais repetições.
+function getBestStrengthSet(sets) {
+  let best = null;
+  (sets || []).forEach((set) => {
+    const reps = Number(set.reps) || 0;
+    const kg = Number(set.kg) || 0;
+    if (!reps) return;
+    if (!best || kg > best.kg || (kg === best.kg && reps > best.reps)) best = { reps, kg };
+  });
+  return best;
+}
+
+function isBetterStrengthSet(a, b) {
+  return a.kg > b.kg || (a.kg === b.kg && a.reps > b.reps);
+}
+
+function getStrengthRecords(workout) {
+  const previous = healthDb.workouts.filter(
+    (item) => Array.isArray(item.exercises) &&
+      String(item.id) !== String(workout.id) &&
+      String(item.date) <= String(workout.date),
+  );
+  const records = [];
+  const firsts = [];
+  (workout.exercises || []).forEach((exercise) => {
+    const best = getBestStrengthSet(exercise.sets);
+    if (!best) return;
+    let before = null;
+    previous.forEach((item) => {
+      item.exercises
+        .filter((done) => done.exerciseId === exercise.exerciseId)
+        .forEach((done) => {
+          const set = getBestStrengthSet(done.sets);
+          if (set && (!before || isBetterStrengthSet(set, before))) before = set;
+        });
+    });
+    if (!before) firsts.push(exercise.name);
+    else if (isBetterStrengthSet(best, before)) records.push({ name: exercise.name, best, before });
+  });
+  return { records, firsts };
+}
+
+function describeBestSet(set) {
+  return set.kg ? `${formatWorkoutNumber(set.kg, 1)} kg × ${set.reps}` : `${set.reps} reps`;
+}
+
+function renderStrengthSummary(workout) {
+  const lift = getStrengthLift(workout);
+  const exercises = workout.exercises || [];
+  const totalReps = exercises.reduce(
+    (sum, exercise) => sum + (exercise.sets || []).reduce((acc, set) => acc + (Number(set.reps) || 0), 0),
+    0,
+  );
+  const { records, firsts } = getStrengthRecords(workout);
+  const groups = [...new Set(exercises.map((exercise) => exercise.group).filter(Boolean))].map(getStrengthGroupName);
+  const weekday = new Date(`${workout.date}T12:00:00`).toLocaleDateString("pt-BR", { weekday: "long" });
+  const equivalent = [...WORKOUT_LIFT_EQUIVALENTS].reverse().find((item) => lift.kg >= item.size);
+
+  const lastSame = workout.routineId
+    ? healthDb.workouts
+        .filter((item) => item.type === "strength" &&
+          item.routineId === workout.routineId &&
+          String(item.id) !== String(workout.id) &&
+          String(item.date) <= String(workout.date))
+        .sort((a, b) => String(b.date).localeCompare(String(a.date)))[0]
+    : null;
+  let comparison = "";
+  if (lastSame && lift.kg > 0) {
+    const lastKg = getStrengthLift(lastSame).kg;
+    const diff = lift.kg - lastKg;
+    if (lastKg > 0 && Math.round(diff) !== 0) {
+      const pct = (diff / lastKg) * 100;
+      comparison = `<div class="ss-compare ${diff > 0 ? "is-up" : "is-down"}">${diff > 0 ? "📈" : "📉"} ${diff > 0 ? "+" : ""}${formatWorkoutNumber(diff, 0)} kg (${diff > 0 ? "+" : ""}${formatWorkoutNumber(pct, 1)}%) vs. a última vez em ${formatWorkoutDate(lastSame.date)}</div>`;
+    }
+  }
+
+  const stat = (value, label) => `<div class="ss-stat"><strong>${value}</strong><span>${label}</span></div>`;
+  const stats = [
+    stat(exercises.length, exercises.length === 1 ? "exercício" : "exercícios"),
+    stat(lift.sets, "séries"),
+    stat(formatWorkoutNumber(totalReps, 0), "reps"),
+  ];
+  if (workout.durationMinutes) stats.push(stat(formatWorkoutNumber(workout.durationMinutes, 0), "min"));
+  if (workout.calories) stats.push(stat(formatWorkoutNumber(workout.calories, 0), "kcal"));
+
+  const recordsHtml = records.length
+    ? `<ul class="ss-records">${records.map((record) => `
+        <li>
+          <span class="ss-record-name">🏅 ${escapeHtml(record.name)}</span>
+          <span class="ss-record-value">${describeBestSet(record.best)}<small>antes: ${describeBestSet(record.before)}</small></span>
+        </li>`).join("")}</ul>`
+    : `<p class="ss-empty">${firsts.length === exercises.length ? "Primeiro registro desses exercícios: agora tem recorde pra bater." : "Sem recorde hoje. Constância também é vitória."}</p>`;
+
+  return `
+    <div class="strength-summary">
+      <div class="ss-top">
+        <span class="ss-badge">💪 Treino concluído</span>
+        <h2 class="ss-title">${escapeHtml(workout.title)}</h2>
+        <span class="ss-date">${formatWorkoutDate(workout.date)} · ${weekday}</span>
+        ${groups.length ? `<div class="ss-groups">${groups.map((group) => `<span>${group}</span>`).join("")}</div>` : ""}
+      </div>
+      <div class="ss-hero">
+        <span class="ss-hero-label">${lift.kg > 0 ? "Peso levantado" : "Repetições"}</span>
+        <strong class="ss-hero-value">${lift.kg > 0 ? `${formatWorkoutNumber(lift.kg, 0)} kg` : formatWorkoutNumber(totalReps, 0)}</strong>
+        ${equivalent ? `<span class="ss-hero-eq">${equivalent.icon} ≈ ${formatWorkoutNumber(lift.kg / equivalent.size, 1)} ${lift.kg / equivalent.size < 2 ? equivalent.one : equivalent.name}</span>` : ""}
+      </div>
+      ${comparison}
+      <div class="ss-stats">${stats.join("")}</div>
+      <div class="ss-section">🏆 Recordes pessoais${records.length ? ` · ${records.length}` : ""}</div>
+      ${recordsHtml}
+      ${firsts.length && firsts.length < exercises.length ?`<p class="ss-firsts">🆕 Primeira vez: ${firsts.map(escapeHtml).join(", ")}</p>` : ""}
+      <div class="ss-section">📋 Exercícios</div>
+      <ul class="ss-exercises">${exercises.map((exercise) => `
+        <li><span>${escapeHtml(exercise.name)}</span><span>${describeStrengthSets(exercise.sets)}</span></li>`).join("")}</ul>
+      ${workout.notes ? `<p class="ss-notes">📝 ${escapeHtml(workout.notes)}</p>` : ""}
+      <div class="ss-brand">⚡ TOBA HEALTH</div>
+    </div>
+    <p class="ss-hint">📸 Tira um print e manda no GymRats!</p>
+    <button type="button" class="btn btn-primary" data-click="closeStrengthSummary">Fechar</button>
+  `;
+}
+
+function openStrengthSummary(workoutId, returnView) {
+  const workout = healthDb.workouts.find((item) => String(item.id) === String(workoutId));
+  if (!workout || workout.type !== "strength") return;
+  strengthSummaryReturnView =
+    returnView || document.querySelector(".app-view.active")?.id || "viewTraining";
+  document.getElementById("strengthSummaryContent").innerHTML = renderStrengthSummary(workout);
+  openModule("viewSummary");
+}
+
+function closeStrengthSummary() {
+  openModule(strengthSummaryReturnView);
 }
 
 async function deleteStrengthRoutine(routineId) {
