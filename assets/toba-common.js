@@ -15,6 +15,8 @@
  *   (tobaSaved), estado vazio (tobaEmpty) e a engrenagem ⚙️ padrão com
  *   "Dados & Backup" (tobaSetupApp).
  * - tobaWheelPicker: régua de arrastar para escolher número sem teclado.
+ * - tobaNotify (notificação com o app aberto) e tobaOpenReminder (lembrete
+ *   com horário pela agenda do celular, arquivo .ics).
  *
  * Este arquivo NÃO grava nada no localStorage: cada core continua dono do
  * próprio banco.
@@ -652,6 +654,190 @@ function tobaReadFile(input) {
     reader.readAsText(file);
   });
 }
+
+/* ---------------------------------------------------------------------
+ * Notificações do aparelho (sem servidor)
+ *   tobaAskNotify()                 pede permissão (chame num toque do usuário)
+ *   tobaNotify(title, body, { tag }) mostra, se já tiver permissão
+ * Só funciona com o app aberto ou recém-minimizado: sem servidor não dá para
+ * agendar. Lembrete com horário vai pela agenda (tobaOpenReminder).
+ * ------------------------------------------------------------------- */
+const TOBA_ICON_URL = (() => {
+  try {
+    return new URL("../icons/icon-192.png", document.currentScript.src).href;
+  } catch (err) {
+    return "";
+  }
+})();
+
+function tobaCanNotify() {
+  return "Notification" in window && Notification.permission === "granted";
+}
+
+async function tobaAskNotify() {
+  if (!("Notification" in window)) return false;
+  if (Notification.permission !== "default") return Notification.permission === "granted";
+  try {
+    return (await Notification.requestPermission()) === "granted";
+  } catch (err) {
+    return false;
+  }
+}
+
+async function tobaNotify(title, body, options = {}) {
+  if (!tobaCanNotify()) return false;
+  const config = {
+    body,
+    icon: TOBA_ICON_URL,
+    badge: TOBA_ICON_URL,
+    tag: options.tag || "toba",
+    renotify: true,
+    vibrate: options.vibrate || [250, 120, 250],
+    data: { url: location.href },
+  };
+  try {
+    // No Android só o service worker pode mostrar notificação.
+    const reg = "serviceWorker" in navigator ? await navigator.serviceWorker.getRegistration() : null;
+    if (reg) await reg.showNotification(title, config);
+    else new Notification(title, config);
+    return true;
+  } catch (err) {
+    console.warn("Notificação não mostrada:", err);
+    return false;
+  }
+}
+
+/* ---------------------------------------------------------------------
+ * Lembrete na agenda (.ics): o calendário do celular é quem avisa no
+ * horário, mesmo com o app fechado e offline. Nada é gravado no banco.
+ *   tobaOpenReminder({
+ *     id: "pesagem",                  // fixo: importar de novo atualiza em vez de duplicar
+ *     title: "⚖️ Hora da pesagem",    // título do evento
+ *     message: "texto do aviso",
+ *     times: ["07:30"],               // um evento por horário (dá para editar na folha)
+ *     days: ["MO"],                   // MO TU WE TH FR SA SU
+ *   });
+ * ------------------------------------------------------------------- */
+const TOBA_WEEK_DAYS = [
+  ["MO", "Seg"], ["TU", "Ter"], ["WE", "Qua"], ["TH", "Qui"], ["FR", "Sex"], ["SA", "Sáb"], ["SU", "Dom"],
+];
+
+let tobaReminderConfig = null;
+
+function tobaIcsEscape(text) {
+  return String(text || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+}
+
+function tobaIcsDate(date) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
+}
+
+// Primeiro dia (de hoje em diante) que cai num dos dias escolhidos: a
+// agenda exige que o início bata com a repetição.
+function tobaIcsFirstDate(time, days) {
+  const [h, m] = time.split(":").map(Number);
+  const jsDays = days.map((code) => (TOBA_WEEK_DAYS.findIndex(([c]) => c === code) + 1) % 7);
+  const date = new Date();
+  date.setHours(h, m, 0, 0);
+  for (let i = 0; i < 7 && !jsDays.includes(date.getDay()); i++) date.setDate(date.getDate() + 1);
+  return date;
+}
+
+function tobaBuildIcs({ id, title, message, times, days }) {
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+  const url = location.href.split(/[?#]/)[0];
+  const rule = days.length === 7 ? "FREQ=DAILY" : `FREQ=WEEKLY;BYDAY=${days.join(",")}`;
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Toba Solutions//Lembretes//PT-BR", "CALSCALE:GREGORIAN", "METHOD:PUBLISH"];
+  times.forEach((time) => {
+    lines.push(
+      "BEGIN:VEVENT",
+      `UID:toba-${id}-${time.replace(":", "")}@toba-solutions`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART:${tobaIcsDate(tobaIcsFirstDate(time, days))}`,
+      "DURATION:PT5M",
+      `RRULE:${rule}`,
+      `SUMMARY:${tobaIcsEscape(title)}`,
+      `DESCRIPTION:${tobaIcsEscape(`${message}\n${url}`)}`,
+      `URL:${url}`,
+      "TRANSP:TRANSPARENT",
+      "BEGIN:VALARM",
+      "ACTION:DISPLAY",
+      `DESCRIPTION:${tobaIcsEscape(message)}`,
+      "TRIGGER:PT0M",
+      "END:VALARM",
+      "END:VEVENT",
+    );
+  });
+  lines.push("END:VCALENDAR");
+  return lines.join("\r\n") + "\r\n";
+}
+
+function tobaDownloadIcs(config, fileName) {
+  const blob = new Blob([tobaBuildIcs(config)], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+const TOBA_REMINDER_HTML = `
+<div class="toba-modal" id="tobaReminderModal" role="dialog" aria-modal="true" aria-labelledby="tobaReminderTitle">
+  <div class="toba-sheet">
+    <div class="toba-sheet-header">
+      <h3 id="tobaReminderTitle">🔔 Lembrete</h3>
+      <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+    </div>
+    <form data-submit="tobaSaveReminder">
+      <p class="toba-sheet-text toba-reminder-msg" id="tobaReminderText"></p>
+      <div class="form-group">
+        <label>Horário</label>
+        <div class="toba-reminder-times" id="tobaReminderTimes"></div>
+      </div>
+      <div class="form-group">
+        <label>Dias</label>
+        <div class="toba-days" id="tobaReminderDays"></div>
+      </div>
+      <p class="toba-reminder-help">Baixa um arquivo de agenda. Abra ele e toque em <b>Adicionar</b>: o calendário do celular avisa no horário, mesmo com o app fechado. Para mudar depois, crie de novo (substitui) ou apague na agenda.</p>
+      <div class="toba-sheet-footer">
+        <button type="submit" class="btn btn-primary">📅 Criar na agenda</button>
+      </div>
+    </form>
+  </div>
+</div>`;
+
+function tobaOpenReminder(config) {
+  if (!document.getElementById("tobaReminderModal")) document.body.insertAdjacentHTML("beforeend", TOBA_REMINDER_HTML);
+  tobaReminderConfig = config;
+  document.getElementById("tobaReminderTitle").textContent = config.title;
+  document.getElementById("tobaReminderText").textContent = `Aviso: "${config.message}"`;
+  document.getElementById("tobaReminderTimes").innerHTML = config.times
+    .map((time, i) => `<input type="time" class="form-control" value="${escapeHtml(time)}" required aria-label="Horário ${i + 1}" />`)
+    .join("");
+  document.getElementById("tobaReminderDays").innerHTML = TOBA_WEEK_DAYS
+    .map(([code, label]) => `<label class="toba-day"><input type="checkbox" value="${code}"${config.days.includes(code) ? " checked" : ""} /><span>${label}</span></label>`)
+    .join("");
+  openTobaModal("tobaReminderModal");
+}
+
+tobaActions({
+  tobaSaveReminder: async (form) => {
+    if (!tobaReminderConfig) return;
+    const times = [...new Set([...form.querySelectorAll("#tobaReminderTimes input")].map((input) => input.value).filter(Boolean))].sort();
+    const days = [...form.querySelectorAll("#tobaReminderDays input:checked")].map((input) => input.value);
+    if (!times.length || !days.length) {
+      showPageMessage("Escolha pelo menos um horário e um dia.", { title: "Faltou escolher", icon: "🗓️" });
+      return;
+    }
+    tobaDownloadIcs({ ...tobaReminderConfig, times, days }, `toba-lembrete-${tobaReminderConfig.id}.ics`);
+    closeTobaModal("tobaReminderModal");
+    tobaToast("📅 Arquivo baixado: abra para pôr na agenda");
+  },
+});
 
 /* ---------------------------------------------------------------------
  * Engrenagem ⚙️ padrão: "Configurações" = itens da página + Dados & Backup

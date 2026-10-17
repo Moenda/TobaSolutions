@@ -4,7 +4,7 @@
  * - Chart.js (CDN): cache primeiro, para os gráficos funcionarem offline.
  * - NUNCA mexe no localStorage: seus dados não passam por aqui.
  * Mudou a lista de arquivos? Aumente a versão abaixo. */
-const VERSION = "toba-v6";
+const VERSION = "toba-v7";
 const NETWORK_TIMEOUT_MS = 4000;
 
 const PRECACHE = [
@@ -116,4 +116,18 @@ self.addEventListener("fetch", (event) => {
   } else if (url.hostname === "cdn.jsdelivr.net") {
     event.respondWith(cacheFirst(request));
   }
+});
+
+// Toque numa notificação do Toba (ex.: "Descanso acabou"): volta para a aba
+// do app se ela ainda estiver aberta, senão abre a página do aviso.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || "./";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      const same = list.find((client) => client.url.split("#")[0] === url.split("#")[0]) || list[0];
+      if (same) return same.focus();
+      return self.clients.openWindow(url);
+    }),
+  );
 });

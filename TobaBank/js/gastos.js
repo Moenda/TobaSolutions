@@ -888,6 +888,14 @@ function saveStartDate(input) {
 }
 
 tobaActions({
+  openExpenseReminder: () =>
+    tobaOpenReminder({
+      id: "gastos",
+      title: "💸 Toba Bank",
+      message: "Gastou algo hoje? Põe no Toba!",
+      times: ["08:00", "14:00", "22:00"],
+      days: ["MO", "TU", "WE", "TH", "FR", "SA", "SU"],
+    }),
   newExpense: () => openExpenseModal(),
   editExpense: (el) => openExpenseModal(el.dataset.id),
   editInstallment: (el) => openEditInstallmentModal(el.dataset.id),

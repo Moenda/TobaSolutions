@@ -348,6 +348,7 @@ function startLiveSession(routineId) {
 }
 
 function openLiveSessionView() {
+  tobaAskNotify(); // só abre por toque: na 1ª vez pede para avisar o fim do descanso fora do app
   if (!liveSession) liveSession = readLiveSession().session;
   if (!liveSession) {
     openModule("viewTraining");
@@ -839,6 +840,9 @@ function liveTick() {
   if (rest.endsAt <= now && !rest.alerted) {
     rest.alerted = true;
     liveBuzz([250, 120, 250, 120, 400]);
+    // Fora do app (reels...), avisa na barra do celular. Com a tela apagada
+    // por muito tempo o celular pode congelar a aba e o aviso atrasar.
+    if (document.hidden) tobaNotify("⏱ Descanso acabou!", "Larga o celular e bora pra próxima série 💪", { tag: "toba-live-rest" });
     storeLiveSession();
   }
   if (getLiveRestState(now) !== liveRestState) renderLiveRest();
