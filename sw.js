@@ -4,7 +4,7 @@
  * - Chart.js (CDN): cache primeiro, para os gráficos funcionarem offline.
  * - NUNCA mexe no localStorage: seus dados não passam por aqui.
  * Mudou a lista de arquivos? Aumente a versão abaixo. */
-const VERSION = "toba-v4";
+const VERSION = "toba-v5";
 const NETWORK_TIMEOUT_MS = 4000;
 
 const PRECACHE = [
@@ -72,7 +72,10 @@ function networkFirst(request) {
     const timer = setTimeout(() => {
       fromCache().then((hit) => { if (hit && !settled) { settled = true; resolve(hit); } });
     }, NETWORK_TIMEOUT_MS);
-    fetch(request)
+    // "no-cache": confere com o servidor se o arquivo mudou, em vez de usar a
+    // cópia de até 10 min que o GitHub Pages deixa no navegador. Sem isso, logo
+    // depois de publicar, a página nova podia carregar com um JS antigo.
+    fetch(request, { cache: "no-cache" })
       .then((response) => {
         clearTimeout(timer);
         if (response && response.ok) {
