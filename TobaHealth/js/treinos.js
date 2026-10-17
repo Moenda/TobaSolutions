@@ -119,13 +119,14 @@ function renderWorkoutRecord(workout) {
             <div class="workout-record-meta">${formatWorkoutDate(workout.date)} · ${weekday}</div>
           </div>
           <div class="workout-record-actions">
+            ${workout.type === "strength" ? `<button type="button" class="workout-icon-btn" data-click="openStrengthSummary" data-id="${id}" title="Ver resumo do treino" aria-label="Ver resumo do treino">🏆</button>` : ""}
             <button type="button" class="workout-icon-btn" data-click="editWorkout" data-id="${id}" title="Editar treino" aria-label="Editar treino">${WORKOUT_ICON_EDIT}</button>
             <button type="button" class="workout-icon-btn workout-icon-btn-danger" data-click="deleteWorkout" data-id="${id}" title="Excluir registro" aria-label="Excluir registro">${WORKOUT_ICON_DELETE}</button>
           </div>
         </div>
         ${chips.length ? `<div class="workout-record-chips">${chips.map((chip) => `<span class="workout-chip">${chip}</span>`).join("")}</div>` : ""}
         ${renderStrengthExerciseList(workout)}
-        ${workout.notes ? `<div class="workout-record-note">${escapeHtml(workout.notes)}</div>` : ""}
+        ${workout.notes ? `<div class="workout-record-note">📝 ${escapeHtml(workout.notes)}</div>` : ""}
       </div>
     </article>
   `;
@@ -777,6 +778,7 @@ const WORKOUT_VIEW_BACK = {
   viewHero: "backToTraining",
   viewMonth: "backToTraining",
   viewDetail: "closeWorkoutDetail",
+  viewSummary: "closeStrengthSummary",
 };
 
 function openModule(viewId) {
@@ -790,6 +792,7 @@ function openModule(viewId) {
     viewHero: "🏆 Hall do Herói",
     viewMonth: document.getElementById("workoutMonthDetailTitle").textContent,
     viewDetail: document.getElementById("workoutDetailTitle").textContent,
+    viewSummary: "💪 Resumo do treino",
   };
   tobaSetHeader({ page: titles[viewId], back: WORKOUT_VIEW_BACK[viewId] });
   document.getElementById("headerAddBtn").hidden = viewId !== "viewTraining";
@@ -805,6 +808,8 @@ tobaActions({
   openModule: (el) => openModule(el.dataset.view),
   backToTraining: () => openModule("viewTraining"),
   closeWorkoutDetail,
+  closeStrengthSummary,
+  openStrengthSummary: (el) => openStrengthSummary(el.dataset.id),
   openWorkoutMonth: (el) => openWorkoutMonth(el.dataset.month),
   openHallDetail: (el) => openWorkoutHallDetail(el.dataset.heroDetail, el.dataset.heroMonth || ""),
   openWorkoutChart: (el) => openWorkoutChart(el.dataset.metric),
