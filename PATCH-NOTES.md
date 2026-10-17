@@ -280,3 +280,24 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 - **No celular** (depois de publicar): arrastar as réguas com o dedo (a página não pode rolar junto; deve vibrar no Android), marcar uma série, sair para o Instagram por uns 2 minutos e voltar (bronca + tempo perdido), deixar a tela apagar no meio e conferir o cronômetro, fechar o app e reabrir (Continuar).
 
 **Commit sugerido:** `v1.27 - Iniciar treino: modo ao vivo com regua de arrastar e timer de descanso`
+
+---
+
+## v1.28 — Notificações: fim do descanso e lembretes na agenda
+
+**Arquivos novos/alterados:** `assets/toba-common.js`, `assets/toba-common.css`, `TobaHealth/js/sessao.js`, `TobaBank/TobaBank-Gastos.html`, `TobaBank/js/gastos.js`, `TobaHealth/TobaHealth-Pesagem.html`, `TobaHealth/js/pesagem.js`, `TobaHealth/TobaHealth-Treinos.html`, `TobaHealth/js/treinos.js`, `sw.js`, `CLAUDE.md`
+
+1. **"⏱ Descanso acabou!" fora do app:** no treino ao vivo, se o descanso acabar enquanto você está em outro app (reels...), chega uma notificação na barra do celular. Tocar nela volta para o treino. Na 1ª vez que abrir o treino ao vivo, o app pede permissão para notificar. Se a tela ficar apagada por muito tempo, o celular pode congelar o app e o aviso atrasar; a vibração e a bronca na volta continuam iguais.
+2. **Lembrete de gastos na agenda:** em Gastos → ⚙️ → **🔔 Lembretes → Lembrete de gastos**. Já vem com **08:00, 14:00 e 22:00, todo dia**, com o aviso "Gastou algo hoje? Põe no Toba!". Dá para mudar os horários e os dias antes de criar.
+3. **Lembrete de pesagem** (Pesagem → ⚙️) e **lembrete de treino** (Treinos → ⚙️, que agora tem a seção 🔔 Lembretes): você escolhe o horário e os dias da semana.
+4. **Como os lembretes funcionam:** o botão **📅 Criar na agenda** baixa um arquivo de agenda (.ics). Abra o arquivo e toque em Adicionar: quem avisa é o **calendário do celular**, no horário certo, mesmo com o app fechado e sem internet. Criar de novo o mesmo lembrete substitui o anterior (na maioria das agendas); para tirar, apague o evento na agenda.
+
+**Dados:** Nenhuma mudança no banco. Os lembretes ficam na agenda do celular, não no Toba.
+
+**Como testar:**
+- No PC: `python -m http.server 8080` → Gastos → ⚙️ → Lembrete de gastos → Criar na agenda: deve baixar `toba-lembrete-gastos.ics`. Abrir no Outlook/Calendário do Windows mostra os 3 eventos diários. Testar também Pesagem e Treinos, desmarcando todos os dias (tem que pedir para escolher um).
+- Larguras 360 e 384 px: os 7 dias cabem numa linha.
+- **No celular** (depois de publicar): criar o lembrete de gastos e abrir o arquivo baixado (no S24 abre no Samsung Calendar; no iPhone, toque no arquivo e em "Adicionar tudo"). Conferir na agenda que repete todo dia.
+- Treino ao vivo: iniciar, aceitar a permissão, marcar uma série com descanso de 60 s, ir para outro app e esperar a notificação. Tocar nela e conferir que volta para o treino.
+
+**Commit sugerido:** `v1.28 - Notificacao do fim do descanso e lembretes na agenda (gastos 08h/14h/22h, pesagem e treino)`

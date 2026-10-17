@@ -807,6 +807,14 @@ function onHealthDataReplaced() {
 }
 
 tobaActions({
+  openWorkoutReminder: () =>
+    tobaOpenReminder({
+      id: "treino",
+      title: "🏋️ Hora do treino",
+      message: "Bora treinar? Registra no Toba Health!",
+      times: ["18:00"],
+      days: ["MO", "WE", "FR"],
+    }),
   newWorkout: openWorkoutModal,
   openModule: (el) => openModule(el.dataset.view),
   backToTraining: () => openModule("viewTraining"),

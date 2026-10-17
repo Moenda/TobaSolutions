@@ -747,6 +747,14 @@ function onHealthDataReplaced() {
 }
 
 tobaActions({
+  openWeighReminder: () =>
+    tobaOpenReminder({
+      id: "pesagem",
+      title: "⚖️ Hora da pesagem",
+      message: "Sobe na balança e registra no Toba Health!",
+      times: ["07:30"],
+      days: ["MO"],
+    }),
   newWeighIn: openAddWeighModal,
   editWeighIn: (el) => openEditWeighModal(el.dataset.id),
   saveWeighIn,
