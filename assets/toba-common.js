@@ -14,6 +14,7 @@
  * - Modais (.toba-modal), aviso/confirmação (showPageMessage), "Salvo ✓"
  *   (tobaSaved), estado vazio (tobaEmpty) e a engrenagem ⚙️ padrão com
  *   "Dados & Backup" (tobaSetupApp).
+ * - tobaWheelPicker: régua de arrastar para escolher número sem teclado.
  *
  * Este arquivo NÃO grava nada no localStorage: cada core continua dono do
  * próprio banco.
@@ -418,6 +419,209 @@ function tobaEmpty(icon, title, hint = "", options = {}) {
     <span class="toba-empty-title">${title}</span>
     ${hint ? `<span class="toba-empty-hint">${hint}</span>` : ""}
   </div>`;
+}
+
+/* ---------------------------------------------------------------------
+ * Seletor de arrastar (régua horizontal), sem teclado
+ *   const picker = tobaWheelPicker(el, {
+ *     min: 0, max: 300, step: 1, value: 60,
+ *     majorEvery: 5,               // traço maior a cada 5 valores (0 = todos iguais)
+ *     unit: "kg",                  // aparece embaixo do valor do centro
+ *     label: "Carga em kg",        // leitor de tela
+ *     format: (v) => String(v),    // texto de cada valor
+ *     onChange: (v) => {...},      // chamado a cada valor que passa pelo centro
+ *   });
+ *   picker.getValue(); picker.setValue(70); picker.destroy();
+ * Dedo: rolagem nativa com scroll-snap (a página não rola junto).
+ * Mouse: arrastar, rodinha e as setas ‹ ›. Teclado: ← → Home End.
+ * Vibra de leve (se o aparelho deixar) a cada valor.
+ * ------------------------------------------------------------------- */
+const TOBA_WHEEL_ITEM = 52; // largura de cada valor, igual ao --wheel-item do CSS
+
+function tobaWheelPicker(container, options = {}) {
+  const min = Number(options.min) || 0;
+  const step = Number(options.step) || 1;
+  const count = Math.max(1, Math.floor(((Number(options.max) || 0) - min) / step) + 1);
+  const majorEvery = Number(options.majorEvery) || 0;
+  const format = options.format || ((v) => String(v));
+  const valueAt = (i) => Math.round((min + i * step) * 1000) / 1000;
+  const indexOf = (v) => Math.min(count - 1, Math.max(0, Math.round(((Number(v) || 0) - min) / step)));
+
+  let index = indexOf(options.value ?? min);
+  let silent = false; // mudança feita pelo código: não vibra nem avisa
+  let styled = [];
+  let frame = 0;
+
+  const items = [];
+  for (let i = 0; i < count; i++) {
+    const v = valueAt(i);
+    const major = majorEvery ? v % (majorEvery * step) === 0 : true;
+    items.push(`<span class="toba-wheel-item${major ? " is-major" : ""}" data-i="${i}"><span class="toba-wheel-num">${escapeHtml(format(v))}</span><span class="toba-wheel-tick"></span></span>`);
+  }
+  container.innerHTML = `
+    <div class="toba-wheel" role="slider" tabindex="0" aria-label="${escapeHtml(options.label || "")}" aria-valuemin="${valueAt(0)}" aria-valuemax="${valueAt(count - 1)}">
+      <button type="button" class="toba-wheel-arrow" data-dir="-1" tabindex="-1" aria-hidden="true">‹</button>
+      <div class="toba-wheel-track">
+        <span class="toba-wheel-pad"></span>${items.join("")}<span class="toba-wheel-pad"></span>
+      </div>
+      <button type="button" class="toba-wheel-arrow" data-dir="1" tabindex="-1" aria-hidden="true">›</button>
+      <span class="toba-wheel-marker" aria-hidden="true"></span>
+      ${options.unit ? `<span class="toba-wheel-unit" aria-hidden="true">${escapeHtml(options.unit)}</span>` : ""}
+    </div>`;
+  const root = container.querySelector(".toba-wheel");
+  const track = root.querySelector(".toba-wheel-track");
+  const itemEls = track.querySelectorAll(".toba-wheel-item");
+  const pads = track.querySelectorAll(".toba-wheel-pad");
+
+  function buzz() {
+    try {
+      if (navigator.vibrate) navigator.vibrate(6);
+    } catch (err) {
+      /* sem vibração neste aparelho */
+    }
+  }
+
+  // Destaca o centro e vai apagando/diminuindo os vizinhos (só os visíveis)
+  function paint() {
+    frame = 0;
+    if (!track.clientWidth) return; // escondido: não dá para medir, mantém o valor
+    const pos = track.scrollLeft / TOBA_WHEEL_ITEM;
+    styled.forEach((el) => {
+      el.style.transform = "";
+      el.style.opacity = "";
+      el.classList.remove("is-center");
+    });
+    styled = [];
+    const from = Math.max(0, Math.floor(pos) - 5);
+    const to = Math.min(count - 1, Math.ceil(pos) + 5);
+    for (let i = from; i <= to; i++) {
+      const dist = Math.abs(i - pos);
+      const el = itemEls[i];
+      el.style.transform = `scale(${Math.max(0.62, 1.35 - dist * 0.24).toFixed(3)})`;
+      el.style.opacity = Math.max(0.12, 1 - dist * 0.27).toFixed(3);
+      if (dist < 0.5) el.classList.add("is-center");
+      styled.push(el);
+    }
+    const next = Math.min(count - 1, Math.max(0, Math.round(pos)));
+    if (next !== index) {
+      index = next;
+      root.setAttribute("aria-valuenow", valueAt(index));
+      root.setAttribute("aria-valuetext", `${format(valueAt(index))}${options.unit ? " " + options.unit : ""}`);
+      if (!silent) {
+        buzz();
+        if (options.onChange) options.onChange(valueAt(index));
+      }
+    }
+  }
+
+  function onScroll() {
+    if (!frame) frame = requestAnimationFrame(paint);
+  }
+
+  // Espaços nas pontas para o primeiro e o último valor poderem ficar no centro
+  let lastWidth = 0;
+  function layout() {
+    // O ResizeObserver avisa logo depois de montar: sem mudança de largura,
+    // não recentraliza (senão cancela uma rolagem que já começou).
+    if (!track.clientWidth || track.clientWidth === lastWidth) return;
+    lastWidth = track.clientWidth;
+    const pad = Math.max(0, (track.clientWidth - TOBA_WHEEL_ITEM) / 2);
+    pads.forEach((el) => (el.style.width = `${pad}px`));
+    silent = true;
+    track.scrollLeft = index * TOBA_WHEEL_ITEM;
+    paint();
+    silent = false;
+  }
+
+  function goTo(i, smooth = true) {
+    const target = Math.min(count - 1, Math.max(0, i));
+    track.scrollTo({ left: target * TOBA_WHEEL_ITEM, behavior: smooth ? "smooth" : "auto" });
+  }
+
+  // Mouse: arrastar como no dedo (o dedo usa a rolagem nativa)
+  let drag = null;
+  track.addEventListener("pointerdown", (event) => {
+    if (event.pointerType !== "mouse" || event.button !== 0) return;
+    drag = { x: event.clientX, left: track.scrollLeft, moved: false };
+    track.classList.add("is-dragging");
+    track.setPointerCapture(event.pointerId);
+  });
+  track.addEventListener("pointermove", (event) => {
+    if (!drag) return;
+    const dx = event.clientX - drag.x;
+    if (Math.abs(dx) > 3) drag.moved = true;
+    track.scrollLeft = drag.left - dx;
+  });
+  const endDrag = () => {
+    if (!drag) return;
+    track.classList.remove("is-dragging");
+    const moved = drag.moved;
+    drag = null;
+    if (moved) {
+      track.dataset.justDragged = "1";
+      setTimeout(() => delete track.dataset.justDragged, 0);
+    }
+    goTo(Math.round(track.scrollLeft / TOBA_WHEEL_ITEM));
+  };
+  track.addEventListener("pointerup", endDrag);
+  track.addEventListener("pointercancel", endDrag);
+
+  // Tocar num valor leva ele para o centro
+  track.addEventListener("click", (event) => {
+    if (track.dataset.justDragged) return;
+    const item = event.target.closest(".toba-wheel-item");
+    if (item) goTo(Number(item.dataset.i));
+  });
+
+  // Rodinha do mouse (vertical) anda de 1 em 1; a horizontal do trackpad é nativa
+  let wheelAcc = 0;
+  track.addEventListener("wheel", (event) => {
+    if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+    event.preventDefault();
+    wheelAcc += event.deltaY;
+    if (Math.abs(wheelAcc) < 40) return;
+    const dir = Math.sign(wheelAcc);
+    wheelAcc = 0;
+    goTo(index + dir);
+  }, { passive: false });
+
+  root.querySelectorAll(".toba-wheel-arrow").forEach((btn) => {
+    btn.addEventListener("click", () => goTo(index + Number(btn.dataset.dir)));
+  });
+
+  root.addEventListener("keydown", (event) => {
+    const moves = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1 };
+    if (moves[event.key]) goTo(index + moves[event.key]);
+    else if (event.key === "Home") goTo(0);
+    else if (event.key === "End") goTo(count - 1);
+    else return;
+    event.preventDefault();
+  });
+
+  track.addEventListener("scroll", onScroll, { passive: true });
+  const observer = typeof ResizeObserver === "function" ? new ResizeObserver(layout) : null;
+  if (observer) observer.observe(track);
+  root.setAttribute("aria-valuenow", valueAt(index));
+  root.setAttribute("aria-valuetext", `${format(valueAt(index))}${options.unit ? " " + options.unit : ""}`);
+  layout();
+
+  return {
+    getValue: () => valueAt(index),
+    setValue(v, smooth = false) {
+      const target = indexOf(v);
+      if (target === index && !smooth) return;
+      silent = true;
+      index = target;
+      track.scrollLeft = target * TOBA_WHEEL_ITEM;
+      paint();
+      silent = false;
+    },
+    destroy() {
+      if (observer) observer.disconnect();
+      if (frame) cancelAnimationFrame(frame);
+      container.innerHTML = "";
+    },
+  };
 }
 
 /* ---------------------------------------------------------------------

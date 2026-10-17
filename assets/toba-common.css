@@ -1286,6 +1286,150 @@ body:has(> .toba-fullpage.active) > .container {
   }
 }
 
+/* ---------------------------------------------------------------------
+ * Régua de arrastar (tobaWheelPicker em toba-common.js)
+ * --wheel-item precisa bater com TOBA_WHEEL_ITEM no JS.
+ * ------------------------------------------------------------------- */
+.toba-wheel {
+  --wheel-item: 52px;
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  height: 78px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.toba-wheel-track {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  scrollbar-width: none;
+  cursor: grab;
+  /* some nas pontas */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+}
+
+.toba-wheel-track::-webkit-scrollbar {
+  display: none;
+}
+
+.toba-wheel-track.is-dragging {
+  scroll-snap-type: none;
+  cursor: grabbing;
+}
+
+.toba-wheel-pad {
+  flex: 0 0 auto;
+}
+
+.toba-wheel-item {
+  flex: 0 0 var(--wheel-item);
+  width: var(--wheel-item);
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding-bottom: 8px;
+  color: var(--muted);
+  transform-origin: 50% 70%;
+  will-change: transform, opacity;
+}
+
+.toba-wheel-num {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.toba-wheel-item.is-major .toba-wheel-num {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-2);
+}
+
+.toba-wheel-tick {
+  width: 2px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--border);
+}
+
+.toba-wheel-item.is-major .toba-wheel-tick {
+  height: 16px;
+  background: var(--muted);
+}
+
+.toba-wheel-item.is-center {
+  color: var(--accent);
+}
+
+.toba-wheel-item.is-center .toba-wheel-num {
+  color: var(--accent);
+  font-weight: 900;
+}
+
+.toba-wheel-item.is-center .toba-wheel-tick {
+  background: var(--accent);
+}
+
+/* Moldura fixa no centro */
+.toba-wheel-marker {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 50%;
+  width: calc(var(--wheel-item) + 8px);
+  transform: translateX(-50%);
+  border: 2px solid var(--accent);
+  border-radius: 10px;
+  pointer-events: none;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.toba-wheel-unit {
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--surface-2);
+  padding: 0 4px;
+  pointer-events: none;
+}
+
+.toba-wheel-arrow {
+  flex: 0 0 34px;
+  border: 0;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 1.4rem;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.toba-wheel-arrow:active {
+  background: var(--border);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

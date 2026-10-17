@@ -772,13 +772,14 @@ async function deleteWorkout(workoutId) {
   renderWorkoutScreen();
 }
 
-/* NAVEGAÇÃO ENTRE AS TELAS DO MÓDULO (Treinos / Hall do Herói / mês / detalhe)
+/* NAVEGAÇÃO ENTRE AS TELAS DO MÓDULO (Treinos / Hall do Herói / mês / detalhe / ao vivo)
  * O "‹" do cabeçalho sobe um nível: detalhe -> Hall/mês -> Treinos -> Hub. */
 const WORKOUT_VIEW_BACK = {
   viewHero: "backToTraining",
   viewMonth: "backToTraining",
   viewDetail: "closeWorkoutDetail",
   viewSummary: "closeStrengthSummary",
+  viewSession: "leaveLiveSession",
 };
 
 function openModule(viewId) {
@@ -786,6 +787,7 @@ function openModule(viewId) {
     .querySelectorAll(".app-view")
     .forEach((v) => v.classList.toggle("active", v.id === viewId));
   if (["viewTraining", "viewHero", "viewMonth"].includes(viewId)) renderWorkoutScreen();
+  if (viewId === "viewTraining") renderLiveSessionLaunch();
 
   const titles = {
     viewTraining: "🏋️ Treinos",
@@ -793,6 +795,7 @@ function openModule(viewId) {
     viewMonth: document.getElementById("workoutMonthDetailTitle").textContent,
     viewDetail: document.getElementById("workoutDetailTitle").textContent,
     viewSummary: "💪 Resumo do treino",
+    viewSession: "▶ Treino ao vivo",
   };
   tobaSetHeader({ page: titles[viewId], back: WORKOUT_VIEW_BACK[viewId] });
   document.getElementById("headerAddBtn").hidden = viewId !== "viewTraining";

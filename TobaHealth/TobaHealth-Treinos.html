@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="../assets/toba-common.css" />
   <link rel="stylesheet" href="css/health-base.css" />
   <link rel="stylesheet" href="css/treinos.css" />
+  <link rel="stylesheet" href="css/sessao.css" />
 </head>
 
 <body>
@@ -33,6 +34,8 @@
     </header>
 
     <div id="viewTraining" class="app-view active">
+      <div id="liveSessionLaunch"></div>
+
       <button type="button" class="workout-hero-launch" data-click="openModule" data-view="viewHero">
         <span class="workout-hero-launch-copy">
           <span class="workout-hero-launch-title">🏆 Hall do Herói</span>
@@ -64,6 +67,11 @@
     <div id="viewDetail" class="app-view">
       <h1 id="workoutDetailTitle" hidden>🏆 Detalhes</h1>
       <div class="card"><div id="workoutDetailContent"></div></div>
+    </div>
+
+    <div id="viewSession" class="app-view">
+      <div id="liveSessionContent"></div>
+      <div id="liveRest" class="live-rest" hidden></div>
     </div>
 
     <div id="viewSummary" class="app-view">
@@ -146,6 +154,65 @@
     </div>
   </div>
 
+  <div class="toba-modal" id="liveStartModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>▶ Iniciar treino</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="liveStartList"></div>
+      <button type="button" class="toba-menu-btn" data-click="startLiveFree">
+        <span class="toba-menu-icon">➕</span>
+        <span class="toba-menu-text">
+          <span class="toba-menu-title">Treino livre</span>
+          <span class="toba-menu-desc">Vai escolhendo os exercícios do catálogo na hora.</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="liveExerciseModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>➕ Adicionar exercício</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="liveExerciseList"></div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="liveFinishModal" data-backdrop="static">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🏁 Finalizar treino</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form data-submit="finishLiveSession">
+        <p class="toba-sheet-text" id="liveFinishSummary"></p>
+        <div class="form-group">
+          <label for="live-title">Nome do treino</label>
+          <input id="live-title" class="form-control" type="text" maxlength="40" placeholder="Ex: Treino A" />
+        </div>
+        <div class="form-group">
+          <label for="live-calories">Calorias (kcal, opcional)</label>
+          <input id="live-calories" class="form-control" type="number" inputmode="numeric" min="0" step="1" />
+        </div>
+        <div class="form-group">
+          <label for="live-notes">Observações (opcional)</label>
+          <input id="live-notes" class="form-control" type="text" maxlength="160" placeholder="Como foi o treino?" />
+        </div>
+        <label class="live-check">
+          <input type="checkbox" id="live-save-routine" />
+          <span id="liveSaveRoutineText">💾 Salvar como modelo</span>
+        </label>
+        <div class="toba-sheet-footer">
+          <button type="submit" class="btn btn-primary">Salvar treino 💪</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div class="toba-modal" id="workoutChartModal">
     <div class="toba-sheet">
       <div class="toba-sheet-header">
@@ -162,6 +229,7 @@
   <script src="js/health-core.js"></script>
   <script src="js/hall.js"></script>
   <script src="js/forca.js"></script>
+  <script src="js/sessao.js"></script>
   <script src="js/treinos.js"></script>
   <script src="../assets/pwa-register.js"></script>
 </body>

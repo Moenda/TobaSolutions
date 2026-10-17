@@ -253,3 +253,30 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 **Como testar:** depois de publicar, feche e abra o app no celular uma vez (ou recarregue a página). Registre um treino de força: o resumo deve aparecer.
 
 **Commit sugerido:** `v1.26 - Service worker sempre confere a versao nova dos arquivos`
+
+---
+
+## v1.27 — Iniciar treino: modo ao vivo com régua e timer de descanso
+
+**Arquivos novos/alterados:** `TobaHealth/js/sessao.js` (NOVO), `TobaHealth/css/sessao.css` (NOVO), `TobaHealth/TobaHealth-Treinos.html`, `TobaHealth/js/treinos.js`, `assets/toba-common.js`, `assets/toba-common.css`, `sw.js`, `CLAUDE.md`
+
+1. **▶ Iniciar treino:** botão novo no topo de Treinos. Você escolhe um dos seus treinos salvos (A, B, C...) ou começa um **treino livre**, adicionando exercícios do catálogo na hora.
+2. **Treino ao vivo:** cronômetro do treino no topo, um exercício por vez, bolinhas mostrando quantos faltam (toque numa para pular direto), botões Anterior / Pular / Próximo e **➕ Exercício extra** no meio do treino. Cada série já vem com o que você fez da última vez naquele exercício; é só ajustar e tocar em **✓ Série feita**. Dá para pôr ou tirar série, e mexer na carga da série atual já ajusta as próximas que estavam iguais.
+3. **Sem teclado para reps e carga:** uma régua de arrastar para o lado (reps de 1 a 50, carga de 0 a 300 kg com traço maior a cada 5 kg). O número do meio fica destacado e o celular vibra de leve a cada valor. No PC funciona arrastando com o mouse, com a rodinha ou com as setas. Cargas com meio quilo da última vez (ex.: 62,5 kg) aparecem arredondadas (63 kg).
+4. **Timer de descanso anti-reels:** ao marcar a série começa o descanso (90 s, com atalhos 60/90/120/180 s e −15 s / +15 s), com contagem grande e anel de progresso. Ao zerar, o celular vibra e manda você largar o reels. Se passar muito do tempo aparece, em vermelho, o **tempo perdido no feed**; se você sair do app e voltar, leva uma bronca ("Te peguei no reels, né? 👀"). O timer conta pelo relógio, então continua certo mesmo se a tela apagar ou você trocar de app. O painel do timer pode ser minimizado (▾).
+5. **Tela acesa:** durante o treino o app pede para a tela não apagar (onde o navegador permite). Se apagar mesmo assim, nada se perde.
+6. **Não perde o treino:** se o app fechar, a tela apagar ou a página recarregar, ao abrir Treinos aparece **"Treino em andamento → Continuar / Descartar"**.
+7. **Finalizar treino:** pede (opcional) calorias e observação, e permite **salvar como modelo** (treino livre) ou **atualizar o modelo** com o que você fez hoje. Salva como um treino de força normal (só as séries marcadas ✓, com a duração do cronômetro) e abre o resumo com os recordes. **Cancelar treino** pede confirmação antes de jogar fora.
+
+**Dados:** Nada muda em `TOBA_HEALTH_DB` (treinos e modelos continuam no mesmo formato). O treino em andamento fica numa chave nova e temporária, `TOBA_HEALTH_ACTIVE_SESSION`, apagada ao finalizar ou descartar. Bancos e backups antigos continuam funcionando; o backup geral do portal já leva essa chave junto, se houver treino aberto.
+
+**Como testar:**
+- No PC (VS Code): `python -m http.server 8080`, abrir `http://localhost:8080/TobaHealth/TobaHealth-Treinos.html` (de preferência com o DevTools no modo celular, 360 e 384 px).
+- Iniciar treino → Treino A: conferir que as séries vêm com a última vez. Arrastar as réguas com o mouse, usar a rodinha e as setas ‹ ›.
+- Marcar ✓ uma série: o timer aparece. Testar 60/120 s, −15 s / +15 s, ▾ minimizar e Pular descanso.
+- Recarregar a página (F5) no meio: aparece "em andamento" → Continuar volta igual, com o timer certo.
+- Pular um exercício, adicionar um exercício extra, pôr e tirar série, Finalizar → conferir o resumo e o treino no Histórico. Treino livre + "Salvar como modelo" vira um treino salvo novo.
+- Cancelar treino → confirma → some o aviso de em andamento.
+- **No celular** (depois de publicar): arrastar as réguas com o dedo (a página não pode rolar junto; deve vibrar no Android), marcar uma série, sair para o Instagram por uns 2 minutos e voltar (bronca + tempo perdido), deixar a tela apagar no meio e conferir o cronômetro, fechar o app e reabrir (Continuar).
+
+**Commit sugerido:** `v1.27 - Iniciar treino: modo ao vivo com regua de arrastar e timer de descanso`
