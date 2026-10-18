@@ -381,3 +381,20 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 
 **Commit sugerido:** `v1.32 - Respiro no fim das janelas e rotulos do mapa de calor abaixo dos pes`
 
+
+## v1.33 — Mapa de calor da vida no Hall do Herói
+
+**Arquivos alterados:** `TobaHealth/js/hall.js`, `TobaHealth/js/treinos.js`, `TobaHealth/css/treinos.css`, `PATCH-NOTES.md`.
+
+1. **Quadradinho "🔥 Mapa de calor da vida" no Hall do Herói:** logo abaixo do Treino Saitama, um mapa do boneco somando todos os treinos da vida (força, peso do corpo, caminhada, corrida, bike, elíptico e km do Saitama). Do lado vem o veredito do shape.
+2. **Triângulo ou retângulo:** compara as repetições de tronco (peito, costas, ombros, bíceps, tríceps, antebraço e abdômen) com as de perna. Se um lado tem mais de 1,3× o outro: 🔻 Triângulo invertido (tronco manda) ou 🔺 Triângulo (perna manda). Senão: ▭ Retângulo. Mostra também o % de cada lado.
+3. **Página do mapa da vida:** tocar no quadradinho abre o resumo do shape e o mapa músculo por músculo, com o ranking e o toque em cada músculo mostrando reps, kg e o último treino.
+
+**Dados:** "Nenhuma mudança no banco." Só cálculo em cima dos treinos já salvos.
+
+**Como testar:**
+- Treinos → 🏆 Hall do Herói: o quadradinho do mapa aparece por último, com o veredito e o % de tronco e perna.
+- Tocar nele: abre "🔥 Mapa de calor da vida" com o resumo e o mapa. Tocar num músculo mostra o resumo dele.
+- Hall de um mês específico: o quadradinho não aparece (é só da vida toda).
+
+**Commit sugerido:** `v1.33 - Mapa de calor da vida no Hall do Heroi (triangulo ou retangulo)`

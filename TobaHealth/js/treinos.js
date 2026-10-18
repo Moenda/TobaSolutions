@@ -415,6 +415,7 @@ function renderWorkoutHeroCards(stats, workoutCount, { monthKey = "", intro = ""
         <strong class="workout-legacy-value">${formatWorkoutNumber(stats.situps, 0)} abd · ${formatWorkoutNumber(stats.pushups, 0)} flex · ${formatWorkoutNumber(stats.squats, 0)} agach</strong>
         <span class="workout-legacy-detail">Toque para descobrir quanto falta para o careca fictício</span>
       </div>
+      ${monthKey ? "" : renderMuscleHallTile(healthDb.workouts)}
     </div>
   `;
 }
