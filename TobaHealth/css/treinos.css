@@ -1311,3 +1311,149 @@
   gap: 8px;
   margin-top: 1rem;
 }
+
+/* ---- Mapa de calor dos músculos (v1.30) ---- */
+.muscle-map {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.muscle-base {
+  fill: var(--surface-3);
+}
+
+.muscle {
+  fill: var(--surface-3);
+  stroke: var(--border);
+  stroke-width: 0.6;
+  transition: fill 0.2s ease;
+}
+
+.muscle.lv-1, .muscle-rank-bar .lv-1 { fill: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.3); }
+.muscle.lv-2, .muscle-rank-bar .lv-2 { fill: rgba(63, 185, 80, 0.55); background: rgba(63, 185, 80, 0.55); }
+.muscle.lv-3, .muscle-rank-bar .lv-3 { fill: rgba(63, 185, 80, 0.8); background: rgba(63, 185, 80, 0.8); }
+.muscle.lv-4, .muscle-rank-bar .lv-4 { fill: var(--green); background: var(--green); stroke: #7ee787; }
+
+.muscle-map.is-interactive .muscle {
+  cursor: pointer;
+}
+
+.muscle-map.is-interactive .muscle:focus-visible,
+.muscle-map.is-interactive .muscle:hover {
+  stroke: var(--text);
+  stroke-width: 1.2;
+  outline: none;
+}
+
+.muscle-side {
+  font-size: 5px;
+  fill: var(--muted);
+  text-anchor: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* Mini no card do mês */
+.muscle-mini {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.muscle-mini .muscle-map {
+  width: 128px;
+  flex-shrink: 0;
+}
+
+.muscle-mini-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.muscle-mini-label {
+  font-size: 0.64rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.muscle-mini-top {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--green);
+}
+
+.muscle-mini-lazy {
+  font-size: 0.72rem;
+  color: var(--text-2);
+}
+
+/* Seção completa (mês e treino) */
+.muscle-card {
+  margin-bottom: 0.9rem;
+}
+
+.muscle-card .muscle-map {
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+.muscle-hint {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: center;
+  margin: 0.4rem 0 0.7rem;
+}
+
+.muscle-rank {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.muscle-rank li {
+  display: grid;
+  grid-template-columns: 5.6rem 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.76rem;
+}
+
+.muscle-rank-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.muscle-rank-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.muscle-rank-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+}
+
+.muscle-rank-value {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.muscle-lazy {
+  margin: 0.7rem 0 0;
+  font-size: 0.76rem;
+  color: var(--text-2);
+}
