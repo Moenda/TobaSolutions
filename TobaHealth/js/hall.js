@@ -256,6 +256,7 @@ function openWorkoutHallDetail(detail, monthKey = "") {
     distance: { title: "🌍 Sua quilometragem pelo mapa", render: renderDistancePage },
     lifted: { title: "🏋️ Peso levantado", render: renderLiftPage },
     saitama: { title: "👊 Você contra o mestre careca", render: renderSaitamaPage },
+    muscles: { title: "🔥 Mapa de calor da vida", render: (stats, workouts) => renderMusclePage(workouts) },
   };
   const page = pages[detail];
   if (!page) return;
@@ -270,7 +271,7 @@ function openWorkoutHallDetail(detail, monthKey = "") {
   document.getElementById("workoutDetailTitle").innerText = page.title;
   document.getElementById("workoutDetailContent").innerHTML =
     (monthKey ? `<div class="eq-scope">📅 ${formatWorkoutMonth(monthKey)}</div>` : "") +
-    page.render(stats);
+    page.render(stats, scopeWorkouts);
   openModule("viewDetail");
   window.scrollTo({ top: 0 });
 }
@@ -481,3 +482,55 @@ function showMuscleHeat(group, scope) {
   const kg = item.kg > 0 ? ` · ${formatWorkoutNumber(item.kg, 0)} kg` : "";
   tobaToast(`${name}: ${formatWorkoutNumber(item.reps, 0)} reps${kg} · último ${when}`);
 }
+
+/* ---------------------------------------------------------------------
+ * FORMATO DO CORPO (Hall do Herói, vida toda): tronco x perna em reps.
+ * ------------------------------------------------------------------- */
+const MUSCLE_UPPER = ["peito", "costas", "ombros", "biceps", "triceps", "antebraco", "abdomen"];
+
+function getBodyShape(heat) {
+  let upper = 0;
+  let lower = 0;
+  Object.entries(heat).forEach(([group, item]) => {
+    if (MUSCLE_UPPER.includes(group)) upper += item.reps;
+    else lower += item.reps;
+  });
+  const total = upper + lower;
+  const upperPct = total ? Math.round((upper / total) * 100) : 0;
+  let shape = { icon: "▭", name: "Retângulo", note: "Tronco e perna no mesmo ritmo. Equilíbrio de monge shaolin 🧘" };
+  if (upper > lower * 1.3) shape = { icon: "🔻", name: "Triângulo invertido", note: "Shape V chegando... mas cuidado com a perna de sabiá 🐦" };
+  else if (lower > upper * 1.3) shape = { icon: "🔺", name: "Triângulo", note: "Perna de jogador, peito de goleiro reserva 🦵" };
+  return { ...shape, upperPct, lowerPct: total ? 100 - upperPct : 0 };
+}
+
+// Quadradinho do Hall (vida toda): mini boneco + veredito
+function renderMuscleHallTile(workouts) {
+  const heat = getMuscleHeat(workouts);
+  if (!Object.keys(heat).length) return "";
+  const shape = getBodyShape(heat);
+  return `
+    <div class="workout-legacy-stat workout-legacy-stat-wide workout-legacy-action muscle-hall-tile" role="button" tabindex="0" data-click="openHallDetail" data-hero-detail="muscles" aria-label="Ver o mapa de calor da vida toda">
+      <span class="workout-legacy-label">🔥 Mapa de calor da vida</span>
+      <span class="muscle-hall-row">
+        ${renderMuscleMap(heat)}
+        <span class="muscle-hall-text">
+          <strong class="workout-legacy-value">${shape.icon} ${shape.name}</strong>
+          <span class="muscle-hall-split">💪 Tronco ${shape.upperPct}%</span>
+          <span class="muscle-hall-split">🦵 Perna ${shape.lowerPct}%</span>
+          <span class="workout-legacy-detail">Toque pra ver músculo por músculo</span>
+        </span>
+      </span>
+    </div>`;
+}
+
+function renderMusclePage(workouts) {
+  const heat = getMuscleHeat(workouts);
+  if (!Object.keys(heat).length) {
+    return tobaEmpty("🛋️", "Nenhum músculo acordado ainda", "Registra um treino que o boneco começa a pegar fogo.", { compact: true });
+  }
+  const shape = getBodyShape(heat);
+  return `
+    ${eqSummary(`${shape.icon} ${shape.name}`, `Tronco ${shape.upperPct}% · Perna ${shape.lowerPct}% das repetições da vida toda`, shape.note)}
+    ${renderMuscleSection(workouts, "life", "🔥 Músculo por músculo")}`;
+}
+

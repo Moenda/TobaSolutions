@@ -1479,3 +1479,29 @@
   font-size: 0.76rem;
   color: var(--text-2);
 }
+
+/* ---- Mapa de calor da vida no Hall do Herói ---- */
+.muscle-hall-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.muscle-hall-row .muscle-map {
+  width: 116px;
+  flex-shrink: 0;
+}
+
+.muscle-hall-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.muscle-hall-split {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-2);
+}
