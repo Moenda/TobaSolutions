@@ -594,8 +594,9 @@ a {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* Quadradinho mais escuro que a tela (destaca); dentro de um card escuro, o contrário */
 .toba-stat {
-  background: var(--surface);
+  background: var(--surface-2);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius);
   padding: 0.6rem 0.65rem;
@@ -605,6 +606,11 @@ a {
   gap: 2px;
   text-align: left;
   color: inherit;
+}
+
+.card .toba-stat,
+.app-card .toba-stat {
+  background: var(--surface);
 }
 
 .toba-stat.is-center {
@@ -1575,6 +1581,10 @@ body:has(> .toba-fullpage.active) > .container {
 
 .text-gold {
   color: var(--gold);
+}
+
+.text-coral {
+  color: var(--coral);
 }
 
 .text-muted {

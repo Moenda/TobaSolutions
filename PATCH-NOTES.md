@@ -301,3 +301,25 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 - Treino ao vivo: iniciar, aceitar a permissão, marcar uma série com descanso de 60 s, ir para outro app e esperar a notificação. Tocar nela e conferir que volta para o treino.
 
 **Commit sugerido:** `v1.28 - Notificacao do fim do descanso e lembretes na agenda (gastos 08h/14h/22h, pesagem e treino)`
+
+---
+
+## v1.29 — Treinos com destaque e página de cada treino
+
+**Arquivos alterados:** `assets/toba-common.css`, `TobaHealth/TobaHealth-Treinos.html`, `TobaHealth/js/treinos.js`, `TobaHealth/css/treinos.css`, `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **Quadradinhos com destaque:** os quadradinhos que ficam soltos na tela (não dentro de um card) agora são mais escuros que o fundo, igual aos do Toba Bank. Nos Treinos, cada número ganhou cor: calorias em dourado, distância em azul, Saitama em coral e levantado em verde.
+2. **Cards do histórico com contraste:** os treinos do mês (Histórico mensal → um mês) também ficaram mais escuros que o fundo, com a borda acendendo ao tocar e um "Ver o treino ›" no canto.
+3. **Página "Como foi o treino":** tocar em qualquer treino do histórico abre a página dele: tipo, data e dia da semana, grupos musculares, peso levantado em destaque (com a comparação divertida), tempo, energia, distância (com min/km), flexões/abdominais/agachamentos e, no treino de força, cada exercício série por série (reps e carga), quanto cada exercício levantou e 🏅 nos recordes. Embaixo: **🏆 Ver resumo com recordes** (força), **Editar** e **Excluir**. O `‹` volta para o mês. Os botões 🏆, lápis e lixeira do card continuam funcionando direto.
+
+**Dados:** "Nenhuma mudança no banco."
+
+**Como testar:**
+- Treinos: os quadradinhos do mês têm fundo mais escuro e números coloridos (360 e 384 px).
+- Histórico mensal → Outubro → tocar no "Treino A": abre a página com as séries. Tocar em Ver resumo e voltar pelo `‹` duas vezes (página → mês).
+- Na página, Editar e salvar: a página atualiza. Excluir: confirma e volta para o mês.
+- Tocar na lixeira do card (sem abrir a página): só pergunta se quer excluir.
+- Conferir que Gastos, Investimentos e o portal continuam com os quadradinhos como antes.
+
+**Commit sugerido:** `v1.29 - Quadradinhos com destaque nos Treinos e pagina de detalhe de cada treino`
+
