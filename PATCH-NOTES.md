@@ -343,3 +343,23 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 
 **Commit sugerido:** `v1.30 - Mapa de calor dos musculos no historico, no mes e no treino`
 
+---
+
+## v1.31 — Todo treino pinta o mapa de calor, do verde ao vermelho
+
+**Arquivos alterados:** `TobaHealth/js/hall.js`, `TobaHealth/css/treinos.css`, `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **Caminhada, bike e elíptico contam:** cada km vira "repetições equivalentes" nos músculos que a atividade trabalha. Sem distância, o app estima pelo tempo.
+   - Caminhada / corrida, por km: panturrilha 12, quadríceps 6, glúteos 4, posterior 3.
+   - Bike, por km: quadríceps 5, panturrilha 2, glúteos 2.
+   - Elíptico, por km: quadríceps 6, glúteos 4, panturrilha 4, posterior 2.
+2. **Todo exercício conta:** os km do Treino Saitama e do treino personalizado (futebol, trilha...) entram como caminhada/corrida. Personalizado sem distância não diz o músculo, então espalha um pouco no corpo todo.
+3. **Ranking sem corte:** "Posterior de coxa" aparece como "Posterior" no ranking, para caber numa linha.
+4. **Do verde ao vermelho:** o mapa agora muda de cor conforme o quanto você treinou cada músculo no período: verde clarinho (pouco) → verde → amarelo → laranja → vermelho (pegando fogo 🔥, o mais treinado). A página do mês tem a legenda "pouco → pegando fogo" embaixo do boneco, e as barras do ranking seguem as mesmas cores.
+
+**Dados:** "Nenhuma mudança no banco." É só cálculo; vale também para os treinos antigos.
+
+**Como testar:** Treinos → Histórico mensal: num mês com caminhada, a panturrilha e o quadríceps aparecem pintados. Abrir uma caminhada ("Ver o treino"): "🔥 Músculos do treino" mostra as pernas. Tocar na panturrilha mostra as reps. O músculo mais treinado do mês fica vermelho.
+
+**Commit sugerido:** `v1.31 - Todo treino conta no mapa de calor (caminhada, bike, eliptico, km do Saitama) e cores do verde ao vermelho`
+
