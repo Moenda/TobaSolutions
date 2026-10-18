@@ -242,6 +242,7 @@ function renderWorkoutView() {
     </div>
     ${tiles.length ? `<div class="toba-stats wv-stats">${tiles.join("")}</div>` : ""}
     ${exercisesHtml}
+    ${renderMuscleSection([workout], "workout", "🔥 Músculos do treino", { teaseLazy: false })}
     ${workout.notes ? `<div class="workout-record-note wv-note">📝 ${escapeHtml(workout.notes)}</div>` : ""}
     <div class="wv-actions">
       ${isStrength ? `<button type="button" class="btn btn-primary" data-click="openStrengthSummary" data-id="${id}">🏆 Ver resumo com recordes</button>` : ""}
@@ -442,6 +443,8 @@ function renderWorkoutMonth(workouts, today) {
       intro: `Seu Hall do Herói só de ${formatWorkoutMonth(selectedHistoryMonth)}:`,
     },
   );
+  document.getElementById("workoutMonthHeat").innerHTML =
+    renderMuscleSection(month.workouts, "month");
   const records = document.getElementById("workoutMonthRecords");
   records.innerHTML = month.workouts.length
     ? month.workouts.map(renderWorkoutRecord).join("")
@@ -524,6 +527,7 @@ function renderWorkoutScreen() {
             <span class="workout-chevron" aria-hidden="true">›</span>
           </span>
           <span class="workout-record-chips">${chips.map((chip) => `<span class="workout-chip">${chip}</span>`).join("")}</span>
+          ${renderMuscleMini(month.workouts)}
         </button>
       `;
     })
@@ -951,6 +955,7 @@ tobaActions({
   closeStrengthSummary,
   closeWorkoutView,
   openWorkoutView: (el) => openWorkoutView(el.dataset.id),
+  showMuscleHeat: (el) => showMuscleHeat(el.dataset.group, el.dataset.scope),
   openStrengthSummary: (el) => openStrengthSummary(el.dataset.id),
   openWorkoutMonth: (el) => openWorkoutMonth(el.dataset.month),
   openHallDetail: (el) => openWorkoutHallDetail(el.dataset.heroDetail, el.dataset.heroMonth || ""),

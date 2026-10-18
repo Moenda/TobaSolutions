@@ -323,3 +323,23 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 
 **Commit sugerido:** `v1.29 - Quadradinhos com destaque nos Treinos e pagina de detalhe de cada treino`
 
+---
+
+## v1.30 — Mapa de calor dos músculos (1ª versão)
+
+**Arquivos alterados:** `TobaHealth/js/hall.js`, `TobaHealth/js/treinos.js`, `TobaHealth/css/treinos.css`, `TobaHealth/TobaHealth-Treinos.html`, `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **Boneco no card do mês:** cada mês do Histórico mensal mostra um bonequinho (frente e costas) com os músculos que você treinou pintados de verde: quanto mais forte o verde, mais repetições naquele grupo. Do lado aparecem os 3 mais treinados e uma zoeira com quem ficou de fora ("Costas pedindo socorro 🆘", "Panturrilha de férias 🏖️"...).
+2. **Mapa de calor na página do mês:** abaixo do Hall do mês, o boneco grande e um ranking com barra por grupo. Tocar num músculo mostra "Peito: 68 reps · 3.877 kg · último há 2 dias".
+3. **Músculos do treino:** a página "Como foi o treino" também mostra o boneco só daquele treino.
+4. **Como mede:** repetições por grupo muscular (kg puro faria a perna sempre ganhar), comparando com o grupo mais treinado do período. Conta os treinos de força e as flexões, agachamentos e abdominais do Saitama. Caminhada, bike e elíptico ainda não pintam o boneco.
+
+**Dados:** "Nenhuma mudança no banco." É só cálculo em cima dos treinos que já existem.
+
+**Como testar:**
+- Treinos → Histórico mensal: o card do mês mostra o boneco e os mais treinados (360 e 384 px).
+- Abrir o mês: seção "🔥 Mapa de calor"; tocar no peito e nas costas (aparece o aviso embaixo).
+- Abrir um treino de força: "🔥 Músculos do treino" com só os grupos dele.
+
+**Commit sugerido:** `v1.30 - Mapa de calor dos musculos no historico, no mes e no treino`
+
