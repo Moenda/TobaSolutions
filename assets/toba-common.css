@@ -941,7 +941,9 @@ button.toba-stat:hover,
   height: 1rem;
 }
 
-.toba-sheet:has(.toba-sheet-footer)::after {
+/* Só quando o rodapé está VISÍVEL (um rodapé dentro de form/painel escondido não conta,
+ * senão o último item da folha fica colado na borda) */
+.toba-sheet:has(.toba-sheet-footer:not([hidden] *))::after {
   display: none;
 }
 

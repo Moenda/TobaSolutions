@@ -363,3 +363,21 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 
 **Commit sugerido:** `v1.31 - Todo treino conta no mapa de calor (caminhada, bike, eliptico, km do Saitama) e cores do verde ao vermelho`
 
+---
+
+## v1.32 — Correções visuais: fim das janelas e mapa de calor
+
+**Arquivos alterados:** `assets/toba-common.css`, `TobaHealth/js/hall.js`, `PATCH-NOTES.md`.
+
+1. **Último item da janela não fica mais colado na borda:** em "Registrar treino" o "Treino personalizado" e no "Treino de força" o "Montar treino do zero" encostavam no fim da janela. Era a folha achando que tinha um rodapé fixo (o botão "Salvar treino", que fica escondido até escolher o tipo) e tirando o respiro de baixo. Agora o respiro só some quando o rodapé está aparecendo de verdade. Conferi todas as janelas do portal, Bank e Health em 360 px.
+2. **"Frente" e "Costas" abaixo dos pés:** no mapa de calor, os rótulos ficavam atrás dos pés do boneco. Agora ficam embaixo, em todo lugar onde o mapa aparece (card do mês, página do mês e página do treino).
+
+**Dados:** "Nenhuma mudança no banco."
+
+**Como testar:**
+- Treinos → + Treino: rolar até o fim, o "Treino personalizado" tem espaço embaixo. Tocar em Treino de força: o "Montar treino do zero" também.
+- Abrir um cadastro com botão de salvar (gasto, pesagem, caminhada): o botão continua preso embaixo.
+- Mapa de calor no card do mês e na página do mês: "FRENTE" e "COSTAS" aparecem inteiros, abaixo dos pés.
+
+**Commit sugerido:** `v1.32 - Respiro no fim das janelas e rotulos do mapa de calor abaixo dos pes`
+
