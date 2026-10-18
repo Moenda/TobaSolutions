@@ -109,8 +109,9 @@ function renderWorkoutRecord(workout) {
   const weekday = new Date(`${workout.date}T12:00:00`).toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
   const id = escapeHtml(workout.id);
 
+  // O card inteiro abre a página do treino; os botões de dentro têm ação própria.
   return `
-    <article class="workout-record">
+    <article class="workout-record is-clickable" role="button" tabindex="0" data-click="openWorkoutView" data-id="${id}" aria-label="Ver detalhes: ${escapeHtml(workout.title)}">
       <div class="workout-record-icon" aria-hidden="true">${WORKOUT_TYPE_ICONS[workout.type] || "🏅"}</div>
       <div class="workout-record-body">
         <div class="workout-record-top">
@@ -127,9 +128,130 @@ function renderWorkoutRecord(workout) {
         ${chips.length ? `<div class="workout-record-chips">${chips.map((chip) => `<span class="workout-chip">${chip}</span>`).join("")}</div>` : ""}
         ${renderStrengthExerciseList(workout)}
         ${workout.notes ? `<div class="workout-record-note">📝 ${escapeHtml(workout.notes)}</div>` : ""}
+        <span class="workout-record-more">Ver o treino ›</span>
       </div>
     </article>
   `;
+}
+
+/* ---------------------------------------------------------------------
+ * PÁGINA DE UM TREINO: toque no card do histórico -> como foi o treino
+ * (números, cada exercício série por série, recordes, observação).
+ * ------------------------------------------------------------------- */
+const WORKOUT_TYPE_NAMES = {
+  saitama: "Treino do Mestre Saitama",
+  walking: "Caminhada / Corrida",
+  bike: "Bike",
+  elliptical: "Elíptico",
+  strength: "Treino de força",
+  custom: "Treino personalizado",
+};
+
+let selectedWorkoutId = "";
+let workoutViewReturn = "viewTraining";
+
+function openWorkoutView(workoutId) {
+  const active = document.querySelector(".app-view.active")?.id;
+  if (active && active !== "viewWorkout") workoutViewReturn = active;
+  selectedWorkoutId = String(workoutId);
+  if (renderWorkoutView()) openModule("viewWorkout");
+}
+
+function closeWorkoutView() {
+  selectedWorkoutId = "";
+  openModule(workoutViewReturn);
+}
+
+function renderWorkoutView() {
+  const workout = healthDb.workouts.find((item) => String(item.id) === selectedWorkoutId);
+  if (!workout) return false;
+  const lift = getWorkoutLift(workout);
+  const isStrength = workout.type === "strength" && Array.isArray(workout.exercises);
+  const weekday = new Date(`${workout.date}T12:00:00`).toLocaleDateString("pt-BR", { weekday: "long" });
+  const groups = [...new Set(getWorkoutMuscleWork(workout).map((item) => item.group))].map(getStrengthGroupName);
+  const id = escapeHtml(workout.id);
+
+  const tile = (label, value, sub = "", color = "") => `
+    <div class="toba-stat">
+      <span class="toba-stat-label">${label}</span>
+      <span class="toba-stat-value${color ? ` ${color}` : ""}">${value}</span>
+      ${sub ? `<span class="toba-stat-sub">${sub}</span>` : ""}
+    </div>`;
+  const tiles = [];
+  if (workout.durationMinutes) tiles.push(tile("⏱️ Tempo", `${formatWorkoutNumber(workout.durationMinutes, 0)} min`, "", "text-blue"));
+  if (workout.calories) tiles.push(tile("🔥 Energia", `${formatWorkoutNumber(workout.calories, 0)} kcal`, "", "text-gold"));
+  if (workout.distanceKm) {
+    const pace = workout.durationMinutes ? workout.durationMinutes / workout.distanceKm : 0;
+    tiles.push(tile("📍 Distância", `${formatWorkoutNumber(workout.distanceKm, 2)} km`, pace ? `${formatWorkoutNumber(pace, 1)} min/km` : "", "text-blue"));
+  }
+  if (isStrength) {
+    tiles.push(tile("🏋️ Exercícios", `${workout.exercises.length}`, `${getStrengthLift(workout).sets} séries`));
+  } else if (workout.sets || workout.reps) {
+    tiles.push(tile("🏋️ Séries", `${formatWorkoutNumber(workout.sets || 0, 0)} × ${formatWorkoutNumber(workout.reps || 0, 0)}`, workout.weightKg ? `${formatWorkoutNumber(workout.weightKg, 1)} kg` : ""));
+  }
+  [["pushups", "🫸 Flexões"], ["situps", "🔥 Abdominais"], ["squats", "🦵 Agachamentos"]].forEach(([field, label]) => {
+    if (workout[field]) tiles.push(tile(label, `${formatWorkoutNumber(workout[field], 0)} reps`, "", "text-gold"));
+  });
+
+  const equivalent = [...WORKOUT_LIFT_EQUIVALENTS].reverse().find((item) => lift.kg >= item.size);
+  const hero = lift.kg > 0
+    ? `<div class="wv-hero">
+        <span class="wv-hero-label">💪 Peso levantado</span>
+        <strong class="wv-hero-value">${formatWorkoutNumber(lift.kg, 0)} kg</strong>
+        <span class="wv-hero-sub">em ${formatWorkoutNumber(lift.reps, 0)} repetições${equivalent ? ` · ${equivalent.icon} ≈ ${formatWorkoutNumber(lift.kg / equivalent.size, 1)} ${lift.kg / equivalent.size < 2 ? equivalent.one : equivalent.name}` : ""}</span>
+      </div>`
+    : "";
+
+  let exercisesHtml = "";
+  if (isStrength && workout.exercises.length) {
+    const prs = new Set(getStrengthRecords(workout).records.map((record) => record.name));
+    exercisesHtml = `
+      <div class="section-title">📋 Exercício por exercício</div>
+      <div class="wv-exercises">${workout.exercises.map((exercise) => {
+        const exLift = getStrengthLift({ date: workout.date, exercises: [exercise] });
+        const fraction = getStrengthExercise(exercise.exerciseId)?.bodyweight || 0;
+        const sets = (exercise.sets || []).filter((set) => Number(set.reps) > 0);
+        return `
+          <div class="wv-exercise">
+            <div class="wv-exercise-head">
+              <span class="wv-exercise-name">${prs.has(exercise.name) ? "🏅 " : ""}${escapeHtml(exercise.name)}</span>
+              ${exLift.kg > 0 ? `<span class="wv-exercise-kg">${formatWorkoutNumber(exLift.kg, 0)} kg</span>` : ""}
+            </div>
+            <div class="wv-exercise-group">${escapeHtml(getStrengthGroupName(exercise.group))}${fraction ? ` · conta ${formatWorkoutNumber(fraction * 100, 0)}% do seu peso` : ""}</div>
+            <ol class="wv-sets">${sets.map((set) => `
+              <li><span>${formatWorkoutNumber(set.reps, 0)} reps</span><span>${Number(set.kg) ? `${formatWorkoutNumber(set.kg, 1)} kg` : (fraction ? "peso do corpo" : "sem carga")}</span></li>`).join("")}
+            </ol>
+          </div>`;
+      }).join("")}</div>`;
+  }
+
+  document.getElementById("workoutViewContent").innerHTML = `
+    <div class="card wv-top">
+      <div class="wv-top-row">
+        <span class="workout-record-icon" aria-hidden="true">${WORKOUT_TYPE_ICONS[workout.type] || "🏅"}</span>
+        <span class="wv-top-text">
+          <span class="wv-title">${escapeHtml(workout.title)}</span>
+          <span class="wv-date">${formatWorkoutDate(workout.date)} · ${weekday}</span>
+        </span>
+      </div>
+      <div class="workout-record-chips">
+        <span class="workout-chip">${WORKOUT_TYPE_NAMES[workout.type] || "Treino"}</span>
+        ${groups.map((group) => `<span class="workout-chip">${escapeHtml(group)}</span>`).join("")}
+      </div>
+      ${hero}
+    </div>
+    ${tiles.length ? `<div class="toba-stats wv-stats">${tiles.join("")}</div>` : ""}
+    ${exercisesHtml}
+    ${workout.notes ? `<div class="workout-record-note wv-note">📝 ${escapeHtml(workout.notes)}</div>` : ""}
+    <div class="wv-actions">
+      ${isStrength ? `<button type="button" class="btn btn-primary" data-click="openStrengthSummary" data-id="${id}">🏆 Ver resumo com recordes</button>` : ""}
+      <div class="btn-row">
+        <button type="button" class="btn btn-secondary" data-click="editWorkout" data-id="${id}">✏️ Editar</button>
+        <button type="button" class="btn btn-danger" data-click="deleteWorkout" data-id="${id}">🗑️ Excluir</button>
+      </div>
+    </div>
+  `;
+  return true;
 }
 
 function getWorkoutLifetimeStats(workouts = healthDb.workouts) {
@@ -364,10 +486,10 @@ function renderWorkoutScreen() {
       `Treinou em ${currentMonth.activeDays} de ${currentMonth.elapsedDays} dias · ${formatWorkoutNumber(currentMonth.efficiency)}% de constância`,
       " is-wide is-highlight",
     ),
-    tile("calories", "🔥 Calorias", `${formatWorkoutNumber(currentMonth.calories, 0)} kcal`, `${formatWorkoutNumber(dailyAverage(currentMonth.calories), 0)} kcal/dia`),
-    tile("distance", "📍 Distância", `${formatWorkoutNumber(currentMonth.distance, 2)} km`, `${formatWorkoutNumber(dailyAverage(currentMonth.distance), 2)} km/dia`),
-    tile("saitamaReps", "👊 Saitama", `${formatWorkoutNumber(saitamaTotal, 0)} reps`, `${formatWorkoutNumber(saitama.situps, 0)} abd · ${formatWorkoutNumber(saitama.pushups, 0)} flex · ${formatWorkoutNumber(saitama.squats, 0)} agach`),
-    tile("lifted", "🏋️ Levantado", `${formatWorkoutNumber(currentMonth.lift.kg, 0)} kg`, `em ${formatWorkoutNumber(currentMonth.lift.reps, 0)} repetições`),
+    tile("calories", "🔥 Calorias", `<span class="text-gold">${formatWorkoutNumber(currentMonth.calories, 0)} kcal</span>`, `${formatWorkoutNumber(dailyAverage(currentMonth.calories), 0)} kcal/dia`),
+    tile("distance", "📍 Distância", `<span class="text-blue">${formatWorkoutNumber(currentMonth.distance, 2)} km</span>`, `${formatWorkoutNumber(dailyAverage(currentMonth.distance), 2)} km/dia`),
+    tile("saitamaReps", "👊 Saitama", `<span class="text-coral">${formatWorkoutNumber(saitamaTotal, 0)} reps</span>`, `${formatWorkoutNumber(saitama.situps, 0)} abd · ${formatWorkoutNumber(saitama.pushups, 0)} flex · ${formatWorkoutNumber(saitama.squats, 0)} agach`),
+    tile("lifted", "🏋️ Levantado", `<span class="text-green">${formatWorkoutNumber(currentMonth.lift.kg, 0)} kg</span>`, `em ${formatWorkoutNumber(currentMonth.lift.reps, 0)} repetições`),
   ].join("");
 
   const heroContent = document.getElementById("workoutHallContent");
@@ -408,6 +530,11 @@ function renderWorkoutScreen() {
     .join("");
 
   renderWorkoutMonth(workouts, today);
+
+  // Página de um treino aberta: redesenha (editou) ou volta (excluiu)
+  if (selectedWorkoutId && document.getElementById("viewWorkout").classList.contains("active")) {
+    if (!renderWorkoutView()) closeWorkoutView();
+  }
 }
 
 function openWorkoutChart(metric) {
@@ -779,6 +906,7 @@ const WORKOUT_VIEW_BACK = {
   viewMonth: "backToTraining",
   viewDetail: "closeWorkoutDetail",
   viewSummary: "closeStrengthSummary",
+  viewWorkout: "closeWorkoutView",
   viewSession: "leaveLiveSession",
 };
 
@@ -795,6 +923,7 @@ function openModule(viewId) {
     viewMonth: document.getElementById("workoutMonthDetailTitle").textContent,
     viewDetail: document.getElementById("workoutDetailTitle").textContent,
     viewSummary: "💪 Resumo do treino",
+    viewWorkout: "📋 Como foi o treino",
     viewSession: "▶ Treino ao vivo",
   };
   tobaSetHeader({ page: titles[viewId], back: WORKOUT_VIEW_BACK[viewId] });
@@ -820,6 +949,8 @@ tobaActions({
   backToTraining: () => openModule("viewTraining"),
   closeWorkoutDetail,
   closeStrengthSummary,
+  closeWorkoutView,
+  openWorkoutView: (el) => openWorkoutView(el.dataset.id),
   openStrengthSummary: (el) => openStrengthSummary(el.dataset.id),
   openWorkoutMonth: (el) => openWorkoutMonth(el.dataset.month),
   openHallDetail: (el) => openWorkoutHallDetail(el.dataset.heroDetail, el.dataset.heroMonth || ""),
