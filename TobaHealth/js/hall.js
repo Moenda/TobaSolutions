@@ -406,12 +406,12 @@ function renderMuscleMap(heat, { interactive = false, scope = "" } = {}) {
       <rect x="${x + 26}" y="56" width="18" height="6" rx="3"/>
     </g>`;
   return `
-    <svg class="muscle-map${interactive ? " is-interactive" : ""}" viewBox="0 0 140 116" role="${interactive ? "group" : "img"}" aria-label="Mapa de calor dos músculos, frente e costas">
+    <svg class="muscle-map${interactive ? " is-interactive" : ""}" viewBox="0 0 140 124" role="${interactive ? "group" : "img"}" aria-label="Mapa de calor dos músculos, frente e costas">
       ${body(0)}${body(70)}
       ${MUSCLE_SHAPES.front.map(part).join("")}
       ${MUSCLE_SHAPES.back.map(part).join("")}
-      <text x="35" y="115" class="muscle-side">frente</text>
-      <text x="105" y="115" class="muscle-side">costas</text>
+      <text x="35" y="122" class="muscle-side">frente</text>
+      <text x="105" y="122" class="muscle-side">costas</text>
     </svg>`;
 }
 
