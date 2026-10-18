@@ -284,8 +284,11 @@ function closeWorkoutDetail() {
  * MAPA DE CALOR DOS MÚSCULOS (1ª versão, v1.30)
  * Boneco em SVG (frente e costas), uma peça por grupo do STRENGTH_GROUPS.
  * Mede REPETIÇÕES por grupo (kg puro faria a perna sempre ganhar) e pinta
- * em 4 tons comparando com o grupo mais treinado do período; cinza = nada.
- * Só cálculo: usa getWorkoutMuscleWork (Saitama) + as séries dos treinos de força.
+ * em 5 níveis comparando com o grupo mais treinado do período, do verde
+ * (pouco) ao vermelho (o que mais treinou); cinza = nada.
+ * Só cálculo: usa getWorkoutMuscleWork (Saitama) + as séries dos treinos de força
+ * + caminhada/bike/elíptico (e km do Saitama/personalizado) como "reps
+ * equivalentes" por km (CARDIO_MUSCLES, getMuscleExtras). Todo tipo de treino pinta.
  * ------------------------------------------------------------------- */
 const MUSCLE_LAZY_LINES = {
   peito: "Peito em modo avião ✈️",
@@ -323,6 +326,40 @@ const MUSCLE_SHAPES = {
   ],
 };
 
+// Cardio também pinta, mas leve: cada km vira "reps equivalentes" por grupo.
+// Sem distância, estima pelo tempo (km por minuto de cada atividade).
+const CARDIO_MUSCLES = {
+  walking: { kmPerMin: 0.1, perKm: { panturrilha: 12, quadriceps: 6, gluteos: 4, posterior: 3 } },
+  bike: { kmPerMin: 0.3, perKm: { quadriceps: 5, panturrilha: 2, gluteos: 2 } },
+  elliptical: { kmPerMin: 0.13, perKm: { quadriceps: 6, gluteos: 4, panturrilha: 4, posterior: 2 } },
+};
+
+function getCardioKm(workout) {
+  const cardio = CARDIO_MUSCLES[workout.type];
+  if (!cardio) return 0;
+  return Number(workout.distanceKm) || (Number(workout.durationMinutes) || 0) * cardio.kmPerMin;
+}
+
+// "Todo exercício conta": além do cardio puro, os km do Saitama e do treino
+// personalizado entram como caminhada/corrida. O personalizado sem distância
+// (só séries×reps ou só minutos) não diz o músculo, então espalha leve no corpo todo.
+function getMuscleExtras(workout) {
+  const items = [];
+  const addMap = (perKm, km) => Object.entries(perKm)
+    .forEach(([group, value]) => items.push([group, Math.round(km * value)]));
+  const km = getCardioKm(workout);
+  if (km > 0) addMap(CARDIO_MUSCLES[workout.type].perKm, km);
+  const loose = Number(workout.distanceKm) || 0;
+  if ((workout.type === "saitama" || workout.type === "custom") && loose > 0) {
+    addMap(CARDIO_MUSCLES.walking.perKm, loose);
+  } else if (workout.type === "custom") {
+    const reps = (Number(workout.sets) || 0) * (Number(workout.reps) || 0) || Number(workout.durationMinutes) || 0;
+    const each = Math.max(1, Math.round(reps / STRENGTH_GROUPS.length));
+    if (reps > 0) STRENGTH_GROUPS.forEach((group) => items.push([group.id, each]));
+  }
+  return items;
+}
+
 // Soma por grupo: { peito: { reps, kg, lastDate }, ... }
 function getMuscleHeat(workouts) {
   const heat = {};
@@ -336,6 +373,7 @@ function getMuscleHeat(workouts) {
   (workouts || []).forEach((workout) => {
     getWorkoutMuscleWork(workout, { bodyweightOnly: true })
       .forEach((item) => add(item.group, item.reps, item.kg, workout.date));
+    getMuscleExtras(workout).forEach(([group, reps]) => add(group, reps, 0, workout.date));
     if (!Array.isArray(workout.exercises)) return;
     workout.exercises.forEach((exercise) => {
       const reps = (exercise.sets || []).reduce((sum, set) => sum + (Number(set.reps) || 0), 0);
@@ -349,7 +387,7 @@ function getMuscleHeat(workouts) {
 function getMuscleLevel(heat, group) {
   const max = Math.max(0, ...Object.values(heat).map((item) => item.reps));
   const reps = heat[group]?.reps || 0;
-  return max && reps ? Math.max(1, Math.ceil((reps / max) * 4)) : 0;
+  return max && reps ? Math.max(1, Math.ceil((reps / max) * 5)) : 0;
 }
 
 // interactive: cada músculo vira botão (toque mostra os números)
@@ -396,7 +434,7 @@ function renderMuscleMini(workouts) {
     <span class="muscle-mini">
       ${renderMuscleMap(heat)}
       <span class="muscle-mini-text">
-        <span class="muscle-mini-label">🔥 Mais treinados</span>
+        <span class="muscle-mini-label">🔥 Top 3 do mês</span>
         <span class="muscle-mini-top">${top.join(" · ")}</span>
         ${lazy ? `<span class="muscle-mini-lazy">${lazy}</span>` : '<span class="muscle-mini-lazy">Corpo inteiro na conta. Monstro 👹</span>'}
       </span>
@@ -417,10 +455,11 @@ function renderMuscleSection(workouts, scope, title = "🔥 Mapa de calor", { te
     <div class="section-title">${title}</div>
     <div class="card muscle-card">
       ${renderMuscleMap(heat, { interactive: true, scope })}
-      <p class="muscle-hint">Toque num músculo pra ver os números. Conta repetições por grupo.</p>
+      <div class="muscle-legend" aria-hidden="true"><span>pouco</span><i class="lv-1"></i><i class="lv-2"></i><i class="lv-3"></i><i class="lv-4"></i><i class="lv-5"></i><span>pegando fogo</span></div>
+      <p class="muscle-hint">Toque num músculo pra ver os números. Conta repetições por grupo (caminhada, bike, elíptico e os km do Saitama entram como reps equivalentes por km).</p>
       <ul class="muscle-rank">${ranked.map(([group, item]) => `
         <li>
-          <span class="muscle-rank-name">${getStrengthGroupName(group)}</span>
+          <span class="muscle-rank-name">${getStrengthGroupName(group).replace(" de coxa", "")}</span>
           <span class="muscle-rank-bar"><span class="lv-${getMuscleLevel(heat, group)}" style="width:${Math.max(6, (item.reps / max) * 100)}%"></span></span>
           <span class="muscle-rank-value">${formatWorkoutNumber(item.reps, 0)} reps</span>
         </li>`).join("")}

@@ -1330,10 +1330,32 @@
   transition: fill 0.2s ease;
 }
 
-.muscle.lv-1, .muscle-rank-bar .lv-1 { fill: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.3); }
-.muscle.lv-2, .muscle-rank-bar .lv-2 { fill: rgba(63, 185, 80, 0.55); background: rgba(63, 185, 80, 0.55); }
-.muscle.lv-3, .muscle-rank-bar .lv-3 { fill: rgba(63, 185, 80, 0.8); background: rgba(63, 185, 80, 0.8); }
-.muscle.lv-4, .muscle-rank-bar .lv-4 { fill: var(--green); background: var(--green); stroke: #7ee787; }
+/* Do verde (pouco) ao vermelho (pegando fogo) */
+.muscle.lv-1, .muscle-rank-bar .lv-1, .muscle-legend .lv-1 { fill: rgba(63, 185, 80, 0.45); background: rgba(63, 185, 80, 0.45); }
+.muscle.lv-2, .muscle-rank-bar .lv-2, .muscle-legend .lv-2 { fill: var(--green); background: var(--green); }
+.muscle.lv-3, .muscle-rank-bar .lv-3, .muscle-legend .lv-3 { fill: var(--gold-2); background: var(--gold-2); }
+.muscle.lv-4, .muscle-rank-bar .lv-4, .muscle-legend .lv-4 { fill: #f0883e; background: #f0883e; }
+.muscle.lv-5, .muscle-rank-bar .lv-5, .muscle-legend .lv-5 { fill: var(--red); background: var(--red); stroke: #ffa198; }
+
+.muscle-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  margin-top: 0.4rem;
+  font-size: 0.66rem;
+  color: var(--muted);
+}
+
+.muscle-legend i {
+  width: 18px;
+  height: 7px;
+  border-radius: 3px;
+}
+
+.muscle-legend span {
+  margin: 0 4px;
+}
 
 .muscle-map.is-interactive .muscle {
   cursor: pointer;
@@ -1386,7 +1408,7 @@
 .muscle-mini-top {
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--green);
+  color: var(--text);
 }
 
 .muscle-mini-lazy {
