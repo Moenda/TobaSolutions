@@ -153,7 +153,7 @@ Arquivo: [TobaBank/js/bank-core.js](TobaBank/js/bank-core.js). Variável global 
     }
   },
   transactions: [ { id, description, amount, category, date, notifId? } ], // gasto à vista
-                                     // notifId (opcional, desde v1.29): id da notificação de compra que o app
+                                     // notifId (opcional, desde v1.34): id da notificação de compra que o app
                                      // Android leu; só evita lançar duas vezes. Sem default no load (ausente = manual)
   installments: [ { id, description, totalAmount, totalInstallments, startDate, category } ],
   investmentFunds: [ {
@@ -179,7 +179,7 @@ Arquivo: [TobaBank/js/bank-core.js](TobaBank/js/bank-core.js). Variável global 
 - `loadDatabase()` roda no `DOMContentLoaded` de cada página do Bank. Ele: cria o `_PRE_REFACTOR_BACKUP` (uma vez), faz `JSON.parse`, **preenche campos ausentes** (é a "migração"), atualiza o `_AUTO_BACKUP`, e só então marca `isDbLoaded = true`.
 - Se o JSON estiver ilegível: mostra alerta e **não** libera gravação (`isDbLoaded` fica `false`) — isso protege o dado original. Não "conserte" isso trocando por um banco vazio.
 - Se não há dado: grava o banco padrão.
-- `saveDatabase(options)`: copia o valor atual para `_AUTO_BACKUP`, grava `JSON.stringify(db)`, chama `onBankDataSaved()` (cada página sobrescreve para redesenhar) e mostra "Salvo ✓" (`{ silent: true }` não mostra). Devolve `true` se gravou, `false` se não (desde v1.29).
+- `saveDatabase(options)`: copia o valor atual para `_AUTO_BACKUP`, grava `JSON.stringify(db)`, chama `onBankDataSaved()` (cada página sobrescreve para redesenhar) e mostra "Salvo ✓" (`{ silent: true }` não mostra). Devolve `true` se gravou, `false` se não (desde v1.34).
 - **Gastos automáticos (app Android):** `importNativePurchases()` em `gastos.js` (no load do Gastos e no `window.onTobaAppResume`) lê a fila do app (`TOBA_NATIVE.getPendingPurchases()`), lança cada compra como `transactions` normal com `notifId`, pula as que já têm esse `notifId`, e só chama `ackPurchases()` se o `saveDatabase()` devolveu `true`. Nunca tire da fila antes de gravar.
 - `importBankBackup(text)`: aceita JSON com `version` ou `transactions`, grava **sem normalizar** e dá `location.reload()` — a normalização acontece no load seguinte. Logo, **toda migração precisa estar em `loadDatabase()`**.
 - `resetBankData()`: remove só `TOBA_BANK_DB` (os backups automáticos ficam).
