@@ -195,9 +195,13 @@
       </div>
       <form data-submit="finishLiveSession">
         <p class="toba-sheet-text" id="liveFinishSummary"></p>
-        <div class="form-group">
+        <div class="form-group" id="liveTitleGroup">
           <label for="live-title">Nome do treino</label>
           <input id="live-title" class="form-control" type="text" maxlength="40" placeholder="Ex: Treino A" />
+        </div>
+        <div class="form-group" id="liveKmGroup" hidden>
+          <label for="live-km">Correu / caminhou? (km, opcional)</label>
+          <input id="live-km" class="form-control" type="number" inputmode="decimal" min="0" step="0.01" placeholder="O careca fazia 10 km" />
         </div>
         <div class="form-group">
           <label for="live-calories">Calorias (kcal, opcional)</label>
@@ -207,7 +211,7 @@
           <label for="live-notes">Observações (opcional)</label>
           <input id="live-notes" class="form-control" type="text" maxlength="160" placeholder="Como foi o treino?" />
         </div>
-        <label class="live-check">
+        <label class="live-check" id="liveSaveRoutineRow">
           <input type="checkbox" id="live-save-routine" />
           <span id="liveSaveRoutineText">💾 Salvar como modelo</span>
         </label>
@@ -298,6 +302,7 @@
   <script src="js/hall.js"></script>
   <script src="js/forca.js"></script>
   <script src="js/sessao.js"></script>
+  <script src="js/sessao-saitama.js"></script>
   <script src="js/treinos.js"></script>
   <script src="../assets/pwa-register.js"></script>
 </body>

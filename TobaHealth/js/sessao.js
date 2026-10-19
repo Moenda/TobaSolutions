@@ -11,13 +11,19 @@
  *     current: índice do exercício na tela,
  *     exercises: [{ exerciseId, skipped: bool, sets: [{ reps, kg, done: bool }] }],
  *     rest: { duration: s, startedAt: ms|null, endsAt: ms|null, alerted: bool },
- *     restDefault: s, updatedAt: ms
+ *     restDefault: s, updatedAt: ms,
+ *     kind: "strength" | "saitama"   (desde v1.36; ausente = "strength")
+ *     saitama: { pushups, situps, squats, step, autoRest,   (só kind "saitama")
+ *                log: [{ field, n, at }] }                   (ver sessao-saitama.js)
  *   }
  * Tempos são horários (Date.now()), nunca contagem de setInterval: o
  * celular congela a aba em segundo plano e o tempo tem que continuar certo.
  * Ao finalizar vira um treino "strength" normal em healthDb.workouts (mesmo
  * formato do registerStrengthWorkout, só as séries marcadas como feitas) e
  * a chave é apagada. Frases e avisos são só de tela: nada disso é gravado.
+ * O treino do Saitama ao vivo (sessao-saitama.js) usa a mesma chave, o
+ * mesmo cronômetro e o mesmo descanso, com exercises: [] e kind "saitama";
+ * ao finalizar vira um treino "saitama" normal.
  *
  * Carregado ANTES de treinos.js; só usa funções de forca.js/treinos.js
  * dentro de funções.
@@ -28,6 +34,9 @@ const LIVE_REST_PRESETS = [60, 90, 120, 180];
 const LIVE_REST_DEFAULT = 90;
 const LIVE_LATE_SECONDS = 30; // passou disso: "tempo perdido no feed"
 const LIVE_RING = 2 * Math.PI * 52; // circunferência do anel (r = 52)
+// Preferências de tela do treino ao vivo (não é dado de treino):
+// { keepAwake: bool, saitamaStep: n, saitamaAutoRest: bool, saitamaRest: s }
+const LIVE_PREFS_KEY = "toba_health_live_prefs";
 
 const LIVE_QUIPS = {
   // durante o descanso (vão girando)
@@ -80,6 +89,11 @@ const LIVE_QUIPS = {
   ],
 };
 
+// Frases do descanso conforme o tipo de treino (o Saitama não tem barra 😂).
+function getLiveQuips() {
+  return liveSession?.kind === "saitama" ? SAITAMA_LIVE_QUIPS : LIVE_QUIPS;
+}
+
 let liveSession = null;
 let liveFocus = null; // série em foco (só tela; null = primeira não feita)
 let liveWheels = [];
@@ -105,6 +119,24 @@ function clampLiveKg(value) {
   return Math.min(300, Math.max(0, Math.round(Number(value) || 0)));
 }
 
+function readLivePrefs() {
+  let prefs = {};
+  try {
+    prefs = JSON.parse(localStorage.getItem(LIVE_PREFS_KEY) || "{}") || {};
+  } catch (err) {
+    prefs = {};
+  }
+  return { keepAwake: prefs.keepAwake !== false, ...prefs };
+}
+
+function storeLivePrefs(patch) {
+  try {
+    localStorage.setItem(LIVE_PREFS_KEY, JSON.stringify({ ...readLivePrefs(), ...patch }));
+  } catch (err) {
+    /* preferência de tela: se não gravar, só volta ao padrão */
+  }
+}
+
 // Campos ausentes ganham padrão: sessão de outra versão não quebra a tela.
 function normalizeLiveSession(raw) {
   const session = { ...raw };
@@ -114,6 +146,8 @@ function normalizeLiveSession(raw) {
   session.routineId = String(session.routineId || "");
   session.date = /^\d{4}-\d{2}-\d{2}$/.test(session.date) ? session.date : toIsoDate(new Date(session.startedAt));
   session.restDefault = Number(session.restDefault) || LIVE_REST_DEFAULT;
+  session.kind = session.kind === "saitama" ? "saitama" : "strength";
+  if (session.kind === "saitama") session.saitama = normalizeSaitamaLive(session.saitama);
   session.exercises = session.exercises
     .filter((entry) => entry && entry.exerciseId)
     .map((entry) => ({
@@ -184,7 +218,10 @@ function syncLiveRestAlarm() {
   // Já tocou: deixa a notificação na barra até a pessoa voltar e seguir o treino.
   if (rest && rest.startedAt && rest.alerted) return;
   if (rest && rest.startedAt && rest.endsAt > Date.now()) {
-    TOBA_NATIVE.scheduleRest(rest.endsAt, "⏱ Descanso acabou!", "Larga o celular e bora pra próxima série 💪");
+    const body = liveSession.kind === "saitama"
+      ? "Larga o celular e bora pra próxima leva 👊"
+      : "Larga o celular e bora pra próxima série 💪";
+    TOBA_NATIVE.scheduleRest(rest.endsAt, "⏱ Descanso acabou!", body);
   } else {
     TOBA_NATIVE.cancelRest();
   }
@@ -329,9 +366,9 @@ function openLiveStart() {
         <span class="toba-hub-chevron">›</span>
       </button>`;
   }).join("");
-  document.getElementById("liveStartList").innerHTML = cards
+  document.getElementById("liveStartList").innerHTML = renderSaitamaLiveStartCard() + (cards
     ? `<div class="hub-title">Seus treinos</div><div class="toba-menu">${cards}</div><div class="section-divider"></div>`
-    : '<p class="toba-sheet-text">Você ainda não tem treino salvo. Comece um livre e, no fim, salve como modelo (Treino A, B, C...).</p>';
+    : '<p class="toba-sheet-text">Treino de força: você ainda não tem treino salvo. Comece um livre e, no fim, salve como modelo (Treino A, B, C...).</p>');
   openTobaModal("liveStartModal");
 }
 
@@ -412,10 +449,13 @@ function renderLiveSessionLaunch() {
   if (session) {
     const counts = getLiveCounts(session);
     const minutes = Math.max(0, Math.round((Date.now() - session.startedAt) / 60000));
+    const progress = session.kind === "saitama"
+      ? describeSaitamaLive(session.saitama)
+      : `${counts.done} ${counts.done === 1 ? "série feita" : "séries feitas"} · ${counts.completed}/${counts.exercises} exercícios`;
     box.innerHTML = `
       <div class="live-resume">
         <div class="live-resume-title">⏸ ${escapeHtml(session.title)} em andamento</div>
-        <div class="live-resume-sub">Começou há ${minutes} min · ${counts.done} ${counts.done === 1 ? "série feita" : "séries feitas"} · ${counts.completed}/${counts.exercises} exercícios</div>
+        <div class="live-resume-sub">Começou há ${minutes} min · ${progress}</div>
         <div class="btn-row">
           <button type="button" class="btn btn-secondary btn-grow-1" data-click="discardLiveSession">Descartar</button>
           <button type="button" class="btn btn-primary btn-grow-2" data-click="resumeLiveSession">▶ Continuar</button>
@@ -428,7 +468,7 @@ function renderLiveSessionLaunch() {
       <span class="live-launch-icon" aria-hidden="true">▶</span>
       <span class="live-launch-copy">
         <span class="live-launch-title">Iniciar treino</span>
-        <span class="live-launch-detail">Preencha ao vivo, série por série, com timer de descanso</span>
+        <span class="live-launch-detail">Força série por série ou Saitama no contador, com timer de descanso</span>
       </span>
     </button>`;
 }
@@ -505,6 +545,11 @@ function renderLiveSession() {
   const box = document.getElementById("liveSessionContent");
   const session = liveSession;
   if (!box || !session) return;
+  if (session.kind === "saitama") {
+    box.innerHTML = renderSaitamaLive(session);
+    renderLiveRest();
+    return;
+  }
   const counts = getLiveCounts(session);
   const entry = session.exercises[session.current] || null;
   const percent = counts.sets ? Math.round((counts.done / counts.sets) * 100) : 0;
@@ -539,6 +584,7 @@ function renderLiveSession() {
       </div>` : ""}
     <button type="button" class="btn btn-outline btn-blue live-add-ex" data-click="openLiveExercisePicker">➕ ${entry ? "Exercício extra" : "Exercício"}</button>
     <div class="live-footer">
+      ${renderLiveAwakeToggle()}
       <button type="button" class="btn btn-primary live-finish" data-click="openLiveFinish">🏁 Finalizar treino</button>
       <button type="button" class="btn btn-secondary" data-click="discardLiveSession">Cancelar treino</button>
     </div>
@@ -720,6 +766,7 @@ function liveRestPreset(el) {
   rest.endsAt = rest.startedAt + seconds * 1000;
   if (rest.endsAt > Date.now()) rest.alerted = false;
   liveSession.restDefault = seconds; // próximas séries usam esse tempo
+  if (liveSession.kind === "saitama") storeLivePrefs({ saitamaRest: seconds });
   storeLiveSession();
   renderLiveRest();
 }
@@ -832,9 +879,9 @@ function updateLiveRest(now = Date.now()) {
     let text = liveQuip;
     if (!text) {
       const state = getLiveRestState(now);
-      if (state === "running") text = pickLiveQuip(LIVE_QUIPS.resting, Math.floor((now - rest.startedAt) / 9000));
-      else if (state === "done") text = pickLiveQuip(LIVE_QUIPS.done);
-      else text = pickLiveQuip(LIVE_QUIPS.late, Math.floor(-left / 12000));
+      if (state === "running") text = pickLiveQuip(getLiveQuips().resting, Math.floor((now - rest.startedAt) / 9000));
+      else if (state === "done") text = pickLiveQuip(getLiveQuips().done);
+      else text = pickLiveQuip(getLiveQuips().late, Math.floor(-left / 12000));
     }
     if (quip.textContent !== text) quip.textContent = text;
   }
@@ -878,7 +925,28 @@ function stopLiveTicker() {
   releaseLiveWakeLock();
 }
 
+// "🔆 Manter a tela acesa" (ligado por padrão): vale pra força e Saitama.
+function renderLiveAwakeToggle() {
+  return `
+    <label class="live-check live-awake">
+      <input type="checkbox" data-change="liveToggleAwake"${readLivePrefs().keepAwake ? " checked" : ""} />
+      <span>🔆 Manter a tela acesa no treino</span>
+    </label>`;
+}
+
+function liveToggleAwake(el) {
+  storeLivePrefs({ keepAwake: el.checked });
+  if (el.checked) {
+    requestLiveWakeLock();
+    tobaToast("🔆 Tela acesa até o fim do treino");
+  } else {
+    releaseLiveWakeLock();
+    tobaToast("🌙 A tela pode apagar sozinha");
+  }
+}
+
 async function requestLiveWakeLock() {
+  if (!readLivePrefs().keepAwake) return;
   if (TOBA_NATIVE) {
     TOBA_NATIVE.keepScreenOn(true);
     return;
@@ -918,8 +986,8 @@ document.addEventListener("visibilitychange", () => {
   if (rest.startedAt && away > 5000) {
     const over = (now - rest.endsAt) / 1000;
     liveQuip = over > 1
-      ? pickLiveQuip(LIVE_QUIPS.backLate).replace("{s}", formatLiveSeconds(over))
-      : pickLiveQuip(LIVE_QUIPS.back);
+      ? pickLiveQuip(getLiveQuips().backLate).replace("{s}", formatLiveSeconds(over))
+      : pickLiveQuip(getLiveQuips().back);
     liveRestMinimized = false;
     renderLiveRest();
   }
@@ -950,8 +1018,20 @@ function buildLiveWorkoutExercises() {
     .filter((exercise) => exercise.sets.length);
 }
 
+// A folha de finalizar é a mesma: o Saitama troca nome/modelo pelos km.
+function setLiveFinishMode(isSaitama) {
+  document.getElementById("liveTitleGroup").hidden = isSaitama;
+  document.getElementById("liveSaveRoutineRow").hidden = isSaitama;
+  document.getElementById("liveKmGroup").hidden = !isSaitama;
+}
+
 function openLiveFinish() {
   if (!liveSession) return;
+  if (liveSession.kind === "saitama") {
+    openSaitamaLiveFinish();
+    return;
+  }
+  setLiveFinishMode(false);
   const exercises = buildLiveWorkoutExercises();
   if (!exercises.length) {
     showPageMessage("Marque pelo menos uma série como feita (✓) para finalizar. Se quiser jogar o treino fora, use Cancelar treino.", { title: "Nenhuma série feita" });
@@ -994,6 +1074,10 @@ function finishLiveSession() {
   if (!liveSession) return;
   if (!isHealthDbLoaded) {
     showHealthDbLockedMessage(); // o treino em andamento continua guardado
+    return;
+  }
+  if (liveSession.kind === "saitama") {
+    finishSaitamaLiveSession();
     return;
   }
   const exercises = buildLiveWorkoutExercises();
@@ -1069,6 +1153,7 @@ tobaActions({
   liveRestNudge,
   liveEndRest,
   liveToggleRestMin,
+  liveToggleAwake,
   openLiveFinish,
   finishLiveSession,
 });

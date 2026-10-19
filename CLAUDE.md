@@ -77,7 +77,7 @@ TobaBank/
 TobaHealth/
   TobaHealth-Index.html    Hub do Health (carrega o health-core só para a ⚙️/backup)
   TobaHealth-Pesagem.html    -> js/health-core.js + js/pesagem.js
-  TobaHealth-Treinos.html    -> js/health-core.js + js/hall.js + js/forca.js + js/sessao.js + js/treinos.js
+  TobaHealth-Treinos.html    -> js/health-core.js + js/hall.js + js/forca.js + js/sessao.js + js/sessao-saitama.js + js/treinos.js
   css/health-base.css + 1 css por módulo
 TobaAndroid/               App Android (APK): WebView que abre o site publicado + ponte window.TobaNative
                            (gastos lidos das notificações, alarmes, salvar arquivo). Java puro, Android Studio.
@@ -86,7 +86,7 @@ PATCH-NOTES.md             Notas de cada patch (antigo LEIA-ME.md — ver seçã
 CLAUDE.md                  Este guia
 ```
 
-- Tudo é **global** (funções e variáveis no `window`). A ordem dos `<script>` importa: `../assets/toba-common.js` vem **primeiro** em toda página, depois o `*-core.js`, depois o módulo; em Treinos a ordem é `health-core.js` → `hall.js` (páginas de detalhe do Hall do Herói, view `viewDetail`; só leitura do banco) → `forca.js` → `sessao.js` (treino ao vivo, view `viewSession`) → `treinos.js`; `hall.js`, `forca.js`, `sessao.js` (e qualquer arquivo novo carregado antes de `treinos.js`) só chama funções de `treinos.js` dentro de funções (nunca na carga do arquivo). Arquivo JS novo: acrescente o `<script>` na ordem certa **e** no `PRECACHE` do `sw.js`.
+- Tudo é **global** (funções e variáveis no `window`). A ordem dos `<script>` importa: `../assets/toba-common.js` vem **primeiro** em toda página, depois o `*-core.js`, depois o módulo; em Treinos a ordem é `health-core.js` → `hall.js` (páginas de detalhe do Hall do Herói, view `viewDetail`; só leitura do banco) → `forca.js` → `sessao.js` (treino ao vivo, view `viewSession`) → `sessao-saitama.js` (Saitama ao vivo, mesma view) → `treinos.js`; `hall.js`, `forca.js`, `sessao.js`, `sessao-saitama.js` (e qualquer arquivo novo carregado antes de `treinos.js`) só chama funções de `treinos.js` dentro de funções (nunca na carga do arquivo). Arquivo JS novo: acrescente o `<script>` na ordem certa **e** no `PRECACHE` do `sw.js`.
 - Desde a v1.22 os cores não repetem mais helpers (tudo comum está no `toba-common.js`) e cada um tem nomes próprios (`exportBankBackup`/`exportHealthBackup`...). Ainda assim cada página registra **um** app em `tobaSetupApp` (a ⚙️ faz backup de um app só); não misture dois cores numa página sem necessidade.
 - Os nomes dos arquivos HTML **não podem mudar** (links, favoritos, atalhos do manifest e o atalho `?action=add_expense` dependem deles).
 
@@ -116,7 +116,8 @@ CLAUDE.md                  Este guia
 | `TOBA_HEALTH_DB_PRE_REFACTOR_BACKUP` | `health-core.js` | Cópia única, mesma regra acima |
 | `TOBA_HEALTH_DB_AUTO_BACKUP` | `health-core.js` | Cópia do valor **anterior** do banco, atualizada a cada `saveHealthDb()` e no load (desde v1.21) |
 | `TOBA_HEALTH_DB_CORRUPT_<timestamp>` | `health-core.js` | Texto original quando o JSON do Health não pôde ser lido (uma cópia por conteúdo) |
-| `TOBA_HEALTH_ACTIVE_SESSION` | `TobaHealth/js/sessao.js` | Treino ao vivo em andamento (desde v1.27): `{ v: 1, id, startedAt (ms), date, routineId, title, current, exercises: [{ exerciseId, skipped, sets: [{ reps, kg, done }] }], rest: { duration, startedAt, endsAt, alerted }, restDefault, updatedAt }`. Temporário: apagado ao finalizar (vira um treino `strength` normal em `workouts`, só com as séries `done`) ou descartar. Ilegível = só oferece "Descartar". Não é lido por backup do módulo nem por `normalizeHealthDb` |
+| `TOBA_HEALTH_ACTIVE_SESSION` | `TobaHealth/js/sessao.js` | Treino ao vivo em andamento (desde v1.27): `{ v: 1, id, startedAt (ms), date, routineId, title, current, exercises: [{ exerciseId, skipped, sets: [{ reps, kg, done }] }], rest: { duration, startedAt, endsAt, alerted }, restDefault, updatedAt, kind?, saitama? }`. `kind` (desde v1.36): ausente/`"strength"` ou `"saitama"`; no Saitama `exercises` fica `[]` e `saitama = { pushups, situps, squats, step, autoRest, log: [{ field, n, at }] }`. Temporário: apagado ao finalizar (vira um treino `strength` normal em `workouts`, só com as séries `done`, ou um treino `saitama` normal com os totais) ou descartar. Ilegível = só oferece "Descartar". Não é lido por backup do módulo nem por `normalizeHealthDb` |
+| `toba_health_live_prefs` | `TobaHealth/js/sessao.js` | Preferências de tela do treino ao vivo (desde v1.36): `{ keepAwake, saitamaStep, saitamaAutoRest, saitamaRest }`. Ausente = tela acesa ligada, passo 10, descanso automático ligado, 60 s |
 | `toba_modules_config` | `assets/portal.js` | `[{ id, visible }]` — ordem/visibilidade dos cards do portal |
 | `toba_bank_card_config` | `assets/portal.js` | `{ type: "personalizado"\|"simples", orcamento, cofre, gastos, sobra, addGasto, privacy }` (mesclado com defaults) |
 
@@ -238,7 +239,7 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 - Treinos `custom` antigos usam `sets/reps/weightKg` soltos; treinos `strength` usam `exercises[]` e deixam esses campos `null`. `getWorkoutLift()` trata os dois casos — qualquer métrica nova de treino precisa tratar os dois também.
 - **Página de um treino** (`viewWorkout`, `openWorkoutView`/`renderWorkoutView` em treinos.js, desde v1.29): só leitura; `renderWorkoutScreen()` redesenha a página aberta depois de editar e volta para o mês se o treino foi excluído.
 - **Mapa de calor** (hall.js, desde v1.30): `getMuscleHeat(workouts)` soma **repetições** (e kg) por grupo; `renderMuscleMini` (card do mês, sem toque) e `renderMuscleSection` (mês e página do treino, músculo tocável → `showMuscleHeat`). Cardio e km soltos (Saitama/personalizado) entram como reps equivalentes por km via `CARDIO_MUSCLES`/`getMuscleExtras` (desde v1.31); tipo de treino novo precisa entrar ali. O boneco é SVG à mão em `MUSCLE_SHAPES`, uma peça por id do `STRENGTH_GROUPS`; grupo novo precisa de forma ali e de frase em `MUSCLE_LAZY_LINES`.
-- **Treino ao vivo** ([sessao.js](TobaHealth/js/sessao.js)): grava só na chave `TOBA_HEALTH_ACTIVE_SESSION` enquanto acontece; no fim monta o treino no **mesmo formato** do `registerStrengthWorkout` e só apaga a sessão depois de conferir que o `TOBA_HEALTH_DB` gravou. Tempos (cronômetro e descanso) são horários `Date.now()`, nunca contagem de `setInterval` (o celular congela a aba). Frases de descanso são só de tela.
+- **Treino ao vivo** ([sessao.js](TobaHealth/js/sessao.js)): grava só na chave `TOBA_HEALTH_ACTIVE_SESSION` enquanto acontece; no fim monta o treino no **mesmo formato** do `registerStrengthWorkout` e só apaga a sessão depois de conferir que o `TOBA_HEALTH_DB` gravou. Tempos (cronômetro e descanso) são horários `Date.now()`, nunca contagem de `setInterval` (o celular congela a aba). Frases de descanso são só de tela. O Saitama ao vivo ([sessao-saitama.js](TobaHealth/js/sessao-saitama.js), desde v1.36) usa a mesma chave/tela com `kind: "saitama"` e no fim grava um treino `saitama` no **mesmo formato** do formulário (`pushups/situps/squats/distanceKm/durationMinutes/calories/notes`). A tela acesa (Wake Lock no navegador, `keepScreenOn` no APK) obedece `keepAwake` de `toba_health_live_prefs`.
 - Todo treino precisa ter `type` conhecido; tipos novos precisam de ícone em `WORKOUT_TYPE_ICONS` (senão cai no 🏅) e de tratamento nos cálculos (distância, reps do Saitama etc.).
 
 ### 3.6 Leitores "fora do dono" (precisam acompanhar mudanças de formato)
@@ -273,7 +274,7 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 ## 4. Service worker / PWA
 
 - [sw.js](sw.js): páginas/JS/CSS **network-first** (timeout 4 s, cai no cache); jsdelivr **cache-first**. O network-first usa `fetch(..., { cache: "no-cache" })` de propósito: o GitHub Pages manda `max-age=600`, e sem isso o celular misturava HTML novo com JS antigo logo depois de publicar. Não tire.
-- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v7"` → `"toba-v8"`…). Sem isso, o app offline fica sem o arquivo.
+- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v9"` → `"toba-v10"`…). Sem isso, o app offline fica sem o arquivo.
 - Atualizar a versão do Chart.js exige trocar a URL nos HTML **e** no `PRECACHE`.
 - Toda página nova deve incluir `<script src="../assets/pwa-register.js"></script>` (ou `assets/...` na raiz), as metas de `color-scheme: dark` e o link do manifest, como as existentes.
 

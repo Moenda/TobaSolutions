@@ -463,3 +463,31 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 - ⚙️ → importar um backup antigo do Bank: volta com as categorias novas.
 
 **Commit sugerido:** `v1.35 - Livre hoje carrega o estouro do dia anterior, botao ? no mapa de calor e categorias novas no Gastos`
+
+---
+
+## v1.36 — Treino do Saitama ao vivo e tela sempre acesa
+
+**Arquivos novos/alterados:** `TobaHealth/js/sessao-saitama.js` (NOVO), `TobaHealth/js/sessao.js`, `TobaHealth/css/sessao.css`, `TobaHealth/TobaHealth-Treinos.html`, `sw.js`, `CLAUDE.md`
+
+1. **Acabou a injustiça com quem não puxa ferro:** no "▶ Iniciar treino" agora tem o card **👊 Treino do Saitama**, logo no topo, antes dos Treinos A/B/C.
+2. **Contador de bolso:** a tela mostra três quadradões (💪 Flexão, 🔥 Abdominal, 🦵 Agachamento) com o total do dia e uma barrinha até os 100 do careca. Não tem ordem: fez 20 flexões, toca no quadrado da flexão e soma. Chegou nos 100, o quadrado fica dourado e o careca aprova 💯.
+3. **Quanto soma cada toque:** fileira **+1 · +5 · +10 · +20**. O app lembra o último que você usou.
+4. **↩ Desfazer** tira o último toque (dedo gordo acontece), e o "Hoje no treino" mostra as últimas levas com o horário.
+5. **Descanso automático:** ligado, cada toque já começa o mesmo timer de descanso do treino de força (anel, 60/90/120/180 s, ±15 s), com frases novas do Saitama. Desligado, vira só contador. Tem também o botão **⏱ Descansar** pra puxar um descanso na mão. O app lembra a escolha.
+6. **Finalizar:** pergunta os km (se correu ou caminhou), calorias e observações e salva como um Treino do Mestre Saitama normal, com o tempo do cronômetro. Abre direto a página "Como foi o treino". Hall do Herói, mapa de calor e peso levantado contam igual a antes.
+7. **Fechou o app no meio?** O treino fica guardado e aparece "⏸ Treino do Saitama em andamento" com Continuar/Descartar, igual o de força.
+8. **🔆 Manter a tela acesa no treino:** a tela já ficava acesa no treino ao vivo de força. Agora tem um interruptor no fim da tela do treino (força e Saitama), ligado por padrão. Desligou, a tela pode apagar sozinha; a escolha vale pros próximos treinos.
+
+**Dados:** Nenhuma mudança no banco: o treino salvo é um treino `saitama` no mesmo formato do formulário. O treino em andamento (chave temporária `TOBA_HEALTH_ACTIVE_SESSION`) ganhou os campos opcionais `kind` e `saitama`; treino de força em andamento de antes continua abrindo normal. Chave nova só de preferência de tela: `toba_health_live_prefs` (tela acesa, passo, descanso automático e tempo do descanso do Saitama); sem ela, vale o padrão.
+
+**Como testar:**
+- Treinos → ▶ Iniciar treino → 👊 Treino do Saitama. Tocar 3× em Flexão: mostra 30 e o descanso começa.
+- Trocar pra +20, tocar em Agachamento, depois ↩ Desfazer: volta o último toque.
+- Desmarcar "Descanso automático" e tocar num quadrado: soma sem abrir o timer.
+- Recarregar a página: aparece "⏸ Treino do Saitama em andamento"; ▶ Continuar volta com os números.
+- 🏁 Finalizar → pôr 2,5 km → Salvar: abre "Como foi o treino" com as reps e os km; no mês, o quadradinho 👊 Saitama soma.
+- Começar um treino de força livre: a folha de finalizar continua com nome e "Salvar como modelo", sem o campo de km.
+- No celular: com "🔆 Manter a tela acesa" ligado a tela não apaga durante o treino; desligado, apaga no tempo normal.
+
+**Commit sugerido:** `v1.36 - Treino do Saitama ao vivo com contador e interruptor de tela acesa`
