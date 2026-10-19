@@ -398,3 +398,30 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 - Hall de um mês específico: o quadradinho não aparece (é só da vida toda).
 
 **Commit sugerido:** `v1.33 - Mapa de calor da vida no Hall do Heroi (triangulo ou retangulo)`
+
+---
+
+## v1.34 — App Android (APK) com gastos automáticos pelas notificações
+
+**Arquivos novos/alterados:** `TobaAndroid/` (NOVO: projeto do app Android e `TobaAndroid/README.md` com o passo a passo), `assets/toba-common.js`, `TobaBank/js/gastos.js`, `TobaBank/js/bank-core.js`, `TobaBank/TobaBank-Gastos.html`, `TobaBank/css/gastos.css`, `TobaHealth/js/sessao.js`, `TobaHealth/TobaHealth-Pesagem.html`, `TobaHealth/TobaHealth-Treinos.html`, `CLAUDE.md`
+
+1. **Toba como app Android:** a pasta `TobaAndroid` gera um APK que abre o site do Toba dentro dele. Patch no site continua chegando sozinho no app; só precisa gerar APK de novo quando mudar a parte do Android (raro). Passo a passo (gerar, instalar, levar os dados) no `TobaAndroid/README.md`.
+2. **Gastos automáticos:** com o app instalado e o acesso às notificações ligado (Gastos → ⚙️ → 🤖 Gastos automáticos), toda notificação de compra do Google Wallet, Samsung Wallet ou dos principais bancos vira um aviso "💸 R$ 25,90 · PADARIA". Ao abrir o Gastos, a compra já entra como gasto à vista, com a data da compra e a categoria da última vez que você usou aquela loja (ou um palpite: Uber → Uber/App, iFood/padaria → Alimentação, posto → Combustível, mercado, farmácia, streaming...; senão "Outros"). Uma janela mostra o que entrou, e dá para editar ou apagar no histórico como qualquer gasto.
+3. **Não entra repetido:** a mesma compra avisada pela carteira e pelo banco conta uma vez só, e um gasto já lançado nunca entra de novo. Recebimentos, Pix recebido, estornos, cashback e avisos de fatura são ignorados.
+4. **🧾 O que o Toba leu:** mostra as últimas notificações com R$ e o que aconteceu com cada uma. Se o seu banco aparecer "fora da lista", toque em **Ler este app**.
+5. **Lembretes de verdade no app:** em Gastos, Pesagem e Treinos (⚙️ → 🔔 Lembretes), o botão vira **🔔 Ligar lembrete**: o próprio Toba avisa nos horários (ex.: 08:00, 14:00, 22:00 "Gastou algo hoje? Põe no Toba!"), mesmo com o app fechado e depois de reiniciar o celular. Tem **Desligar**. No navegador continua indo pela agenda (.ics).
+6. **Descanso no horário certo:** no app, o fim do descanso do treino ao vivo é avisado pelo Android na hora exata, mesmo com a tela apagada ou no Instagram, e a tela fica acesa durante o treino.
+7. **Backup no app:** "Baixar backup" grava em `Downloads/Toba` (no app não existe o download do navegador).
+
+**Dados:** Os gastos lançados pelo app ganham um campo opcional novo, `notifId` (texto), em `transactions`. Ele só serve para não lançar a mesma notificação duas vezes; gastos antigos e manuais não têm o campo, e bancos/backups antigos continuam funcionando igual. A fila de compras lidas, os lembretes e o descanso agendado ficam guardados na parte Android do app, fora do `localStorage`. **Atenção:** o app tem armazenamento separado do Chrome; na 1ª vez, leve os dados pelo backup geral do portal (passo 3 do README).
+
+**Como testar:**
+- No PC (site): abrir Gastos, Pesagem e Treinos: nada muda no navegador (a seção 🤖 não aparece, os lembretes continuam criando a agenda), sem erros no console.
+- Gerar o APK pelo Android Studio (README, passo 1) e instalar no S24.
+- No app: levar os dados pelo backup geral, ligar o acesso às notificações (e a "configuração restrita", se pedir) e pôr a bateria do Toba em "Sem restrições".
+- Fazer uma compra com o celular → conferir o aviso "💸" → abrir o Gastos → o gasto entra. Abrir de novo → não duplica. Ver em 🧾 O que o Toba leu.
+- Ligar o lembrete de gastos com um horário daqui a 2 minutos, fechar o app e esperar o aviso. Desligar depois.
+- Treino ao vivo: marcar uma série, apagar a tela e esperar o aviso do fim do descanso.
+- Gastos → ⚙️ → Dados & Backup → Baixar backup → conferir o arquivo em Downloads/Toba.
+
+**Commit sugerido:** `v1.34 - App Android (APK) com gastos automaticos pelas notificacoes e lembretes nativos`

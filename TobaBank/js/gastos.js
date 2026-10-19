@@ -798,6 +798,7 @@ function openGastosSettings() {
   startDateInput.value = db.config.startDate || toIsoDate();
 
   updateMonthlyProjection();
+  refreshNativeAutoSection();
   document.getElementById("startDateHiddenArea").hidden = true;
   document.getElementById("startDateArrow").innerText = "🔒";
   openDataModal();
@@ -887,7 +888,166 @@ function saveStartDate(input) {
   saveDatabase();
 }
 
+/* ---------------------------------------------------------------------
+ * Gastos automáticos (só no app Android, TobaAndroid/): o app lê as
+ * notificações de compra do banco/carteira e guarda numa fila. Ao abrir o
+ * Gastos, a fila vira gasto à vista normal. Cada um leva `notifId` (opcional)
+ * para nunca entrar duas vezes; só sai da fila depois de gravar no banco.
+ * ------------------------------------------------------------------- */
+const AUTO_CATEGORY_HINTS = [
+  [/uber|99 ?app|99pop|cabify|taxi/, "Transporte - Uber/App"],
+  [/posto|shell|ipiranga|petrobras|br mania|combust/, "Transporte - Combustível"],
+  [/ifood|ifd\*|rappi|restaurante|lanchonete|padaria|burger|pizza|cafe|mc ?donald|subway|outback/, "Alimentação"],
+  [/mercado|supermerc|atacad|assai|carrefour|pao de acucar|hortifruti|sacolao/, "Mercado"],
+  [/farmacia|drogaria|droga raia|drogasil|pague menos|panvel|clinica|laborat/, "Saúde & Bem-Estar"],
+  [/netflix|spotify|prime video|amazon prime|disney|hbo|youtube|globoplay|deezer|icloud|google one/, "Assinaturas"],
+  [/steam|playstation|psn|xbox|nintendo|epic games|riot/, "Games"],
+  [/petz|cobasi|petshop|pet shop|veterin/, "Pet"],
+  [/renner|riachuelo|c&a|zara|shein|centauro|netshoes|hering/, "Vestuário"],
+];
+
+function plainText(text) {
+  return String(text || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+}
+
+// Mesma loja de antes → mesma categoria. Senão, palpite pelo nome; senão "Outros".
+function guessExpenseCategory(description) {
+  const key = plainText(description);
+  for (let i = db.transactions.length - 1; i >= 0; i--) {
+    const t = db.transactions[i];
+    if (t.category && plainText(t.description) === key) return t.category;
+  }
+  const hint = AUTO_CATEGORY_HINTS.find(([pattern]) => pattern.test(key));
+  return hint ? hint[1] : "Outros";
+}
+
+function importNativePurchases() {
+  if (!TOBA_NATIVE || !isDbLoaded) return;
+  let pending;
+  try {
+    pending = JSON.parse(TOBA_NATIVE.getPendingPurchases() || "[]");
+  } catch (err) {
+    console.error("Fila de compras do app ilegível:", err);
+    return;
+  }
+  if (!Array.isArray(pending) || !pending.length) return;
+
+  const handled = [];
+  const added = [];
+  const baseId = Date.now();
+  pending.forEach((p) => {
+    const id = String(p?.id || "");
+    const amount = Math.round((Number(p?.amount) || 0) * 100) / 100;
+    if (!id || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(String(p.date))) {
+      if (id) handled.push(id); // lixo: tira da fila
+      return;
+    }
+    if (db.transactions.some((t) => String(t.notifId) === id)) {
+      handled.push(id); // já lançado numa abertura anterior
+      return;
+    }
+    const description = String(p.desc || "Compra no cartão").slice(0, 60);
+    const transaction = {
+      id: (baseId + added.length).toString(),
+      description,
+      amount,
+      category: guessExpenseCategory(description),
+      date: p.date,
+      notifId: id,
+    };
+    db.transactions.push(transaction);
+    added.push(transaction);
+    handled.push(id);
+  });
+
+  if (added.length && !saveDatabase({ silent: true })) return; // fica na fila para a próxima
+  if (handled.length) TOBA_NATIVE.ackPurchases(JSON.stringify(handled));
+  if (!added.length) return;
+
+  const lines = added.map((t) => `• ${t.description} · ${formatCurrency(t.amount)} (${t.category})`).join("\n");
+  showPageMessage(
+    `${lines}\n\nLidos das notificações do cartão. Categoria errada ou não era gasto? Toque nele no histórico para editar ou apagar.`,
+    { title: added.length === 1 ? "1 gasto lançado" : `${added.length} gastos lançados`, icon: "🤖" },
+  );
+}
+
+const PURCHASE_LOG_STATUS = {
+  detectada: "✅ Lançada",
+  ignorada: "🙈 Ignorada",
+  repetida: "♻️ Repetida",
+  fora: "🚫 App fora da lista",
+};
+
+function refreshNativeAutoSection() {
+  const section = document.getElementById("nativeAutoSection");
+  if (!section || !TOBA_NATIVE) return;
+  section.hidden = false;
+  const ok = TOBA_NATIVE.hasNotificationAccess();
+  document.getElementById("nativeAccessDesc").textContent = ok
+    ? "✅ Ligado: compras no cartão entram sozinhas"
+    : "Desligado: toque para dar acesso";
+  document.getElementById("nativeRestrictedBtn").hidden = ok;
+}
+
+async function openNativeAccess() {
+  if (!TOBA_NATIVE) return;
+  const go = await showPageMessage(
+    "Na próxima tela, ligue o Toba em \"Acesso a notificações\". Ele só guarda notificações com R$ dos apps de banco e carteira, e nada sai do celular.\n\nSe a opção estiver cinza (\"configuração restrita\"), volte aqui e toque em ⚠️ Liberar configuração restrita.",
+    { title: "Ler notificações de compra", icon: "🤖", confirm: true, confirmLabel: "Abrir", danger: false },
+  );
+  if (go) TOBA_NATIVE.openNotificationAccess();
+}
+
+function openPurchaseLog() {
+  if (!TOBA_NATIVE) return;
+  let log = [];
+  try {
+    log = JSON.parse(TOBA_NATIVE.getPurchaseLog() || "[]");
+  } catch (err) {
+    log = [];
+  }
+  const list = document.getElementById("purchaseLogList");
+  if (!log.length) {
+    list.innerHTML = tobaEmpty("🧾", "Nada lido ainda", "Faça uma compra no cartão e volte aqui.");
+  } else {
+    list.innerHTML = log
+      .map((e) => {
+        const when = new Date(Number(e.at) || 0);
+        const time = `${String(when.getHours()).padStart(2, "0")}:${String(when.getMinutes()).padStart(2, "0")}`;
+        const status = PURCHASE_LOG_STATUS[e.status] || escapeHtml(e.status);
+        const reason = e.reason ? ` · ${escapeHtml(e.reason)}` : "";
+        const allow = e.status === "fora"
+          ? `<button type="button" class="chip-btn" data-click="allowNativeApp" data-pkg="${escapeHtml(e.pkg)}">Ler este app</button>`
+          : "";
+        return `
+          <div class="purchase-log-item">
+            <div class="purchase-log-head"><b>${escapeHtml(e.app || e.pkg)}</b><span>${isoToBrDate(toIsoDate(when))} ${time}</span></div>
+            <div class="purchase-log-raw">${escapeHtml(e.raw)}</div>
+            <div class="purchase-log-foot"><span>${status}${reason}</span>${allow}</div>
+          </div>`;
+      })
+      .join("");
+  }
+  openTobaModal("purchaseLogModal");
+}
+
+function allowNativeApp(el) {
+  if (!TOBA_NATIVE) return;
+  TOBA_NATIVE.allowApp(el.dataset.pkg);
+  el.replaceWith(document.createTextNode("✓ Liberado: as próximas entram"));
+}
+
+// O app chama ao voltar para a frente (compras feitas com o app fechado).
+window.onTobaAppResume = () => {
+  importNativePurchases();
+  refreshNativeAutoSection();
+};
+
 tobaActions({
+  openNativeAccess,
+  openNativeRestricted: () => TOBA_NATIVE && TOBA_NATIVE.openAppInfo(),
+  openPurchaseLog,
+  allowNativeApp,
   openExpenseReminder: () =>
     tobaOpenReminder({
       id: "gastos",
@@ -928,4 +1088,5 @@ document.addEventListener("DOMContentLoaded", () => {
     openExpenseModal();
     window.history.replaceState({}, document.title, window.location.pathname);
   }
+  importNativePurchases();
 });

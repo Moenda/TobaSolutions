@@ -1,0 +1,43 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'br.com.toba.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "br.com.toba.app"
+        minSdk 29
+        // 34 de propósito: no 35 o Android desenha o site por baixo da barra de status.
+        targetSdk 34
+        // Mudou algo na parte nativa? Aumente os dois antes de gerar o APK.
+        versionCode 1
+        versionName "1.0"
+        // O app abre o site publicado: patch no site = app atualizado, sem APK novo.
+        buildConfigField "String", "START_URL", "\"https://moenda.github.io/TobaSolutions/\""
+        buildConfigField "String", "SITE_HOST", "\"moenda.github.io\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    // App de uso pessoal (fora da Play Store): o aviso de "targetSdk antigo"
+    // não pode travar a geração do APK.
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

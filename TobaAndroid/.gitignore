@@ -1,0 +1,16 @@
+# Gerado pelo Android Studio / Gradle
+.gradle/
+build/
+app/build/
+app/release/
+.idea/
+*.iml
+local.properties
+captures/
+.cxx/
+*.apk
+*.aab
+# NUNCA publicar a chave de assinatura (o repositório é público)
+*.jks
+*.keystore
+keystore.properties

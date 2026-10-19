@@ -173,6 +173,21 @@ function storeLiveSession() {
       );
     }
   }
+  syncLiveRestAlarm();
+}
+
+// App Android: o próprio sistema avisa o fim do descanso, mesmo com a tela
+// apagada ou outro app na frente (no navegador o aviso depende da aba viva).
+function syncLiveRestAlarm() {
+  if (!TOBA_NATIVE) return;
+  const rest = liveSession?.rest;
+  // Já tocou: deixa a notificação na barra até a pessoa voltar e seguir o treino.
+  if (rest && rest.startedAt && rest.alerted) return;
+  if (rest && rest.startedAt && rest.endsAt > Date.now()) {
+    TOBA_NATIVE.scheduleRest(rest.endsAt, "⏱ Descanso acabou!", "Larga o celular e bora pra próxima série 💪");
+  } else {
+    TOBA_NATIVE.cancelRest();
+  }
 }
 
 // Arrastar a régua grava várias vezes por segundo: junta numa gravação só.
@@ -186,6 +201,7 @@ function dropLiveSession() {
   liveSaveTimer = 0;
   liveSession = null;
   liveFocus = null;
+  syncLiveRestAlarm();
   try {
     localStorage.removeItem(LIVE_SESSION_KEY);
   } catch (err) {
@@ -863,6 +879,10 @@ function stopLiveTicker() {
 }
 
 async function requestLiveWakeLock() {
+  if (TOBA_NATIVE) {
+    TOBA_NATIVE.keepScreenOn(true);
+    return;
+  }
   if (!("wakeLock" in navigator) || liveWakeLock || document.hidden) return;
   try {
     liveWakeLock = await navigator.wakeLock.request("screen");
@@ -875,6 +895,7 @@ async function requestLiveWakeLock() {
 }
 
 function releaseLiveWakeLock() {
+  if (TOBA_NATIVE) TOBA_NATIVE.keepScreenOn(false);
   if (!liveWakeLock) return;
   liveWakeLock.release().catch(() => {});
   liveWakeLock = null;

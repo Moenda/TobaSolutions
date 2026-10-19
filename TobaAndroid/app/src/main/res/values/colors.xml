@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mesmas cores do toba-common.css (--bg, --green) -->
+    <color name="toba_bg">#0D1117</color>
+    <color name="toba_green">#3FB950</color>
+</resources>

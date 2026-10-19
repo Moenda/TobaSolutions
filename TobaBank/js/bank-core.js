@@ -113,12 +113,13 @@ function loadDatabase() {
 }
 
 // options.silent: grava sem mostrar o "Salvo ✓" (gravações automáticas).
+// Devolve true se gravou (os gastos lidos do app Android só saem da fila assim).
 function saveDatabase(options = {}) {
   if (!isDbLoaded) {
     console.warn(
       "Gravação bloqueada: O banco de dados ainda não foi carregado com segurança.",
     );
-    return;
+    return false;
   }
 
   // O backup é melhor esforço: se ele falhar (por exemplo, por quota),
@@ -142,11 +143,12 @@ function saveDatabase(options = {}) {
       { title: "Não salvou", icon: "💥" },
     );
     onBankDataSaved();
-    return;
+    return false;
   }
 
   if (!options.silent) tobaSaved();
   onBankDataSaved();
+  return true;
 }
 
 function exportBankBackup() {

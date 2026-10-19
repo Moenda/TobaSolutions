@@ -266,10 +266,48 @@
         <span class="toba-menu-icon">📅</span>
         <span class="toba-menu-text">
           <span class="toba-menu-title">Lembrete de gastos</span>
-          <span class="toba-menu-desc">Na agenda: 08:00, 14:00 e 22:00</span>
+          <span class="toba-menu-desc">Todo dia às 08:00, 14:00 e 22:00</span>
         </span>
         <span class="toba-hub-chevron">›</span>
       </button>
+    </div>
+    <div class="toba-settings-section" id="nativeAutoSection" hidden>
+      <div class="toba-settings-label">🤖 Gastos automáticos</div>
+      <button type="button" class="toba-menu-btn" data-click="openNativeAccess">
+        <span class="toba-menu-icon">🔓</span>
+        <span class="toba-menu-text">
+          <span class="toba-menu-title">Ler notificações de compra</span>
+          <span class="toba-menu-desc" id="nativeAccessDesc">Desligado: toque para dar acesso</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </button>
+      <button type="button" class="toba-menu-btn" data-click="openNativeRestricted" id="nativeRestrictedBtn">
+        <span class="toba-menu-icon">⚠️</span>
+        <span class="toba-menu-text">
+          <span class="toba-menu-title">Liberar configuração restrita</span>
+          <span class="toba-menu-desc">Se o acesso aparecer cinza</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </button>
+      <button type="button" class="toba-menu-btn" data-click="openPurchaseLog">
+        <span class="toba-menu-icon">🧾</span>
+        <span class="toba-menu-text">
+          <span class="toba-menu-title">O que o Toba leu</span>
+          <span class="toba-menu-desc">Últimas notificações com R$</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="purchaseLogModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🧾 O que o Toba leu</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <p class="toba-sheet-text">Últimas notificações com R$. Só as dos apps de banco e carteira viram gasto; se o seu banco aparecer como "fora da lista", toque em <b>Ler este app</b>.</p>
+      <div id="purchaseLogList" class="purchase-log"></div>
     </div>
   </div>
 
