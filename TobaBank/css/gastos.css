@@ -267,3 +267,37 @@
 .acc-card.expanded .history-stats {
   padding-bottom: 0.6rem;
 }
+
+/* 🧾 O que o Toba leu (app Android) */
+.purchase-log {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.purchase-log-item {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.7rem;
+  font-size: 0.78rem;
+}
+
+.purchase-log-head,
+.purchase-log-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.purchase-log-head span,
+.purchase-log-foot > span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.purchase-log-raw {
+  margin: 0.3rem 0;
+  word-break: break-word;
+}

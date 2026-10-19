@@ -17,6 +17,8 @@
  * - tobaWheelPicker: régua de arrastar para escolher número sem teclado.
  * - tobaNotify (notificação com o app aberto) e tobaOpenReminder (lembrete
  *   com horário pela agenda do celular, arquivo .ics).
+ * - TOBA_NATIVE / tobaIsApp(): ponte com o app Android (TobaAndroid/); no
+ *   navegador é null e tudo funciona como site.
  *
  * Este arquivo NÃO grava nada no localStorage: cada core continua dono do
  * próprio banco.
@@ -630,7 +632,15 @@ function tobaWheelPicker(container, options = {}) {
  * Backup: download e leitura de .json
  * ------------------------------------------------------------------- */
 function tobaDownloadJson(data, fileName) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const text = JSON.stringify(data, null, 2);
+  // No app Android o WebView não baixa arquivo gerado pelo site: grava em Downloads/Toba.
+  if (TOBA_NATIVE) {
+    if (!TOBA_NATIVE.saveFile(fileName, "application/json", text)) {
+      showPageMessage("Não consegui salvar o arquivo em Downloads.", { title: "Não salvou", icon: "💥" });
+    }
+    return;
+  }
+  const blob = new Blob([text], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -662,6 +672,13 @@ function tobaReadFile(input) {
  * Só funciona com o app aberto ou recém-minimizado: sem servidor não dá para
  * agendar. Lembrete com horário vai pela agenda (tobaOpenReminder).
  * ------------------------------------------------------------------- */
+// App Android (TobaAndroid/): window.TobaNative existe; no navegador é null.
+const TOBA_NATIVE = window.TobaNative || null;
+
+function tobaIsApp() {
+  return Boolean(TOBA_NATIVE);
+}
+
 const TOBA_ICON_URL = (() => {
   try {
     return new URL("../icons/icon-192.png", document.currentScript.src).href;
@@ -675,6 +692,10 @@ function tobaCanNotify() {
 }
 
 async function tobaAskNotify() {
+  if (TOBA_NATIVE) {
+    if (!TOBA_NATIVE.canPostNotifications()) TOBA_NATIVE.requestNotificationPermission();
+    return TOBA_NATIVE.canPostNotifications();
+  }
   if (!("Notification" in window)) return false;
   if (Notification.permission !== "default") return Notification.permission === "granted";
   try {
@@ -802,9 +823,12 @@ const TOBA_REMINDER_HTML = `
         <label>Dias</label>
         <div class="toba-days" id="tobaReminderDays"></div>
       </div>
-      <p class="toba-reminder-help">Baixa um arquivo de agenda. Abra ele e toque em <b>Adicionar</b>: o calendário do celular avisa no horário, mesmo com o app fechado. Para mudar depois, crie de novo (substitui) ou apague na agenda.</p>
+      <p class="toba-reminder-help" id="tobaReminderHelp"></p>
       <div class="toba-sheet-footer">
-        <button type="submit" class="btn btn-primary">📅 Criar na agenda</button>
+        <div class="btn-row">
+          <button type="button" class="btn btn-secondary" id="tobaReminderOff" data-click="tobaClearReminder" hidden>Desligar</button>
+          <button type="submit" class="btn btn-primary" id="tobaReminderSave">📅 Criar na agenda</button>
+        </div>
       </div>
     </form>
   </div>
@@ -813,13 +837,29 @@ const TOBA_REMINDER_HTML = `
 function tobaOpenReminder(config) {
   if (!document.getElementById("tobaReminderModal")) document.body.insertAdjacentHTML("beforeend", TOBA_REMINDER_HTML);
   tobaReminderConfig = config;
+  // No app o próprio Toba avisa (alarme do Android); no navegador vai pela agenda.
+  let saved = null;
+  if (TOBA_NATIVE) {
+    try {
+      saved = JSON.parse(TOBA_NATIVE.getReminder(config.id) || "null");
+    } catch (err) {
+      saved = null;
+    }
+  }
+  const times = saved?.times?.length ? saved.times : config.times;
+  const days = saved?.days?.length ? saved.days : config.days;
+  document.getElementById("tobaReminderHelp").innerHTML = TOBA_NATIVE
+    ? `O Toba avisa nesses horários, mesmo com o app fechado.${saved ? " <b>Ligado.</b>" : ""}`
+    : "Baixa um arquivo de agenda. Abra ele e toque em <b>Adicionar</b>: o calendário do celular avisa no horário, mesmo com o app fechado. Para mudar depois, crie de novo (substitui) ou apague na agenda.";
+  document.getElementById("tobaReminderSave").textContent = TOBA_NATIVE ? (saved ? "🔔 Salvar" : "🔔 Ligar lembrete") : "📅 Criar na agenda";
+  document.getElementById("tobaReminderOff").hidden = !saved;
   document.getElementById("tobaReminderTitle").textContent = config.title;
   document.getElementById("tobaReminderText").textContent = `Aviso: "${config.message}"`;
-  document.getElementById("tobaReminderTimes").innerHTML = config.times
+  document.getElementById("tobaReminderTimes").innerHTML = times
     .map((time, i) => `<input type="time" class="form-control" value="${escapeHtml(time)}" required aria-label="Horário ${i + 1}" />`)
     .join("");
   document.getElementById("tobaReminderDays").innerHTML = TOBA_WEEK_DAYS
-    .map(([code, label]) => `<label class="toba-day"><input type="checkbox" value="${code}"${config.days.includes(code) ? " checked" : ""} /><span>${label}</span></label>`)
+    .map(([code, label]) => `<label class="toba-day"><input type="checkbox" value="${code}"${days.includes(code) ? " checked" : ""} /><span>${label}</span></label>`)
     .join("");
   openTobaModal("tobaReminderModal");
 }
@@ -833,9 +873,27 @@ tobaActions({
       showPageMessage("Escolha pelo menos um horário e um dia.", { title: "Faltou escolher", icon: "🗓️" });
       return;
     }
+    if (TOBA_NATIVE) {
+      const { id, title, message } = tobaReminderConfig;
+      const url = location.href.split(/[?#]/)[0];
+      if (!TOBA_NATIVE.setReminder(id, JSON.stringify({ title, message, times, days, url }))) {
+        showPageMessage("Não consegui ligar o lembrete.", { title: "Ops", icon: "😵" });
+        return;
+      }
+      tobaAskNotify();
+      closeTobaModal("tobaReminderModal");
+      tobaToast(`🔔 Lembrete ligado: ${times.join(", ")}`);
+      return;
+    }
     tobaDownloadIcs({ ...tobaReminderConfig, times, days }, `toba-lembrete-${tobaReminderConfig.id}.ics`);
     closeTobaModal("tobaReminderModal");
     tobaToast("📅 Arquivo baixado: abra para pôr na agenda");
+  },
+  tobaClearReminder: () => {
+    if (!TOBA_NATIVE || !tobaReminderConfig) return;
+    TOBA_NATIVE.clearReminder(tobaReminderConfig.id);
+    closeTobaModal("tobaReminderModal");
+    tobaToast("🔕 Lembrete desligado");
   },
 });
 

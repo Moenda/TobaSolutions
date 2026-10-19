@@ -79,6 +79,9 @@ TobaHealth/
   TobaHealth-Pesagem.html    -> js/health-core.js + js/pesagem.js
   TobaHealth-Treinos.html    -> js/health-core.js + js/hall.js + js/forca.js + js/sessao.js + js/treinos.js
   css/health-base.css + 1 css por módulo
+TobaAndroid/               App Android (APK): WebView que abre o site publicado + ponte window.TobaNative
+                           (gastos lidos das notificações, alarmes, salvar arquivo). Java puro, Android Studio.
+                           Fora do PRECACHE. Passo a passo em TobaAndroid/README.md (ver seção 4.1)
 PATCH-NOTES.md             Notas de cada patch (antigo LEIA-ME.md — ver seção 0.1)
 CLAUDE.md                  Este guia
 ```
@@ -149,7 +152,9 @@ Arquivo: [TobaBank/js/bank-core.js](TobaBank/js/bank-core.js). Variável global 
       fixedExpensesSnapshot: [ ... ] // cópia de config.fixedExpenses congelada para meses passados
     }
   },
-  transactions: [ { id, description, amount, category, date } ],          // gasto à vista
+  transactions: [ { id, description, amount, category, date, notifId? } ], // gasto à vista
+                                     // notifId (opcional, desde v1.29): id da notificação de compra que o app
+                                     // Android leu; só evita lançar duas vezes. Sem default no load (ausente = manual)
   installments: [ { id, description, totalAmount, totalInstallments, startDate, category } ],
   investmentFunds: [ {
     id, name,
@@ -174,7 +179,8 @@ Arquivo: [TobaBank/js/bank-core.js](TobaBank/js/bank-core.js). Variável global 
 - `loadDatabase()` roda no `DOMContentLoaded` de cada página do Bank. Ele: cria o `_PRE_REFACTOR_BACKUP` (uma vez), faz `JSON.parse`, **preenche campos ausentes** (é a "migração"), atualiza o `_AUTO_BACKUP`, e só então marca `isDbLoaded = true`.
 - Se o JSON estiver ilegível: mostra alerta e **não** libera gravação (`isDbLoaded` fica `false`) — isso protege o dado original. Não "conserte" isso trocando por um banco vazio.
 - Se não há dado: grava o banco padrão.
-- `saveDatabase(options)`: copia o valor atual para `_AUTO_BACKUP`, grava `JSON.stringify(db)`, chama `onBankDataSaved()` (cada página sobrescreve para redesenhar) e mostra "Salvo ✓" (`{ silent: true }` não mostra).
+- `saveDatabase(options)`: copia o valor atual para `_AUTO_BACKUP`, grava `JSON.stringify(db)`, chama `onBankDataSaved()` (cada página sobrescreve para redesenhar) e mostra "Salvo ✓" (`{ silent: true }` não mostra). Devolve `true` se gravou, `false` se não (desde v1.29).
+- **Gastos automáticos (app Android):** `importNativePurchases()` em `gastos.js` (no load do Gastos e no `window.onTobaAppResume`) lê a fila do app (`TOBA_NATIVE.getPendingPurchases()`), lança cada compra como `transactions` normal com `notifId`, pula as que já têm esse `notifId`, e só chama `ackPurchases()` se o `saveDatabase()` devolveu `true`. Nunca tire da fila antes de gravar.
 - `importBankBackup(text)`: aceita JSON com `version` ou `transactions`, grava **sem normalizar** e dá `location.reload()` — a normalização acontece no load seguinte. Logo, **toda migração precisa estar em `loadDatabase()`**.
 - `resetBankData()`: remove só `TOBA_BANK_DB` (os backups automáticos ficam).
 
@@ -270,13 +276,22 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 - Atualizar a versão do Chart.js exige trocar a URL nos HTML **e** no `PRECACHE`.
 - Toda página nova deve incluir `<script src="../assets/pwa-register.js"></script>` (ou `assets/...` na raiz), as metas de `color-scheme: dark` e o link do manifest, como as existentes.
 
+### 4.1 App Android (`TobaAndroid/`)
+
+- O APK só abre `https://moenda.github.io/TobaSolutions/` (`START_URL`/`SITE_HOST` em `app/build.gradle`). **Patch no site não precisa de APK novo.** Mudou algo em `TobaAndroid/`? Aumente `versionCode`/`versionName` e avise o usuário que precisa gerar e instalar o APK de novo.
+- O armazenamento do app (WebView) é **separado** do Chrome: os dados vão por backup geral. Mudar o domínio/caminho do site também esvazia o app (mesma regra da 3.1).
+- No site, a ponte é `TOBA_NATIVE` (toba-common; `null` no navegador) / `tobaIsApp()`. Todo uso tem que funcionar sem ela. Métodos (todos texto/JSON): `getPendingPurchases`, `ackPurchases`, `getPurchaseLog`, `allowApp`, `hasNotificationAccess`, `openNotificationAccess`, `openAppInfo`, `getReminder`/`setReminder`/`clearReminder`, `scheduleRest`/`cancelRest`, `keepScreenOn`, `saveFile`, `canPostNotifications`/`requestNotificationPermission`. Mudou um método? Mude em `TobaBridge.java` e no site juntos.
+- No app o WebView não baixa arquivo gerado pelo site: `tobaDownloadJson` usa `TOBA_NATIVE.saveFile` (Downloads/Toba). Download novo deve passar por ela.
+- Texto de notificação de banco mudou? Ajuste `PurchaseParser.java` (listas de apps e palavras). Fila/log/lembretes ficam em SharedPreferences (`TobaStore.java`), nunca no `localStorage`.
+- Nunca commitar a chave de assinatura (`*.jks`, já no `TobaAndroid/.gitignore`): o repositório é público.
+
 ## 5. Estilo de código
 
 - JS puro, funções globais, `const`/`let`, aspas duplas, ponto e vírgula, indentação de 2 espaços.
 - HTML gerado via template string; escapar texto do usuário antes de inserir no DOM com `escapeHtml()` (toba-common). Passe id/índice em `data-id`/`data-index` e busque o dado na função.
 - **Nada de `onclick=`/`onchange=`/`onsubmit=`/`on*=` no HTML (nem no gerado por JS).** Use `data-click`, `data-change`, `data-input` ou `data-submit` com o nome de uma função registrada em `tobaActions({ nome(el, event) {...} })`. `data-close` fecha a folha onde está; `data-open="id"` abre uma. Ação com nome errado aparece no console. (O Treino de Força usa `data-action` com handler próprio no painel; não reaproveite esse nome.)
 - **Número sem teclado:** `tobaWheelPicker(el, { min, max, step, value, majorEvery, unit, label, onChange })` (toba-common) cria a régua de arrastar. Não redesenhe a régua dentro do próprio `onChange` (o dedo perde o arraste); atualize só textos.
-- **Notificações / lembretes:** não há servidor, então não existe push agendado. `tobaNotify(title, body, { tag })` (toba-common) mostra notificação do sistema só com o app aberto ou recém-minimizado (pede permissão com `tobaAskNotify()`, sempre num toque); o clique é tratado no `notificationclick` do `sw.js`. Lembrete com horário vai pela agenda: `tobaOpenReminder({ id, title, message, times, days })` baixa um `.ics` com repetição (o `id` fixo faz a agenda substituir em vez de duplicar). Nada disso grava no `localStorage`.
+- **Notificações / lembretes:** não há servidor, então não existe push agendado (no app Android, `tobaOpenReminder` e o descanso usam alarmes nativos pela ponte; ver 4.1). `tobaNotify(title, body, { tag })` (toba-common) mostra notificação do sistema só com o app aberto ou recém-minimizado (pede permissão com `tobaAskNotify()`, sempre num toque); o clique é tratado no `notificationclick` do `sw.js`. Lembrete com horário vai pela agenda: `tobaOpenReminder({ id, title, message, times, days })` baixa um `.ics` com repetição (o `id` fixo faz a agenda substituir em vez de duplicar). Nada disso grava no `localStorage`.
 - **Avisos e confirmações:** só `showPageMessage(msg, { title, icon, confirm, confirmLabel })` (retorna Promise). Proibido `alert`/`confirm`/`prompt`.
 - **Feedback:** gravou → "Salvo ✓" (`tobaSaved()`, já chamado pelos cores). Lista vazia → `tobaEmpty(icone, titulo, dica)`.
 - **Padrão de tela** (igual em todos os apps): cabeçalho `.toba-header` com `‹` à esquerda (sobe um nível: módulo → hub do app → portal), título do app + página no meio, botão "+" e ⚙️ à direita. "Subpáginas" no mesmo HTML usam `tobaSetHeader({ page, back: "acao" })`. Números em quadradinhos `.toba-stats > .toba-stat` (desde a v1.29 o quadradinho é mais escuro que a tela; dentro de `.card`/`.app-card` ele fica mais claro, para sempre destacar do fundo). Card de lista que abre detalhe: `role="button" tabindex="0" data-click=...` no card inteiro; botões dentro dele com `data-click` próprio têm prioridade.
