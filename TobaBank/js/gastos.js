@@ -390,7 +390,6 @@ function openExpenseModal(id = null, presetDateIso = null) {
   const idInput = document.getElementById("expenseIdInput");
   const descInput = document.getElementById("expenseDescInput");
   const amountInput = document.getElementById("expenseAmountInput");
-  const catSelect = document.getElementById("expenseCategorySelect");
   const dateInput = document.getElementById("expenseDateInput");
   const isInstCheckbox = document.getElementById("isInstallmentCheckbox");
   const instGroupEl = document.getElementById("installmentCheckboxGroup");
@@ -403,7 +402,7 @@ function openExpenseModal(id = null, presetDateIso = null) {
     idInput.value = item.id;
     descInput.value = item.description;
     amountInput.value = formatMoneyInput(item.amount);
-    catSelect.value = item.category;
+    setCategoryField("expenseCategorySelect", item.category);
     dateInput.value = item.date;
     instGroupEl.hidden = true;
     isInstCheckbox.checked = false;
@@ -413,7 +412,7 @@ function openExpenseModal(id = null, presetDateIso = null) {
     idInput.value = "";
     descInput.value = "";
     amountInput.value = "";
-    catSelect.value = "Alimentação";
+    setCategoryField("expenseCategorySelect", "comida");
     dateInput.value = presetDateIso || toIsoDate();
     instGroupEl.hidden = false;
     isInstCheckbox.checked = false;
@@ -479,7 +478,9 @@ function saveExpense() {
         (t) => String(t.id) === String(id),
       );
       if (index !== -1) {
+        // Mantém campos extras do gasto (notifId, oldCategory)
         db.transactions[index] = {
+          ...db.transactions[index],
           id,
           description: desc,
           amount: rawAmount,
@@ -514,6 +515,7 @@ function openEditInstallmentModal(instId) {
   );
   document.getElementById("editInstCount").value = inst.totalInstallments;
   document.getElementById("editInstStartDate").value = inst.startDate;
+  setCategoryField("editInstCategory", inst.category);
   openTobaModal("editInstallmentModal");
 }
 
@@ -528,6 +530,7 @@ function saveEditedInstallment() {
     inst.totalAmount = totalAmount;
     inst.totalInstallments = totalCount;
     inst.startDate = document.getElementById("editInstStartDate").value;
+    inst.category = document.getElementById("editInstCategory").value;
     saveDatabase();
     closeTobaModal("editInstallmentModal");
   }
@@ -594,7 +597,7 @@ function editFixedExpense(id) {
   document.getElementById("editFixedId").value = item.id;
   document.getElementById("editFixedName").value = item.name;
   document.getElementById("editFixedAmount").value = formatMoneyInput(item.amount);
-  document.getElementById("editFixedCategory").value = item.category || "Outros";
+  setCategoryField("editFixedCategory", item.category);
   openTobaModal("editFixedModal");
 }
 
@@ -895,30 +898,31 @@ function saveStartDate(input) {
  * para nunca entrar duas vezes; só sai da fila depois de gravar no banco.
  * ------------------------------------------------------------------- */
 const AUTO_CATEGORY_HINTS = [
-  [/uber|99 ?app|99pop|cabify|taxi/, "Transporte - Uber/App"],
-  [/posto|shell|ipiranga|petrobras|br mania|combust/, "Transporte - Combustível"],
-  [/ifood|ifd\*|rappi|restaurante|lanchonete|padaria|burger|pizza|cafe|mc ?donald|subway|outback/, "Alimentação"],
-  [/mercado|supermerc|atacad|assai|carrefour|pao de acucar|hortifruti|sacolao/, "Mercado"],
-  [/farmacia|drogaria|droga raia|drogasil|pague menos|panvel|clinica|laborat/, "Saúde & Bem-Estar"],
-  [/netflix|spotify|prime video|amazon prime|disney|hbo|youtube|globoplay|deezer|icloud|google one/, "Assinaturas"],
-  [/steam|playstation|psn|xbox|nintendo|epic games|riot/, "Games"],
-  [/petz|cobasi|petshop|pet shop|veterin/, "Pet"],
-  [/renner|riachuelo|c&a|zara|shein|centauro|netshoes|hering/, "Vestuário"],
+  [/uber|99 ?app|99pop|cabify|taxi|estacion|estapar|zona azul|sem parar|conectcar|veloe|pedagio/, "uber"],
+  [/posto|shell|ipiranga|petrobras|br mania|combust/, "combustivel"],
+  [/ifood|ifd\*|rappi|restaurante|lanchonete|padaria|burger|pizza|cafe|mc ?donald|subway|outback/, "comida"],
+  [/mercado|supermerc|atacad|assai|carrefour|pao de acucar|hortifruti|sacolao/, "mercado"],
+  [/farmacia|drogaria|droga raia|drogasil|pague menos|panvel|clinica|laborat/, "saude"],
+  [/netflix|spotify|prime video|amazon prime|disney|hbo|youtube|globoplay|deezer|icloud|google one/, "assinaturas"],
+  [/steam|playstation|psn|xbox|nintendo|epic games|riot|blizzard|battle\.?net|jagex/, "games"],
+  [/petz|cobasi|petshop|pet shop|veterin/, "pets"],
+  [/renner|riachuelo|c&a|zara|shein|centauro|netshoes|hering/, "roupas"],
+  [/tarifa|anuidade|juros|multa|iof/, "taxas"],
 ];
 
 function plainText(text) {
   return String(text || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
 }
 
-// Mesma loja de antes → mesma categoria. Senão, palpite pelo nome; senão "Outros".
+// Mesma loja de antes → mesma categoria. Senão, palpite pelo nome; senão "outros".
 function guessExpenseCategory(description) {
   const key = plainText(description);
   for (let i = db.transactions.length - 1; i >= 0; i--) {
     const t = db.transactions[i];
-    if (t.category && plainText(t.description) === key) return t.category;
+    if (BANK_CATEGORIES[t.category] && plainText(t.description) === key) return t.category;
   }
   const hint = AUTO_CATEGORY_HINTS.find(([pattern]) => pattern.test(key));
-  return hint ? hint[1] : "Outros";
+  return hint ? hint[1] : "outros";
 }
 
 function importNativePurchases() {
@@ -964,7 +968,7 @@ function importNativePurchases() {
   if (handled.length) TOBA_NATIVE.ackPurchases(JSON.stringify(handled));
   if (!added.length) return;
 
-  const lines = added.map((t) => `• ${t.description} · ${formatCurrency(t.amount)} (${t.category})`).join("\n");
+  const lines = added.map((t) => `• ${t.description} · ${formatCurrency(t.amount)} (${getCleanCategory(t.category)})`).join("\n");
   showPageMessage(
     `${lines}\n\nLidos das notificações do cartão. Categoria errada ou não era gasto? Toque nele no histórico para editar ou apagar.`,
     { title: added.length === 1 ? "1 gasto lançado" : `${added.length} gastos lançados`, icon: "🤖" },

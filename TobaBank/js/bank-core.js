@@ -60,11 +60,21 @@ function loadDatabase() {
             id: Date.now().toString(),
             name: "Gastos Legado (Atualize)",
             amount: parsed.config.fixedTotal,
-            category: "Outros",
+            category: "outros",
           });
         }
       }
       if (!parsed.config.fixedExpenses) parsed.config.fixedExpenses = [];
+
+      // v1.35: categorias antigas -> códigos novos (ver BANK_CATEGORY_MIGRATION).
+      // Antes da 1ª troca guarda uma cópia única do banco como estava.
+      if (migrateBankCategories(parsed) > 0 && localStorage.getItem(STORAGE_KEY + "_PRE_CATEGORIES_BACKUP") === null) {
+        try {
+          localStorage.setItem(STORAGE_KEY + "_PRE_CATEGORIES_BACKUP", data);
+        } catch (err) {
+          console.warn("Não foi possível criar a cópia antes das categorias novas:", err);
+        }
+      }
 
       parsed.investmentFunds.forEach((f) => {
         if (f.isFinished === undefined) f.isFinished = false;
@@ -205,10 +215,109 @@ async function resetBankData() {
   location.reload();
 }
 
-// Categoria sem o grupo ("Moradia - Aluguel" -> "Aluguel"); tolera gasto
-// antigo sem categoria.
+/* ---------------------------------------------------------------------
+ * Categorias do Gastos (desde v1.35). O banco grava só o `id`; nome e
+ * emoji vêm daqui. Nunca troque nem remova um `id` (vira gasto órfão):
+ * para renomear, mude só `name`/`short`. `short` é o nome do botão da
+ * gaveta (cabe em 360px); `name` aparece no gráfico e nas listas.
+ * ------------------------------------------------------------------- */
+const BANK_CATEGORY_GROUPS = [
+  { label: "🏡 Casa", items: [
+    { id: "moradia", emoji: "🏠", name: "Moradia" },
+    { id: "contas", emoji: "💡", name: "Contas da casa", short: "Contas" },
+    { id: "casa", emoji: "🛋️", name: "Casa & reparos", short: "Casa" },
+  ] },
+  { label: "🍔 Comida & rolê", items: [
+    { id: "mercado", emoji: "🛒", name: "Mercado / Feira", short: "Mercado" },
+    { id: "comida", emoji: "🍔", name: "Comida fora" },
+    { id: "role", emoji: "🎉", name: "Rolês & bares" },
+  ] },
+  { label: "🎮 Lazer", items: [
+    { id: "viagens", emoji: "✈️", name: "Viagens" },
+    { id: "assinaturas", emoji: "📺", name: "Assinaturas" },
+    { id: "games", emoji: "🎮", name: "Games" },
+  ] },
+  { label: "🚗 Transporte", items: [
+    { id: "combustivel", emoji: "⛽", name: "Combustível" },
+    { id: "uber", emoji: "🚕", name: "Uber / Estacionamento", short: "Uber / Estac." },
+    { id: "carro", emoji: "🔧", name: "Carro" },
+  ] },
+  { label: "🧍 Você", items: [
+    { id: "saude", emoji: "💊", name: "Saúde" },
+    { id: "pets", emoji: "🐱", name: "Pets" },
+    { id: "cuidados", emoji: "🧴", name: "Cuidados" },
+    { id: "roupas", emoji: "👕", name: "Roupas" },
+    { id: "estudos", emoji: "📚", name: "Estudos" },
+    { id: "presentes", emoji: "🎁", name: "Presentes" },
+  ] },
+  { label: "📦 Resto", items: [
+    { id: "taxas", emoji: "💸", name: "Taxas & juros" },
+    { id: "investimentos", emoji: "📈", name: "Investimentos" },
+    { id: "outros", emoji: "📦", name: "Outros" },
+  ] },
+];
+
+const BANK_CATEGORIES = {};
+BANK_CATEGORY_GROUPS.forEach((g) => g.items.forEach((c) => (BANK_CATEGORIES[c.id] = c)));
+
+// Texto gravado até a v1.34 (value do antigo <select>) -> id novo.
+// Fica aqui de vez: backup antigo importado passa pelo load e é convertido.
+const BANK_CATEGORY_MIGRATION = {
+  "Moradia - Aluguel/Condomínio": "moradia",
+  "Moradia - Contas Básicas (Luz/Água/Internet)": "contas",
+  "Moradia - Manutenção/Eletro": "casa",
+  "Mercado": "mercado",
+  "Alimentação": "comida",
+  "Lazer": "role",
+  "Viagens": "viagens",
+  "Presentes": "presentes",
+  "Assinaturas": "assinaturas",
+  "Games": "games",
+  "Transporte - Combustível": "combustivel",
+  "Transporte - Uber/App": "uber",
+  "Transporte - Manutenção/IPVA": "carro",
+  "Saúde & Bem-Estar": "saude",
+  "Pet": "pets",
+  "Cuidados Pessoais": "cuidados",
+  "Vestuário": "roupas",
+  "Educação": "estudos",
+  "Investimentos & Pessoal": "investimentos",
+  "Outros": "outros",
+};
+
+// Troca a categoria antiga pelo id novo em gastos, parcelados, fixos e nas
+// cópias de fixos dos meses. Texto desconhecido vira "outros" mas fica
+// guardado em `oldCategory`. Idempotente: id novo não é tocado.
+// Devolve quantos itens mudaram.
+function migrateBankCategories(parsed) {
+  let changed = 0;
+  const fix = (item) => {
+    if (!item || typeof item !== "object" || BANK_CATEGORIES[item.category]) return;
+    const old = item.category;
+    const mapped = BANK_CATEGORY_MIGRATION[typeof old === "string" ? old.trim() : ""];
+    item.category = mapped || "outros";
+    if (old && typeof old === "string" && item.oldCategory === undefined) item.oldCategory = old;
+    changed++;
+  };
+  (parsed.transactions || []).forEach(fix);
+  (parsed.installments || []).forEach(fix);
+  ((parsed.config && parsed.config.fixedExpenses) || []).forEach(fix);
+  Object.values(parsed.months || {}).forEach((m) => {
+    if (m && Array.isArray(m.fixedExpensesSnapshot)) m.fixedExpensesSnapshot.forEach(fix);
+  });
+  return changed;
+}
+
+function getBankCategory(id) {
+  return BANK_CATEGORIES[id] || BANK_CATEGORIES.outros;
+}
+
+// "🛒 Mercado / Feira" (gráfico, listas). Texto que não é id (banco ainda
+// não migrado) aparece como antes: sem o grupo ("Moradia - Aluguel" -> "Aluguel").
 function getCleanCategory(category) {
-  if (!category) return "Outros";
+  if (!category) return "📦 Outros";
+  const cat = BANK_CATEGORIES[category];
+  if (cat) return `${cat.emoji} ${cat.name}`;
   return category.includes(" - ") ? category.split(" - ")[1] : category;
 }
 

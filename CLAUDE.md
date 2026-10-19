@@ -70,7 +70,7 @@ _molde-app/                Molde de app novo (copiar e preencher; ver _molde-app
 icons/
 TobaBank/
   TobaBank-Index.html      Hub do Bank (carrega o bank-core só para a ⚙️/backup)
-  TobaBank-Gastos.html       -> js/bank-core.js + js/bank-metrics.js + js/gastos.js
+  TobaBank-Gastos.html       -> js/bank-core.js + js/bank-metrics.js + js/categorias.js (gaveta de categorias) + js/gastos.js
   TobaBank-Investimento.html -> Chart.js + js/bank-core.js + js/investimento.js
   TobaBank-Raxador.html      -> js/bank-core.js + js/raxador.js
   css/bank-base.css + 1 css por módulo
@@ -111,6 +111,7 @@ CLAUDE.md                  Este guia
 | `TOBA_BANK_DB` | `bank-core.js` | Banco principal do Toba Bank (JSON) |
 | `TOBA_BANK_DB_AUTO_BACKUP` | `bank-core.js` | Cópia do valor **anterior** do banco, atualizada a cada `saveDatabase()` e no load |
 | `TOBA_BANK_DB_PRE_REFACTOR_BACKUP` | `bank-core.js` | Cópia única feita na 1ª abertura da versão reorganizada. **Nunca sobrescrever** |
+| `TOBA_BANK_DB_PRE_CATEGORIES_BACKUP` | `bank-core.js` | Cópia única do banco antes da 1ª troca para as categorias novas (v1.35). **Nunca sobrescrever** |
 | `TOBA_HEALTH_DB` | `health-core.js` | Banco principal do Toba Health (JSON) |
 | `TOBA_HEALTH_DB_PRE_REFACTOR_BACKUP` | `health-core.js` | Cópia única, mesma regra acima |
 | `TOBA_HEALTH_DB_AUTO_BACKUP` | `health-core.js` | Cópia do valor **anterior** do banco, atualizada a cada `saveHealthDb()` e no load (desde v1.21) |
@@ -132,7 +133,7 @@ Ao criar uma chave nova: use prefixo `TOBA_` (bancos) ou `toba_` (preferências 
   - Health `workouts[].id`: **string** `` `${Date.now()}-${rand6}` `` (bancos antigos podem ter outros formatos; compare com `String()`).
   - Health `strengthRoutines[].id`: **string** `` `r-${Date.now()}-${rand4}` ``.
   - Cuidado: dois `Date.now()` no mesmo tick geram o mesmo id (veja `newFund`, que usa `Date.now() + 1`). Ao criar vários itens de uma vez, acrescente sufixo aleatório.
-- **Categorias** do Bank são gravadas como o **texto do `value`** do `<option>` (ex.: `"Moradia - Aluguel/Condomínio"`). Mudar o `value` de uma opção deixa os gastos antigos órfãos. Para renomear, mantenha o `value` antigo ou migre no load.
+- **Categorias** do Gastos (desde v1.35) são gravadas como **id** curto (`"mercado"`, `"uber"`...) da tabela `BANK_CATEGORY_GROUPS` em `bank-core.js`; nome e emoji vêm de lá (`getBankCategory`/`getCleanCategory`). Nunca troque nem remova um `id` (deixa gastos órfãos); renomear é só mudar `name`/`short`. Categoria nova = item novo na tabela. O texto antigo (até v1.34, ex. `"Moradia - Aluguel/Condomínio"`) é convertido no load por `migrateBankCategories()` via `BANK_CATEGORY_MIGRATION` (em `transactions`, `installments`, `config.fixedExpenses` e `fixedExpensesSnapshot`); o texto original fica em `oldCategory` (opcional) e texto desconhecido vira `"outros"`. **Não remova essa migração**: backup antigo importado depende dela. Na tela, campo de categoria = `<input type="hidden">` + botão `.category-field` (`categorias.js`); mude o valor pelo JS com `setCategoryField(id, valor)`. O Raxador tem categorias próprias (texto com emoji), fora disso.
 
 ### 3.4 Toba Bank — `TOBA_BANK_DB`
 
@@ -152,7 +153,7 @@ Arquivo: [TobaBank/js/bank-core.js](TobaBank/js/bank-core.js). Variável global 
       fixedExpensesSnapshot: [ ... ] // cópia de config.fixedExpenses congelada para meses passados
     }
   },
-  transactions: [ { id, description, amount, category, date, notifId? } ], // gasto à vista
+  transactions: [ { id, description, amount, category, date, notifId?, oldCategory? } ], // gasto à vista; category = id (3.3)
                                      // notifId (opcional, desde v1.29): id da notificação de compra que o app
                                      // Android leu; só evita lançar duas vezes. Sem default no load (ausente = manual)
   installments: [ { id, description, totalAmount, totalInstallments, startDate, category } ],

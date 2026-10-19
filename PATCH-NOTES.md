@@ -425,3 +425,41 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 - Gastos → ⚙️ → Dados & Backup → Baixar backup → conferir o arquivo em Downloads/Toba.
 
 **Commit sugerido:** `v1.34 - App Android (APK) com gastos automaticos pelas notificacoes e lembretes nativos`
+
+---
+
+## v1.35 — Livre hoje cobra o estouro de ontem, ? no mapa de calor e categorias novas no Gastos
+
+**Arquivos novos/alterados:** `TobaBank/js/bank-metrics.js`, `TobaHealth/TobaHealth-Treinos.html`, `TobaHealth/js/hall.js`, `TobaHealth/js/treinos.js`, `TobaHealth/css/treinos.css`, `TobaBank/js/categorias.js` (NOVO), `TobaBank/js/bank-core.js`, `TobaBank/js/gastos.js`, `TobaBank/TobaBank-Gastos.html`, `TobaBank/css/gastos.css`, `sw.js`, `CLAUDE.md`
+
+1. **Estourou, paga amanhã:** o "💵 Livre hoje" agora carrega a dívida. Orçamento de 150 e gastou 300 hoje? Amanhã você começa em −150, e somando os 150 do dia o Livre hoje mostra R$ 0,00. Segura um dia sem gastar e no outro volta pros 150. Estourou mais? A dívida vai passando de dia em dia até ser paga. O Toba não é só controle, é economia 💪
+2. **Sobra não vira crédito:** gastou menos que o orçamento? O dia seguinte começa normal; a sobra vai pro 🐷 Cofre do mês, como sempre.
+3. **Só dentro do mês:** a dívida conta a partir do início do controle e zera na virada do mês, junto com o cofre.
+4. **Portal junto:** o card do Toba Bank no portal usa a mesma conta, então o "Livre hoje" de lá bate com o do Gastos.
+5. Isso nunca tinha funcionado assim (desde a v1.04 o Livre hoje era só "orçamento do dia − gasto de hoje"); não foi um patch que quebrou.
+6. **Botão ? no mapa de calor:** do lado do título do mapa (página do mês, página do treino e "Mapa de calor da vida" do Hall do Herói) tem um ? redondinho. Tocar abre o "🔥 Manual do boneco", no jeito Toba: o que as cores querem dizer (vermelho é o campeão do período, não lesão), o que entra na conta (força, peso do corpo/Saitama, caminhada, bike e elíptico) e por que conta reps e não kg.
+7. **Modelos de shape explicados:** quais músculos são tronco e quais são perna, a regra do 1,3× (uns 57% do total) e o que é 🔻 Triângulo invertido, 🔺 Triângulo e ▭ Retângulo.
+8. **Como equilibrar:** caçar os músculos cinzas, o que treinar se virou 🔻 ou 🔺, e o lembrete de que a meta é o boneco colorido por igual, não tudo vermelho. A dica embaixo do mapa ficou mais curta e aponta pro ?.
+9. **Categorias novas no Gastos:** 21 categorias que fazem sentido, em 6 grupos: 🏡 Casa (Moradia, Contas, Casa), 🍔 Comida & rolê (Mercado / Feira, Comida fora, Rolês & bares), 🎮 Lazer (Viagens, Assinaturas, Games), 🚗 Transporte (Combustível, Uber / Estacionamento, Carro), 🧍 Você (Saúde, Pets, Cuidados, Roupas, Estudos, Presentes) e 📦 Resto (💸 Taxas & juros, que é nova, Investimentos e Outros).
+10. **Adeus select cinza:** tocar em Categoria (novo gasto, editar gasto, editar compra parcelada, gasto fixo) abre a gaveta "🏷️ Onde foi parar o dinheiro?" com botões grandes de emoji, 3 por linha, e o escolhido aceso. O gráfico e as listas mostram emoji + nome curto, sem quebrar linha no S24.
+11. **O passado vem junto:** na 1ª abertura, todo gasto, parcelado e fixo antigo troca sozinho para a categoria nova (Alimentação → Comida fora, Lazer → Rolês & bares, Transporte - Manutenção/IPVA → Carro...). Categoria que não estava na lista vira 📦 Outros, e o nome antigo fica guardado.
+12. **Categoria da compra parcelada:** o "✏️ Editar compra parcelada" ganhou o campo Categoria (antes não dava pra trocar depois de lançar). Muda a categoria de todas as parcelas, inclusive as que já passaram.
+13. **Gastos automáticos do app** já chutam nas categorias novas, e agora estacionamento, Zona Azul, Sem Parar/pedágio caem em Uber / Estacionamento e tarifa, anuidade, juros e IOF em Taxas & juros.
+
+**Dados:** Livre hoje e mapa de calor: nenhuma mudança no banco, é só conta. Categorias: o campo `category` de `transactions`, `installments`, `config.fixedExpenses` e das cópias de fixos dos meses passa a guardar um código curto (`"mercado"`, `"uber"`...) em vez do texto antigo. A troca acontece no load (rodar de novo não muda nada), o texto antigo fica num campo opcional novo, `oldCategory`, e antes da 1ª troca o banco inteiro é copiado uma vez para a chave nova `TOBA_BANK_DB_PRE_CATEGORIES_BACKUP` (nunca sobrescrita). Backups antigos continuam importando: passam pela mesma troca. Essa conversão fica no código de vez (é pequena, e sem ela backup antigo importado voltaria com categoria desconhecida).
+
+**Como testar:**
+- Abrir o Gastos: se ontem você gastou mais que o orçamento líquido do dia, o Livre hoje aparece menor (ou vermelho). Ex.: 18/10 com R$ 341,04 gastos e R$ 123,64/dia → em 19/10 o Livre hoje começa em −R$ 93,76.
+- Num dia em que ontem ficou abaixo do orçamento, o Livre hoje continua o valor cheio.
+- Abrir o portal e conferir que o "Livre hoje" do card bate com o do Gastos.
+- Console sem erros nas duas telas.
+- Treinos → tocar num mês do histórico: no "🔥 Mapa de calor" aparece o ? à direita do título. Tocar abre o Manual do boneco; rolar até o fim e fechar no ✕. O ? também aparece em "🔥 Músculos do treino" (página do treino) e em "🔥 Músculo por músculo" (Hall do Herói → mapa da vida).
+
+- Gastos: abrir com os dados de sempre. O gráfico "📊 Gastos por categoria" e os lançamentos já aparecem com as categorias novas (emoji + nome), inclusive nos meses fechados e nos fixos.
+- Tocar em + Gasto → Categoria: abre a gaveta, escolher uma, salvar. Editar um gasto antigo: a gaveta abre com a categoria dele acesa.
+- Fixos → Novo gasto fixo e editar um fixo: mesma gaveta.
+- Parcelas → tocar numa parcela → Categoria mostra a atual; trocar, salvar e conferir no gráfico.
+- Console: `localStorage.getItem("TOBA_BANK_DB_PRE_CATEGORIES_BACKUP")` tem a cópia de antes. Recarregar a página duas vezes não muda nada.
+- ⚙️ → importar um backup antigo do Bank: volta com as categorias novas.
+
+**Commit sugerido:** `v1.35 - Livre hoje carrega o estouro do dia anterior, botao ? no mapa de calor e categorias novas no Gastos`

@@ -453,11 +453,14 @@ function renderMuscleSection(workouts, scope, title = "🔥 Mapa de calor", { te
   const ranked = Object.entries(heat).sort((a, b) => b[1].reps - a[1].reps);
   const max = ranked[0][1].reps;
   return `
-    <div class="section-title">${title}</div>
+    <div class="section-title">
+      <span>${title}</span>
+      <button type="button" class="muscle-help-btn" data-click="openMuscleHelp" aria-label="Como funciona o mapa de calor">?</button>
+    </div>
     <div class="card muscle-card">
       ${renderMuscleMap(heat, { interactive: true, scope })}
       <div class="muscle-legend" aria-hidden="true"><span>pouco</span><i class="lv-1"></i><i class="lv-2"></i><i class="lv-3"></i><i class="lv-4"></i><i class="lv-5"></i><span>pegando fogo</span></div>
-      <p class="muscle-hint">Toque num músculo pra ver os números. Conta repetições por grupo (caminhada, bike, elíptico e os km do Saitama entram como reps equivalentes por km).</p>
+      <p class="muscle-hint">Toque num músculo pra ver os números. Ficou boiando? Toca no <b>?</b> lá em cima.</p>
       <ul class="muscle-rank">${ranked.map(([group, item]) => `
         <li>
           <span class="muscle-rank-name">${getStrengthGroupName(group).replace(" de coxa", "")}</span>

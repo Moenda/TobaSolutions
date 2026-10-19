@@ -162,68 +162,8 @@
           <input type="text" id="fixedNameInput" class="form-control fixed-name" placeholder="Ex: Spotify, Academia..." />
           <input type="text" inputmode="numeric" id="fixedAmountInput" class="form-control smart-money fixed-amount" placeholder="R$ 0,00" />
         </div>
-        <select id="fixedCategorySelect" class="form-control" style="margin-top: 8px">
-                  <optgroup label="🏠 Casa & Moradia">
-                    <option value="Moradia - Aluguel/Condomínio">
-                      🏢 Aluguel / Condomínio
-                    </option>
-                    <option value="Moradia - Contas Básicas (Luz/Água/Internet)">
-                      💡 Contas Básicas (Luz, Água, Internet)
-                    </option>
-                    <option value="Moradia - Manutenção/Eletro">
-                      🛠️ Manutenção / Eletro / Decoração
-                    </option>
-                    <option value="Mercado">
-                      🛒 Mercado / Feira / Limpeza
-                    </option>
-                  </optgroup>
-                  <optgroup label="🍔 Alimentação & Rolês">
-                    <option value="Alimentação">
-                      🍔 Rest. / Lanches / Ifood
-                    </option>
-                    <option value="Lazer">🎉 Festas / Rolês / Bares</option>
-                    <option value="Viagens">✈️ Viagens & Passeios</option>
-                    <option value="Presentes">🎁 Presentes</option>
-                  </optgroup>
-                  <optgroup label="🎮 Digital & Assinaturas">
-                    <option value="Assinaturas" selected>
-                      📺 Assinaturas & Streaming (Netflix, Spotify)
-                    </option>
-                    <option value="Games">
-                      🎮 Games (Passes, Jogos, Itens)
-                    </option>
-                  </optgroup>
-                  <optgroup label="🚗 Transporte">
-                    <option value="Transporte - Combustível">
-                      ⛽ Combustível
-                    </option>
-                    <option value="Transporte - Uber/App">
-                      🚕 Uber / Táxi
-                    </option>
-                    <option value="Transporte - Manutenção/IPVA">
-                      📄 Manutenção / IPVA / Seguro
-                    </option>
-                  </optgroup>
-                  <optgroup label="🩺 Saúde, Pets & Pessoal">
-                    <option value="Saúde & Bem-Estar">
-                      💊 Saúde / Terapia / Farmácia
-                    </option>
-                    <option value="Pet">🐱 Pets (Ração, Vet, Mimos)</option>
-                    <option value="Cuidados Pessoais">
-                      🧴 Cuidados Pessoais / Cosméticos
-                    </option>
-                    <option value="Vestuário">👕 Roupas & Acessórios</option>
-                    <option value="Educação">
-                      📚 Educação (Cursos, Livros, Materiais)
-                    </option>
-                  </optgroup>
-                  <optgroup label="📈 Outros">
-                    <option value="Investimentos & Pessoal">
-                      📈 Investimentos
-                    </option>
-                    <option value="Outros">📦 Outros Gastos</option>
-                  </optgroup>
-                </select>
+        <input type="hidden" id="fixedCategorySelect" value="assinaturas" />
+        <button type="button" class="category-field is-spaced" data-click="openCategoryPicker" data-target="fixedCategorySelect"></button>
         <button type="submit" class="btn btn-primary" style="margin-top: 8px">Adicionar</button>
       </form>
 
@@ -350,6 +290,11 @@
             <input type="date" id="editInstStartDate" class="form-control" required />
           </div>
         </div>
+        <div class="form-group">
+          <label>Categoria</label>
+          <input type="hidden" id="editInstCategory" value="outros" />
+          <button type="button" class="category-field" data-click="openCategoryPicker" data-target="editInstCategory"></button>
+        </div>
         <div class="toba-sheet-footer">
           <div class="btn-row">
             <button type="button" class="btn btn-danger btn-grow-1" data-click="deleteInstallmentFromEditModal">🗑️ Apagar</button>
@@ -395,61 +340,9 @@
         </div>
 
         <div class="form-group">
-          <label for="expenseCategorySelect">Categoria</label>
-          <select id="expenseCategorySelect" class="form-control" required>
-              <optgroup label="🏠 Casa & Moradia">
-                <option value="Moradia - Aluguel/Condomínio">
-                  🏢 Aluguel / Condomínio
-                </option>
-                <option value="Moradia - Contas Básicas (Luz/Água/Internet)">
-                  💡 Contas Básicas (Luz, Água, Internet)
-                </option>
-                <option value="Moradia - Manutenção/Eletro">
-                  🛠️ Manutenção / Eletro / Decoração
-                </option>
-                <option value="Mercado">🛒 Mercado / Feira / Limpeza</option>
-              </optgroup>
-              <optgroup label="🍔 Alimentação & Rolês">
-                <option value="Alimentação" selected>
-                  🍔 Rest. / Lanches / Ifood
-                </option>
-                <option value="Lazer">🎉 Festas / Rolês / Bares</option>
-                <option value="Viagens">✈️ Viagens & Passeios</option>
-                <option value="Presentes">🎁 Presentes</option>
-              </optgroup>
-              <optgroup label="🎮 Digital & Assinaturas">
-                <option value="Assinaturas">
-                  📺 Assinaturas & Streaming (Netflix, Spotify)
-                </option>
-                <option value="Games">🎮 Games (Passes, Jogos, Itens)</option>
-              </optgroup>
-              <optgroup label="🚗 Transporte">
-                <option value="Transporte - Combustível">⛽ Combustível</option>
-                <option value="Transporte - Uber/App">🚕 Uber / Táxi</option>
-                <option value="Transporte - Manutenção/IPVA">
-                  📄 Manutenção / IPVA / Seguro
-                </option>
-              </optgroup>
-              <optgroup label="🩺 Saúde, Pets & Pessoal">
-                <option value="Saúde & Bem-Estar">
-                  💊 Saúde / Terapia / Farmácia
-                </option>
-                <option value="Pet">🐱 Pets (Ração, Vet, Mimos)</option>
-                <option value="Cuidados Pessoais">
-                  🧴 Cuidados Pessoais / Cosméticos
-                </option>
-                <option value="Vestuário">👕 Roupas & Acessórios</option>
-                <option value="Educação">
-                  📚 Educação (Cursos, Livros, Materiais)
-                </option>
-              </optgroup>
-              <optgroup label="📈 Outros">
-                <option value="Investimentos & Pessoal">
-                  📈 Investimentos
-                </option>
-                <option value="Outros">📦 Outros Gastos</option>
-              </optgroup>
-            </select>
+          <label>Categoria</label>
+          <input type="hidden" id="expenseCategorySelect" value="comida" />
+          <button type="button" class="category-field" data-click="openCategoryPicker" data-target="expenseCategorySelect"></button>
         </div>
 
         <div class="form-group">
@@ -484,69 +377,9 @@
           <input type="text" inputmode="numeric" id="editFixedAmount" class="form-control smart-money" required />
         </div>
         <div class="form-group">
-          <label for="editFixedCategory">Categoria</label>
-          <select id="editFixedCategory" class="form-control">
-                  <optgroup label="🏠 Casa & Moradia">
-                    <option value="Moradia - Aluguel/Condomínio">
-                      🏢 Aluguel / Condomínio
-                    </option>
-                    <option value="Moradia - Contas Básicas (Luz/Água/Internet)">
-                      💡 Contas Básicas (Luz, Água, Internet)
-                    </option>
-                    <option value="Moradia - Manutenção/Eletro">
-                      🛠️ Manutenção / Eletro / Decoração
-                    </option>
-                    <option value="Mercado">
-                      🛒 Mercado / Feira / Limpeza
-                    </option>
-                  </optgroup>
-                  <optgroup label="🍔 Alimentação & Rolês">
-                    <option value="Alimentação">
-                      🍔 Rest. / Lanches / Ifood
-                    </option>
-                    <option value="Lazer">🎉 Festas / Rolês / Bares</option>
-                    <option value="Viagens">✈️ Viagens & Passeios</option>
-                    <option value="Presentes">🎁 Presentes</option>
-                  </optgroup>
-                  <optgroup label="🎮 Digital & Assinaturas">
-                    <option value="Assinaturas" selected>
-                      📺 Assinaturas & Streaming (Netflix, Spotify)
-                    </option>
-                    <option value="Games">
-                      🎮 Games (Passes, Jogos, Itens)
-                    </option>
-                  </optgroup>
-                  <optgroup label="🚗 Transporte">
-                    <option value="Transporte - Combustível">
-                      ⛽ Combustível
-                    </option>
-                    <option value="Transporte - Uber/App">
-                      🚕 Uber / Táxi
-                    </option>
-                    <option value="Transporte - Manutenção/IPVA">
-                      📄 Manutenção / IPVA / Seguro
-                    </option>
-                  </optgroup>
-                  <optgroup label="🩺 Saúde, Pets & Pessoal">
-                    <option value="Saúde & Bem-Estar">
-                      💊 Saúde / Terapia / Farmácia
-                    </option>
-                    <option value="Pet">🐱 Pets (Ração, Vet, Mimos)</option>
-                    <option value="Cuidados Pessoais">
-                      🧴 Cuidados Pessoais / Cosméticos
-                    </option>
-                    <option value="Vestuário">👕 Roupas & Acessórios</option>
-                    <option value="Educação">
-                      📚 Educação (Cursos, Livros, Materiais)
-                    </option>
-                  </optgroup>
-                  <optgroup label="📈 Outros">
-                    <option value="Investimentos & Pessoal">
-                      📈 Investimentos
-                    </option>
-                    <option value="Outros">📦 Outros Gastos</option>
-                  </optgroup>
-                </select>
+          <label>Categoria</label>
+          <input type="hidden" id="editFixedCategory" value="assinaturas" />
+          <button type="button" class="category-field" data-click="openCategoryPicker" data-target="editFixedCategory"></button>
         </div>
         <div class="toba-sheet-footer">
           <div class="btn-row">
@@ -561,6 +394,7 @@
   <script src="../assets/toba-common.js"></script>
   <script src="js/bank-core.js"></script>
   <script src="js/bank-metrics.js"></script>
+  <script src="js/categorias.js"></script>
   <script src="js/gastos.js"></script>
   <script src="../assets/pwa-register.js"></script>
 </body>
