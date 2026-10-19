@@ -55,10 +55,17 @@
         <div class="app-card-top">
           <span class="app-icon">🥗</span>
           <span class="app-title">Toba Health</span>
-          <span class="badge badge-beta">🔥 Beta</span>
+          <span id="tobaHealthCardTopAction"><span class="badge badge-beta">🔥 Beta</span></span>
         </div>
-        <div class="app-desc">
+        <div class="app-desc" id="tobaHealthDesc">
           Shape de respeito, proteína no teto e água na guela sem choro <b>(•̀_•́)⁠o</b>
+        </div>
+        <div class="card-custom-body is-health" id="tobaHealthCustomBody" hidden>
+          <div class="toba-stats" id="tobaHealthMetricsGrid"></div>
+          <div class="quick-add-row" id="tobaHealthQuickRow" hidden>
+            <span class="quick-add-btn" role="button" tabindex="0" data-click="goHealthPage" data-page="TobaHealth-Treinos.html">🏋️ Treinos</span>
+            <span class="quick-add-btn" role="button" tabindex="0" data-click="goHealthPage" data-page="TobaHealth-Pesagem.html">⚖️ Pesagem</span>
+          </div>
         </div>
       </a>
 
@@ -112,11 +119,11 @@
     <div class="toba-settings-section">
       <div class="toba-settings-label">🎛️ Painel</div>
       <div class="toba-menu">
-        <button type="button" class="toba-menu-btn" data-click="openBankCardConfig">
-          <span class="toba-menu-icon">🏦</span>
+        <button type="button" class="toba-menu-btn" data-open="cardsModal">
+          <span class="toba-menu-icon">🧩</span>
           <span class="toba-menu-text">
-            <span class="toba-menu-title">Card do Toba Bank</span>
-            <span class="toba-menu-desc">Números e atalho que aparecem no card</span>
+            <span class="toba-menu-title">Configurador de cards</span>
+            <span class="toba-menu-desc">O que cada app mostra no painel</span>
           </span>
           <span class="toba-hub-chevron">›</span>
         </button>
@@ -134,6 +141,35 @@
             <span class="toba-menu-title">Aparência</span>
             <span class="toba-menu-desc">Cores e temas (em breve)</span>
           </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Configurador de cards: um item por app com card configurável. App novo
+       com números no card = botão novo aqui + a folha dele logo abaixo. -->
+  <div class="toba-modal" id="cardsModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🧩 Configurador de cards</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div class="toba-menu">
+        <button type="button" class="toba-menu-btn" data-click="openBankCardConfig">
+          <span class="toba-menu-icon">🏦</span>
+          <span class="toba-menu-text">
+            <span class="toba-menu-title">Toba Bank</span>
+            <span class="toba-menu-desc">Livre hoje, cofre, gastos e atalho</span>
+          </span>
+          <span class="toba-hub-chevron">›</span>
+        </button>
+        <button type="button" class="toba-menu-btn" data-click="openHealthCardConfig">
+          <span class="toba-menu-icon">🥗</span>
+          <span class="toba-menu-text">
+            <span class="toba-menu-title">Toba Health</span>
+            <span class="toba-menu-desc">Peso, treinos, km e mais</span>
+          </span>
+          <span class="toba-hub-chevron">›</span>
         </button>
       </div>
     </div>
@@ -168,6 +204,33 @@
     </div>
   </div>
 
+  <div class="toba-modal" id="healthCardModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🥗 Card do Toba Health</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="card-type-selector">
+        <label class="radio-card" id="radioHealthSimplesLabel">
+          <input type="radio" name="thCardType" value="simples" id="radioHealthSimples" data-change="updateHealthCardConfig" />
+          <span>Simples</span>
+        </label>
+        <label class="radio-card active" id="radioHealthPersonalizadoLabel">
+          <input type="radio" name="thCardType" value="personalizado" id="radioHealthPersonalizado" data-change="updateHealthCardConfig" checked />
+          <span>Com números</span>
+        </label>
+      </div>
+
+      <div class="check-list" id="thCustomDrawer">
+        <div class="check-list-hint">Escolha o que aparece. Par fica mais bonito 😎</div>
+        <div class="check-group" id="healthCardChecks"></div>
+        <label class="check-row"><span>🔗 Atalhos Treinos e Pesagem</span><input type="checkbox" id="chkHealthLinks" data-change="updateHealthCardConfig" checked /></label>
+        <label class="check-row"><span>🙈 Esconder o peso (** kg)</span><input type="checkbox" id="chkHealthPrivacy" data-change="updateHealthCardConfig" /></label>
+      </div>
+    </div>
+  </div>
+
   <div class="toba-modal" id="orderModal">
     <div class="toba-sheet">
       <div class="toba-sheet-header">
@@ -180,6 +243,7 @@
 
   <script src="assets/toba-common.js"></script>
   <script src="TobaBank/js/bank-metrics.js"></script>
+  <script src="TobaHealth/js/health-metrics.js"></script>
   <script src="assets/portal.js"></script>
   <script src="assets/pwa-register.js"></script>
 </body>

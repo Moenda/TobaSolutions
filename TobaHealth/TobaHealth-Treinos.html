@@ -195,9 +195,13 @@
       </div>
       <form data-submit="finishLiveSession">
         <p class="toba-sheet-text" id="liveFinishSummary"></p>
-        <div class="form-group">
+        <div class="form-group" id="liveTitleGroup">
           <label for="live-title">Nome do treino</label>
           <input id="live-title" class="form-control" type="text" maxlength="40" placeholder="Ex: Treino A" />
+        </div>
+        <div class="form-group" id="liveKmGroup" hidden>
+          <label for="live-km">Correu / caminhou? (km, opcional)</label>
+          <input id="live-km" class="form-control" type="number" inputmode="decimal" min="0" step="0.01" placeholder="O careca fazia 10 km" />
         </div>
         <div class="form-group">
           <label for="live-calories">Calorias (kcal, opcional)</label>
@@ -207,7 +211,7 @@
           <label for="live-notes">Observações (opcional)</label>
           <input id="live-notes" class="form-control" type="text" maxlength="160" placeholder="Como foi o treino?" />
         </div>
-        <label class="live-check">
+        <label class="live-check" id="liveSaveRoutineRow">
           <input type="checkbox" id="live-save-routine" />
           <span id="liveSaveRoutineText">💾 Salvar como modelo</span>
         </label>
@@ -230,6 +234,55 @@
     </div>
   </div>
 
+  <div class="toba-modal" id="muscleHelpModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🔥 Manual do boneco</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div class="toba-sheet-text muscle-help">
+        <p>O boneco é o seu raio-X de academia de casa 🩻. Cada pedaço pinta conforme as <b>repetições</b> que aquele músculo levou no período (o treino, o mês ou a vida toda).</p>
+
+        <div class="muscle-help-title">🎨 As cores</div>
+        <div class="muscle-legend muscle-help-legend" aria-hidden="true"><span>pouco</span><i class="lv-1"></i><i class="lv-2"></i><i class="lv-3"></i><i class="lv-4"></i><i class="lv-5"></i><span>pegando fogo</span></div>
+        <ul>
+          <li><b>Cinza:</b> músculo em coma. Nem sabe que você treina 😴</li>
+          <li><b>Verde → vermelho:</b> é comparação. O vermelho é o campeão do período, o resto pinta em relação a ele. Vermelho não é lesão, é o queridinho 🏆</li>
+        </ul>
+
+        <div class="muscle-help-title">🧮 O que entra na conta</div>
+        <ul>
+          <li><b>Treino de força:</b> todas as reps de cada série vão pro grupo do exercício.</li>
+          <li><b>Peso do corpo e Saitama:</b> flexão, agachamento, abdominal... cada um no seu músculo.</li>
+          <li><b>Caminhada, bike e elíptico:</b> cada km vira umas reps de perna (sem km, ele estima pelo tempo). Pinta, mas de leve 🚶</li>
+        </ul>
+        <p>Conta reps e não kg de propósito: no kg a perna ia ganhar sempre e o bíceps ia chorar no canto 😢. Toca num músculo do boneco pra ver reps, kg e quando foi o último treino dele.</p>
+
+        <div class="muscle-help-title">📐 Os modelos de shape</div>
+        <p>No 🏆 Hall do Herói, o Toba soma a vida toda e divide em dois times:</p>
+        <ul>
+          <li><b>💪 Tronco:</b> peito, costas, ombros, bíceps, tríceps, antebraço e abdômen.</li>
+          <li><b>🦵 Perna:</b> quadríceps, posterior, glúteos e panturrilha.</li>
+        </ul>
+        <p>Se um time tem mais de 1,3× as reps do outro (uns 57% do total), ele manda no shape:</p>
+        <ul>
+          <li><b>🔻 Triângulo invertido:</b> tronco passou de 57%. Shape V chegando... mas a perna de sabiá tá logo ali 🐦</li>
+          <li><b>🔺 Triângulo:</b> perna passou de 57%. Perna de jogador, peito de goleiro reserva 🦵</li>
+          <li><b>▭ Retângulo:</b> os dois entre 43% e 57%. Equilíbrio de monge shaolin 🧘</li>
+        </ul>
+
+        <div class="muscle-help-title">⚖️ Como equilibrar</div>
+        <ul>
+          <li><b>Caça os cinzas:</b> músculo cinza ou no fim do ranking é o próximo da fila. O Toba até zoa quem ficou de fora 🦩</li>
+          <li><b>Virou 🔻?</b> Dia de perna: agachamento, afundo, panturrilha, e caminhada e bike também ajudam.</li>
+          <li><b>Virou 🔺?</b> Sobe pro tronco: flexão, barra, mergulho e abdominal.</li>
+          <li><b>Não precisa tudo vermelho:</b> a meta é o boneco colorido por igual, sem buraco cinza. Constância ganha de treino monstro uma vez por mês 🐢</li>
+        </ul>
+        <p class="muscle-help-motto">Nunca foi sorte, Toba. Nunca foi sorte. 🙏</p>
+      </div>
+    </div>
+  </div>
+
   <div id="tobaSettingsExtra" hidden>
     <div class="toba-settings-section">
       <div class="toba-settings-label">🔔 Lembretes</div>
@@ -249,6 +302,7 @@
   <script src="js/hall.js"></script>
   <script src="js/forca.js"></script>
   <script src="js/sessao.js"></script>
+  <script src="js/sessao-saitama.js"></script>
   <script src="js/treinos.js"></script>
   <script src="../assets/pwa-register.js"></script>
 </body>

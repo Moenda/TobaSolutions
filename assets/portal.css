@@ -280,3 +280,45 @@
 .order-toggle {
   min-width: 82px;
 }
+
+/* Card do Health com números */
+.eye-toggle-btn.is-health {
+  color: var(--green);
+  background: rgba(63, 185, 80, 0.12);
+  border-color: rgba(63, 185, 80, 0.35);
+}
+
+.quick-add-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.quick-add-row[hidden] {
+  display: none;
+}
+
+.card-custom-body.is-health .quick-add-btn {
+  border-color: rgba(63, 185, 80, 0.5);
+  background: rgba(63, 185, 80, 0.08);
+  color: var(--green);
+}
+
+.card-custom-body.is-health .quick-add-btn:hover {
+  background: rgba(63, 185, 80, 0.16);
+}
+
+/* Listas de escolhas geradas pelo JS dentro de .check-list */
+.check-group {
+  display: contents;
+}
+
+.check-list-hint {
+  font-size: 0.74rem;
+  color: var(--muted);
+  padding: 0 0.2rem 0.2rem;
+}
+
+.check-list .check-row.is-off {
+  opacity: 0.45;
+}

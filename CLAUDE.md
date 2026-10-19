@@ -57,7 +57,8 @@ Ao terminar um patch, informe a lista de arquivos alterados e o que testar — n
 ## 2. Estrutura
 
 ```
-index.html                 Portal (cards, config dos cards, backup GERAL) -> assets/portal.js + portal.css
+index.html                 Portal (cards, Configurador de cards, backup GERAL)
+                             -> TobaBank/js/bank-metrics.js + TobaHealth/js/health-metrics.js + assets/portal.js + portal.css
 manifest.webmanifest       PWA (atalhos: add_expense, Pesagem, Treinos)
 sw.js                      Service worker (lista PRECACHE + VERSION)
 assets/toba-common.js      Base de TODOS os apps: datas, dinheiro, decimais, escapeHtml, ações
@@ -70,14 +71,14 @@ _molde-app/                Molde de app novo (copiar e preencher; ver _molde-app
 icons/
 TobaBank/
   TobaBank-Index.html      Hub do Bank (carrega o bank-core só para a ⚙️/backup)
-  TobaBank-Gastos.html       -> js/bank-core.js + js/bank-metrics.js + js/gastos.js
+  TobaBank-Gastos.html       -> js/bank-core.js + js/bank-metrics.js + js/categorias.js (gaveta de categorias) + js/gastos.js
   TobaBank-Investimento.html -> Chart.js + js/bank-core.js + js/investimento.js
   TobaBank-Raxador.html      -> js/bank-core.js + js/raxador.js
   css/bank-base.css + 1 css por módulo
 TobaHealth/
   TobaHealth-Index.html    Hub do Health (carrega o health-core só para a ⚙️/backup)
   TobaHealth-Pesagem.html    -> js/health-core.js + js/pesagem.js
-  TobaHealth-Treinos.html    -> js/health-core.js + js/hall.js + js/forca.js + js/sessao.js + js/treinos.js
+  TobaHealth-Treinos.html    -> js/health-core.js + js/hall.js + js/forca.js + js/sessao.js + js/sessao-saitama.js + js/treinos.js
   css/health-base.css + 1 css por módulo
 TobaAndroid/               App Android (APK): WebView que abre o site publicado + ponte window.TobaNative
                            (gastos lidos das notificações, alarmes, salvar arquivo). Java puro, Android Studio.
@@ -86,7 +87,7 @@ PATCH-NOTES.md             Notas de cada patch (antigo LEIA-ME.md — ver seçã
 CLAUDE.md                  Este guia
 ```
 
-- Tudo é **global** (funções e variáveis no `window`). A ordem dos `<script>` importa: `../assets/toba-common.js` vem **primeiro** em toda página, depois o `*-core.js`, depois o módulo; em Treinos a ordem é `health-core.js` → `hall.js` (páginas de detalhe do Hall do Herói, view `viewDetail`; só leitura do banco) → `forca.js` → `sessao.js` (treino ao vivo, view `viewSession`) → `treinos.js`; `hall.js`, `forca.js`, `sessao.js` (e qualquer arquivo novo carregado antes de `treinos.js`) só chama funções de `treinos.js` dentro de funções (nunca na carga do arquivo). Arquivo JS novo: acrescente o `<script>` na ordem certa **e** no `PRECACHE` do `sw.js`.
+- Tudo é **global** (funções e variáveis no `window`). A ordem dos `<script>` importa: `../assets/toba-common.js` vem **primeiro** em toda página, depois o `*-core.js`, depois o módulo; em Treinos a ordem é `health-core.js` → `hall.js` (páginas de detalhe do Hall do Herói, view `viewDetail`; só leitura do banco) → `forca.js` → `sessao.js` (treino ao vivo, view `viewSession`) → `sessao-saitama.js` (Saitama ao vivo, mesma view) → `treinos.js`; `hall.js`, `forca.js`, `sessao.js`, `sessao-saitama.js` (e qualquer arquivo novo carregado antes de `treinos.js`) só chama funções de `treinos.js` dentro de funções (nunca na carga do arquivo). Arquivo JS novo: acrescente o `<script>` na ordem certa **e** no `PRECACHE` do `sw.js`.
 - Desde a v1.22 os cores não repetem mais helpers (tudo comum está no `toba-common.js`) e cada um tem nomes próprios (`exportBankBackup`/`exportHealthBackup`...). Ainda assim cada página registra **um** app em `tobaSetupApp` (a ⚙️ faz backup de um app só); não misture dois cores numa página sem necessidade.
 - Os nomes dos arquivos HTML **não podem mudar** (links, favoritos, atalhos do manifest e o atalho `?action=add_expense` dependem deles).
 
@@ -111,13 +112,16 @@ CLAUDE.md                  Este guia
 | `TOBA_BANK_DB` | `bank-core.js` | Banco principal do Toba Bank (JSON) |
 | `TOBA_BANK_DB_AUTO_BACKUP` | `bank-core.js` | Cópia do valor **anterior** do banco, atualizada a cada `saveDatabase()` e no load |
 | `TOBA_BANK_DB_PRE_REFACTOR_BACKUP` | `bank-core.js` | Cópia única feita na 1ª abertura da versão reorganizada. **Nunca sobrescrever** |
+| `TOBA_BANK_DB_PRE_CATEGORIES_BACKUP` | `bank-core.js` | Cópia única do banco antes da 1ª troca para as categorias novas (v1.35). **Nunca sobrescrever** |
 | `TOBA_HEALTH_DB` | `health-core.js` | Banco principal do Toba Health (JSON) |
 | `TOBA_HEALTH_DB_PRE_REFACTOR_BACKUP` | `health-core.js` | Cópia única, mesma regra acima |
 | `TOBA_HEALTH_DB_AUTO_BACKUP` | `health-core.js` | Cópia do valor **anterior** do banco, atualizada a cada `saveHealthDb()` e no load (desde v1.21) |
 | `TOBA_HEALTH_DB_CORRUPT_<timestamp>` | `health-core.js` | Texto original quando o JSON do Health não pôde ser lido (uma cópia por conteúdo) |
-| `TOBA_HEALTH_ACTIVE_SESSION` | `TobaHealth/js/sessao.js` | Treino ao vivo em andamento (desde v1.27): `{ v: 1, id, startedAt (ms), date, routineId, title, current, exercises: [{ exerciseId, skipped, sets: [{ reps, kg, done }] }], rest: { duration, startedAt, endsAt, alerted }, restDefault, updatedAt }`. Temporário: apagado ao finalizar (vira um treino `strength` normal em `workouts`, só com as séries `done`) ou descartar. Ilegível = só oferece "Descartar". Não é lido por backup do módulo nem por `normalizeHealthDb` |
+| `TOBA_HEALTH_ACTIVE_SESSION` | `TobaHealth/js/sessao.js` | Treino ao vivo em andamento (desde v1.27): `{ v: 1, id, startedAt (ms), date, routineId, title, current, exercises: [{ exerciseId, skipped, sets: [{ reps, kg, done }] }], rest: { duration, startedAt, endsAt, alerted }, restDefault, updatedAt, kind?, saitama? }`. `kind` (desde v1.36): ausente/`"strength"` ou `"saitama"`; no Saitama `exercises` fica `[]` e `saitama = { pushups, situps, squats, step, autoRest, log: [{ field, n, at }] }`. Temporário: apagado ao finalizar (vira um treino `strength` normal em `workouts`, só com as séries `done`, ou um treino `saitama` normal com os totais) ou descartar. Ilegível = só oferece "Descartar". Não é lido por backup do módulo nem por `normalizeHealthDb` |
+| `toba_health_live_prefs` | `TobaHealth/js/sessao.js` | Preferências de tela do treino ao vivo (desde v1.36): `{ keepAwake, saitamaStep, saitamaAutoRest, saitamaRest }`. Ausente = tela acesa ligada, passo 10, descanso automático ligado, 60 s |
 | `toba_modules_config` | `assets/portal.js` | `[{ id, visible }]` — ordem/visibilidade dos cards do portal |
 | `toba_bank_card_config` | `assets/portal.js` | `{ type: "personalizado"\|"simples", orcamento, cofre, gastos, sobra, addGasto, privacy }` (mesclado com defaults) |
+| `toba_health_card_config` | `assets/portal.js` | Desde v1.37: `{ type: "personalizado"\|"simples", metrics: { peso, pesoMes, treinos, km, semana, kcal, minutos, saitama, gordura }, links, privacy }`. `metrics` é mesclado com os defaults de `HEALTH_CARD_METRICS` (número novo = item novo na lista, nunca renomear a `key`) |
 
 Ao criar uma chave nova: use prefixo `TOBA_` (bancos) ou `toba_` (preferências de UI) e documente aqui. O backup geral do portal já pega **todas** as chaves automaticamente.
 
@@ -132,7 +136,7 @@ Ao criar uma chave nova: use prefixo `TOBA_` (bancos) ou `toba_` (preferências 
   - Health `workouts[].id`: **string** `` `${Date.now()}-${rand6}` `` (bancos antigos podem ter outros formatos; compare com `String()`).
   - Health `strengthRoutines[].id`: **string** `` `r-${Date.now()}-${rand4}` ``.
   - Cuidado: dois `Date.now()` no mesmo tick geram o mesmo id (veja `newFund`, que usa `Date.now() + 1`). Ao criar vários itens de uma vez, acrescente sufixo aleatório.
-- **Categorias** do Bank são gravadas como o **texto do `value`** do `<option>` (ex.: `"Moradia - Aluguel/Condomínio"`). Mudar o `value` de uma opção deixa os gastos antigos órfãos. Para renomear, mantenha o `value` antigo ou migre no load.
+- **Categorias** do Gastos (desde v1.35) são gravadas como **id** curto (`"mercado"`, `"uber"`...) da tabela `BANK_CATEGORY_GROUPS` em `bank-core.js`; nome e emoji vêm de lá (`getBankCategory`/`getCleanCategory`). Nunca troque nem remova um `id` (deixa gastos órfãos); renomear é só mudar `name`/`short`. Categoria nova = item novo na tabela. O texto antigo (até v1.34, ex. `"Moradia - Aluguel/Condomínio"`) é convertido no load por `migrateBankCategories()` via `BANK_CATEGORY_MIGRATION` (em `transactions`, `installments`, `config.fixedExpenses` e `fixedExpensesSnapshot`); o texto original fica em `oldCategory` (opcional) e texto desconhecido vira `"outros"`. **Não remova essa migração**: backup antigo importado depende dela. Na tela, campo de categoria = `<input type="hidden">` + botão `.category-field` (`categorias.js`); mude o valor pelo JS com `setCategoryField(id, valor)`. O Raxador tem categorias próprias (texto com emoji), fora disso.
 
 ### 3.4 Toba Bank — `TOBA_BANK_DB`
 
@@ -152,7 +156,7 @@ Arquivo: [TobaBank/js/bank-core.js](TobaBank/js/bank-core.js). Variável global 
       fixedExpensesSnapshot: [ ... ] // cópia de config.fixedExpenses congelada para meses passados
     }
   },
-  transactions: [ { id, description, amount, category, date, notifId? } ], // gasto à vista
+  transactions: [ { id, description, amount, category, date, notifId?, oldCategory? } ], // gasto à vista; category = id (3.3)
                                      // notifId (opcional, desde v1.34): id da notificação de compra que o app
                                      // Android leu; só evita lançar duas vezes. Sem default no load (ausente = manual)
   installments: [ { id, description, totalAmount, totalInstallments, startDate, category } ],
@@ -237,12 +241,13 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 - Treinos `custom` antigos usam `sets/reps/weightKg` soltos; treinos `strength` usam `exercises[]` e deixam esses campos `null`. `getWorkoutLift()` trata os dois casos — qualquer métrica nova de treino precisa tratar os dois também.
 - **Página de um treino** (`viewWorkout`, `openWorkoutView`/`renderWorkoutView` em treinos.js, desde v1.29): só leitura; `renderWorkoutScreen()` redesenha a página aberta depois de editar e volta para o mês se o treino foi excluído.
 - **Mapa de calor** (hall.js, desde v1.30): `getMuscleHeat(workouts)` soma **repetições** (e kg) por grupo; `renderMuscleMini` (card do mês, sem toque) e `renderMuscleSection` (mês e página do treino, músculo tocável → `showMuscleHeat`). Cardio e km soltos (Saitama/personalizado) entram como reps equivalentes por km via `CARDIO_MUSCLES`/`getMuscleExtras` (desde v1.31); tipo de treino novo precisa entrar ali. O boneco é SVG à mão em `MUSCLE_SHAPES`, uma peça por id do `STRENGTH_GROUPS`; grupo novo precisa de forma ali e de frase em `MUSCLE_LAZY_LINES`.
-- **Treino ao vivo** ([sessao.js](TobaHealth/js/sessao.js)): grava só na chave `TOBA_HEALTH_ACTIVE_SESSION` enquanto acontece; no fim monta o treino no **mesmo formato** do `registerStrengthWorkout` e só apaga a sessão depois de conferir que o `TOBA_HEALTH_DB` gravou. Tempos (cronômetro e descanso) são horários `Date.now()`, nunca contagem de `setInterval` (o celular congela a aba). Frases de descanso são só de tela.
+- **Treino ao vivo** ([sessao.js](TobaHealth/js/sessao.js)): grava só na chave `TOBA_HEALTH_ACTIVE_SESSION` enquanto acontece; no fim monta o treino no **mesmo formato** do `registerStrengthWorkout` e só apaga a sessão depois de conferir que o `TOBA_HEALTH_DB` gravou. Tempos (cronômetro e descanso) são horários `Date.now()`, nunca contagem de `setInterval` (o celular congela a aba). Frases de descanso são só de tela. O Saitama ao vivo ([sessao-saitama.js](TobaHealth/js/sessao-saitama.js), desde v1.36) usa a mesma chave/tela com `kind: "saitama"` e no fim grava um treino `saitama` no **mesmo formato** do formulário (`pushups/situps/squats/distanceKm/durationMinutes/calories/notes`). A tela acesa (Wake Lock no navegador, `keepScreenOn` no APK) obedece `keepAwake` de `toba_health_live_prefs`.
 - Todo treino precisa ter `type` conhecido; tipos novos precisam de ícone em `WORKOUT_TYPE_ICONS` (senão cai no 🏅) e de tratamento nos cálculos (distância, reps do Saitama etc.).
 
 ### 3.6 Leitores "fora do dono" (precisam acompanhar mudanças de formato)
 
 - **Portal `assets/portal.js` → `obterMetricasReaisTobaBank()`** lê `TOBA_BANK_DB` direto, mas o cálculo é o **mesmo** da tela de Gastos: os dois chamam `calcBankMonthSummary()` de [TobaBank/js/bank-metrics.js](TobaBank/js/bank-metrics.js) (desde v1.21). Regra nova do painel do Gastos entra **só** em `bank-metrics.js`. Esse arquivo não pode depender de `bank-core.js` (o portal carrega ele sozinho) e só lê o banco, nunca grava.
+- **Portal → card do Health** (desde v1.37) lê `TOBA_HEALTH_DB` direto por `calcHealthSummary()` de [TobaHealth/js/health-metrics.js](TobaHealth/js/health-metrics.js) (só leitura, não depende de `health-core.js`). Treinos do mês seguem a **mesma regra** de `getWorkoutMonthStats` (treinos.js): mudou lá, mude aqui. Peso levantado fica de fora (precisa do catálogo do `forca.js`). Campo novo em pesagem/treino que o card mostre precisa de leitura defensiva ali.
 - **Backup geral do portal** (`exportAllData`/`importAllData`): formato `{ "<chave localStorage>": "<valor como STRING>" }`. Na importação, cada chave do arquivo é gravada como está (chaves ausentes no arquivo não são apagadas). A importação recusa arquivo sem nenhuma chave `TOBA_`/`toba_` ou com valor que não seja texto (backup de módulo). Não mude para guardar objetos já parseados — quebraria backups existentes.
 - **Backups por módulo** (`toba_bank_backup_*.json`, `toba_health_backup_*.json`): são o objeto do banco puro. Não misturar com o formato do backup geral.
 
@@ -263,6 +268,7 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 - [ ] Testado **exportar → apagar tudo → importar** o backup do módulo, e importar um backup **antigo**.
 - [ ] Testado o backup **geral** do portal (exportar/importar).
 - [ ] Se mudou algo do Gastos: o card do Toba Bank no portal continua batendo com a tela de Gastos.
+- [ ] Se mudou pesagens/treinos: o card do Toba Health continua batendo com Pesagem e Treinos (`health-metrics.js`).
 - [ ] Datas gravadas em `AAAA-MM-DD` local; dinheiro como `number` em reais; IDs no tipo da coleção.
 - [ ] Migração idempotente (abrir a página duas vezes dá o mesmo resultado).
 - [ ] Nenhum `alert`/`confirm`/`on*=` novo e nenhum erro no console ao carregar cada página.
@@ -271,8 +277,8 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 
 ## 4. Service worker / PWA
 
-- [sw.js](sw.js): páginas/JS/CSS **network-first** (timeout 4 s, cai no cache); jsdelivr **cache-first**. O network-first usa `fetch(..., { cache: "no-cache" })` de propósito: o GitHub Pages manda `max-age=600`, e sem isso o celular misturava HTML novo com JS antigo logo depois de publicar. Não tire.
-- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v7"` → `"toba-v8"`…). Sem isso, o app offline fica sem o arquivo.
+- [sw.js](sw.js): páginas/JS/CSS **network-first** (timeout 4 s, cai no cache); jsdelivr **cache-first**. Sem cópia no cache, só **navegação** (`request.mode === "navigate"`) cai no `index.html`; JS/CSS faltando devolvem erro (desde v1.37 — antes o HTML ia no lugar do script e a tela quebrava offline sem aviso). O network-first usa `fetch(..., { cache: "no-cache" })` de propósito: o GitHub Pages manda `max-age=600`, e sem isso o celular misturava HTML novo com JS antigo logo depois de publicar. Não tire.
+- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v10"` → `"toba-v11"`…). Sem isso, o app offline fica sem o arquivo.
 - Atualizar a versão do Chart.js exige trocar a URL nos HTML **e** no `PRECACHE`.
 - Toda página nova deve incluir `<script src="../assets/pwa-register.js"></script>` (ou `assets/...` na raiz), as metas de `color-scheme: dark` e o link do manifest, como as existentes.
 
@@ -299,7 +305,7 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 - **⚙️ Configurações** é a mesma em todo app: `tobaSetupApp({ name, exportBackup, importBackup, resetData })` no core; itens só da página ficam num `<div id="tobaSettingsExtra" hidden>`.
 - Cada página sobrescreve o hook do core: `onBankDataSaved()` (Bank) / `onHealthDataReplaced()` (Health).
 - **Telas de 360px (S24) a 384px (S24+):** rótulos curtos que caibam em 1 linha; teste nas duas larguras.
-- **App novo:** copie `_molde-app/` e siga o `_molde-app/README.md` (página, core, PRECACHE, backup, card no portal).
+- **App novo:** copie `_molde-app/` e siga o `_molde-app/README.md` (página, core, PRECACHE, backup, card no portal). Card com números configuráveis entra no **Configurador de cards** do portal (`#cardsModal` no `index.html`, desde v1.37): um botão por app ali + a folha dele; nunca um item solto na ⚙️.
 - Tema sempre escuro: use as variáveis de `toba-common.css` (`--bg`, `--surface`, `--border`, `--blue`, `--green`, `--red`, `--gold`...). Cada app define só `--accent` no seu CSS base.
 - Interface responsiva pensada primeiro para celular (retrato).
 

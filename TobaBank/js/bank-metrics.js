@@ -94,8 +94,10 @@ function calcBankMonthSummary(bankDb, now = new Date()) {
     0,
   );
 
-  // Uma única passagem reúne os lançamentos do mês e o gasto de hoje.
+  // Uma única passagem reúne os lançamentos do mês, o gasto de cada dia e o
+  // gasto de hoje.
   const monthTransactions = [];
+  const spentByDay = {};
   let monthlySpentVista = 0;
   let todaySpent = 0;
   (bankDb.transactions || []).forEach((transaction) => {
@@ -104,6 +106,7 @@ function calcBankMonthSummary(bankDb, now = new Date()) {
     if (transaction.date.startsWith(monthKey)) {
       monthTransactions.push(transaction);
       monthlySpentVista += amount;
+      spentByDay[transaction.date] = (spentByDay[transaction.date] || 0) + amount;
     }
     if (transaction.date === todayIso) todaySpent += amount;
   });
@@ -140,7 +143,17 @@ function calcBankMonthSummary(bankDb, now = new Date()) {
   // O cofre acumula o orçamento diário líquido desde o início do período,
   // descontando os gastos variáveis já lançados no mês.
   const vaultBalance = netDailyBudget * diasPassados - monthlySpentVista;
-  const todayAvailable = netDailyBudget - todaySpent;
+
+  // Livre hoje: estourou ontem, hoje começa no negativo. A dívida passa de
+  // um dia para o outro até ser paga; a sobra NÃO passa (essa vai pro cofre).
+  // Só olha os dias deste mês, desde o início do período.
+  let carryDebt = 0;
+  for (let d = now.getDate() - diasPassados + 1; d < now.getDate(); d++) {
+    const dayIso = `${monthKey}-${String(d).padStart(2, "0")}`;
+    const endOfDay = carryDebt + netDailyBudget - (spentByDay[dayIso] || 0);
+    carryDebt = Math.min(endOfDay, 0);
+  }
+  const todayAvailable = carryDebt + netDailyBudget - todaySpent;
 
   return {
     monthKey, todayIso, totalDaysInMonth, effectiveDays,
@@ -151,6 +164,6 @@ function calcBankMonthSummary(bankDb, now = new Date()) {
     varSpent, totalMonthlySpent,
     diasPassados, diasRestantes, mediaDiariaVista, mediaDiariaTotal,
     projecaoRestanteVista, projecaoTotalMes, sobraPrevista,
-    vaultBalance, todayAvailable,
+    vaultBalance, todayAvailable, carryDebt,
   };
 }

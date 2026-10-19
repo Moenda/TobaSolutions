@@ -681,3 +681,186 @@
     font-size: 0.74rem;
   }
 }
+
+/* ---------------------------------------------------------------------
+ * Treino do Saitama ao vivo (js/sessao-saitama.js, desde v1.36)
+ * Três quadradões de toque: cada toque soma o passo escolhido.
+ * ------------------------------------------------------------------- */
+.saitama-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.saitama-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 136px;
+  padding: 0.75rem 0.4rem 0.7rem;
+  color: var(--text);
+  background: linear-gradient(160deg, #2a1a17, var(--surface) 75%);
+  border: 1px solid rgba(255, 123, 114, 0.45);
+  border-radius: var(--radius);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: transform 0.08s ease, border-color 0.2s ease;
+}
+
+.saitama-tile:active {
+  transform: scale(0.95);
+  border-color: var(--coral);
+}
+
+.saitama-tile.is-done {
+  background: linear-gradient(160deg, #3a2c0d, var(--surface) 75%);
+  border-color: rgba(227, 179, 65, 0.8);
+}
+
+.saitama-tile-name {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.saitama-tile-value {
+  margin-top: 4px;
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--coral);
+}
+
+.saitama-tile.is-done .saitama-tile-value {
+  color: var(--gold-2);
+}
+
+.saitama-tile-goal {
+  font-size: 0.68rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.saitama-tile-bar {
+  width: 80%;
+  height: 5px;
+  margin: 6px 0 4px;
+  background: var(--surface-3);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.saitama-tile-bar span {
+  display: block;
+  height: 100%;
+  background: var(--coral);
+  border-radius: inherit;
+  transition: width 0.25s ease;
+}
+
+.saitama-tile.is-done .saitama-tile-bar span {
+  background: var(--gold-2);
+}
+
+.saitama-tile-add {
+  margin-top: auto;
+  padding: 2px 10px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: #0d1117;
+  background: var(--coral);
+  border-radius: 999px;
+}
+
+.saitama-tile.is-done .saitama-tile-add {
+  background: var(--gold-2);
+}
+
+.saitama-steps {
+  margin-top: 12px;
+}
+
+.saitama-steps-label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.saitama-steps-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.saitama-steps-row .live-chip {
+  min-height: 46px;
+  font-size: 0.95rem;
+}
+
+.saitama-steps-row .live-chip.active {
+  background: var(--coral);
+  border-color: var(--coral);
+}
+
+.saitama-actions {
+  margin-top: 10px;
+}
+
+.saitama-actions .btn {
+  flex: 1;
+  margin-top: 0;
+}
+
+.saitama-autorest {
+  margin: 10px 0 0;
+}
+
+.saitama-log {
+  margin-top: 14px;
+}
+
+.saitama-log-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.saitama-log-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0.45rem 0.1rem;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.saitama-log-item strong {
+  color: var(--coral);
+}
+
+.saitama-log-time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.live-footer .live-awake {
+  margin-bottom: 0;
+}
+
+@media (max-width: 374px) {
+  .saitama-tile-value {
+    font-size: 1.9rem;
+  }
+
+  .saitama-tile-name {
+    font-size: 0.68rem;
+  }
+}

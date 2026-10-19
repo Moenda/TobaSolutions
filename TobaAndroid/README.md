@@ -34,10 +34,13 @@ Projeto Java puro, sem bibliotecas. Não entra no site (o `sw.js` não precisa d
 
 ## 2. Instalar no celular
 
-1. Mande o `app-release.apk` para o celular (Drive, WhatsApp para você mesmo, cabo).
-2. Abra o arquivo. O Android pede para permitir **instalar apps desconhecidos** a partir desse app (Arquivos/Drive): permita.
-3. Se o Play Protect avisar, toque em **Mais detalhes → Instalar mesmo assim**.
-4. Ao abrir o Toba, permita as **notificações**.
+Abrir o APK direto no celular **não funciona no Brasil**: o Play Protect bloqueia, sem "instalar mesmo assim", app de fora da loja que lê notificações. Instale pelo cabo USB a partir do PC (adb). Passo a passo completo, que serve também para outra pessoa instalar: **[INSTALAR.md](INSTALAR.md)**.
+
+Neste PC o adb já vem com o Android Studio:
+
+```powershell
+& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" install -r TobaAndroid\app\release\app-release.apk
+```
 
 ## 3. Levar os dados para o app (1ª vez)
 

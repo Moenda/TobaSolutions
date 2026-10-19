@@ -301,3 +301,114 @@
   margin: 0.3rem 0;
   word-break: break-word;
 }
+
+/* Campo de categoria (botão que abre a gaveta) e a gaveta, desde v1.35 */
+.category-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 0.55rem 0.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.category-field.is-spaced {
+  margin-top: 8px;
+}
+
+.category-field:active,
+.category-field:focus-visible {
+  border-color: var(--accent);
+}
+
+.category-field-emoji {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.category-field-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.category-field-arrow {
+  color: var(--muted);
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.category-picker {
+  padding-bottom: 0.4rem;
+}
+
+.category-group-label {
+  margin: 0.9rem 0 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.category-group-label:first-child {
+  margin-top: 0.2rem;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.category-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 72px;
+  padding: 0.55rem 0.3rem;
+  background: var(--surface-3);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  color: var(--text-2);
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.category-tile:active {
+  transform: scale(0.95);
+}
+
+.category-tile.is-selected {
+  background: rgba(88, 166, 255, 0.14);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.category-tile-emoji {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.category-tile-name {
+  max-width: 100%;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

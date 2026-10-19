@@ -957,6 +957,7 @@ tobaActions({
   closeWorkoutView,
   openWorkoutView: (el) => openWorkoutView(el.dataset.id),
   showMuscleHeat: (el) => showMuscleHeat(el.dataset.group, el.dataset.scope),
+  openMuscleHelp: () => openTobaModal("muscleHelpModal"),
   openStrengthSummary: (el) => openStrengthSummary(el.dataset.id),
   openWorkoutMonth: (el) => openWorkoutMonth(el.dataset.month),
   openHallDetail: (el) => openWorkoutHallDetail(el.dataset.heroDetail, el.dataset.heroMonth || ""),
