@@ -491,3 +491,25 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 - No celular: com "🔆 Manter a tela acesa" ligado a tela não apaga durante o treino; desligado, apaga no tempo normal.
 
 **Commit sugerido:** `v1.36 - Treino do Saitama ao vivo com contador e interruptor de tela acesa`
+
+---
+
+## v1.37 — Card do Health com números, Configurador de cards e conserto do modo offline
+
+**Arquivos novos/alterados:** `index.html`, `assets/portal.js`, `assets/portal.css`, `TobaHealth/js/health-metrics.js` (NOVO), `sw.js`, `CLAUDE.md`
+
+1. **🧩 Configurador de cards:** na ⚙️ do portal, os ajustes de card agora ficam num menu só, **Configurador de cards**, com um item por app (Toba Bank e Toba Health). Quando chegarem mais apps com números no card, eles entram ali sem encher a ⚙️.
+2. **🥗 Card do Toba Health com dado de verdade:** igual ao card do Bank, ele pode ser **Simples** ou **Com números**. Em ⚙️ → Configurador de cards → **Toba Health** você marca o que aparece: peso atual (com a setinha vs a pesagem anterior), peso no mês (quanto subiu/desceu desde a última pesagem do mês passado), treinos no mês, km no mês, treinos na semana, calorias, tempo treinado, reps do Saitama e gordura. Padrão: peso, peso no mês, treinos e km. Tem botão 🙈 pra esconder o peso e atalhos pra Treinos e Pesagem. Quem ainda não tem pesagem nem treino vê o card normal, sem um monte de "--".
+3. **🐛 Tela quebrada offline:** sem internet, se um JS ou CSS não estivesse guardado no celular, o app entregava a página do portal no lugar dele e a tela quebrava sem aviso. Agora só página cai no portal; arquivo faltando dá erro normal.
+
+**Dados:** Nenhuma mudança nos bancos. O portal só **lê** o `TOBA_HEALTH_DB` (do mesmo jeito que já lia o do Bank). Uma chave nova de preferência de tela: `toba_health_card_config` (o que o card do Health mostra); sem ela, vale o padrão. O backup geral já leva ela.
+
+**Como testar:**
+- ⚙️ → Configurador de cards: aparecem Toba Bank e Toba Health; o do Bank abre igual antes.
+- Card do Health: peso e setinha batem com a tela da Pesagem; treinos e km do mês batem com os quadradinhos do Treinos.
+- Configurador → Toba Health: ligar "Reps do Saitama" e "Gordura", recarregar: continuam ligados. Tocar 🙈 Esconder no card: peso vira "** kg".
+- Registrar um treino e voltar pelo ‹: o card já mostra o treino novo.
+- Aba anônima (sem dados): portal abre sem erro no console, card do Health com a frase de sempre.
+- Offline: com o app aberto uma vez, DevTools → Application → Service Workers deve mostrar `toba-v10`; em Network marcar Offline e recarregar: tudo abre igual.
+
+**Commit sugerido:** `v1.37 - Card do Health com numeros, configurador de cards e fallback offline so pra paginas`

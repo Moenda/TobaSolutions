@@ -4,7 +4,7 @@
  * - Chart.js (CDN): cache primeiro, para os gráficos funcionarem offline.
  * - NUNCA mexe no localStorage: seus dados não passam por aqui.
  * Mudou a lista de arquivos? Aumente a versão abaixo. */
-const VERSION = "toba-v9";
+const VERSION = "toba-v10";
 const NETWORK_TIMEOUT_MS = 4000;
 
 const PRECACHE = [
@@ -42,6 +42,7 @@ const PRECACHE = [
   "./TobaHealth/css/treinos.css",
   "./TobaHealth/css/sessao.css",
   "./TobaHealth/js/health-core.js",
+  "./TobaHealth/js/health-metrics.js",
   "./TobaHealth/js/pesagem.js",
   "./TobaHealth/js/hall.js",
   "./TobaHealth/js/forca.js",
@@ -71,8 +72,12 @@ self.addEventListener("activate", (event) => {
 function networkFirst(request) {
   return new Promise((resolve) => {
     let settled = false;
+    // Sem cópia no cache, só uma PÁGINA cai no portal. JS/CSS/ícone faltando
+    // devolvem erro de rede: entregar o index.html no lugar de um .js quebrava
+    // a tela offline sem aviso (o navegador tentava rodar HTML como script).
     const fromCache = () =>
-      caches.match(request, { ignoreSearch: true }).then((hit) => hit || caches.match("./index.html"));
+      caches.match(request, { ignoreSearch: true })
+        .then((hit) => hit || (request.mode === "navigate" ? caches.match("./index.html") : undefined));
     const timer = setTimeout(() => {
       fromCache().then((hit) => { if (hit && !settled) { settled = true; resolve(hit); } });
     }, NETWORK_TIMEOUT_MS);
