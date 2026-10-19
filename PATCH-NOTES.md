@@ -425,3 +425,18 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 - Gastos → ⚙️ → Dados & Backup → Baixar backup → conferir o arquivo em Downloads/Toba.
 
 **Commit sugerido:** `v1.34 - App Android (APK) com gastos automaticos pelas notificacoes e lembretes nativos`
+
+---
+
+## v1.35 — Correção: APK não compilava
+
+**Arquivos alterados:** `TobaAndroid/app/src/main/res/values/colors.xml`, `CLAUDE.md`
+
+1. **APK volta a compilar:** um comentário no arquivo de cores do app Android tinha dois hífens seguidos, o que não é permitido nesse tipo de arquivo. O Android Studio parava com "A string '--' não é permitida nos comentários". Só o comentário mudou; as cores são as mesmas.
+2. **Guia:** o `CLAUDE.md` passa a citar a versão certa (v1.34) do campo novo dos gastos automáticos.
+
+**Dados:** Nenhuma mudança no banco.
+
+**Como testar:** no Android Studio, **Build → Rebuild Project** e depois **Build → Generate Signed App Bundle / APK** sem erros.
+
+**Commit sugerido:** `v1.35 - Corrige comentario do colors.xml que travava a build do APK`
