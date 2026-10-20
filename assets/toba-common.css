@@ -1394,7 +1394,8 @@ body:has(> .toba-fullpage.active) > .container {
   cursor: grabbing;
 }
 
-.toba-wheel-pad {
+.toba-wheel-pad,
+.toba-wheel-gap {
   flex: 0 0 auto;
 }
 

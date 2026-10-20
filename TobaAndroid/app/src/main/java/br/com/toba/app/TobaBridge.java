@@ -161,6 +161,26 @@ final class TobaBridge {
         Alarms.cancelRest(app);
     }
 
+    // Notificação fixa com o tempo do treino ao vivo (some no hideWorkout).
+    @JavascriptInterface
+    public void showWorkout(double startedAt, String title) {
+        try {
+            JSONObject w = new JSONObject();
+            w.put("startedAt", (long) startedAt);
+            w.put("title", title == null ? "" : title);
+            TobaStore.put(app, TobaStore.KEY_WORKOUT, w.toString());
+        } catch (JSONException ignored) {
+            return;
+        }
+        Notifier.showWorkout(app);
+    }
+
+    @JavascriptInterface
+    public void hideWorkout() {
+        TobaStore.put(app, TobaStore.KEY_WORKOUT, "{}");
+        Notifier.cancel(app, Notifier.WORKOUT_ID);
+    }
+
     @JavascriptInterface
     public void keepScreenOn(boolean on) {
         activity.keepScreenOn(on);

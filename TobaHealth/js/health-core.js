@@ -105,6 +105,7 @@ function createEmptyHealthDb() {
     metricsOrder: JSON.parse(JSON.stringify(DEFAULT_METRICS_ORDER)),
     workouts: [],
     strengthRoutines: [],
+    exerciseSettings: {},
   };
 }
 
@@ -116,6 +117,10 @@ function normalizeHealthDb(db) {
   if (!Array.isArray(db.weighIns)) db.weighIns = [];
   if (!Array.isArray(db.workouts)) db.workouts = [];
   if (!Array.isArray(db.strengthRoutines)) db.strengthRoutines = [];
+  // Tipo de carga por exercício (v1.39). Ausente = "Total / bilateral".
+  if (!db.exerciseSettings || typeof db.exerciseSettings !== "object" || Array.isArray(db.exerciseSettings)) {
+    db.exerciseSettings = {};
+  }
   if (!Array.isArray(db.metricsOrder)) {
     db.metricsOrder = JSON.parse(JSON.stringify(DEFAULT_METRICS_ORDER));
   }

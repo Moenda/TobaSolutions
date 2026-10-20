@@ -6,7 +6,7 @@ import android.content.Intent;
 
 import org.json.JSONObject;
 
-/** Chegou a hora: mostra o lembrete ou o fim do descanso. */
+/** Chegou a hora: mostra o lembrete ou o fim do descanso (ou repõe a notificação do treino). */
 public class AlarmReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context c, Intent intent) {
@@ -19,8 +19,12 @@ public class AlarmReceiver extends BroadcastReceiver {
                 Notifier.show(c, Notifier.CH_REST, Notifier.REST_ID,
                         rest.optString("title", "⏱ Descanso acabou!"),
                         rest.optString("body", "Bora pra próxima série 💪"),
-                        BuildConfig.START_URL + "TobaHealth/TobaHealth-Treinos.html");
+                        Notifier.WORKOUT_URL);
             }
+            return;
+        }
+        if (Alarms.TYPE_WORKOUT.equals(type)) {
+            Notifier.showWorkout(c); // não faz nada se o treino já acabou
             return;
         }
         if (Alarms.TYPE_REMINDER.equals(type)) {

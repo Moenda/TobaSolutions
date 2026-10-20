@@ -618,6 +618,12 @@
   appearance: none;
 }
 
+.load-chip {
+  margin-top: 6px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+}
+
 .strength-chip.active {
   color: #0d1117;
   background: #3fb950;

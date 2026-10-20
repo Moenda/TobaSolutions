@@ -10,6 +10,10 @@
  *   O grupo muscular fica gravado em cada exercício feito: é o que vai alimentar
  *   o mapa de calor do corpo no Hall do Herói.
  *
+ *   healthDb.exerciseSettings = { [exerciseId]: { load: "total"|"perHand", unilateral: bool } }
+ *     Tipo de carga escolhido pela pessoa (ausente = Total / bilateral). Vale
+ *     para o histórico inteiro: mudou, os treinos daquele exercício recalculam.
+ *
  * bodyweight (opcional no catálogo): parte do peso do corpo que o exercício
  * levanta. Cada repetição soma (carga + peso do corpo × bodyweight) no
  * "Peso levantado"; o peso do corpo vem de getBodyWeightOn() (treinos.js).
@@ -126,8 +130,21 @@ function getStrengthGroupName(groupId) {
  * Cálculos
  * ------------------------------------------------------------------- */
 
+function getExerciseLoad(exerciseId) {
+  const saved = healthDb.exerciseSettings?.[exerciseId] || {};
+  return { perHand: saved.load === "perHand", unilateral: saved.unilateral === true };
+}
+
+function describeExerciseLoad(exerciseId) {
+  const load = getExerciseLoad(exerciseId);
+  return `${load.perHand ? "Por halter" : "Total"}${load.unilateral ? " · unilateral" : ""}`;
+}
+
 // Peso levantado de um treino de força: soma de repetições × carga das
-// séries com carga informada.
+// séries com carga informada. É a ÚNICA conta de volume do app (Hall, resumo,
+// página do treino, gráficos e mapa de calor passam por aqui).
+// Por halter: a carga anotada é de uma mão, então dobra. Unilateral: as reps
+// são por lado, então dobram (halter + unilateral = um halter por vez: só as reps).
 function getStrengthLift(workout) {
   const totals = { kg: 0, reps: 0, sets: 0 };
   let bodyKg = null;
@@ -135,9 +152,12 @@ function getStrengthLift(workout) {
     const fraction = getStrengthExercise(exercise.exerciseId)?.bodyweight || 0;
     if (fraction && bodyKg === null) bodyKg = getBodyWeightOn(workout.date);
     const bodyPart = fraction ? bodyKg * fraction : 0;
+    const load = getExerciseLoad(exercise.exerciseId);
+    const loadFactor = load.perHand && !load.unilateral ? 2 : 1;
+    const repsFactor = load.unilateral ? 2 : 1;
     (exercise.sets || []).forEach((set) => {
-      const reps = Number(set.reps) || 0;
-      const kg = (Number(set.kg) || 0) + bodyPart;
+      const reps = (Number(set.reps) || 0) * repsFactor;
+      const kg = (Number(set.kg) || 0) * loadFactor + bodyPart;
       if (reps > 0) totals.sets += 1;
       if (reps > 0 && kg > 0) {
         totals.kg += reps * kg;
@@ -149,6 +169,36 @@ function getStrengthLift(workout) {
 }
 
 // "3×10 · 60 kg" (séries iguais agrupadas) ou "10×60 kg / 8×62,5 kg"
+// Chip que abre a folha "Tipo de carga" do exercício.
+function renderExerciseLoadChip(exerciseId) {
+  return `<button type="button" class="strength-chip load-chip" data-click="openExerciseLoad" data-exercise="${escapeHtml(exerciseId)}">⚖️ ${describeExerciseLoad(exerciseId)}</button>`;
+}
+
+function openExerciseLoad(el) {
+  const exerciseId = el.dataset.exercise;
+  const load = getExerciseLoad(exerciseId);
+  document.getElementById("exerciseLoadForm").dataset.exercise = exerciseId;
+  document.getElementById("exerciseLoadName").textContent = getStrengthExercise(exerciseId)?.name || exerciseId;
+  document.getElementById("exercise-load-type").value = load.perHand ? "perHand" : "total";
+  document.getElementById("exercise-load-unilateral").checked = load.unilateral;
+  openTobaModal("exerciseLoadModal");
+}
+
+function saveExerciseLoad(form) {
+  if (!isHealthDbLoaded) {
+    showHealthDbLockedMessage();
+    return;
+  }
+  healthDb.exerciseSettings[form.dataset.exercise] = {
+    load: document.getElementById("exercise-load-type").value === "perHand" ? "perHand" : "total",
+    unilateral: document.getElementById("exercise-load-unilateral").checked,
+  };
+  saveHealthDb();
+  closeTobaModal("exerciseLoadModal");
+  if (isLiveViewActive()) renderLiveSession();
+  else renderWorkoutScreen();
+}
+
 function describeStrengthSets(sets) {
   const groups = [];
   (sets || []).forEach((set) => {

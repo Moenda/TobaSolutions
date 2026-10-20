@@ -439,6 +439,8 @@ function tobaEmpty(icon, title, hint = "", options = {}) {
  * Dedo: rolagem nativa com scroll-snap (a página não rola junto).
  * Mouse: arrastar, rodinha e as setas ‹ ›. Teclado: ← → Home End.
  * Vibra de leve (se o aparelho deixar) a cada valor.
+ * Só os valores perto do centro existem na tela (espaçadores fazem o resto da
+ * largura): a régua pode ter milhares de valores sem pesar.
  * ------------------------------------------------------------------- */
 const TOBA_WHEEL_ITEM = 52; // largura de cada valor, igual ao --wheel-item do CSS
 
@@ -456,17 +458,11 @@ function tobaWheelPicker(container, options = {}) {
   let styled = [];
   let frame = 0;
 
-  const items = [];
-  for (let i = 0; i < count; i++) {
-    const v = valueAt(i);
-    const major = majorEvery ? v % (majorEvery * step) === 0 : true;
-    items.push(`<span class="toba-wheel-item${major ? " is-major" : ""}" data-i="${i}"><span class="toba-wheel-num">${escapeHtml(format(v))}</span><span class="toba-wheel-tick"></span></span>`);
-  }
   container.innerHTML = `
     <div class="toba-wheel" role="slider" tabindex="0" aria-label="${escapeHtml(options.label || "")}" aria-valuemin="${valueAt(0)}" aria-valuemax="${valueAt(count - 1)}">
       <button type="button" class="toba-wheel-arrow" data-dir="-1" tabindex="-1" aria-hidden="true">‹</button>
       <div class="toba-wheel-track">
-        <span class="toba-wheel-pad"></span>${items.join("")}<span class="toba-wheel-pad"></span>
+        <span class="toba-wheel-pad"></span><span class="toba-wheel-gap"></span><span class="toba-wheel-gap"></span><span class="toba-wheel-pad"></span>
       </div>
       <button type="button" class="toba-wheel-arrow" data-dir="1" tabindex="-1" aria-hidden="true">›</button>
       <span class="toba-wheel-marker" aria-hidden="true"></span>
@@ -474,8 +470,48 @@ function tobaWheelPicker(container, options = {}) {
     </div>`;
   const root = container.querySelector(".toba-wheel");
   const track = root.querySelector(".toba-wheel-track");
-  const itemEls = track.querySelectorAll(".toba-wheel-item");
   const pads = track.querySelectorAll(".toba-wheel-pad");
+  const [gapBefore, gapAfter] = track.querySelectorAll(".toba-wheel-gap");
+  const itemEls = new Map(); // índice -> elemento, só a janela visível
+  let shown = { from: 0, to: -1 };
+
+  function makeItem(i) {
+    const v = valueAt(i);
+    const major = majorEvery ? v % (majorEvery * step) === 0 : true;
+    const el = document.createElement("span");
+    el.className = `toba-wheel-item${major ? " is-major" : ""}`;
+    el.dataset.i = i;
+    el.innerHTML = `<span class="toba-wheel-num">${escapeHtml(format(v))}</span><span class="toba-wheel-tick"></span>`;
+    return el;
+  }
+
+  // Mantém no DOM só os valores visíveis + folga. O snap só "enxerga" o que
+  // existe: a folga (~2000px de cada lado) cobre um peteleco forte no dedo.
+  function renderWindow(pos) {
+    const reach = Math.ceil(track.clientWidth / TOBA_WHEEL_ITEM / 2) + 40;
+    const from = Math.max(0, Math.floor(pos) - reach);
+    const to = Math.min(count - 1, Math.ceil(pos) + reach);
+    if (from === shown.from && to === shown.to) return;
+    itemEls.forEach((el, i) => {
+      if (i < from || i > to) {
+        el.remove();
+        itemEls.delete(i);
+      }
+    });
+    let anchor = gapBefore;
+    for (let i = from; i <= to; i++) {
+      let el = itemEls.get(i);
+      if (!el) {
+        el = makeItem(i);
+        itemEls.set(i, el);
+        anchor.after(el);
+      }
+      anchor = el;
+    }
+    gapBefore.style.width = `${from * TOBA_WHEEL_ITEM}px`;
+    gapAfter.style.width = `${(count - 1 - to) * TOBA_WHEEL_ITEM}px`;
+    shown = { from, to };
+  }
 
   function buzz() {
     try {
@@ -490,6 +526,7 @@ function tobaWheelPicker(container, options = {}) {
     frame = 0;
     if (!track.clientWidth) return; // escondido: não dá para medir, mantém o valor
     const pos = track.scrollLeft / TOBA_WHEEL_ITEM;
+    renderWindow(pos);
     styled.forEach((el) => {
       el.style.transform = "";
       el.style.opacity = "";
@@ -500,7 +537,7 @@ function tobaWheelPicker(container, options = {}) {
     const to = Math.min(count - 1, Math.ceil(pos) + 5);
     for (let i = from; i <= to; i++) {
       const dist = Math.abs(i - pos);
-      const el = itemEls[i];
+      const el = itemEls.get(i);
       el.style.transform = `scale(${Math.max(0.62, 1.35 - dist * 0.24).toFixed(3)})`;
       el.style.opacity = Math.max(0.12, 1 - dist * 0.27).toFixed(3);
       if (dist < 0.5) el.classList.add("is-center");
@@ -531,6 +568,7 @@ function tobaWheelPicker(container, options = {}) {
     lastWidth = track.clientWidth;
     const pad = Math.max(0, (track.clientWidth - TOBA_WHEEL_ITEM) / 2);
     pads.forEach((el) => (el.style.width = `${pad}px`));
+    renderWindow(index);
     silent = true;
     track.scrollLeft = index * TOBA_WHEEL_ITEM;
     paint();
@@ -539,6 +577,11 @@ function tobaWheelPicker(container, options = {}) {
 
   function goTo(i, smooth = true) {
     const target = Math.min(count - 1, Math.max(0, i));
+    if (Math.abs(target - index) > 30) {
+      // Pulo longo (Home/End): desenha o destino antes, senão o snap volta
+      renderWindow(target);
+      smooth = false;
+    }
     track.scrollTo({ left: target * TOBA_WHEEL_ITEM, behavior: smooth ? "smooth" : "auto" });
   }
 
@@ -616,6 +659,7 @@ function tobaWheelPicker(container, options = {}) {
       if (target === index && !smooth) return;
       silent = true;
       index = target;
+      renderWindow(target);
       track.scrollLeft = target * TOBA_WHEEL_ITEM;
       paint();
       silent = false;

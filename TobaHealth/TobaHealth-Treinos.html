@@ -234,6 +234,32 @@
     </div>
   </div>
 
+  <div class="toba-modal" id="exerciseLoadModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>⚖️ Tipo de carga</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form id="exerciseLoadForm" data-submit="saveExerciseLoad">
+        <p class="toba-sheet-text"><b id="exerciseLoadName"></b>: como você anota a carga? Vale para todos os treinos desse exercício, inclusive os antigos.</p>
+        <div class="form-group">
+          <label for="exercise-load-type">Carga anotada</label>
+          <select id="exercise-load-type" class="form-control">
+            <option value="total">Total (barra, máquina, peso do corpo)</option>
+            <option value="perHand">Por halter / mão (conta 2×)</option>
+          </select>
+        </div>
+        <label class="live-check">
+          <input type="checkbox" id="exercise-load-unilateral" />
+          <span>Unilateral: um lado de cada vez, reps por lado (conta 2×)</span>
+        </label>
+        <div class="toba-sheet-footer">
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div class="toba-modal" id="muscleHelpModal">
     <div class="toba-sheet">
       <div class="toba-sheet-header">

@@ -23,6 +23,7 @@ final class Alarms {
     static final String EXTRA_ID = "id";
     static final String TYPE_REST = "rest";
     static final String TYPE_REMINDER = "reminder";
+    static final String TYPE_WORKOUT = "workout";
     private static final int REST_CODE = 9001;
     private static final String[] DAY_CODES = {"SU", "MO", "TU", "WE", "TH", "FR", "SA"}; // Calendar.SUNDAY = 1
 
@@ -30,6 +31,7 @@ final class Alarms {
 
     static void rescheduleAll(Context c) {
         scheduleReminders(c);
+        Notifier.showWorkout(c); // reiniciou no meio do treino: a notificação volta
         JSONObject rest = TobaStore.getObject(c, TobaStore.KEY_REST);
         long endsAt = rest.optLong("endsAt", 0);
         if (endsAt > System.currentTimeMillis()) setExact(c, endsAt, restIntent(c, PendingIntent.FLAG_UPDATE_CURRENT));

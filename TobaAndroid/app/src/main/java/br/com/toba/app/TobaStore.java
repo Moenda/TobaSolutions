@@ -18,6 +18,7 @@ import java.util.Set;
  * - extra_apps: apps que o usuário mandou ler além da lista padrão
  * - reminders: lembretes { id: { title, message, times, days, url } }
  * - rest: fim do descanso agendado { endsAt, title, body }
+ * - workout: treino ao vivo em andamento { startedAt, title } (notificação fixa)
  */
 final class TobaStore {
     private static final String PREFS = "toba_native";
@@ -27,6 +28,7 @@ final class TobaStore {
     static final String KEY_REMINDERS = "reminders";
     static final String KEY_REMINDER_CODES = "reminder_codes";
     static final String KEY_REST = "rest";
+    static final String KEY_WORKOUT = "workout";
     private static final int LOG_MAX = 25;
     private static final Object LOCK = new Object();
 

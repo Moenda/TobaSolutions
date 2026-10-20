@@ -116,7 +116,7 @@ function clampLiveReps(value) {
 }
 
 function clampLiveKg(value) {
-  return Math.min(300, Math.max(0, Math.round(Number(value) || 0)));
+  return Math.min(999, Math.max(0, Math.round(Number(value) || 0)));
 }
 
 function readLivePrefs() {
@@ -208,6 +208,7 @@ function storeLiveSession() {
     }
   }
   syncLiveRestAlarm();
+  syncLiveNotification();
 }
 
 // App Android: o próprio sistema avisa o fim do descanso, mesmo com a tela
@@ -227,6 +228,18 @@ function syncLiveRestAlarm() {
   }
 }
 
+// App Android: notificação fixa com o tempo do treino (o Android conta a
+// partir do startedAt). Só chama a ponte quando muda: a régua grava toda hora.
+let liveNotified = "?"; // "?" = ainda não sincronizou nesta página
+function syncLiveNotification(session = liveSession) {
+  if (!TOBA_NATIVE || typeof TOBA_NATIVE.showWorkout !== "function") return; // APK antigo
+  const key = session ? `${session.startedAt}|${session.title}` : "";
+  if (key === liveNotified) return;
+  liveNotified = key;
+  if (session) TOBA_NATIVE.showWorkout(session.startedAt, session.title);
+  else TOBA_NATIVE.hideWorkout();
+}
+
 // Arrastar a régua grava várias vezes por segundo: junta numa gravação só.
 function storeLiveSessionSoon() {
   clearTimeout(liveSaveTimer);
@@ -239,6 +252,7 @@ function dropLiveSession() {
   liveSession = null;
   liveFocus = null;
   syncLiveRestAlarm();
+  syncLiveNotification();
   try {
     localStorage.removeItem(LIVE_SESSION_KEY);
   } catch (err) {
@@ -437,6 +451,7 @@ function renderLiveSessionLaunch() {
   const box = document.getElementById("liveSessionLaunch");
   if (!box) return;
   const { session, broken } = readLiveSession();
+  if (!broken) syncLiveNotification(session); // treino de antes do APK novo ganha a notificação
   if (broken) {
     box.innerHTML = `
       <div class="live-resume is-broken">
@@ -528,6 +543,7 @@ function renderLiveExercise(entry) {
         <div>
           <div class="live-exercise-name">${escapeHtml(exercise ? exercise.name : entry.exerciseId)}</div>
           <div class="live-exercise-meta">${exercise ? getStrengthGroupName(exercise.group) : ""}${last ? ` · última vez ${describeStrengthSets(last)}` : " · primeira vez 🆕"}</div>
+          ${renderExerciseLoadChip(entry.exerciseId)}
         </div>
         ${entry.skipped ? '<span class="live-skip-badge">⏭ Pulado</span>' : ""}
       </div>
@@ -597,7 +613,7 @@ function renderLiveSession() {
       const isKg = field === "kg";
       liveWheels.push(tobaWheelPicker(el, {
         min: isKg ? 0 : 1,
-        max: isKg ? 300 : 50,
+        max: isKg ? 999 : 50,
         step: 1,
         value: entry.sets[setIndex][field],
         majorEvery: 5,

@@ -529,3 +529,29 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 **Como testar:** no Android Studio, **Build → Rebuild Project** e depois **Build → Generate Signed App Bundle / APK** sem erros. Ler o `TobaAndroid/INSTALAR.md` no VS Code (pré-visualização do Markdown) e conferir os passos.
 
 **Commit sugerido:** `v1.38 - Corrige build do APK e passo a passo de instalacao pelo cabo USB`
+
+---
+
+## v1.39 — Notificação do treino ao vivo, régua até 999 kg e carga por halter
+
+**Arquivos novos/alterados:** `TobaHealth/js/sessao.js`, `TobaHealth/js/treinos.js`, `TobaHealth/js/forca.js`, `TobaHealth/js/health-core.js`, `TobaHealth/TobaHealth-Treinos.html`, `TobaHealth/css/treinos.css`, `assets/toba-common.js`, `assets/toba-common.css`, `TobaAndroid/app/build.gradle`, `TobaAndroid/app/src/main/java/br/com/toba/app/` (`Notifier.java`, `TobaBridge.java`, `TobaStore.java`, `Alarms.java`, `AlarmReceiver.java`), `CLAUDE.md`
+
+1. **🏋️ Notificação fixa do treino (app Android):** enquanto um treino ao vivo estiver aberto, a barra mostra "Treino X em andamento" com o tempo correndo, mesmo com o app fechado (o Android conta o tempo a partir da hora de início). Se você arrastar ela para fora, ela volta. Some quando o treino é finalizado ou descartado, e volta sozinha se o celular reiniciar no meio do treino. No navegador não existe essa notificação.
+2. **👆 Tocar na notificação abre o treino:** vai direto para a tela do treino ao vivo, com séries feitas e cronômetro do jeito que estavam. O aviso de "descanso acabou" também abre direto o treino agora.
+3. **📏 Régua de carga até 999 kg:** a régua de kg do treino ao vivo vai de 0 a 999 (antes parava em 300) e continua de 1 em 1, parando certinho no valor. Ela só desenha os números perto do centro, então fica leve. A régua de repetições continua de 1 a 50.
+4. **⚖️ Tipo de carga do exercício:** embaixo do nome do exercício (no treino ao vivo e na página de um treino) aparece o chip **⚖️ Total**. Tocando nele você escolhe:
+   - **Carga anotada:** "Total" (barra, máquina, peso do corpo) ou "Por halter / mão" (o peso conta 2×).
+   - **Unilateral:** um lado de cada vez, reps por lado (as reps contam 2×). Com halter e unilateral juntos conta 2× (um halter por vez), não 4×.
+   Vale para todos os treinos daquele exercício, inclusive os antigos: o Hall do Herói, o resumo, a página do treino, os gráficos e o mapa de calor recalculam na hora.
+
+**Dados:** campo novo opcional `exerciseSettings` dentro do `TOBA_HEALTH_DB` (`{ "supino-reto-halter": { load: "perHand", unilateral: false } }`). Banco ou backup antigo sem ele = todo exercício "Total / bilateral", ou seja, os números antigos não mudam até você editar. O app Android guarda o treino em andamento só nas preferências dele (`workout`), nunca no `localStorage`.
+
+**APK novo:** versão 1.1 (versionCode 2). Precisa gerar e instalar de novo para ter a notificação (itens 1 e 2). Sem o APK novo o site funciona normal, só sem a notificação.
+
+**Como testar:**
+- Navegador (`python -m http.server 8080`): Treinos → Iniciar treino → a régua de kg vai até 999, não passa de 0, e as teclas Home/End vão às pontas.
+- Tocar no chip ⚖️ de um exercício de halter → "Por halter" → Salvar: o chip muda e os kg levantados da página do treino e do Hall dobram para aquele exercício. Voltar para "Total" desfaz.
+- Abrir `TobaHealth-Treinos.html?live=1` com um treino em andamento: abre direto no treino.
+- No celular com o APK novo: iniciar treino → notificação com cronômetro; fechar o app e esperar: o tempo continua certo; tocar → abre o treino; arrastar para fora → volta; finalizar ou descartar → some.
+
+**Commit sugerido:** `v1.39 - Notificacao fixa do treino ao vivo, regua de kg ate 999 e tipo de carga por halter/unilateral`

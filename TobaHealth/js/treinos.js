@@ -218,6 +218,7 @@ function renderWorkoutView() {
               ${exLift.kg > 0 ? `<span class="wv-exercise-kg">${formatWorkoutNumber(exLift.kg, 0)} kg</span>` : ""}
             </div>
             <div class="wv-exercise-group">${escapeHtml(getStrengthGroupName(exercise.group))}${fraction ? ` · conta ${formatWorkoutNumber(fraction * 100, 0)}% do seu peso` : ""}</div>
+            ${renderExerciseLoadChip(exercise.exerciseId)}
             <ol class="wv-sets">${sets.map((set) => `
               <li><span>${formatWorkoutNumber(set.reps, 0)} reps</span><span>${Number(set.kg) ? `${formatWorkoutNumber(set.kg, 1)} kg` : (fraction ? "peso do corpo" : "sem carga")}</span></li>`).join("")}
             </ol>
@@ -956,6 +957,8 @@ tobaActions({
   closeStrengthSummary,
   closeWorkoutView,
   openWorkoutView: (el) => openWorkoutView(el.dataset.id),
+  openExerciseLoad,
+  saveExerciseLoad,
   showMuscleHeat: (el) => showMuscleHeat(el.dataset.group, el.dataset.scope),
   openMuscleHelp: () => openTobaModal("muscleHelpModal"),
   openStrengthSummary: (el) => openStrengthSummary(el.dataset.id),
@@ -971,3 +974,8 @@ tobaActions({
 
 initTobaDecimalMasks();
 openModule("viewTraining");
+// ?live=1: veio da notificação do treino em andamento -> abre direto o treino
+if (new URLSearchParams(location.search).has("live")) {
+  history.replaceState(null, "", location.pathname);
+  if (readLiveSession().session) openLiveSessionView();
+}
