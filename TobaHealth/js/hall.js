@@ -9,36 +9,8 @@
  * Carregado ANTES de treinos.js; usa funções dele só dentro de funções.
  * ===================================================================== */
 
-const WORKOUT_DISTANCE_DESTINATIONS = [
-  { icon: "🏖️", size: 360, label: "São Paulo → Rio de Janeiro", done: "foi de São Paulo ao Rio de Janeiro", note: "Com direito a biscoito Globo e farofa na areia." },
-  { icon: "🧉", size: 1680, label: "São Paulo → Buenos Aires", done: "foi de São Paulo a Buenos Aires", note: "Alfajor, empanada e nenhuma conversa sobre o placar." },
-  { icon: "🌴", size: 2690, label: "São Paulo → Manaus", done: "foi de São Paulo a Manaus", note: "Repelente não é opcional." },
-  { icon: "🗽", size: 7690, label: "São Paulo → Nova York", done: "foi de São Paulo a Nova York", note: "Pizza de rua e crise de identidade." },
-  { icon: "🥐", size: 7940, label: "São Paulo → Lisboa", done: "foi de São Paulo a Lisboa", note: "Pastel de nata na chegada. Pode pedir o segundo." },
-  { icon: "💃", size: 8390, label: "São Paulo → Madri", done: "foi de São Paulo a Madri", note: "Jantar só começa às 22h, vai se acostumando." },
-  { icon: "🏜️", size: 12220, label: "São Paulo → Dubai", done: "foi de São Paulo a Dubai", note: "O calor de lá faz o treino parecer sauna." },
-  { icon: "🥢", size: 17750, label: "São Paulo → Pequim", done: "foi de São Paulo a Pequim", note: "Com pato laqueado de recompensa." },
-  { icon: "🍣", size: 18550, label: "São Paulo → Tóquio", done: "foi de São Paulo a Tóquio", note: "Lá o temaki é de verdade, sem mini." },
-  { icon: "🌍", size: 40075, label: "Uma volta ao mundo", done: "deu a volta ao mundo", note: "Magalhães ficaria com inveja." },
-];
-
-const WORKOUT_LIFT_EQUIVALENTS = [
-  { icon: "🐈", one: "gato", name: "gatos", size: 4, note: "Levantado sem ele aprovar." },
-  { icon: "🐕", one: "cachorro caramelo", name: "cachorros caramelo", size: 12, note: "O patrimônio nacional, no supino." },
-  { icon: "🧍", one: "pessoa adulta", name: "pessoas adultas", size: 75, note: "Sem reclamar de ninguém." },
-  { icon: "🏍️", one: "moto CG", name: "motos CG", size: 115, note: "Entrega por aplicativo, só que no ar." },
-  { icon: "🦁", one: "leão", name: "leões", size: 190, note: "E ele nem rugiu." },
-  { icon: "🎹", one: "piano de cauda", name: "pianos de cauda", size: 500, note: "Música para os ouvidos, dor para a coluna." },
-  { icon: "🚗", one: "Fusca", name: "Fuscas", size: 830, note: "Sem a mudança de casa dentro." },
-  { icon: "🦛", one: "hipopótamo", name: "hipopótamos", size: 1500, note: "Parece fofo, pesa uma tonelada e meia." },
-  { icon: "🐘", one: "elefante", name: "elefantes", size: 5500, note: "A tromba não ajuda." },
-  { icon: "🚌", one: "ônibus urbano", name: "ônibus urbanos", size: 12000, note: "Vazio, mas a lotação já saiu na foto." },
-  { icon: "✈️", one: "Boeing 747 (vazio)", name: "Boeings 747 (vazios)", size: 180000, note: "Decolagem por sua conta e risco." },
-  { icon: "🗽", one: "Estátua da Liberdade", name: "Estátuas da Liberdade", size: 204000, note: "Tocha inclusa." },
-  { icon: "🙌", one: "Cristo Redentor", name: "Cristos Redentores", size: 635000, note: "De braços abertos, mas agora quem abraça é você." },
-  { icon: "🗼", one: "Torre Eiffel", name: "Torres Eiffel", size: 10100000, note: "Paris que me perdoe, mas a torre veio junto." },
-  { icon: "🚢", one: "Titanic", name: "Titanics", size: 52000000, note: "Sem iceberg, sem drama e sem Celine Dion." },
-];
+// WORKOUT_DISTANCE_DESTINATIONS e WORKOUT_LIFT_EQUIVALENTS moram em health-metrics.js
+// (as conquistas do perfil do jogador usam as mesmas escalas).
 
 // Calorias aproximadas por porção, da mais leve para a mais pesada.
 const WORKOUT_FOOD_EQUIVALENTS = [

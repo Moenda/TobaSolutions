@@ -296,31 +296,9 @@ function getWorkoutLifetimeStats(workouts = healthDb.workouts) {
  *   treino (sem pesagem: BODYWEIGHT_DEFAULT_KG). Só cálculo: nada disso é
  *   gravado, então vale também para os treinos antigos.
  * ------------------------------------------------------------------- */
-const BODYWEIGHT_DEFAULT_KG = 75;
-// Campos soltos do treino Saitama -> exercício do catálogo (grupo muscular
-// para o futuro mapa de calor) e parte do corpo levantada.
-const BODYWEIGHT_FIELDS = {
-  pushups: { exerciseId: "flexao", group: "peito", fraction: 0.64 }, // ~64% do corpo
-  squats: { exerciseId: "agachamento-corpo", group: "quadriceps", fraction: 0.7 }, // ~70%
-  situps: { exerciseId: "abdominal-crunch", group: "abdomen", fraction: 0.3 }, // ~30% (tronco)
-};
-
+// BODYWEIGHT_DEFAULT_KG / BODYWEIGHT_FIELDS e a conta moram em health-metrics.js.
 function getBodyWeightOn(dateStr) {
-  const weighIns = (healthDb.weighIns || [])
-    .filter((w) => Number(w.weight) > 0)
-    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
-  if (!weighIns.length) return BODYWEIGHT_DEFAULT_KG;
-  const day = String(dateStr || "");
-  const before = weighIns.filter((w) => String(w.date).slice(0, 10) <= day);
-  // Treino antes da 1ª pesagem usa a 1ª pesagem
-  return Number((before.length ? before[before.length - 1] : weighIns[0]).weight);
-}
-
-function getBodyweightLift(workout) {
-  return getWorkoutMuscleWork(workout, { bodyweightOnly: true }).reduce(
-    (totals, item) => ({ kg: totals.kg + item.kg, reps: totals.reps + item.reps }),
-    { kg: 0, reps: 0 },
-  );
+  return calcBodyWeightOn(healthDb, dateStr);
 }
 
 /* Trabalho por grupo muscular de um treino: base do futuro mapa de calor.
@@ -348,16 +326,7 @@ function getWorkoutMuscleWork(workout, { bodyweightOnly = false } = {}) {
 }
 
 function getWorkoutLift(workout) {
-  const body = getBodyweightLift(workout);
-  if (Array.isArray(workout.exercises)) {
-    const strength = getStrengthLift(workout);
-    return { kg: strength.kg + body.kg, reps: strength.reps + body.reps };
-  }
-  const weight = Number(workout.weightKg) || 0;
-  if (weight <= 0) return body;
-  const sets = Math.max(Number(workout.sets) || 1, 1);
-  const reps = Math.max(Number(workout.reps) || 1, 1);
-  return { kg: weight * sets * reps + body.kg, reps: sets * reps + body.reps };
+  return calcWorkoutLift(workout, healthDb);
 }
 
 function sumWorkoutLift(workouts) {
@@ -536,6 +505,7 @@ function renderWorkoutScreen() {
     .join("");
 
   renderWorkoutMonth(workouts, today);
+  tobaPlayerCheck(); // XP / streak / conquistas: comemora o que for novo
 
   // Página de um treino aberta: redesenha (editou) ou volta (excluiu)
   if (selectedWorkoutId && document.getElementById("viewWorkout").classList.contains("active")) {
@@ -881,6 +851,7 @@ function saveWorkout() {
     return;
   }
 
+  tobaPlayerCheck({ reason: editingWorkoutId ? "Treino atualizado ✏️" : "Treino registrado 💪" });
   if (editingWorkoutId) {
     const workoutIndex = healthDb.workouts.findIndex(
       (item) => String(item.id) === editingWorkoutId,
@@ -940,6 +911,12 @@ function openModule(viewId) {
 function onHealthDataReplaced() {
   openModule("viewTraining");
 }
+
+// Faixa do streak no topo de Treinos (o toba-player.js recalcula e avisa)
+document.addEventListener("toba:player", (event) => {
+  const strip = document.getElementById("playerStrip");
+  if (strip) strip.innerHTML = renderPlayerStrip(event.detail, "../Toba-Perfil.html");
+});
 
 tobaActions({
   openWorkoutReminder: () =>

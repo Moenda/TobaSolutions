@@ -555,3 +555,35 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 - No celular com o APK novo: iniciar treino → notificação com cronômetro; fechar o app e esperar: o tempo continua certo; tocar → abre o treino; arrastar para fora → volta; finalizar ou descartar → some.
 
 **Commit sugerido:** `v1.39 - Notificacao fixa do treino ao vivo, regua de kg ate 999 e tipo de carga por halter/unilateral`
+
+---
+
+## v1.40 — Perfil do jogador: XP, nível, streak e conquistas
+
+**Arquivos novos/alterados:** `assets/toba-player.js` (NOVO), `assets/toba-player.css` (NOVO), `Toba-Perfil.html` (NOVO), `assets/perfil.js` (NOVO), `assets/perfil.css` (NOVO), `index.html`, `assets/portal.js`, `TobaHealth/TobaHealth-Treinos.html`, `TobaHealth/js/health-metrics.js`, `TobaHealth/js/forca.js`, `TobaHealth/js/hall.js`, `TobaHealth/js/treinos.js`, `TobaHealth/js/sessao.js`, `TobaHealth/js/sessao-saitama.js`, `sw.js`, `CLAUDE.md`
+
+1. **🎮 Perfil do jogador no portal:** card novo no topo com avatar, nível, título, barra de XP e o 🔥 do streak. Tocar abre a página do perfil.
+2. **✨ XP por treino, já contando o passado:** todo treino dá XP (base + minutos + séries + repetições do Saitama + km). Recordes pessoais, conquistas e marcos de streak dão bônus. Na primeira abertura o Toba conta todos os seus treinos antigos e mostra "Você já é nível X". O XP é recalculado dos treinos, então nunca duplica, e apagar um treino tira o XP dele.
+3. **📈 Níveis e títulos:** cada nível pede um pouco mais de XP que o anterior. Os títulos vão de 🐣 Frango de Academia até 👊 Saitama, passando pelas classes C, B, A e S de herói. A tabela completa está no perfil.
+4. **🔥 Streak "dias + meta semanal":** conta os dias seguidos e não apaga enquanto toda semana (seg a dom) tiver pelo menos 3 dias de treino. A meta dá para mudar na ⚙️ do perfil. Bônus em 7, 30, 100 e 365 dias, e o recorde de streak fica guardado. Aparece no portal, no perfil e numa faixa no topo do Treinos.
+5. **🏅 55 conquistas:** treinos, peso levantado (do gato ao Titanic), distância (do Rio à volta ao mundo), calorias, Saitama, mapa de calor, recordes, streak e pesagens. As bloqueadas aparecem em cinza com a barra de progresso; as lendárias ficam como "???". Tocar mostra o detalhe.
+6. **🎉 Comemorações:** ao salvar ou finalizar um treino sobe um "+XP" com a barra enchendo, depois a medalha das conquistas novas e, se subir de nível, uma tela cheia de level up com confete e o que foi desbloqueado. Som e vibração são opcionais (⚙️ do perfil).
+7. **🎁 Recompensas:** títulos especiais ganhos em conquistas, avatares, molduras (bronze, prata, ouro, diamante, em chamas) e cores do avatar, liberados por nível ou conquista.
+8. **Por dentro:** o catálogo de exercícios, as escalas do Hall e a conta do peso levantado foram para o `health-metrics.js`, para o portal e o Treinos darem exatamente o mesmo número. Os números do Treinos e do Hall não mudam.
+
+**Dados:**
+- Chave nova `TOBA_PLAYER_DB` (+ `TOBA_PLAYER_DB_AUTO_BACKUP`) com só a meta do streak, as recompensas escolhidas e o que já foi comemorado. O XP em si não é gravado: vem dos treinos.
+- Preferência nova `toba_player_prefs` (som e vibração).
+- O `TOBA_HEALTH_DB` não mudou. Bancos e backups antigos funcionam igual; o backup geral do portal já leva o perfil. Perfil ilegível não é sobrescrito: fica uma cópia em `TOBA_PLAYER_DB_CORRUPT_<data>`.
+
+**Como testar:**
+- `python -m http.server 8080` e abrir `http://localhost:8080/` com dados (restaurar um backup geral): aparece a tela "Perfil de jogador liberado" uma vez só; recarregar não repete.
+- Portal: o card do jogador mostra nível, XP e streak; tocar abre o perfil.
+- Perfil: conferir conquistas (tocar numa bloqueada e numa liberada), equipar um avatar/moldura/cor/título, abrir "De onde veio seu XP" e a "Tabela de níveis". Na ⚙️: mudar a meta (o streak recalcula), ligar e desligar som/vibração, "Ver a tela de level up".
+- Treinos: faixa 🔥 no topo. Registrar um treino → "+XP" subindo; fazer 100/100/100 no Saitama → medalha "Dia do careca". O kg levantado do Hall continua igual ao de antes.
+- Apagar o treino de teste: o XP volta, sem aviso.
+- Aba anônima (sem dados): portal abre com nível 1, sem erro no console.
+- Backup geral: exportar → importar → o perfil continua igual.
+- APK: nada muda no app Android; ele abre o site novo normalmente.
+
+**Commit sugerido:** `v1.40 - Perfil do jogador com XP, nivel, streak semanal e conquistas`

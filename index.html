@@ -15,6 +15,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Toba" />
   <link rel="stylesheet" href="assets/toba-common.css" />
+  <link rel="stylesheet" href="assets/toba-player.css" />
   <link rel="stylesheet" href="assets/portal.css" />
 </head>
 
@@ -29,6 +30,9 @@
         <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
       </div>
     </header>
+
+    <!-- Perfil do jogador (XP, nível, streak): desenhado por renderPlayerCard() -->
+    <a class="tp-card" id="playerCard" href="Toba-Perfil.html" aria-label="Perfil do jogador"></a>
 
     <!--
       Cada app é um <a class="app-card" data-id="...">. Para um app novo,
@@ -244,6 +248,7 @@
   <script src="assets/toba-common.js"></script>
   <script src="TobaBank/js/bank-metrics.js"></script>
   <script src="TobaHealth/js/health-metrics.js"></script>
+  <script src="assets/toba-player.js"></script>
   <script src="assets/portal.js"></script>
   <script src="assets/pwa-register.js"></script>
 </body>

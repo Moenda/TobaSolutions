@@ -2,7 +2,8 @@
  * Portal Toba Solutions (index.html)
  * - Depende de toba-common.js, de TobaBank/js/bank-metrics.js (o card do
  *   Bank usa o MESMO cálculo da tela de Gastos: calcBankMonthSummary) e de
- *   TobaHealth/js/health-metrics.js (card do Health).
+ *   TobaHealth/js/health-metrics.js (card do Health) e de toba-player.js
+ *   (card do Perfil do jogador no topo).
  * - Preferências de UI: "toba_modules_config" (ordem/visibilidade dos
  *   cards), "toba_bank_card_config" (o que o card do Bank mostra),
  *   "toba_health_card_config" (o que o card do Health mostra).
@@ -425,7 +426,14 @@ function updateHealthCardConfigFromUI() {
 function renderPortalPanels() {
   renderBankCard(getBankCardConfig());
   renderHealthCard(getHealthCardConfig());
+  tobaPlayerCheck();
 }
+
+// O perfil do jogador avisa quando recalcula (e já comemora o que for novo)
+document.addEventListener("toba:player", (event) => {
+  const card = document.getElementById("playerCard");
+  if (card) card.innerHTML = renderPlayerCard(event.detail);
+});
 
 /* ---------------------------------------------------------------------
  * Backup GERAL (todas as chaves do navegador, valores como texto)

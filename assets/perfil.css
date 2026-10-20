@@ -1,0 +1,477 @@
+/* Toba · página do Perfil do jogador. Base: toba-common.css + toba-player.css */
+
+:root {
+  --accent: var(--gold-2);
+}
+
+.pf-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 1.4rem;
+  text-align: center;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(227, 179, 65, 0.16), transparent 60%),
+    var(--surface);
+}
+
+.pf-hero .tp-avatar {
+  margin-bottom: 6px;
+}
+
+.pf-hero .tp-bar {
+  width: 100%;
+  height: 10px;
+}
+
+.pf-hero-title {
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.pf-hero-level {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--gold-2);
+}
+
+.pf-hero-xp {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.pf-hero-next {
+  font-size: 0.72rem;
+  color: var(--text-2);
+}
+
+.pf-count {
+  margin-left: 6px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* Streak */
+.pf-streak-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pf-streak-big {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.pf-streak-big.is-on {
+  color: var(--coral);
+  text-shadow: 0 0 16px rgba(248, 81, 73, 0.5);
+}
+
+.pf-streak-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.pf-streak-text strong {
+  color: var(--text);
+  font-size: 0.88rem;
+}
+
+.pf-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin: 0.9rem 0 0.4rem;
+}
+
+.pf-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.pf-day-dot {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  border: 2px solid var(--border);
+  font-size: 1rem;
+}
+
+.pf-day.is-done .pf-day-dot {
+  background: rgba(248, 81, 73, 0.18);
+  border-color: var(--coral);
+}
+
+.pf-day.is-today .pf-day-dot {
+  border-color: var(--gold-2);
+  border-style: dashed;
+}
+
+.pf-day.is-future .pf-day-dot {
+  opacity: 0.45;
+}
+
+.pf-note {
+  display: block;
+  margin-top: 0.6rem;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* Conquistas */
+.pf-ach-group {
+  margin-bottom: 0.9rem;
+}
+
+.pf-ach-title {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text-2);
+}
+
+.pf-ach-title > span:last-child {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.pf-ach-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.pf-ach {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 0.55rem 0.2rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  color: inherit;
+  cursor: pointer;
+}
+
+.pf-ach .tp-medal {
+  width: 44px;
+  height: 44px;
+  font-size: 1.35rem;
+}
+
+.pf-ach:not(.is-unlocked) .tp-medal {
+  filter: grayscale(1);
+  opacity: 0.4;
+  box-shadow: none;
+}
+
+.pf-ach-name {
+  width: 100%;
+  font-size: 0.64rem;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--text-2);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.pf-ach:not(.is-unlocked) .pf-ach-name {
+  color: var(--muted);
+}
+
+.pf-ach .tp-bar.is-mini {
+  width: 70%;
+  margin: 0;
+}
+
+.pf-ach-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0.4rem 0 0.8rem;
+  text-align: center;
+}
+
+.pf-ach-detail strong {
+  font-size: 1.1rem;
+}
+
+.pf-ach-detail p {
+  font-size: 0.88rem;
+  color: var(--text-2);
+}
+
+.pf-ach-detail .tp-bar {
+  width: 100%;
+}
+
+.tp-medal.is-big {
+  width: 84px;
+  height: 84px;
+  font-size: 2.6rem;
+}
+
+.tp-medal.is-locked {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
+.pf-tier {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  background: var(--surface-3);
+}
+
+.pf-tier-bronze { color: #e3a869; }
+.pf-tier-prata { color: #e6edf3; }
+.pf-tier-ouro { color: var(--gold-2); }
+.pf-tier-lenda { color: #d2a8ff; }
+
+/* Recompensas */
+.pf-tabs {
+  margin-bottom: 0.8rem;
+}
+
+.pf-reward-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.pf-title-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pf-reward {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 72px;
+  padding: 0.5rem 0.25rem;
+  border-radius: var(--radius);
+  border: 2px solid var(--border-soft);
+  background: var(--surface-2);
+  color: inherit;
+  cursor: pointer;
+}
+
+.pf-title-list .pf-reward {
+  flex-direction: row;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  min-height: 0;
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+}
+
+.pf-reward.is-active {
+  border-color: var(--gold-2);
+  background: rgba(227, 179, 65, 0.1);
+}
+
+.pf-reward.is-locked {
+  opacity: 0.55;
+}
+
+.pf-reward-preview {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.pf-title-list .pf-reward-preview {
+  font-size: 1.2rem;
+}
+
+.pf-reward-name {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+.pf-title-list .pf-reward-name {
+  font-size: 0.85rem;
+}
+
+.pf-reward-lock {
+  width: 100%;
+  font-size: 0.6rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.pf-title-list .pf-reward-lock {
+  width: auto;
+  margin-left: auto;
+  text-align: right;
+}
+
+.pf-color {
+  display: block;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+}
+
+/* Extrato e tabela */
+.pf-details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  list-style: none;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.pf-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.pf-chevron {
+  color: var(--muted);
+  transition: transform 0.2s ease;
+}
+
+.pf-details[open] .pf-chevron {
+  transform: rotate(90deg);
+}
+
+.pf-details[open] summary {
+  margin-bottom: 0.8rem;
+}
+
+.pf-ledger {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 0.8rem;
+}
+
+.pf-ledger-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.pf-ledger-icon {
+  font-size: 1.1rem;
+}
+
+.pf-ledger-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.pf-ledger-text strong {
+  color: var(--text);
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pf-ledger-xp {
+  font-weight: 800;
+  color: var(--green);
+  font-size: 0.85rem;
+}
+
+.pf-level-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.74rem;
+}
+
+.pf-level-table th,
+.pf-level-table td {
+  padding: 5px 4px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.pf-level-table th {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.pf-level-table tr.is-done td {
+  color: var(--muted);
+}
+
+.pf-level-table tr.is-current td {
+  background: rgba(227, 179, 65, 0.14);
+  color: var(--gold-2);
+  font-weight: 800;
+}
+
+/* ⚙️ */
+.pf-goal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0.5rem 0;
+}
+
+.pf-goal-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.pf-goal-text strong {
+  color: var(--text);
+  font-size: 0.88rem;
+}
+
+.pf-goal-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+}
+
+.pf-test-btn {
+  width: 100%;
+  margin-top: 0.6rem;
+}

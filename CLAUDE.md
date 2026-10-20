@@ -57,8 +57,10 @@ Ao terminar um patch, informe a lista de arquivos alterados e o que testar — n
 ## 2. Estrutura
 
 ```
-index.html                 Portal (cards, Configurador de cards, backup GERAL)
-                             -> TobaBank/js/bank-metrics.js + TobaHealth/js/health-metrics.js + assets/portal.js + portal.css
+index.html                 Portal (card do jogador, cards, Configurador de cards, backup GERAL)
+                             -> TobaBank/js/bank-metrics.js + TobaHealth/js/health-metrics.js + assets/toba-player.js + assets/portal.js + portal.css
+Toba-Perfil.html           Perfil do jogador (XP, nível, streak, conquistas, recompensas)
+                             -> TobaHealth/js/health-metrics.js + assets/toba-player.js + assets/perfil.js + perfil.css
 manifest.webmanifest       PWA (atalhos: add_expense, Pesagem, Treinos)
 sw.js                      Service worker (lista PRECACHE + VERSION)
 assets/toba-common.js      Base de TODOS os apps: datas, dinheiro, decimais, escapeHtml, ações
@@ -66,6 +68,9 @@ assets/toba-common.js      Base de TODOS os apps: datas, dinheiro, decimais, esc
                            e a régua de arrastar tobaWheelPicker
 assets/toba-common.css     Base visual de TODOS os apps: cores, botões, cards, quadradinhos, folhas, cabeçalho
 assets/portal.js / .css    Só do portal
+assets/toba-player.js/.css Perfil do jogador (desde v1.40): cálculo de XP/nível/streak/conquistas e as comemorações
+                           (+XP, medalha, level up). Usado no portal, no Toba-Perfil.html e no Treinos (ver 3.9)
+assets/perfil.js / .css    Só da página Toba-Perfil.html
 assets/pwa-register.js     Registra o sw.js (caminho relativo ao próprio script)
 _molde-app/                Molde de app novo (copiar e preencher; ver _molde-app/README.md). Fora do PRECACHE.
 icons/
@@ -78,7 +83,7 @@ TobaBank/
 TobaHealth/
   TobaHealth-Index.html    Hub do Health (carrega o health-core só para a ⚙️/backup)
   TobaHealth-Pesagem.html    -> js/health-core.js + js/pesagem.js
-  TobaHealth-Treinos.html    -> js/health-core.js + js/hall.js + js/forca.js + js/sessao.js + js/sessao-saitama.js + js/treinos.js
+  TobaHealth-Treinos.html    -> js/health-core.js + js/health-metrics.js + ../assets/toba-player.js + js/hall.js + js/forca.js + js/sessao.js + js/sessao-saitama.js + js/treinos.js
   css/health-base.css + 1 css por módulo
 TobaAndroid/               App Android (APK): WebView que abre o site publicado + ponte window.TobaNative
                            (gastos lidos das notificações, alarmes, salvar arquivo). Java puro, Android Studio.
@@ -87,7 +92,7 @@ PATCH-NOTES.md             Notas de cada patch (antigo LEIA-ME.md — ver seçã
 CLAUDE.md                  Este guia
 ```
 
-- Tudo é **global** (funções e variáveis no `window`). A ordem dos `<script>` importa: `../assets/toba-common.js` vem **primeiro** em toda página, depois o `*-core.js`, depois o módulo; em Treinos a ordem é `health-core.js` → `hall.js` (páginas de detalhe do Hall do Herói, view `viewDetail`; só leitura do banco) → `forca.js` → `sessao.js` (treino ao vivo, view `viewSession`) → `sessao-saitama.js` (Saitama ao vivo, mesma view) → `treinos.js`; `hall.js`, `forca.js`, `sessao.js`, `sessao-saitama.js` (e qualquer arquivo novo carregado antes de `treinos.js`) só chama funções de `treinos.js` dentro de funções (nunca na carga do arquivo). Arquivo JS novo: acrescente o `<script>` na ordem certa **e** no `PRECACHE` do `sw.js`.
+- Tudo é **global** (funções e variáveis no `window`). A ordem dos `<script>` importa: `../assets/toba-common.js` vem **primeiro** em toda página, depois o `*-core.js`, depois o módulo; em Treinos a ordem é `health-core.js` → `health-metrics.js` (catálogo de força, escalas do Hall e conta do kg levantado, desde v1.40) → `../assets/toba-player.js` → `hall.js` (páginas de detalhe do Hall do Herói, view `viewDetail`; só leitura do banco) → `forca.js` → `sessao.js` (treino ao vivo, view `viewSession`) → `sessao-saitama.js` (Saitama ao vivo, mesma view) → `treinos.js`; `hall.js`, `forca.js`, `sessao.js`, `sessao-saitama.js` (e qualquer arquivo novo carregado antes de `treinos.js`) só chama funções de `treinos.js` dentro de funções (nunca na carga do arquivo). Arquivo JS novo: acrescente o `<script>` na ordem certa **e** no `PRECACHE` do `sw.js`.
 - Desde a v1.22 os cores não repetem mais helpers (tudo comum está no `toba-common.js`) e cada um tem nomes próprios (`exportBankBackup`/`exportHealthBackup`...). Ainda assim cada página registra **um** app em `tobaSetupApp` (a ⚙️ faz backup de um app só); não misture dois cores numa página sem necessidade.
 - Os nomes dos arquivos HTML **não podem mudar** (links, favoritos, atalhos do manifest e o atalho `?action=add_expense` dependem deles).
 
@@ -119,6 +124,10 @@ CLAUDE.md                  Este guia
 | `TOBA_HEALTH_DB_CORRUPT_<timestamp>` | `health-core.js` | Texto original quando o JSON do Health não pôde ser lido (uma cópia por conteúdo) |
 | `TOBA_HEALTH_ACTIVE_SESSION` | `TobaHealth/js/sessao.js` | Treino ao vivo em andamento (desde v1.27): `{ v: 1, id, startedAt (ms), date, routineId, title, current, exercises: [{ exerciseId, skipped, sets: [{ reps, kg, done }] }], rest: { duration, startedAt, endsAt, alerted }, restDefault, updatedAt, kind?, saitama? }`. `kind` (desde v1.36): ausente/`"strength"` ou `"saitama"`; no Saitama `exercises` fica `[]` e `saitama = { pushups, situps, squats, step, autoRest, log: [{ field, n, at }] }`. Temporário: apagado ao finalizar (vira um treino `strength` normal em `workouts`, só com as séries `done`, ou um treino `saitama` normal com os totais) ou descartar. Ilegível = só oferece "Descartar". Não é lido por backup do módulo nem por `normalizeHealthDb` |
 | `toba_health_live_prefs` | `TobaHealth/js/sessao.js` | Preferências de tela do treino ao vivo (desde v1.36): `{ keepAwake, saitamaStep, saitamaAutoRest, saitamaRest }`. Ausente = tela acesa ligada, passo 10, descanso automático ligado, 60 s |
+| `TOBA_PLAYER_DB` | `assets/toba-player.js` | Perfil do jogador (desde v1.40), ver 3.9: `{ v: 1, createdAt, settings: { weeklyGoal }, seen: { xp, level, achievements: [ids] }, equipped: { title, avatar, frame, color } }`. **Não guarda XP de verdade**: o XP é calculado dos treinos; `seen` só serve para saber o que já foi comemorado |
+| `TOBA_PLAYER_DB_AUTO_BACKUP` | `assets/toba-player.js` | Cópia do valor **anterior** do perfil, atualizada a cada `savePlayerDb()` e no load |
+| `TOBA_PLAYER_DB_CORRUPT_<timestamp>` | `assets/toba-player.js` | Texto original quando o perfil não pôde ser lido (uma cópia por conteúdo); com ele ilegível nada é gravado até restaurar ou "Recomeçar perfil" |
+| `toba_player_prefs` | `assets/toba-player.js` | `{ sound, vibrate }` das comemorações (desde v1.40). Ausente = os dois ligados |
 | `toba_modules_config` | `assets/portal.js` | `[{ id, visible }]` — ordem/visibilidade dos cards do portal |
 | `toba_bank_card_config` | `assets/portal.js` | `{ type: "personalizado"\|"simples", orcamento, cofre, gastos, sobra, addGasto, privacy }` (mesclado com defaults) |
 | `toba_health_card_config` | `assets/portal.js` | Desde v1.37: `{ type: "personalizado"\|"simples", metrics: { peso, pesoMes, treinos, km, semana, kcal, minutos, saitama, gordura }, links, privacy }`. `metrics` é mesclado com os defaults de `HEALTH_CARD_METRICS` (número novo = item novo na lista, nunca renomear a `key`) |
@@ -234,12 +243,12 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 **Armadilhas específicas do Health**
 - **`metricsOrder` é salvo no banco do usuário.** Adicionar uma métrica em `DEFAULT_METRICS_ORDER` **não** faz ela aparecer para quem já tem dados. Para isso, acrescente em `normalizeHealthDb()` um merge: para cada métrica padrão cuja `key` não existe em `db.metricsOrder`, dar `push` (preservando ordem/`active` do usuário). Para remover uma métrica, filtre por `key` (como já é feito com `bmi`), mas **não apague** o valor dos `weighIns` antigos.
 - Ao salvar uma pesagem, métricas inativas (fora da tela) **mantêm o valor antigo** do registro — preserve esse comportamento.
-- **Catálogo de força** (`STRENGTH_GROUPS` / `STRENGTH_EXERCISES` em [forca.js](TobaHealth/js/forca.js)): os `id` são referência gravada.
+- **Catálogo de força** (`STRENGTH_GROUPS` / `STRENGTH_EXERCISES` em [health-metrics.js](TobaHealth/js/health-metrics.js) desde v1.40, antes em forca.js): os `id` são referência gravada.
   - `strengthRoutines` guardam **só** `exerciseId` → nunca renomeie nem remova um `id` de exercício; para "remover", esconda da UI mas mantenha no catálogo.
   - `workouts` de força guardam um **snapshot** de `name` e `group` (histórico não muda se o catálogo mudar). O `group` alimenta o futuro mapa de calor; mantenha-o gravado.
   - Pode renomear o `name` exibido; o `id` fica.
-- **Peso levantado com peso do corpo** (só cálculo, nada gravado): os campos `pushups/squats/situps` (Saitama) e os exercícios do catálogo com `bodyweight` somam `reps × peso do corpo × fração` (`BODYWEIGHT_FIELDS` em treinos.js; `bodyweight` em `STRENGTH_EXERCISES`). O peso do corpo é a pesagem mais recente até a data do treino (`getBodyWeightOn`, padrão 75 kg). `BODYWEIGHT_FIELDS` também dá o **grupo muscular** desses campos; `getWorkoutMuscleWork(workout)` devolve `[{ group, exerciseId, reps, kg }]` de qualquer treino e é a base do futuro mapa de calor. Campo novo de exercício de peso do corpo precisa entrar ali com grupo.
-- **Volume (kg levantados)** só em `getStrengthLift()` (forca.js), que aplica `exerciseSettings`: por halter (bilateral) dobra a carga, unilateral dobra as reps. Vale para todo o histórico do exercício (não é snapshot). Chip ⚖️ (`renderExerciseLoadChip`) no treino ao vivo e na página do treino abre a folha `exerciseLoadModal`.
+- **Peso levantado com peso do corpo** (só cálculo, nada gravado): os campos `pushups/squats/situps` (Saitama) e os exercícios do catálogo com `bodyweight` somam `reps × peso do corpo × fração` (`BODYWEIGHT_FIELDS` em health-metrics.js; `bodyweight` em `STRENGTH_EXERCISES`). O peso do corpo é a pesagem mais recente até a data do treino (`getBodyWeightOn`, padrão 75 kg). `BODYWEIGHT_FIELDS` também dá o **grupo muscular** desses campos; `getWorkoutMuscleWork(workout)` devolve `[{ group, exerciseId, reps, kg }]` de qualquer treino e é a base do futuro mapa de calor. Campo novo de exercício de peso do corpo precisa entrar ali com grupo.
+- **Volume (kg levantados)** só em `calcStrengthLift()` / `calcWorkoutLift()` (health-metrics.js, desde v1.40; `getStrengthLift`/`getWorkoutLift`/`getBodyWeightOn` em forca.js/treinos.js só repassam o `healthDb`), que aplica `exerciseSettings`: por halter (bilateral) dobra a carga, unilateral dobra as reps. Vale para todo o histórico do exercício (não é snapshot). Chip ⚖️ (`renderExerciseLoadChip`) no treino ao vivo e na página do treino abre a folha `exerciseLoadModal`.
 - Treinos `custom` antigos usam `sets/reps/weightKg` soltos; treinos `strength` usam `exercises[]` e deixam esses campos `null`. `getWorkoutLift()` trata os dois casos — qualquer métrica nova de treino precisa tratar os dois também.
 - **Página de um treino** (`viewWorkout`, `openWorkoutView`/`renderWorkoutView` em treinos.js, desde v1.29): só leitura; `renderWorkoutScreen()` redesenha a página aberta depois de editar e volta para o mês se o treino foi excluído.
 - **Mapa de calor** (hall.js, desde v1.30): `getMuscleHeat(workouts)` soma **repetições** (e kg) por grupo; `renderMuscleMini` (card do mês, sem toque) e `renderMuscleSection` (mês e página do treino, músculo tocável → `showMuscleHeat`). Cardio e km soltos (Saitama/personalizado) entram como reps equivalentes por km via `CARDIO_MUSCLES`/`getMuscleExtras` (desde v1.31); tipo de treino novo precisa entrar ali. O boneco é SVG à mão em `MUSCLE_SHAPES`, uma peça por id do `STRENGTH_GROUPS`; grupo novo precisa de forma ali e de frase em `MUSCLE_LAZY_LINES`.
@@ -249,7 +258,7 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 ### 3.6 Leitores "fora do dono" (precisam acompanhar mudanças de formato)
 
 - **Portal `assets/portal.js` → `obterMetricasReaisTobaBank()`** lê `TOBA_BANK_DB` direto, mas o cálculo é o **mesmo** da tela de Gastos: os dois chamam `calcBankMonthSummary()` de [TobaBank/js/bank-metrics.js](TobaBank/js/bank-metrics.js) (desde v1.21). Regra nova do painel do Gastos entra **só** em `bank-metrics.js`. Esse arquivo não pode depender de `bank-core.js` (o portal carrega ele sozinho) e só lê o banco, nunca grava.
-- **Portal → card do Health** (desde v1.37) lê `TOBA_HEALTH_DB` direto por `calcHealthSummary()` de [TobaHealth/js/health-metrics.js](TobaHealth/js/health-metrics.js) (só leitura, não depende de `health-core.js`). Treinos do mês seguem a **mesma regra** de `getWorkoutMonthStats` (treinos.js): mudou lá, mude aqui. Peso levantado fica de fora (precisa do catálogo do `forca.js`). Campo novo em pesagem/treino que o card mostre precisa de leitura defensiva ali.
+- **Portal → card do Health** (desde v1.37) lê `TOBA_HEALTH_DB` direto por `calcHealthSummary()` de [TobaHealth/js/health-metrics.js](TobaHealth/js/health-metrics.js) (só leitura, não depende de `health-core.js`). Treinos do mês seguem a **mesma regra** de `getWorkoutMonthStats` (treinos.js): mudou lá, mude aqui. Peso levantado fica de fora do card. Campo novo em pesagem/treino que o card mostre precisa de leitura defensiva ali.
 - **Backup geral do portal** (`exportAllData`/`importAllData`): formato `{ "<chave localStorage>": "<valor como STRING>" }`. Na importação, cada chave do arquivo é gravada como está (chaves ausentes no arquivo não são apagadas). A importação recusa arquivo sem nenhuma chave `TOBA_`/`toba_` ou com valor que não seja texto (backup de módulo). Não mude para guardar objetos já parseados — quebraria backups existentes.
 - **Backups por módulo** (`toba_bank_backup_*.json`, `toba_health_backup_*.json`): são o objeto do banco puro. Não misturar com o formato do backup geral.
 
@@ -271,16 +280,30 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 - [ ] Testado o backup **geral** do portal (exportar/importar).
 - [ ] Se mudou algo do Gastos: o card do Toba Bank no portal continua batendo com a tela de Gastos.
 - [ ] Se mudou pesagens/treinos: o card do Toba Health continua batendo com Pesagem e Treinos (`health-metrics.js`).
+- [ ] Se mudou treinos/pesagens: o Perfil do jogador (`computePlayer` em `toba-player.js`) continua lendo o formato (XP, kg levantado igual ao Hall).
 - [ ] Datas gravadas em `AAAA-MM-DD` local; dinheiro como `number` em reais; IDs no tipo da coleção.
 - [ ] Migração idempotente (abrir a página duas vezes dá o mesmo resultado).
 - [ ] Nenhum `alert`/`confirm`/`on*=` novo e nenhum erro no console ao carregar cada página.
+
+### 3.9 Perfil do jogador — `TOBA_PLAYER_DB` (desde v1.40)
+
+Arquivo: [assets/toba-player.js](assets/toba-player.js). Variável global `playerDb`; estado calculado em `tobaPlayerState`.
+
+- **O XP é calculado, nunca somado.** `computePlayer()` relê o `TOBA_HEALTH_DB` (direto do `localStorage`, só leitura) e devolve XP, nível, streak, recordes, conquistas e o extrato (`events`). Apagar um treino tira o XP dele; o histórico antigo já conta. Não crie "XP ganho" gravado: some regra nova em `computePlayer()`.
+- **Regras** (todas no topo do arquivo): `PLAYER_XP` (treino: 40 + 1/min até 90 + 3/série até 60 + 1 a cada 10 reps de flexão/abdominal/agachamento até 60 + 8/km até 80; teto 300 XP de treino por dia; recorde +30, até 3 por treino), `PLAYER_TIERS` (conquista 50/150/400/1000), `PLAYER_STREAK_MILESTONES` (7/30/100/365 dias, a cada streak). Nível: `playerXpToNext(n) = 60·n + 3·n²` arredondado para dezenas.
+- **Recorde pessoal** = mesma regra do `getStrengthRecords` (maior carga; empate, mais reps; 1ª vez não conta), mais maior distância e mais reps do Saitama num treino.
+- **Streak "dias + meta semanal"** (`calcPlayerStreak`): conta os dias desde o 1º treino da sequência; não quebra enquanto toda semana seg–dom fechada tiver `settings.weeklyGoal` dias com treino; a semana atual só quebra quando não dá mais para bater a meta. Mudar a meta recalcula o histórico inteiro (sem comemoração).
+- **Conquistas** (`PLAYER_ACHIEVEMENTS`): `id` gravado em `seen.achievements` → nunca troque. As de peso/distância usam o `id` de `WORKOUT_LIFT_EQUIVALENTS`/`WORKOUT_DISTANCE_DESTINATIONS` (health-metrics.js). Conquista nova = item novo com `metric(stats)` e `goal`.
+- **Recompensas** (`PLAYER_AVATARS`, `PLAYER_FRAMES`, `PLAYER_COLORS`, títulos de `PLAYER_LEVEL_TITLES` e `title` das conquistas): só visual; `equipped` guarda o `id` ("" = automático). Item bloqueado/sumido cai no automático.
+- **Comemorações**: `tobaPlayerCheck({ reason, silent })` (com espera de 200 ms) compara o calculado com `seen`: +XP, medalha nova, level up, e na 1ª vez (sem `TOBA_PLAYER_DB`) a tela de boas-vindas "você já é nível X". Depois grava o novo `seen`. Se algum banco não pôde ser lido (`state.ok === false`) ou o perfil está travado, só mostra, não comemora nem grava. Chame depois de gravar algo que vale XP (Treinos já chama em `renderWorkoutScreen`, `saveWorkout`, `registerStrengthWorkout`, fim do treino ao vivo e do Saitama). A tela escuta o evento `toba:player` para redesenhar.
+- **Backup**: o geral do portal já leva `TOBA_PLAYER_DB`; a ⚙️ do Toba-Perfil.html tem backup só do perfil (`toba_perfil_backup_*.json`, objeto puro) e "Recomeçar perfil" (apaga só `TOBA_PLAYER_DB`; XP e conquistas voltam do cálculo).
 
 ---
 
 ## 4. Service worker / PWA
 
 - [sw.js](sw.js): páginas/JS/CSS **network-first** (timeout 4 s, cai no cache); jsdelivr **cache-first**. Sem cópia no cache, só **navegação** (`request.mode === "navigate"`) cai no `index.html`; JS/CSS faltando devolvem erro (desde v1.37 — antes o HTML ia no lugar do script e a tela quebrava offline sem aviso). O network-first usa `fetch(..., { cache: "no-cache" })` de propósito: o GitHub Pages manda `max-age=600`, e sem isso o celular misturava HTML novo com JS antigo logo depois de publicar. Não tire.
-- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v10"` → `"toba-v11"`…). Sem isso, o app offline fica sem o arquivo.
+- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v11"` → `"toba-v12"`…). Sem isso, o app offline fica sem o arquivo.
 - Atualizar a versão do Chart.js exige trocar a URL nos HTML **e** no `PRECACHE`.
 - Toda página nova deve incluir `<script src="../assets/pwa-register.js"></script>` (ou `assets/...` na raiz), as metas de `color-scheme: dark` e o link do manifest, como as existentes.
 

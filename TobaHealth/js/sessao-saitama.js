@@ -345,6 +345,7 @@ function finishSaitamaLiveSession() {
   closeTobaModal("liveFinishModal");
   dropLiveSession();
   stopLiveTicker();
+  tobaPlayerCheck({ reason: "Treino do Saitama no histórico 👊" });
   openModule("viewTraining"); // o ‹ da página do treino volta pra Treinos
   openWorkoutView(workout.id);
   tobaToast("👊 Treino do Saitama no histórico!");

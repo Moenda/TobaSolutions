@@ -14,6 +14,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Toba" />
   <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="../assets/toba-player.css" />
   <link rel="stylesheet" href="css/health-base.css" />
   <link rel="stylesheet" href="css/treinos.css" />
   <link rel="stylesheet" href="css/sessao.css" />
@@ -34,6 +35,7 @@
     </header>
 
     <div id="viewTraining" class="app-view active">
+      <div id="playerStrip"></div>
       <div id="liveSessionLaunch"></div>
 
       <button type="button" class="workout-hero-launch" data-click="openModule" data-view="viewHero">
@@ -325,6 +327,8 @@
 
   <script src="../assets/toba-common.js"></script>
   <script src="js/health-core.js"></script>
+  <script src="js/health-metrics.js"></script>
+  <script src="../assets/toba-player.js"></script>
   <script src="js/hall.js"></script>
   <script src="js/forca.js"></script>
   <script src="js/sessao.js"></script>

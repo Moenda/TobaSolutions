@@ -22,101 +22,8 @@
  * funções (nunca na carga do arquivo).
  * ===================================================================== */
 
-const STRENGTH_GROUPS = [
-  { id: "peito", name: "Peito" },
-  { id: "costas", name: "Costas" },
-  { id: "ombros", name: "Ombros" },
-  { id: "biceps", name: "Bíceps" },
-  { id: "triceps", name: "Tríceps" },
-  { id: "antebraco", name: "Antebraço" },
-  { id: "quadriceps", name: "Quadríceps" },
-  { id: "posterior", name: "Posterior de coxa" },
-  { id: "gluteos", name: "Glúteos" },
-  { id: "panturrilha", name: "Panturrilha" },
-  { id: "abdomen", name: "Abdômen" },
-];
-
-const STRENGTH_EXERCISES = [
-  // Peito
-  { id: "supino-reto-barra", name: "Supino reto (barra)", group: "peito" },
-  { id: "supino-reto-halter", name: "Supino reto (halteres)", group: "peito" },
-  { id: "supino-inclinado-barra", name: "Supino inclinado (barra)", group: "peito" },
-  { id: "supino-inclinado-halter", name: "Supino inclinado (halteres)", group: "peito" },
-  { id: "supino-declinado", name: "Supino declinado", group: "peito" },
-  { id: "supino-maquina", name: "Supino na máquina", group: "peito" },
-  { id: "crucifixo-halter", name: "Crucifixo (halteres)", group: "peito" },
-  { id: "crossover", name: "Crossover (polia)", group: "peito" },
-  { id: "peck-deck", name: "Peck deck (voador)", group: "peito" },
-  { id: "flexao", name: "Flexão de braço", group: "peito", bodyweight: 0.64 },
-  // Costas
-  { id: "puxada-frente", name: "Puxada frontal (pulley)", group: "costas" },
-  { id: "puxada-triangulo", name: "Puxada com triângulo", group: "costas" },
-  { id: "barra-fixa", name: "Barra fixa", group: "costas", bodyweight: 0.95 },
-  { id: "remada-curvada", name: "Remada curvada (barra)", group: "costas" },
-  { id: "remada-baixa", name: "Remada baixa normal (polia)", group: "costas" },
-  { id: "remada-baixa-unilateral", name: "Remada baixa unilateral (polia)", group: "costas" },
-  { id: "remada-unilateral", name: "Remada unilateral (halter)", group: "costas" },
-  { id: "remada-maquina", name: "Remada na máquina", group: "costas" },
-  { id: "pulldown", name: "Pulldown (braço reto)", group: "costas" },
-  { id: "terra", name: "Levantamento terra", group: "costas" },
-  // Ombros
-  { id: "desenvolvimento-halter", name: "Desenvolvimento (halteres)", group: "ombros" },
-  { id: "desenvolvimento-barra", name: "Desenvolvimento militar (barra)", group: "ombros" },
-  { id: "desenvolvimento-maquina", name: "Desenvolvimento na máquina", group: "ombros" },
-  { id: "elevacao-lateral", name: "Elevação lateral", group: "ombros" },
-  { id: "elevacao-frontal", name: "Elevação frontal", group: "ombros" },
-  { id: "crucifixo-inverso", name: "Crucifixo inverso", group: "ombros" },
-  { id: "encolhimento", name: "Encolhimento (trapézio)", group: "ombros" },
-  { id: "face-pull", name: "Face pull", group: "ombros" },
-  // Bíceps
-  { id: "rosca-direta", name: "Rosca direta (barra)", group: "biceps" },
-  { id: "rosca-alternada", name: "Rosca alternada (halteres)", group: "biceps" },
-  { id: "rosca-martelo", name: "Rosca martelo", group: "biceps" },
-  { id: "rosca-scott", name: "Rosca Scott", group: "biceps" },
-  { id: "rosca-concentrada", name: "Rosca concentrada", group: "biceps" },
-  { id: "rosca-polia", name: "Rosca na polia", group: "biceps" },
-  // Tríceps
-  { id: "triceps-pulley-corda", name: "Tríceps pulley (corda)", group: "triceps" },
-  { id: "triceps-pulley-barra", name: "Tríceps pulley (barra)", group: "triceps" },
-  { id: "triceps-testa", name: "Tríceps testa", group: "triceps" },
-  { id: "triceps-frances", name: "Tríceps francês", group: "triceps" },
-  { id: "triceps-coice", name: "Tríceps coice", group: "triceps" },
-  { id: "mergulho", name: "Mergulho (paralelas)", group: "triceps", bodyweight: 0.9 },
-  { id: "supino-fechado", name: "Supino fechado", group: "triceps" },
-  // Antebraço
-  { id: "rosca-punho", name: "Rosca de punho (flexão)", group: "antebraco" },
-  { id: "rosca-punho-inversa", name: "Rosca de punho inversa (extensão)", group: "antebraco" },
-  { id: "rosca-inversa", name: "Rosca inversa (pegada pronada)", group: "antebraco" },
-  { id: "rosca-zottman", name: "Rosca Zottman", group: "antebraco" },
-  { id: "rolo-punho", name: "Rolo de punho", group: "antebraco" },
-  // Quadríceps
-  { id: "agachamento-livre", name: "Agachamento livre", group: "quadriceps" },
-  { id: "agachamento-corpo", name: "Agachamento (peso do corpo)", group: "quadriceps", bodyweight: 0.7 },
-  { id: "agachamento-smith", name: "Agachamento no Smith", group: "quadriceps" },
-  { id: "agachamento-hack", name: "Agachamento hack", group: "quadriceps" },
-  { id: "agachamento-bulgaro", name: "Agachamento búlgaro", group: "quadriceps" },
-  { id: "leg-press", name: "Leg press 45°", group: "quadriceps" },
-  { id: "cadeira-extensora", name: "Cadeira extensora", group: "quadriceps" },
-  { id: "afundo", name: "Afundo / passada", group: "quadriceps" },
-  // Posterior de coxa
-  { id: "mesa-flexora", name: "Mesa flexora", group: "posterior" },
-  { id: "cadeira-flexora", name: "Cadeira flexora", group: "posterior" },
-  { id: "stiff", name: "Stiff", group: "posterior" },
-  // Glúteos
-  { id: "elevacao-pelvica", name: "Elevação pélvica", group: "gluteos" },
-  { id: "cadeira-abdutora", name: "Cadeira abdutora", group: "gluteos" },
-  { id: "gluteo-polia", name: "Glúteo na polia", group: "gluteos" },
-  { id: "gluteo-maquina", name: "Glúteo na máquina (coice)", group: "gluteos" },
-  // Panturrilha
-  { id: "panturrilha-pe", name: "Panturrilha em pé", group: "panturrilha" },
-  { id: "panturrilha-sentado", name: "Panturrilha sentado", group: "panturrilha" },
-  { id: "panturrilha-leg", name: "Panturrilha no leg press", group: "panturrilha" },
-  // Abdômen
-  { id: "abdominal-crunch", name: "Abdominal (crunch)", group: "abdomen", bodyweight: 0.3 },
-  { id: "abdominal-infra", name: "Abdominal infra (elevação de pernas)", group: "abdomen", bodyweight: 0.3 },
-  { id: "abdominal-polia", name: "Abdominal na polia", group: "abdomen" },
-  { id: "abdominal-maquina", name: "Abdominal na máquina", group: "abdomen" },
-];
+// STRENGTH_GROUPS e STRENGTH_EXERCISES (o catálogo) moram em health-metrics.js:
+// o portal também usa (perfil do jogador). Os ids continuam os mesmos.
 
 function getStrengthExercise(exerciseId) {
   return STRENGTH_EXERCISES.find((exercise) => exercise.id === exerciseId);
@@ -131,8 +38,7 @@ function getStrengthGroupName(groupId) {
  * ------------------------------------------------------------------- */
 
 function getExerciseLoad(exerciseId) {
-  const saved = healthDb.exerciseSettings?.[exerciseId] || {};
-  return { perHand: saved.load === "perHand", unilateral: saved.unilateral === true };
+  return calcExerciseLoad(healthDb, exerciseId);
 }
 
 function describeExerciseLoad(exerciseId) {
@@ -146,26 +52,7 @@ function describeExerciseLoad(exerciseId) {
 // Por halter: a carga anotada é de uma mão, então dobra. Unilateral: as reps
 // são por lado, então dobram (halter + unilateral = um halter por vez: só as reps).
 function getStrengthLift(workout) {
-  const totals = { kg: 0, reps: 0, sets: 0 };
-  let bodyKg = null;
-  (workout.exercises || []).forEach((exercise) => {
-    const fraction = getStrengthExercise(exercise.exerciseId)?.bodyweight || 0;
-    if (fraction && bodyKg === null) bodyKg = getBodyWeightOn(workout.date);
-    const bodyPart = fraction ? bodyKg * fraction : 0;
-    const load = getExerciseLoad(exercise.exerciseId);
-    const loadFactor = load.perHand && !load.unilateral ? 2 : 1;
-    const repsFactor = load.unilateral ? 2 : 1;
-    (exercise.sets || []).forEach((set) => {
-      const reps = (Number(set.reps) || 0) * repsFactor;
-      const kg = (Number(set.kg) || 0) * loadFactor + bodyPart;
-      if (reps > 0) totals.sets += 1;
-      if (reps > 0 && kg > 0) {
-        totals.kg += reps * kg;
-        totals.reps += reps;
-      }
-    });
-  });
-  return totals;
+  return calcStrengthLift(workout, healthDb); // conta em health-metrics.js
 }
 
 // "3×10 · 60 kg" (séries iguais agrupadas) ou "10×60 kg / 8×62,5 kg"
@@ -552,6 +439,7 @@ function registerStrengthWorkout() {
   saveHealthDb();
   hideStrengthPanel();
   closeWorkoutModal();
+  if (isNew) tobaPlayerCheck({ reason: "Treino de força registrado 💪" });
   renderWorkoutScreen();
   if (isNew) openStrengthSummary(workout.id, "viewTraining");
 }

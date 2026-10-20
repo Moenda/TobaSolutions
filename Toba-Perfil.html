@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
+  <title>Toba | Perfil do jogador 🎮</title>
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="assets/toba-common.css" />
+  <link rel="stylesheet" href="assets/toba-player.css" />
+  <link rel="stylesheet" href="assets/perfil.css" />
+</head>
+
+<body>
+  <main class="container">
+    <header class="toba-header">
+      <a class="toba-back" href="index.html" aria-label="Voltar para o Toba Solutions">‹</a>
+      <a class="toba-titles" href="index.html">
+        <span class="toba-app">⚡ Toba</span>
+        <span class="toba-page">🎮 Perfil do jogador</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
+      </div>
+    </header>
+
+    <div class="hint-box" id="pfLocked" hidden>
+      🛡️ Não consegui ler o perfil salvo, então nada novo é gravado nele. O XP continua certo (vem dos treinos). Restaure um backup em ⚙️ → Dados &amp; Backup, ou use "Recomeçar perfil" lá.
+    </div>
+
+    <section class="card pf-hero" id="pfHero"></section>
+    <div class="toba-stats" id="pfStats"></div>
+
+    <div class="section-title">🔥 Streak</div>
+    <div class="card" id="pfStreak"></div>
+
+    <div class="section-title">🏅 Conquistas <span class="pf-count" id="pfAchCount"></span></div>
+    <div id="pfAchievements"></div>
+
+    <div class="section-title">🎁 Recompensas</div>
+    <div class="card">
+      <div class="tab-nav pf-tabs" role="tablist">
+        <button type="button" class="tab-btn active" data-click="showRewardTab" data-tab="title">Título</button>
+        <button type="button" class="tab-btn" data-click="showRewardTab" data-tab="avatar">Avatar</button>
+        <button type="button" class="tab-btn" data-click="showRewardTab" data-tab="frame">Moldura</button>
+        <button type="button" class="tab-btn" data-click="showRewardTab" data-tab="color">Cor</button>
+      </div>
+      <div id="pfRewards"></div>
+    </div>
+
+    <details class="card pf-details">
+      <summary>📜 De onde veio seu XP <span class="pf-chevron" aria-hidden="true">›</span></summary>
+      <div id="pfLedger"></div>
+    </details>
+
+    <details class="card pf-details">
+      <summary>📈 Tabela de níveis <span class="pf-chevron" aria-hidden="true">›</span></summary>
+      <div id="pfLevels"></div>
+    </details>
+  </main>
+
+  <!-- Itens só desta página dentro da ⚙️ -->
+  <div id="tobaSettingsExtra" hidden>
+    <div class="toba-settings-section">
+      <div class="toba-settings-label">🎮 Jogo</div>
+      <div class="pf-goal-row">
+        <span class="pf-goal-text">
+          <strong>📅 Meta do streak</strong>
+          <span>Dias de treino por semana para o 🔥 não apagar</span>
+        </span>
+        <span class="pf-goal-ctrl">
+          <button type="button" class="round-btn" data-click="changeWeeklyGoal" data-step="-1" aria-label="Diminuir meta">−</button>
+          <strong id="pfGoalValue">3</strong>
+          <button type="button" class="round-btn" data-click="changeWeeklyGoal" data-step="1" aria-label="Aumentar meta">+</button>
+        </span>
+      </div>
+      <label class="check-row"><span>🔊 Som nas comemorações</span><input type="checkbox" id="pfSound" data-change="updatePlayerPrefs" /></label>
+      <label class="check-row"><span>📳 Vibrar nas comemorações</span><input type="checkbox" id="pfVibrate" data-change="updatePlayerPrefs" /></label>
+      <button type="button" class="btn btn-secondary pf-test-btn" data-click="testLevelUp">🎉 Ver a tela de level up</button>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="achModal" role="dialog" aria-modal="true" aria-labelledby="achModalTitle">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="achModalTitle">🏅 Conquista</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="achModalContent"></div>
+    </div>
+  </div>
+
+  <script src="assets/toba-common.js"></script>
+  <script src="TobaHealth/js/health-metrics.js"></script>
+  <script src="assets/toba-player.js"></script>
+  <script src="assets/perfil.js"></script>
+  <script src="assets/pwa-register.js"></script>
+</body>
+
+</html>

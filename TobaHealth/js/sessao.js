@@ -1143,6 +1143,7 @@ function finishLiveSession() {
   closeTobaModal("liveFinishModal");
   dropLiveSession();
   stopLiveTicker();
+  tobaPlayerCheck({ reason: "Treino finalizado 🏁" });
   openStrengthSummary(workout.id, "viewTraining");
 }
 
