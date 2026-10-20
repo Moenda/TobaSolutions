@@ -16,9 +16,9 @@ const ROUTINE_ALERT_MAX = 300; // alguns Androids limitam ~500 alarmes por app
 
 const ROUTINE_PAGE_URL = (() => {
   try {
-    return new URL("../TobaRoutine-Index.html", document.currentScript.src).href;
+    return new URL("../TobaRoutine-Rotina.html", document.currentScript.src).href;
   } catch (err) {
-    return "TobaRoutine/TobaRoutine-Index.html";
+    return "TobaRoutine/TobaRoutine-Rotina.html";
   }
 })();
 
@@ -107,10 +107,12 @@ function buildRoutineAlerts(data, now = Date.now()) {
     tasks.forEach((task) => {
       if (!isRoutineTaskDue(task, day) || done.has(`${task.id}|${day}`)) return;
       const base = new Date(`${day}T${task.time}:00`).getTime();
+      // Tarefa que não passa pro dia seguinte não cobra depois da meia-noite (já expirou)
+      const dayEnd = routineCarriesOver(task) ? Infinity : new Date(`${routineAddDays(day, 1)}T00:00:00`).getTime();
       const steps = task.nag === false ? ROUTINE_NAG_STEPS.slice(0, 1) : ROUTINE_NAG_STEPS;
       steps.forEach((minutes, level) => {
         const at = base + minutes * 60000;
-        if (at <= now) return;
+        if (at <= now || at >= dayEnd) return;
         const text = routineNagText(task, level);
         alerts.push({
           key: `${task.id}|${day}|${level}`,

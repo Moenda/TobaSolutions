@@ -13,146 +13,110 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Toba" />
+  <script>
+    // Até a v1.42 esta página era a rotina. Notificação/atalho antigo (?task=...) vai direto pra ela.
+    if (location.search) location.replace(`TobaRoutine-Rotina.html${location.search}`);
+  </script>
   <link rel="stylesheet" href="../assets/toba-common.css" />
-  <link rel="stylesheet" href="../assets/toba-player.css" />
   <link rel="stylesheet" href="css/routine-base.css" />
   <title>Toba Routine ⚡</title>
 </head>
 
 <body>
-  <div class="container">
+  <main class="container">
     <header class="toba-header">
-      <a class="toba-back" href="../index.html" data-label="Voltar para o Toba Solutions" aria-label="Voltar para o Toba Solutions">‹</a>
+      <a class="toba-back" href="../index.html" aria-label="Voltar para o Toba Solutions">‹</a>
       <a class="toba-titles" href="../index.html">
         <span class="toba-app">⚡ Toba Routine</span>
-        <span class="toba-page">✅ Hoje</span>
+        <span class="toba-page">Hub</span>
       </a>
       <div class="toba-header-actions">
-        <button type="button" class="toba-add-btn" data-click="newTask">+ Tarefa</button>
         <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
       </div>
     </header>
 
-    <div class="tab-nav rt-tabs" role="tablist">
-      <button type="button" class="tab-btn active" data-click="showRoutineView" data-view="viewToday">✅ Hoje</button>
-      <button type="button" class="tab-btn" data-click="showRoutineView" data-view="viewTasks">📋 Tarefas</button>
-      <button type="button" class="tab-btn" data-click="showRoutineView" data-view="viewHistory">📜 Histórico</button>
-    </div>
+    <div class="toba-kicker">Qual vai ser hoje, parça?</div>
+    <nav class="toba-hub-list" aria-label="Módulos do Toba Routine">
+      <a class="toba-hub-card" href="TobaRoutine-Rotina.html">
+        <span class="toba-hub-icon">🔁</span>
+        <span class="toba-hub-text">
+          <span class="toba-hub-title">Rotina</span>
+          <span class="toba-hub-desc" id="hubRoutineDesc">Tarefas de todo dia, semana e mês com XP.</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </a>
+      <a class="toba-hub-card" href="TobaRoutine-Task.html">
+        <span class="toba-hub-icon">🛠️</span>
+        <span class="toba-hub-text">
+          <span class="toba-hub-title">Task</span>
+          <span class="toba-hub-desc" id="hubTaskDesc">Pintar o quarto, consertar a privada... o Toba acha o dia.</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </a>
+    </nav>
 
-    <div id="viewToday" class="app-view active">
-      <section class="card rt-hero" id="rtHero"></section>
-      <div id="rtNotice"></div>
-      <div class="section-title" id="rtTodayTitle">📅 Hoje</div>
-      <div class="rt-list" id="rtTodayList"></div>
-      <div id="rtOverdue"></div>
-      <div id="rtSituational"></div>
-    </div>
-
-    <div id="viewTasks" class="app-view">
-      <div id="rtTaskList"></div>
-      <button type="button" class="btn btn-secondary rt-wide-btn" data-click="openSuggestions">💡 Ver sugestões de tarefas</button>
-    </div>
-
-    <div id="viewHistory" class="app-view">
-      <div id="rtHistory"></div>
-    </div>
-  </div>
+    <div class="section-title">🆓 Seu tempo livre</div>
+    <button type="button" class="card rt-week-card" data-click="openDayPlan" aria-label="Abrir Meu dia fixo">
+      <div class="rt-week-free" id="hubWeekFree"></div>
+      <span class="rt-help" id="hubWeekHelp"></span>
+    </button>
+  </main>
 
   <!-- Itens só desta página dentro da ⚙️ -->
   <div id="tobaSettingsExtra" hidden>
     <div class="toba-settings-section">
-      <div class="toba-settings-label">🔔 Avisos e cobranças</div>
-      <p class="toba-sheet-text" id="rtNotifyHelp"></p>
-      <button type="button" class="btn btn-secondary rt-wide-btn" data-click="enableRoutineNotify" id="rtNotifyBtn">🔔 Permitir notificações</button>
-    </div>
-  </div>
-
-  <!-- Criar / editar tarefa -->
-  <div class="toba-modal" id="taskSheet" role="dialog" aria-modal="true" aria-labelledby="taskSheetTitle">
-    <div class="toba-sheet">
-      <div class="toba-sheet-header">
-        <h3 id="taskSheetTitle">➕ Nova tarefa</h3>
-        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
-      </div>
-      <form data-submit="saveTask">
-        <input type="hidden" id="taskId" />
-        <div class="rt-name-row">
-          <div class="form-group rt-emoji-group">
-            <label for="taskEmoji">Emoji</label>
-            <input type="text" id="taskEmoji" class="form-control rt-emoji-input" maxlength="8" autocomplete="off" />
-          </div>
-          <div class="form-group rt-name-group">
-            <label for="taskName">Tarefa</label>
-            <input type="text" id="taskName" class="form-control" maxlength="60" placeholder="Ex: Lavar o banheiro" autocomplete="off" />
-          </div>
-        </div>
-        <div class="rt-emoji-picks" id="taskEmojiPicks"></div>
-
-        <div class="form-group">
-          <label>Quando</label>
-          <div class="rt-segment" id="taskRecurrence">
-            <label><input type="radio" name="taskRec" value="daily" data-change="updateTaskForm" /><span>Todo dia</span></label>
-            <label><input type="radio" name="taskRec" value="weekly" data-change="updateTaskForm" /><span>Semana</span></label>
-            <label><input type="radio" name="taskRec" value="monthly" data-change="updateTaskForm" /><span>Mês</span></label>
-            <label><input type="radio" name="taskRec" value="situational" data-change="updateTaskForm" /><span>Quando der</span></label>
-          </div>
-        </div>
-        <div class="form-group" id="taskDaysGroup">
-          <label>Dias da semana</label>
-          <div class="toba-days" id="taskDays"></div>
-        </div>
-        <div class="form-group" id="taskMonthGroup">
-          <label for="taskMonthDay">Dia do mês</label>
-          <input type="number" id="taskMonthDay" class="form-control" min="1" max="31" inputmode="numeric" />
-          <span class="rt-help">Dia 31 em mês curto cai no último dia.</span>
-        </div>
-        <p class="rt-help" id="taskSituationalHelp">Sem agenda: aparece em "Quando acontecer" e você marca quando fizer (vale XP até 3× por dia).</p>
-
-        <div class="form-group" id="taskTimeGroup">
-          <label for="taskTime">Horário (opcional)</label>
-          <input type="time" id="taskTime" class="form-control" />
-        </div>
-        <label class="check-row" id="taskNagRow"><span>😈 Cobrar se eu não fizer (+30 min e +2 h)</span><input type="checkbox" id="taskNag" /></label>
-
-        <div class="form-group">
-          <label>Dificuldade</label>
-          <div class="rt-diff" id="taskDifficulty"></div>
-        </div>
-
-        <button type="button" class="btn btn-secondary rt-wide-btn" id="taskCalendarBtn" data-click="addTaskToCalendar" hidden>📅 Pôr na agenda do celular</button>
-
-        <div class="toba-sheet-footer">
-          <div class="btn-row">
-            <button type="button" class="btn btn-danger btn-grow-1" id="deleteTaskBtn" data-click="deleteTask" hidden>🗑️ Apagar</button>
-            <button type="submit" class="btn btn-primary btn-grow-2">Salvar</button>
-          </div>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Sugestões (1ª abertura e pela aba Tarefas) -->
-  <div class="toba-modal" id="suggestSheet" role="dialog" aria-modal="true" aria-labelledby="suggestSheetTitle">
-    <div class="toba-sheet">
-      <div class="toba-sheet-header">
-        <h3 id="suggestSheetTitle">💡 Bora montar a rotina?</h3>
-        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
-      </div>
-      <p class="toba-sheet-text">Marque as que fazem sentido. Dá para editar horário, dias e dificuldade depois.</p>
-      <div class="rt-suggest-list" id="suggestList"></div>
-      <div class="toba-sheet-footer">
-        <button type="button" class="btn btn-primary" data-click="addSuggestions">Adicionar as marcadas</button>
-      </div>
+      <div class="toba-settings-label">🕰️ Seu dia</div>
+      <button type="button" class="toba-menu-btn" data-click="openDayPlan">
+        <span class="toba-menu-icon">🕰️</span>
+        <span class="toba-menu-text">
+          <span class="toba-menu-title">Meu dia fixo</span>
+          <span class="toba-menu-desc">Sono, trabalho, transporte e o que mais tomar tempo</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </button>
     </div>
   </div>
 
   <script src="../assets/toba-common.js"></script>
   <script src="js/routine-metrics.js"></script>
   <script src="js/routine-core.js"></script>
-  <script src="../TobaHealth/js/health-metrics.js"></script>
-  <script src="../assets/toba-player.js"></script>
-  <script src="js/routine-alerts.js"></script>
-  <script src="js/routine.js"></script>
+  <script src="js/routine-plan.js"></script>
+  <script>
+    // O Hub só mostra um resumo; quem grava é a ⚙️ (backup e Meu dia fixo).
+    function renderRoutineHub() {
+      const today = toIsoDate();
+      const summary = calcRoutineToday(routineDb, today);
+      document.getElementById("hubRoutineDesc").textContent = summary.total
+        ? `Hoje: ${summary.done}/${summary.total} feitas${summary.overdue ? ` · ⏰ ${summary.overdue} atrasadas` : ""}.`
+        : "Tarefas de todo dia, semana e mês com XP.";
+      const oneoffs = (routineDb.oneoffs || []).filter((o) => !o.archivedAt && !o.doneAt);
+      const queue = oneoffs.filter((o) => routineOneoffStatus(o, today).toPlan > 0).length;
+      const todayCount = oneoffs.filter((o) => o.sessions.some((s) => s.date === today && !s.doneAt)).length;
+      document.getElementById("hubTaskDesc").textContent = oneoffs.length
+        ? [todayCount ? `🎯 ${todayCount} pra hoje` : "", queue ? `📥 ${queue} na fila` : "", `${oneoffs.length} em aberto`].filter(Boolean).join(" · ")
+        : "Pintar o quarto, consertar a privada... o Toba acha o dia.";
+      const monday = routineAddDays(today, -((new Date().getDay() + 6) % 7));
+      document.getElementById("hubWeekFree").innerHTML = TOBA_WEEK_DAYS.map(([, label], i) => {
+        const day = routineAddDays(monday, i);
+        const load = calcRoutineDayLoad(routineDb, day, { now: new Date() });
+        const past = day < today;
+        return `<div class="rt-free-day${day === today ? " is-today" : ""}${past ? " is-past" : ""}"><span>${label}</span><strong>${past ? "—" : routineFormatMinutes(load.free)}</strong></div>`;
+      }).join("");
+      document.getElementById("hubWeekHelp").textContent = routineDb.dayPlan.configured
+        ? "Livre depois do dia fixo, da rotina, das tasks e do respiro. Toque pra ajustar."
+        : "⚠️ Tá no chute (9h–18h, dorme 23h30). Toque e conta como é o seu dia.";
+    }
+    function onRoutinePlanChanged() {
+      renderRoutineHub();
+    }
+    function onRoutineDataReplaced() {
+      renderRoutineHub();
+    }
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") renderRoutineHub();
+    });
+    renderRoutineHub();
+  </script>
   <script src="../assets/pwa-register.js"></script>
 </body>
 

@@ -186,6 +186,10 @@ function buildPlayerAchievements() {
     { id: "rt-seq100", cat: "rotina", tier: "lenda", icon: "🛡️", name: "Hábito de vibranium", desc: "100 vezes seguidas. Nem o Thanos te para.", hint: "Faça 100 vezes seguidas a mesma tarefa.", metric: (s) => s.routineBestSeq, goal: 100, title: "🛡️ Inabalável" },
     { id: "rt-perfeito", cat: "rotina", tier: "prata", icon: "✨", name: "Dia perfeito", desc: "Todas as tarefas do dia feitas no dia.", hint: "Faça todas as tarefas de um dia (mínimo 2) no próprio dia.", metric: (s) => s.routinePerfect, goal: 1 },
     { id: "rt-perfeito7", cat: "rotina", tier: "ouro", icon: "🌟", name: "7 dias perfeitos", desc: "Sete dias com tudo feito. Quem é você e o que fez com o preguiçoso?", hint: "Tenha 7 dias perfeitos.", metric: (s) => s.routinePerfect, goal: 7 },
+    { id: "tk-1", cat: "rotina", tier: "bronze", icon: "🛠️", name: "Resolvedor", desc: "Primeira task terminada. Saiu do 'um dia eu faço'.", hint: "Termine uma task no Toba Routine.", metric: (s) => s.routineOneoffs, goal: 1 },
+    { id: "tk-10", cat: "rotina", tier: "prata", icon: "🧰", name: "Faz-tudo", desc: "10 tasks terminadas. O marido de aluguel tá com medo da concorrência.", hint: "Termine 10 tasks.", metric: (s) => s.routineOneoffs, goal: 10 },
+    { id: "tk-grande", cat: "rotina", tier: "prata", icon: "🧱", name: "Pedreiro de fim de semana", desc: "Terminou uma task de 4 horas ou mais. Merece uma cerveja.", hint: "Termine uma task de 4 h ou mais.", metric: (s) => s.routineBigOneoff, goal: 1 },
+    { id: "tk-50", cat: "rotina", tier: "ouro", icon: "🏗️", name: "Empreiteiro", desc: "50 tasks terminadas. Já pode abrir CNPJ.", hint: "Termine 50 tasks.", metric: (s) => s.routineOneoffs, goal: 50, title: "🏗️ Empreiteiro" },
   );
   return list;
 }
@@ -520,6 +524,7 @@ function computePlayer(options = {}) {
     carecaDay: 0, carecaFull: 0, groups: 0, monthGroups: 0, records: 0,
     weekend: 0, types: 0, weighIns: 0, streakBest: 0,
     routineTasks: 0, routineHard: 0, routineBestSeq: 0, routineSleepSeq: 0, routinePerfect: 0,
+    routineOneoffs: 0, routineBigOneoff: 0,
   };
   const checkAchievements = (date) => {
     PLAYER_ACHIEVEMENTS.forEach((a) => {

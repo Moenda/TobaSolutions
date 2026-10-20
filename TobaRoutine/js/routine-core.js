@@ -11,11 +11,25 @@
  *                              days?: ["MO","WE"], monthDay?: 1-31 },
  *                time: "HH:MM" | "", difficulty: "easy"|"medium"|"hard",
  *                nag: bool,                 // cobrar de novo (+30 min, +2 h)
+ *                carryOver: bool,           // não fez no dia: vira atrasada (true) ou expira (false)
  *                createdAt: "AAAA-MM-DD",
  *                archivedAt?: "AAAA-MM-DD" } ], // "apagada": some da tela, histórico fica
  *     log: [ { id, taskId, date: "AAAA-MM-DD" (dia da tarefa), doneAt: ms,
- *              difficulty (cópia na hora de marcar) } ]
+ *              difficulty (cópia na hora de marcar) } ],
+ *     // desde v1.42 (módulo Task e Meu dia fixo):
+ *     dayPlan: { configured: bool, breathing: minutos de respiro por dia,
+ *                blocks: [ { id, kind: "sleep"|"work"|"commute"|"custom", name, emoji,
+ *                            days: ["MO".."SU"], start: "HH:MM", end: "HH:MM",
+ *                            minutes? (só commute: ida + volta) } ] },
+ *     oneoffs: [ { id: "o-<ts>-<rand4>", name, emoji, minutes (duração total),
+ *                  split: bool (dá pra quebrar), chunk: minutos por sessão,
+ *                  heavy: bool, deadline: "AAAA-MM-DD" | "", createdAt,
+ *                  doneAt?: ms (terminou), archivedAt?: "AAAA-MM-DD",
+ *                  sessions: [ { id: "s-<ts>-<rand4>", date: "AAAA-MM-DD",
+ *                                minutes, doneAt?: ms } ] } ]
  *   }
+ *   tasks[].minutes? (desde v1.42): quanto tempo a tarefa ocupa do dia;
+ *   sem ele vale o chute pela dificuldade (ROUTINE_DEFAULT_MINUTES).
  * - O XP sai do log (routine-metrics.js); nada de XP gravado aqui.
  * - Carregue DEPOIS de routine-metrics.js (usa ROUTINE_DIFFICULTIES).
  * ===================================================================== */
@@ -26,7 +40,7 @@ const ROUTINE_BACKUP_KEY = "TOBA_ROUTINE_DB_AUTO_BACKUP";
 let isRoutineDbLoaded = false;
 
 function createEmptyRoutineDb() {
-  return { version: 1, seeded: false, tasks: [], log: [] };
+  return { version: 1, seeded: false, tasks: [], log: [], dayPlan: { configured: false, breathing: 90, blocks: routineDefaultBlocks() }, oneoffs: [] };
 }
 
 // "Migração": todo campo novo ganha default AQUI (load e import passam por ela).
@@ -46,8 +60,16 @@ function normalizeRoutineDb(db) {
     task.time = /^\d{2}:\d{2}$/.test(String(task.time || "")) ? task.time : "";
     if (!ROUTINE_DIFFICULTIES[task.difficulty]) task.difficulty = "easy";
     if (task.nag === undefined) task.nag = true;
+    task.carryOver = task.carryOver !== false; // desde v1.42; as antigas continuam passando pro dia seguinte
     if (!routineIsIso(task.createdAt)) task.createdAt = toIsoDate();
+    if (task.minutes !== undefined) {
+      const minutes = Math.round(Number(task.minutes) || 0);
+      if (minutes > 0) task.minutes = Math.min(1440, minutes);
+      else delete task.minutes; // sem duração = chute pela dificuldade
+    }
   });
+  normalizeRoutineDayPlan(db);
+  normalizeRoutineOneoffs(db);
   db.log = Array.isArray(db.log) ? db.log.filter((e) => e && typeof e === "object" && e.taskId && routineIsIso(e.date)) : [];
   db.log.forEach((entry) => {
     entry.taskId = String(entry.taskId);
@@ -56,6 +78,52 @@ function normalizeRoutineDb(db) {
     if (!ROUTINE_DIFFICULTIES[entry.difficulty]) entry.difficulty = "easy";
   });
   return db;
+}
+
+const ROUTINE_BLOCK_KINDS = ["sleep", "work", "commute", "custom"];
+
+function normalizeRoutineDayPlan(db) {
+  const plan = db.dayPlan && typeof db.dayPlan === "object" && !Array.isArray(db.dayPlan) ? db.dayPlan : {};
+  plan.configured = plan.configured === true;
+  plan.breathing = Number.isFinite(Number(plan.breathing)) ? Math.min(600, Math.max(0, Math.round(Number(plan.breathing)))) : 90;
+  plan.blocks = Array.isArray(plan.blocks) ? plan.blocks.filter((b) => b && typeof b === "object") : routineDefaultBlocks();
+  plan.blocks.forEach((block, i) => {
+    block.id = String(block.id || `b-${Date.now()}-${i}`);
+    if (!ROUTINE_BLOCK_KINDS.includes(block.kind)) block.kind = "custom";
+    block.name = String(block.name || "Bloco");
+    block.emoji = String(block.emoji || "📌");
+    block.days = Array.isArray(block.days) ? block.days.filter((d) => ROUTINE_WEEK_CODES.includes(d)) : [];
+    if (block.kind === "commute") {
+      block.minutes = Math.min(600, Math.max(0, Math.round(Number(block.minutes) || 0)));
+    } else {
+      if (routineTimeToMin(block.start) === null) block.start = "09:00";
+      if (routineTimeToMin(block.end) === null) block.end = "10:00";
+    }
+  });
+  db.dayPlan = plan;
+}
+
+function normalizeRoutineOneoffs(db) {
+  db.oneoffs = Array.isArray(db.oneoffs) ? db.oneoffs.filter((o) => o && typeof o === "object" && o.id) : [];
+  db.oneoffs.forEach((o) => {
+    o.id = String(o.id);
+    o.name = String(o.name || "Task");
+    o.emoji = String(o.emoji || "🛠️");
+    o.minutes = Math.min(100 * 60, Math.max(15, Math.round(Number(o.minutes) || 60)));
+    o.split = o.split === true;
+    o.chunk = Math.min(480, Math.max(30, Math.round(Number(o.chunk) || 60)));
+    o.heavy = o.heavy === true;
+    o.deadline = routineIsIso(o.deadline) ? o.deadline : "";
+    if (!routineIsIso(o.createdAt)) o.createdAt = toIsoDate();
+    if (o.doneAt !== undefined && !Number(o.doneAt)) delete o.doneAt;
+    if (o.archivedAt !== undefined && !routineIsIso(o.archivedAt)) delete o.archivedAt;
+    o.sessions = Array.isArray(o.sessions) ? o.sessions.filter((s) => s && typeof s === "object" && routineIsIso(s.date)) : [];
+    o.sessions.forEach((s, i) => {
+      s.id = String(s.id || `s-${s.date}-${i}`);
+      s.minutes = Math.max(5, Math.round(Number(s.minutes) || 60));
+      if (s.doneAt !== undefined && !Number(s.doneAt)) delete s.doneAt;
+    });
+  });
 }
 
 function loadRoutineDb() {

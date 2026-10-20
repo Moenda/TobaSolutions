@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="icon" href="../icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="../assets/toba-player.css" />
+  <link rel="stylesheet" href="css/routine-base.css" />
+  <title>Toba Routine ⚡ Task</title>
+</head>
+
+<body>
+  <div class="container">
+    <header class="toba-header">
+      <a class="toba-back" href="TobaRoutine-Index.html" data-label="Voltar para o hub do Routine" aria-label="Voltar para o hub do Routine">‹</a>
+      <a class="toba-titles" href="TobaRoutine-Index.html">
+        <span class="toba-app">⚡ Toba Routine</span>
+        <span class="toba-page">🛠️ Task</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-add-btn" data-click="newOneoff">+ Task</button>
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
+      </div>
+    </header>
+
+    <section class="card rt-hero" id="tkHero"></section>
+    <div id="tkNotice"></div>
+    <div id="tkPlanned"></div>
+    <div id="tkQueue"></div>
+    <div id="tkDone"></div>
+  </div>
+
+  <!-- Itens só desta página dentro da ⚙️ -->
+  <div id="tobaSettingsExtra" hidden>
+    <div class="toba-settings-section">
+      <div class="toba-settings-label">🕰️ Seu dia</div>
+      <button type="button" class="toba-menu-btn" data-click="openDayPlan">
+        <span class="toba-menu-icon">🕰️</span>
+        <span class="toba-menu-text">
+          <span class="toba-menu-title">Meu dia fixo</span>
+          <span class="toba-menu-desc">Sono, trabalho, transporte e o que mais tomar tempo</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Criar / editar task -->
+  <div class="toba-modal" id="oneoffSheet" role="dialog" aria-modal="true" aria-labelledby="oneoffSheetTitle">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="oneoffSheetTitle">➕ Nova task</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form data-submit="saveOneoff">
+        <input type="hidden" id="oneoffId" />
+        <div class="rt-name-row">
+          <div class="form-group rt-emoji-group">
+            <label for="oneoffEmoji">Emoji</label>
+            <input type="text" id="oneoffEmoji" class="form-control rt-emoji-input" maxlength="8" autocomplete="off" />
+          </div>
+          <div class="form-group rt-name-group">
+            <label for="oneoffName">Task</label>
+            <input type="text" id="oneoffName" class="form-control" maxlength="60" placeholder="Ex: Pintar o quarto" autocomplete="off" data-input="guessOneoff" />
+          </div>
+        </div>
+        <div class="rt-emoji-picks" id="oneoffEmojiPicks"></div>
+
+        <div class="form-group">
+          <label>⏱️ Quanto tempo leva (no total)</label>
+          <div class="rt-time-row">
+            <select id="oneoffHours" class="form-control" data-change="touchOneoffTime" aria-label="Horas"></select>
+            <select id="oneoffMins" class="form-control" data-change="touchOneoffTime" aria-label="Minutos"></select>
+          </div>
+          <span class="rt-help" id="oneoffGuess"></span>
+        </div>
+
+        <label class="check-row"><span>🍕 Dá pra fazer em pedaços (ex: ler um livro)</span><input type="checkbox" id="oneoffSplit" data-change="updateOneoffForm" /></label>
+        <div class="form-group" id="oneoffChunkGroup">
+          <label for="oneoffChunk">Pedaço num dia de trabalho</label>
+          <select id="oneoffChunk" class="form-control"></select>
+          <span class="rt-help">Em folga e fim de semana o Toba deixa até 3× isso.</span>
+        </div>
+        <label class="check-row"><span>🏋️ É pesada (melhor em dia de folga)</span><input type="checkbox" id="oneoffHeavy" /></label>
+        <div class="form-group">
+          <label for="oneoffDeadline">📌 Prazo (opcional)</label>
+          <input type="date" id="oneoffDeadline" class="form-control" />
+        </div>
+
+        <div class="toba-sheet-footer">
+          <div class="btn-row">
+            <button type="button" class="btn btn-danger btn-grow-1" id="deleteOneoffBtn" data-click="deleteOneoff" hidden>🗑️ Apagar</button>
+            <button type="submit" class="btn btn-primary btn-grow-2" id="saveOneoffBtn">Salvar</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Detalhe da task -->
+  <div class="toba-modal" id="oneoffDetail" role="dialog" aria-modal="true" aria-labelledby="oneoffDetailTitle">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="oneoffDetailTitle">🛠️ Task</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="oneoffDetailBody"></div>
+      <div class="toba-sheet-footer">
+        <div class="btn-row">
+          <button type="button" class="btn btn-secondary btn-grow-1" data-click="editOneoffFromDetail">✏️ Editar</button>
+          <button type="button" class="btn btn-primary btn-grow-2" id="detailSuggestBtn" data-click="suggestFromDetail">🔮 Toba, qual dia?</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sugestão do Toba -->
+  <div class="toba-modal" id="oneoffSuggest" role="dialog" aria-modal="true" aria-labelledby="oneoffSuggestTitle">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="oneoffSuggestTitle">🔮 O Toba matutou</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="oneoffSuggestBody"></div>
+      <div class="toba-sheet-footer" id="oneoffSuggestFooter"></div>
+    </div>
+  </div>
+
+  <script src="../assets/toba-common.js"></script>
+  <script src="js/routine-metrics.js"></script>
+  <script src="js/routine-core.js"></script>
+  <script src="../TobaHealth/js/health-metrics.js"></script>
+  <script src="../assets/toba-player.js"></script>
+  <script src="js/routine-alerts.js"></script>
+  <script src="js/routine-plan.js"></script>
+  <script src="js/task.js"></script>
+  <script src="../assets/pwa-register.js"></script>
+</body>
+
+</html>

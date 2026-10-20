@@ -465,6 +465,20 @@
   margin-bottom: 0.9rem;
 }
 
+#taskCarryRow {
+  margin-bottom: 0;
+}
+
+#taskCarryRow[hidden] + .rt-carry-help {
+  display: none;
+}
+
+/* Amanhã: só pra ver, não marca */
+.rt-task.is-tomorrow {
+  opacity: 0.75;
+  border-style: dashed;
+}
+
 /* Sugestões */
 .rt-suggest-list {
   display: flex;
@@ -491,4 +505,196 @@
 
 .rt-suggest.is-have {
   opacity: 0.5;
+}
+
+/* ---------------------------------------------------------------------
+ * Hub, Meu dia fixo e módulo Task (desde v1.42)
+ * ------------------------------------------------------------------- */
+.rt-week-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.rt-week-free {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.rt-free-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0.45rem 0.1rem;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  font-size: 0.68rem;
+  color: var(--muted);
+  min-width: 0;
+}
+
+.card .rt-free-day {
+  background: var(--surface);
+}
+
+.rt-free-day strong {
+  color: var(--text);
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+.rt-free-day.is-today {
+  border-color: var(--gold-2);
+}
+
+.rt-free-day.is-past {
+  opacity: 0.45;
+}
+
+.rt-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 0.6rem;
+}
+
+.rt-block-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rt-block-head .form-control {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.rt-block-head .rt-emoji-input {
+  flex: 0 0 52px;
+}
+
+.rt-block-total {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gold-2);
+  white-space: nowrap;
+}
+
+.rt-time-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.rt-time-row .form-group {
+  margin-bottom: 0;
+}
+
+.rt-breath-group {
+  margin-top: 0.9rem;
+}
+
+.rt-hero-line {
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.rt-title-hint {
+  margin-left: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.rt-progress {
+  height: 8px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  overflow: hidden;
+  margin: 0.4rem 0;
+}
+
+.rt-progress span {
+  display: block;
+  height: 100%;
+  background: var(--green);
+  border-radius: inherit;
+  transition: width 0.4s ease;
+}
+
+.rt-session-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rt-session-row .rt-task {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.rt-oracle {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0.85rem 0.9rem;
+  border-radius: var(--radius);
+  border: 1px solid rgba(227, 179, 65, 0.45);
+  background: radial-gradient(120% 120% at 0% 0%, rgba(227, 179, 65, 0.16), transparent 60%), var(--surface-2);
+  font-size: 0.78rem;
+  color: var(--text-2);
+  margin-bottom: 0.6rem;
+}
+
+.rt-oracle strong {
+  color: var(--gold-2);
+  font-size: 0.95rem;
+  line-height: 1.3;
+  font-weight: 900;
+}
+
+.rt-tag {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 99px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  vertical-align: middle;
+  border: 1px solid currentColor;
+}
+
+.rt-tag.is-green {
+  color: var(--green);
+}
+
+.rt-tag.is-gold {
+  color: var(--gold-2);
+}
+
+.rt-tag.is-red {
+  color: var(--red);
+}
+
+.rt-suggest-opt .rt-task-body {
+  gap: 2px;
+}
+
+.rt-task.is-oneoff {
+  border-left: 3px solid var(--gold-2);
+}
+
+a.rt-notice-btn {
+  display: block;
+  color: inherit;
+  text-decoration: none;
 }

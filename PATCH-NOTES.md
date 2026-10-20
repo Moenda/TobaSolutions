@@ -635,3 +635,72 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
   - Reiniciar o celular: os avisos continuam agendados.
 
 **Commit sugerido:** `v1.41 - Toba Routine com tarefas, XP por dificuldade e cobrancas por notificacao`
+
+## v1.42 — Toba Routine vira hub: Rotina + Task (o Toba acha o dia), tarefa que expira e "Amanhã"
+
+**Arquivos novos:** `TobaRoutine/TobaRoutine-Rotina.html` (NOVO), `TobaRoutine/TobaRoutine-Task.html` (NOVO), `TobaRoutine/js/routine-plan.js` (NOVO), `TobaRoutine/js/task.js` (NOVO)
+
+**Arquivos alterados:** `TobaRoutine/TobaRoutine-Index.html` (agora é o hub), `TobaRoutine/css/routine-base.css`, `TobaRoutine/js/routine-core.js`, `TobaRoutine/js/routine-metrics.js`, `TobaRoutine/js/routine-alerts.js`, `TobaRoutine/js/routine.js`, `assets/toba-player.js`, `assets/perfil.js`, `sw.js`, `manifest.webmanifest`, `CLAUDE.md`
+
+### Parte 1: tarefa que expira e "Amanhã"
+
+1. **↪️ "Se não fizer, passa pro dia seguinte":** opção nova dentro de cada tarefa (não aparece nas "quando der").
+   - **Ligada (padrão):** igual era antes. Não fez no dia, vira atrasada e vale metade do XP.
+   - **Desligada:** a tarefa expira à meia-noite. Não aparece nas atrasadas, não conta no "⏰ atrasadas" do portal e não dá mais pra marcar o dia que passou. Serve pra coisa tipo "😴 Dormir na hora certa": dormir às 3 da manhã não é dormir na hora 😂
+   - Na lista, a tarefa que expira mostra **⌛ só hoje** (tela de hoje) e **⌛** (aba Tarefas).
+2. **🌅 Amanhã:** a tela de hoje mostra, depois das atrasadas, as tarefas agendadas pra amanhã (com o dia da semana). É só pra ver o que vem: não dá pra marcar antes do dia, mas tocar abre a tarefa pra editar.
+3. **😴 Sugestão "Dormir na hora certa"** já vem com a opção desligada para quem adicionar agora.
+
+**Cobranças:** tarefa que expira não cobra depois da meia-noite. Ex: dormir às 23:00 avisa às 23:00 e 23:30; a de +2 h (01:00) não vai. Um "✅ Feito" da notificação tocado depois da meia-noite nessa tarefa é ignorado (o dia dela já acabou).
+
+**XP e streak (nada muda no que já foi feito):**
+- `computePlayer()`/`calcRoutinePlayer` continuam iguais: o XP de tudo que já está no histórico é o mesmo, inclusive atrasadas antigas de uma tarefa que agora você desligou.
+- O 🔥 por tarefa já quebrava quando um dia passava sem fazer, então a regra é a mesma. Expirar não tira XP, só deixa de existir a chance de pegar a metade.
+- Dia perfeito, conquistas e streak do jogador: sem mudança.
+
+**Dados:**
+- Campo novo `carryOver` em `TOBA_ROUTINE_DB.tasks[]` (formato no `CLAUDE.md`, seção 3.10). Tarefa sem o campo (todas as que já existem) vale `true`, ou seja, continua passando pro dia seguinte. **A sua "Dormir na hora certa" também**: abra ela e desligue a opção.
+- Backup antigo importa normal (o campo ganha o padrão no `normalizeRoutineDb`).
+- Nenhum arquivo novo, então o `sw.js` não mudou. Não precisa de APK novo.
+
+**Como testar:**
+- Routine → tocar na tarefa de dormir → desligar "↪️ Se não fizer, passa pro dia seguinte" → Salvar. A linha ganha "⌛ só hoje".
+- Ver as atrasadas sumirem pra ela: no console, `routineDb.tasks.forEach(t => t.createdAt = "2026-10-15"); saveRoutineDb(); renderRoutine()`. Só as tarefas com a opção ligada aparecem em "⏰ Atrasadas".
+- "🌅 Amanhã" aparece embaixo das atrasadas com as tarefas de amanhã (semanal só no dia certo).
+- Perfil: o XP total é o mesmo de antes do patch.
+
+### Parte 2: hub com módulos, Task e Meu dia fixo
+
+1. **⚡ Hub do Routine:** igualzinho ao do Toba Bank. Abrir o Routine pelo portal agora mostra dois cards: **🔁 Rotina** (a tela de sempre, com Hoje / Tarefas / Histórico) e **🛠️ Task**. Embaixo, uma faixa **🆓 Seu tempo livre** com quanto sobra em cada dia da semana (tocar abre o Meu dia fixo).
+   - Notificação, botão "Feito" e o atalho "Rotina de hoje" continuam abrindo direto a Rotina (até as notificações já agendadas no celular).
+2. **🛠️ Task (tarefas não rotineiras):** pintar o quarto, fazer as marmitas, consertar a privada, ler um livro...
+   - **+ Task:** nome, emoji, quanto tempo leva no total, se dá pra fazer em pedaços, se é pesada e prazo (opcional).
+   - **Chute do Toba:** escreveu "Pintar o quarto"? Ele já chuta 6h e pesada. "Ler o livro" vira 8h em pedaços. É só ajustar se ele viajou.
+   - Salvou, o Toba já abre a sugestão: **"OLHA PAI, MELHOR SÁBADO 24/10, TU TÁ COM 15H30 LIVRE"**, com mais duas opções (e quanto o dia já tem de sono, trampo, rotina...). Um toque em **Agendar** e pronto.
+   - **Em pedaços:** ele monta o plano (pedaço pequeno em dia de trampo, até 3× maior na folga), evitando dia que já tem outra task.
+   - **Não cabe inteira em nenhum dia?** Ele avisa e oferece **🍕 Fatiar em pedaços**.
+   - Tocar numa task abre o detalhe: progresso, os dias marcados (✕ tira um dia), **escolher o dia na mão**, **🔮 Remarcar**, **✅ Já terminei** e **↩ Ainda não acabou**.
+   - Furou o dia marcado? Ela volta pra **📥 Fila** com "🙈 furou dd/mm" e a Rotina avisa pra reagendar.
+3. **Tasks na Rotina:** a tela de hoje ganhou **🛠️ Tasks de hoje** (marcar ali vale igual) e o **🌅 Amanhã** mostra as tasks de amanhã também.
+4. **🕰️ Meu dia fixo** (⚙️ de qualquer página do Routine): 😴 sono, 💼 trabalho, 🚌 transporte (minutos de ida + volta, só nos dias presenciais) e **➕ Outro bloco fixo** (faculdade, inglês...). Cada um com seus dias da semana. Mais o **🚿 respiro** por dia (padrão 1h30, porque precisamos tomar banho). A folha mostra o livre de cada dia enquanto você mexe. Enquanto não salvar, o Toba usa um chute (9h–18h, dorme 23h30) e avisa.
+5. **⏱️ Quanto tempo leva** nas tarefas da Rotina (opcional): entra na conta do tempo livre. Sem preencher, vale o chute pela dificuldade (☕ 15 min, 😐 30, 🧘 1h).
+6. **XP da Task:** 20 XP por hora feita (mínimo 15, até 150 por vez), **fora** do teto de 250 XP/dia da rotina, pra pintar o quarto valer a pena. Aparece como "🛠️ Tasks" no extrato do Perfil.
+7. **Conquistas novas:** 🛠️ Resolvedor (1ª task), 🧰 Faz-tudo (10), 🧱 Pedreiro de fim de semana (task de 4h+) e 🏗️ Empreiteiro (50, com título).
+
+**Dados (parte 2):**
+- Tudo no mesmo `TOBA_ROUTINE_DB`, só campos novos: `dayPlan` (Meu dia fixo), `oneoffs` (as tasks e seus dias) e `tasks[].minutes` (opcional). Formato no `CLAUDE.md`, seção 3.10.
+- Banco ou backup antigo abre normal: ganha o dia fixo padrão e a lista de tasks vazia. `tasks` e `log` não mudaram, então o XP da rotina é o mesmo.
+- O XP da task é calculado das sessões feitas (nada de XP gravado), igual ao resto.
+- Arquivos novos → `sw.js` foi pra `toba-v13`. Não precisa de APK novo.
+
+**Como testar (parte 2):**
+- Portal → Toba Routine: abre o hub com Rotina, Task e o 🆓 Seu tempo livre.
+- ⚙️ → 🕰️ Meu dia fixo: mudar o fim do trabalho, adicionar um bloco "Inglês" seg/qua 19h–21h, respiro 1h. Ver o livre por dia mudar na hora → Salvar.
+- Task → + Task → "Pintar o quarto": o chute vira 6h pesada → Salvar e achar o dia → deve sugerir sábado ou domingo → Agendar.
+- + Task → "Ler o livro": em pedaços → plano de vários dias → Agendar tudo.
+- + Task de 20h sem pedaços → "não cabe" → 🍕 Fatiar em pedaços.
+- Tocar numa task → Escolher o dia na mão = hoje → Rotina mostra em "🛠️ Tasks de hoje" → marcar → +XP e conquista Resolvedor.
+- Abrir `TobaRoutine/TobaRoutine-Index.html?task=qualquer` → cai na Rotina (notificação antiga).
+- Perfil → extrato com "🛠️ Tasks".
+
+**Commit sugerido:** `v1.42 - Routine vira hub com Rotina e Task, dia fixo e sugestao do melhor dia, tarefa que expira e lista de amanha`

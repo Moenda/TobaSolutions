@@ -1,7 +1,9 @@
 /* =====================================================================
- * Toba Routine · tela (Hoje / Tarefas / Histórico)
+ * Toba Routine · módulo Rotina (Hoje / Tarefas / Histórico)
+ * Página TobaRoutine-Rotina.html (desde v1.42; antes era o Index, que virou hub).
  * Depende de toba-common.js, routine-metrics.js, routine-core.js,
- * health-metrics.js + toba-player.js (XP) e routine-alerts.js (avisos).
+ * health-metrics.js + toba-player.js (XP), routine-alerts.js (avisos) e
+ * routine-plan.js (Meu dia fixo e as sessões de task que caem hoje).
  * ===================================================================== */
 const ROUTINE_EMOJI_PICKS = ["🚽", "🪴", "🐕", "😴", "🗑️", "🍽️", "🧺", "🧹", "💧", "💊", "📚", "🛒", "💸", "🧘", "📞", "🐈"];
 
@@ -9,12 +11,14 @@ const ROUTINE_SUGGESTIONS = [
   { emoji: "🚽", name: "Lavar o banheiro", recurrence: { type: "weekly", days: ["SA"] }, time: "10:00", difficulty: "medium", on: true },
   { emoji: "🪴", name: "Regar as plantas", recurrence: { type: "weekly", days: ["MO", "TH"] }, time: "08:00", difficulty: "easy", on: true },
   { emoji: "🐕", name: "Passear com o cachorro", recurrence: { type: "daily" }, time: "19:00", difficulty: "medium", on: true },
-  { emoji: "😴", name: "Dormir na hora certa", recurrence: { type: "daily" }, time: "23:00", difficulty: "hard", on: true },
+  { emoji: "😴", name: "Dormir na hora certa", recurrence: { type: "daily" }, time: "23:00", difficulty: "hard", carryOver: false, on: true },
   { emoji: "🗑️", name: "Tirar o lixo", recurrence: { type: "weekly", days: ["MO", "WE", "FR"] }, time: "20:00", difficulty: "easy", on: false },
   { emoji: "💧", name: "Beber 2 litros de água", recurrence: { type: "daily" }, time: "", difficulty: "easy", on: false },
   { emoji: "🧺", name: "Lavar roupa", recurrence: { type: "situational" }, time: "", difficulty: "medium", on: false },
   { emoji: "💸", name: "Pagar as contas", recurrence: { type: "monthly", monthDay: 5 }, time: "09:00", difficulty: "medium", on: false },
 ];
+
+const ROUTINE_MINUTE_OPTIONS = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180];
 
 const ROUTINE_VIEW_TITLES = { viewToday: "✅ Hoje", viewTasks: "📋 Tarefas", viewHistory: "📜 Histórico" };
 let routineView = "viewToday";
@@ -68,6 +72,7 @@ function renderRoutineTask(task, date, { done = false, overdue = false, streak =
     `${diff.icon} ${diff.name}`,
     `+${xp} XP`,
     streak >= 2 ? `🔥 ${streak}` : "",
+    !done && !routineCarriesOver(task) ? "⌛ só hoje" : "",
   ].filter(Boolean).join(" · ");
   return `
     <div class="rt-task${done ? " is-done" : ""}${overdue ? " is-overdue" : ""}${highlight ? " is-highlight" : ""}" id="rt-${escapeHtml(task.id)}-${date}">
@@ -126,11 +131,11 @@ function renderRoutineToday() {
   renderRoutineHero(today);
   renderRoutineNotice();
 
-  // Atrasadas: últimos 7 dias, vale metade do XP
+  // Atrasadas: últimos 7 dias, vale metade do XP (a que não passa pro dia seguinte expira)
   const overdue = [];
   for (let i = 1; i <= 7; i++) {
     const day = routineAddDays(today, -i);
-    sortRoutineTasks(tasks).forEach((task) => {
+    sortRoutineTasks(tasks.filter(routineCarriesOver)).forEach((task) => {
       if (isRoutineTaskDue(task, day) && !doneKeys.has(`${task.id}|${day}`)) overdue.push({ task, day });
     });
   }
@@ -161,6 +166,37 @@ function renderRoutineToday() {
     })).join("");
   }
 
+  renderRoutineOneoffsToday(today);
+
+  // Amanhã: só pra ver o que vem (não dá pra marcar antes do dia)
+  const tomorrow = routineAddDays(today, 1);
+  const next = sortRoutineTasks(tasks.filter((t) => isRoutineTaskDue(t, tomorrow)));
+  const tomorrowName = new Date(`${tomorrow}T12:00:00`).toLocaleDateString("pt-BR", { weekday: "long" });
+  const nextOneoffs = routineOneoffSessionsOn(tomorrow);
+  document.getElementById("rtTomorrow").innerHTML = tasks.some(isRoutineScheduled) || nextOneoffs.length
+    ? `<div class="section-title rt-overdue-title">🌅 Amanhã <span>${tomorrowName}</span></div>
+       ${nextOneoffs.length ? `<div class="rt-list">${nextOneoffs.map(({ oneoff, session }) => `
+          <div class="rt-task is-list is-tomorrow" role="button" tabindex="0" data-click="openOneoffFromRow" data-id="${escapeHtml(oneoff.id)}">
+            <span class="rt-task-emoji is-big">${escapeHtml(oneoff.emoji)}</span>
+            <div class="rt-task-body">
+              <span class="rt-task-name">${escapeHtml(oneoff.name)}</span>
+              <span class="rt-task-meta">🛠️ Task · ⏱️ ${routineFormatMinutes(session.minutes)} · +${routineOneoffXp(session.minutes)} XP</span>
+            </div>
+          </div>`).join("")}</div>` : ""}
+       ${next.length ? `<div class="rt-list">${next.map((task) => {
+         const diff = routineDifficulty(task.difficulty);
+         const meta = [task.time ? `⏰ ${task.time}` : "", `${diff.icon} ${diff.name}`, `+${diff.xp} XP`, routineCarriesOver(task) ? "" : "⌛ só no dia"].filter(Boolean).join(" · ");
+         return `
+          <div class="rt-task is-list is-tomorrow" role="button" tabindex="0" data-click="editTask" data-id="${escapeHtml(task.id)}">
+            <span class="rt-task-emoji is-big">${escapeHtml(task.emoji)}</span>
+            <div class="rt-task-body">
+              <span class="rt-task-name">${escapeHtml(task.name)}</span>
+              <span class="rt-task-meta">${meta}</span>
+            </div>
+          </div>`;
+       }).join("")}</div>` : nextOneoffs.length ? "" : tobaEmpty("😎", "Nada agendado pra amanhã", "", { compact: true })}`
+    : "";
+
   const situational = sortRoutineTasks(tasks.filter((t) => t.recurrence.type === "situational"));
   document.getElementById("rtSituational").innerHTML = situational.length
     ? `<div class="section-title">🌀 Quando acontecer</div>
@@ -177,6 +213,31 @@ function renderRoutineToday() {
             <button type="button" class="btn btn-sm btn-green" data-click="doSituational" data-id="${escapeHtml(task.id)}">Fiz agora</button>
           </div>`;
        }).join("")}</div>`
+    : "";
+}
+
+/* ---------------------------------------------------------------------
+ * Tasks (módulo Task) que caem hoje: marcar aqui vale igual à página Task
+ * ------------------------------------------------------------------- */
+function routineOneoffSessionsOn(iso) {
+  const list = [];
+  (routineDb.oneoffs || []).forEach((oneoff) => {
+    if (oneoff.archivedAt) return;
+    oneoff.sessions.forEach((session) => {
+      if (session.date === iso && (!oneoff.doneAt || session.doneAt)) list.push({ oneoff, session });
+    });
+  });
+  return list;
+}
+
+function renderRoutineOneoffsToday(today) {
+  const box = document.getElementById("rtOneoffs");
+  const items = routineOneoffSessionsOn(today).sort((a, b) => Boolean(a.session.doneAt) - Boolean(b.session.doneAt));
+  const missed = (routineDb.oneoffs || []).filter((o) => !o.archivedAt && !o.doneAt && routineOneoffStatus(o, today).missed.length).length;
+  box.innerHTML = items.length || missed
+    ? `<div class="section-title rt-overdue-title">🛠️ Tasks de hoje <span>fora do teto de XP</span></div>
+       ${items.length ? `<div class="rt-list">${items.map(({ oneoff, session }) => renderOneoffSessionRow(oneoff, session, { today })).join("")}</div>` : ""}
+       ${missed ? `<a class="hint-box rt-notice-btn" href="TobaRoutine-Task.html">🙈 ${missed === 1 ? "1 task furou o dia marcado" : `${missed} tasks furaram o dia marcado`}. Toque pra reagendar.</a>` : ""}`
     : "";
 }
 
@@ -209,7 +270,7 @@ function renderRoutineTasks() {
           <span class="rt-task-emoji is-big">${escapeHtml(task.emoji)}</span>
           <div class="rt-task-body">
             <span class="rt-task-name">${escapeHtml(task.name)}</span>
-            <span class="rt-task-meta">${describeRoutineWhen(task)} · ${diff.icon} ${diff.name}${task.time && task.nag && type !== "situational" ? " · 😈" : ""}</span>
+            <span class="rt-task-meta">${describeRoutineWhen(task)} · ${diff.icon} ${diff.name}${task.time && task.nag && type !== "situational" ? " · 😈" : ""}${type !== "situational" && !routineCarriesOver(task) ? " · ⌛" : ""}</span>
           </div>
           ${type !== "situational" ? `<span class="rt-streak${streak.current ? " is-on" : ""}">🔥 ${streak.current}</span>` : ""}
         </div>`;
@@ -286,6 +347,11 @@ function renderRoutine() {
   fillRoutineSettings();
 }
 
+// Meu dia fixo salvo ou sessão de task marcada (routine-plan.js)
+function onRoutinePlanChanged() {
+  renderRoutine();
+}
+
 // Chamado pelo core depois de cada gravação: refaz os avisos e o XP.
 function onRoutineDataSaved() {
   syncRoutineAlerts(routineDb);
@@ -331,6 +397,11 @@ function toggleTask(el) {
     tobaToast("↩ Desmarcada (o XP saiu junto)");
     renderRoutine();
     tobaPlayerCheck();
+    return;
+  }
+  if (!routineCarriesOver(task) && date < toIsoDate()) {
+    showPageMessage(`"${task.name}" não passa pro dia seguinte: o dia dela acabou e não dá mais pra marcar. Amanhã tem revanche 💪`, { title: "Essa expirou", icon: "⌛" });
+    renderRoutine();
     return;
   }
   const entry = { id: newRoutineLogId(), taskId: String(task.id), date, doneAt: Date.now(), difficulty: task.difficulty };
@@ -396,6 +467,11 @@ function openTaskSheet(task = null) {
   document.getElementById("taskMonthDay").value = rec.type === "monthly" ? rec.monthDay : new Date().getDate();
   document.getElementById("taskTime").value = task ? task.time : "";
   document.getElementById("taskNag").checked = task ? task.nag !== false : true;
+  document.getElementById("taskCarry").checked = routineCarriesOver(task);
+  const minutes = task && task.minutes ? Number(task.minutes) : "";
+  const minuteOptions = ROUTINE_MINUTE_OPTIONS.includes(minutes) || !minutes ? ROUTINE_MINUTE_OPTIONS : [...ROUTINE_MINUTE_OPTIONS, minutes].sort((a, b) => a - b);
+  document.getElementById("taskMinutes").innerHTML = `<option value="">Chute pela dificuldade (15/30/60 min)</option>${minuteOptions
+    .map((m) => `<option value="${m}"${m === minutes ? " selected" : ""}>${routineFormatMinutes(m)}</option>`).join("")}`;
   const difficulty = task ? task.difficulty : "medium";
   document.getElementById("taskDifficulty").innerHTML = Object.entries(ROUTINE_DIFFICULTIES).map(([key, d]) => `
     <label class="rt-diff-card">
@@ -417,6 +493,8 @@ function updateTaskForm() {
   document.getElementById("taskSituationalHelp").hidden = !situational;
   document.getElementById("taskTimeGroup").hidden = situational;
   document.getElementById("taskNagRow").hidden = situational || !hasTime;
+  document.getElementById("taskCarryRow").hidden = situational;
+  document.getElementById("taskMinutesGroup").hidden = situational;
   const editing = Boolean(document.getElementById("taskId").value);
   document.getElementById("taskCalendarBtn").hidden = !(editing && routineAlertMode() === "browser" && hasTime && (type === "daily" || type === "weekly"));
 }
@@ -432,7 +510,9 @@ function readTaskForm() {
     recurrence,
     time: type === "situational" ? "" : document.getElementById("taskTime").value,
     nag: document.getElementById("taskNag").checked,
+    carryOver: type === "situational" || document.getElementById("taskCarry").checked,
     difficulty: document.querySelector('input[name="taskDiff"]:checked')?.value || "medium",
+    minutes: type === "situational" ? 0 : Number(document.getElementById("taskMinutes").value) || 0,
   };
 }
 
@@ -447,8 +527,13 @@ function saveTask() {
     return;
   }
   const existing = findRoutineTask(document.getElementById("taskId").value);
-  if (existing) Object.assign(existing, data);
-  else routineDb.tasks.push({ id: `t-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, ...data, createdAt: toIsoDate() });
+  const minutes = data.minutes;
+  delete data.minutes; // sem duração escolhida = campo ausente (chute pela dificuldade)
+  if (minutes) data.minutes = minutes;
+  if (existing) {
+    Object.assign(existing, data);
+    if (!minutes) delete existing.minutes;
+  } else routineDb.tasks.push({ id: `t-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, ...data, createdAt: toIsoDate() });
   if (!saveRoutineDb()) return;
   closeTobaModal("taskSheet");
   if (data.time) tobaAskNotify(); // no toque do botão: o navegador deixa pedir
@@ -499,6 +584,7 @@ function addSuggestions() {
       time: s.time,
       difficulty: s.difficulty,
       nag: true,
+      carryOver: s.carryOver !== false,
       createdAt: today,
     });
   });
@@ -555,7 +641,10 @@ function importNativeRoutineDone() {
     const task = findRoutineTask(item.taskId);
     if (!task) return;
     if (routineDb.log.some((e) => e.taskId === String(task.id) && e.date === item.date)) return;
-    routineDb.log.push({ id: newRoutineLogId(), taskId: String(task.id), date: item.date, doneAt: Number(item.at) || Date.now(), difficulty: task.difficulty });
+    const doneAt = Number(item.at) || Date.now();
+    // "✅ Feito" tocado depois da meia-noite numa tarefa que não passa pro dia seguinte: expirou
+    if (!routineCarriesOver(task) && toIsoDate(new Date(doneAt)) > item.date) return;
+    routineDb.log.push({ id: newRoutineLogId(), taskId: String(task.id), date: item.date, doneAt, difficulty: task.difficulty });
     added += 1;
   });
   // Só tira da fila do app o que ficou gravado no banco
@@ -587,6 +676,9 @@ tobaActions({
   addSuggestions,
   enableRoutineNotify,
   addTaskToCalendar,
+  openOneoffFromRow: (el) => {
+    location.href = `TobaRoutine-Task.html?open=${encodeURIComponent(el.dataset.id)}`;
+  },
 });
 
 document.getElementById("taskTime").addEventListener("input", updateTaskForm);

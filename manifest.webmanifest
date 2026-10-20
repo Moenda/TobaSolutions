@@ -18,6 +18,6 @@
     { "name": "Adicionar gasto", "url": "TobaBank/TobaBank-Gastos.html?action=add_expense", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Pesagem", "url": "TobaHealth/TobaHealth-Pesagem.html", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Treinos", "url": "TobaHealth/TobaHealth-Treinos.html", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Rotina de hoje", "url": "TobaRoutine/TobaRoutine-Index.html", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+    { "name": "Rotina de hoje", "url": "TobaRoutine/TobaRoutine-Rotina.html", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
   ]
 }
