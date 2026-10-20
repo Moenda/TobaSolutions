@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="icon" href="../icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="css/kitchen-base.css" />
+  <title>Toba Kitchen 🍳</title>
+</head>
+
+<body>
+  <main class="container">
+    <header class="toba-header">
+      <a class="toba-back" href="../index.html" aria-label="Voltar para o Toba Solutions">‹</a>
+      <a class="toba-titles" href="../index.html">
+        <span class="toba-app">🍳 Toba Kitchen</span>
+        <span class="toba-page">Hub</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
+      </div>
+    </header>
+
+    <div class="toba-kicker">Bora cozinhar sem incendiar a casa?</div>
+    <nav class="toba-hub-list" aria-label="Módulos do Toba Kitchen">
+      <a class="toba-hub-card" href="TobaKitchen-Receitas.html">
+        <span class="toba-hub-icon">📖</span>
+        <span class="toba-hub-text">
+          <span class="toba-hub-title">Livro de Receitas</span>
+          <span class="toba-hub-desc" id="hubBookDesc">Receitas por refeição, busca pelo que tem em casa e modo cozinha.</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </a>
+      <a class="toba-hub-card" href="TobaKitchen-Semana.html">
+        <span class="toba-hub-icon">📅</span>
+        <span class="toba-hub-text">
+          <span class="toba-hub-title">Programação da Semana</span>
+          <span class="toba-hub-desc" id="hubWeekDesc">Escolhe o que comer cada dia e o Toba monta a lista do mercado.</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </a>
+    </nav>
+
+    <div class="section-title">👨‍🍳 Seu placar</div>
+    <div class="toba-stats" id="hubStats"></div>
+  </main>
+
+  <script src="../assets/toba-common.js"></script>
+  <script src="js/kitchen-recipes.js"></script>
+  <script src="js/kitchen-core.js"></script>
+  <script>
+    // O Hub só mostra um resumo; quem grava são os módulos (e a ⚙️ com backup).
+    function renderKitchenHub() {
+      const k = calcKitchenSummary(kitchenDb);
+      document.getElementById("hubBookDesc").textContent = `${KITCHEN_RECIPES.length} receitas no livro · ${k.distinct} já testadas`;
+      document.getElementById("hubWeekDesc").textContent = k.todayPlan.length
+        ? `Hoje: ${k.todayPlan.map((r) => `${r.emoji} ${r.name}`).join(", ")}`
+        : k.weekPlanned
+          ? `${k.weekPlanned} ${k.weekPlanned === 1 ? "receita programada" : "receitas programadas"} nesta semana`
+          : "Escolhe o que comer cada dia e o Toba monta a lista do mercado.";
+      const tile = (label, value, sub) => `
+        <div class="toba-stat">
+          <span class="toba-stat-label">${label}</span>
+          <span class="toba-stat-value">${value}</span>
+          <span class="toba-stat-sub">${sub}</span>
+        </div>`;
+      document.getElementById("hubStats").innerHTML =
+        tile("🍽️ Feitas", `<span class="text-coral">${k.cookedTotal}</span>`, k.cookedTotal === 1 ? "receita no total" : "receitas no total")
+        + tile("📆 No mês", `${k.cookedMonth}`, "desde o dia 1")
+        + tile("📖 Testadas", `${k.distinct}/${KITCHEN_RECIPES.length}`, "receitas diferentes")
+        + tile("🏆 Mais feita", k.top && k.top.recipe ? k.top.recipe.emoji : "--", k.top && k.top.recipe ? `${escapeHtml(k.top.recipe.name)} (${k.top.count}×)` : "cozinha uma aí");
+    }
+    function onKitchenDataReplaced() {
+      renderKitchenHub();
+    }
+    window.addEventListener("pageshow", (event) => {
+      if (event.persisted) renderKitchenHub();
+    });
+    renderKitchenHub();
+  </script>
+  <script src="../assets/pwa-register.js"></script>
+</body>
+
+</html>

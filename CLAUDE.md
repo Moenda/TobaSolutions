@@ -52,6 +52,7 @@ Ao terminar um patch, informe a lista de arquivos alterados e o que testar — n
   - **Toba Bank** — Gastos, Investimentos, Raxador (divisão de contas).
   - **Toba Health** — Pesagem (balança) e Treinos (inclui Treino de Força).
   - **Toba Routine** — Rotina (tarefas com XP e cobranças, desde v1.41) e Task (tarefas não rotineiras com sugestão de dia, desde v1.42).
+  - **Toba Kitchen** — Livro de Receitas (receitas no código, busca pelo que tem em casa, modo cozinha) e Programação da Semana (lista de compras), desde v1.43.
 - Única dependência externa: Chart.js **fixado** em `chart.js@4.4.7` (jsdelivr). Nunca usar versão flutuante.
 - Commits seguem o padrão `vX.YY - descrição` (ex.: `v1.16 - Novo modulo de treino de força...`).
 
@@ -59,7 +60,9 @@ Ao terminar um patch, informe a lista de arquivos alterados e o que testar — n
 
 ```
 index.html                 Portal (card do jogador, cards, Configurador de cards, backup GERAL)
-                             -> TobaBank/js/bank-metrics.js + TobaHealth/js/health-metrics.js + assets/toba-player.js + assets/portal.js + portal.css
+                             -> TobaBank/js/bank-metrics.js + TobaHealth/js/health-metrics.js + TobaRoutine/js/routine-metrics.js
+                                + assets/toba-player.js + TobaRoutine/js/routine-alerts.js + TobaKitchen/js/kitchen-recipes.js
+                                + assets/portal.js + portal.css
 Toba-Perfil.html           Perfil do jogador (XP, nível, streak, conquistas, recompensas)
                              -> TobaHealth/js/health-metrics.js + assets/toba-player.js + assets/perfil.js + perfil.css
 manifest.webmanifest       PWA (atalhos: add_expense, Pesagem, Treinos, Rotina de hoje -> TobaRoutine-Rotina.html)
@@ -98,6 +101,14 @@ TobaRoutine/
   js/routine-alerts.js     Frases das cobranças + agenda de avisos (APK) / conferência com a página aberta. Também no portal
   js/routine-plan.js       ⚙️ "Meu dia fixo" (folha) + marcar sessão de task. Nas três páginas do Routine
   css/routine-base.css
+TobaKitchen/                 (desde v1.43; ver 3.11)
+  TobaKitchen-Index.html   Hub do Kitchen (placar de receitas feitas) -> js/kitchen-recipes.js + js/kitchen-core.js
+  TobaKitchen-Receitas.html  Livro de Receitas + "O que tem aí?" + detalhe + Modo cozinha
+                             -> js/kitchen-recipes.js + js/kitchen-core.js + js/receitas.js
+  TobaKitchen-Semana.html    Programação da Semana + lista de compras -> mesma ordem, com js/semana.js no fim
+  js/kitchen-recipes.js    CATÁLOGO das receitas e ingredientes (no código, não no banco) + regras puras
+                           (falta o quê, lista de compras, resumo). Também no portal
+  css/kitchen-base.css
 TobaAndroid/               App Android (APK): WebView que abre o site publicado + ponte window.TobaNative
                            (gastos lidos das notificações, alarmes, salvar arquivo). Java puro, Android Studio.
                            Fora do PRECACHE. Passo a passo em TobaAndroid/README.md (ver seção 4.1)
@@ -143,9 +154,14 @@ CLAUDE.md                  Este guia
 | `toba_player_prefs` | `assets/toba-player.js` | `{ sound, vibrate }` das comemorações (desde v1.40). Ausente = os dois ligados |
 | `TOBA_ROUTINE_DB` | `TobaRoutine/js/routine-core.js` | Banco do Toba Routine (desde v1.41), ver 3.10 |
 | `TOBA_ROUTINE_DB_AUTO_BACKUP` | `TobaRoutine/js/routine-core.js` | Cópia do valor **anterior** da rotina, atualizada a cada `saveRoutineDb()` e no load |
+| `TOBA_KITCHEN_DB` | `TobaKitchen/js/kitchen-core.js` | Banco do Toba Kitchen (desde v1.43), ver 3.11 |
+| `TOBA_KITCHEN_DB_AUTO_BACKUP` | `TobaKitchen/js/kitchen-core.js` | Cópia do valor **anterior** do Kitchen, atualizada a cada `saveKitchenDb()` |
+| `toba_kitchen_live` | `TobaKitchen/js/receitas.js` | Modo cozinha em andamento (desde v1.43): `{ v: 1, recipeId, servings, planId, step, done: [índices], startedAt, timer: { step, endsAt (ms) \| null, left (ms), alerted } \| null }`. Temporário: apagado ao terminar (vira entrada em `cooked`) ou largar. Ilegível = ignorado |
+| `toba_kitchen_prefs` | `TobaKitchen/js/receitas.js` | `{ keepAwake }` do modo cozinha (desde v1.43). Ausente = tela acesa ligada |
 | `toba_modules_config` | `assets/portal.js` | `[{ id, visible }]` — ordem/visibilidade dos cards do portal |
 | `toba_bank_card_config` | `assets/portal.js` | `{ type: "personalizado"\|"simples", orcamento, cofre, gastos, sobra, addGasto, privacy }` (mesclado com defaults) |
 | `toba_health_card_config` | `assets/portal.js` | Desde v1.37: `{ type: "personalizado"\|"simples", metrics: { peso, pesoMes, treinos, km, semana, kcal, minutos, saitama, gordura }, links, privacy }`. `metrics` é mesclado com os defaults de `HEALTH_CARD_METRICS` (número novo = item novo na lista, nunca renomear a `key`) |
+| `toba_routine_card_config` | `assets/portal.js` | Desde v1.43: `{ type: "personalizado"\|"simples", metrics: { hoje, livreSemana, mes, tasks, livreHoje, semana, amanha, atrasadas, streak, xp }, links }`, mesma regra do Health (`ROUTINE_CARD_METRICS`). "Simples" = a linha de chips de antes |
 
 Ao criar uma chave nova: use prefixo `TOBA_` (bancos) ou `toba_` (preferências de UI) e documente aqui. O backup geral do portal já pega **todas** as chaves automaticamente.
 
@@ -274,6 +290,8 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 
 - **Portal `assets/portal.js` → `obterMetricasReaisTobaBank()`** lê `TOBA_BANK_DB` direto, mas o cálculo é o **mesmo** da tela de Gastos: os dois chamam `calcBankMonthSummary()` de [TobaBank/js/bank-metrics.js](TobaBank/js/bank-metrics.js) (desde v1.21). Regra nova do painel do Gastos entra **só** em `bank-metrics.js`. Esse arquivo não pode depender de `bank-core.js` (o portal carrega ele sozinho) e só lê o banco, nunca grava.
 - **Portal → card do Health** (desde v1.37) lê `TOBA_HEALTH_DB` direto por `calcHealthSummary()` de [TobaHealth/js/health-metrics.js](TobaHealth/js/health-metrics.js) (só leitura, não depende de `health-core.js`). Treinos do mês seguem a **mesma regra** de `getWorkoutMonthStats` (treinos.js): mudou lá, mude aqui. Peso levantado fica de fora do card. Campo novo em pesagem/treino que o card mostre precisa de leitura defensiva ali.
+- **Portal → card do Routine** (desde v1.43) lê `TOBA_ROUTINE_DB` por `readRoutineDbRaw()` + `calcRoutineSummary()` de [routine-metrics.js](TobaRoutine/js/routine-metrics.js), que só junta as regras das telas (`calcRoutineToday`, `calcRoutineDayLoad` = mesmo livre do hub, `routineOneoffStatus`, `calcRoutineTaskStreak`, `calcRoutinePlayer` pro XP do mês). Regra nova da rotina entra nessas funções, não no portal.
+- **Portal → card do Kitchen** (desde v1.43) lê `TOBA_KITCHEN_DB` direto por `calcKitchenSummary()` de [kitchen-recipes.js](TobaKitchen/js/kitchen-recipes.js) (só leitura; ilegível = card sem números).
 - **Backup geral do portal** (`exportAllData`/`importAllData`): formato `{ "<chave localStorage>": "<valor como STRING>" }`. Na importação, cada chave do arquivo é gravada como está (chaves ausentes no arquivo não são apagadas). A importação recusa arquivo sem nenhuma chave `TOBA_`/`toba_` ou com valor que não seja texto (backup de módulo). Não mude para guardar objetos já parseados — quebraria backups existentes.
 - **Backups por módulo** (`toba_bank_backup_*.json`, `toba_health_backup_*.json`): são o objeto do banco puro. Não misturar com o formato do backup geral.
 
@@ -295,7 +313,8 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 - [ ] Testado o backup **geral** do portal (exportar/importar).
 - [ ] Se mudou algo do Gastos: o card do Toba Bank no portal continua batendo com a tela de Gastos.
 - [ ] Se mudou pesagens/treinos: o card do Toba Health continua batendo com Pesagem e Treinos (`health-metrics.js`).
-- [ ] Se mudou tarefas/log da rotina: o Perfil do jogador e o card do Routine no portal continuam batendo (`routine-metrics.js`).
+- [ ] Se mudou tarefas/log da rotina: o Perfil do jogador e o card do Routine no portal continuam batendo (`routine-metrics.js`, inclusive `calcRoutineSummary`).
+- [ ] Se mexeu no catálogo do Kitchen: nenhum `id` de receita/ingrediente/refeição renomeado ou apagado sem querer.
 - [ ] Se mudou treinos/pesagens: o Perfil do jogador (`computePlayer` em `toba-player.js`) continua lendo o formato (XP, kg levantado igual ao Hall).
 - [ ] Datas gravadas em `AAAA-MM-DD` local; dinheiro como `number` em reais; IDs no tipo da coleção.
 - [ ] Migração idempotente (abrir a página duas vezes dá o mesmo resultado).
@@ -360,12 +379,34 @@ Arquivo: [TobaRoutine/js/routine-core.js](TobaRoutine/js/routine-core.js). Vari�
 - **Dia livre e sugestão** (routine-metrics.js): `calcRoutineDayLoad(db, dia)` = 1440 − blocos do dia fixo − rotina do dia (`routineTaskMinutes`) − sessões de task do dia − respiro; hoje só conta o que falta até a hora de dormir. `suggestRoutineOneoff` olha `ROUTINE_PLAN_DAYS` (14) dias ou até o prazo: inteira = até 3 dias onde cabe (nota: mais livre, pesada ganha em folga/fim de semana, perde se já tem task no dia, leve preferência por mais cedo); em pedaços = uma sessão por dia (`chunk` em dia de trabalho, até 3× na folga), primeiro nos dias sem outra task. Só cálculo, nada gravado; quem grava é `task.js` ao tocar em Agendar.
 - Backup do app: `toba_routine_backup_*.json` (objeto puro, precisa de `tasks`). Importar passa pelo `normalizeRoutineDb()` (que também dá default ao `dayPlan` e ao `oneoffs`).
 
+### 3.11 Toba Kitchen — `TOBA_KITCHEN_DB` (desde v1.43)
+
+Arquivos: [TobaKitchen/js/kitchen-core.js](TobaKitchen/js/kitchen-core.js) (dono do banco; variável `kitchenDb`, trava `isKitchenDbLoaded`) e [TobaKitchen/js/kitchen-recipes.js](TobaKitchen/js/kitchen-recipes.js) (catálogo + regras puras).
+
+```js
+{
+  version: 1,
+  cooked: [ { id: "c-<ts>-<rand4>", recipeId, date: "AAAA-MM-DD", doneAt: ms, servings, planId? } ], // contador "receitas feitas"
+  pantry: [ "id de ingrediente" ],    // marcados em "O que tem aí?" (vale pra busca e pro "Já tem em casa" da lista)
+  plan: [ { id: "p-<ts>-<rand4>", date: "AAAA-MM-DD", recipeId, meal: "cafe"|"almoco"|"lanche"|"janta"|"sobremesa", servings } ],
+  shopping: { "<segunda AAAA-MM-DD>": { checked: [ "id de ingrediente" ] } } // itens marcados na lista de cada semana
+}
+```
+
+- **As receitas moram no código** (`KITCHEN_RECIPES`), não no banco: o banco só guarda o `id`. **Id de receita, de ingrediente (`KITCHEN_INGREDIENTS`) e a `key` das refeições (`KITCHEN_MEALS`) nunca mudam** depois de publicados (contador, programação e despensa apontam pra eles). Receita nova = item novo em `KITCHEN_RECIPES` (ingrediente novo = item novo em `KITCHEN_INGREDIENTS`). Receita apagada do catálogo some das telas, mas as entradas antigas ficam no banco.
+- Receita: `{ id, name, emoji, meals: [keys], minutes, servings, kcal /* por porção, estimativa */, ingredients: [{ id, qty /* null = a gosto */, unit /* KITCHEN_UNITS */, note?, optional? }], steps: [{ text, timer? /* min */ }], tip? }`.
+- **Falta o quê** (`kitchenMatchRecipe`): só ingrediente não `optional` e não `staple` (sal, açúcar, óleo, azeite, temperos) conta como falta.
+- **Lista de compras** (`kitchenShoppingList`): soma as receitas da semana (seg–dom, `kitchenWeekMonday`) já na quantidade de porções de cada entrada, por ingrediente (unidades diferentes ficam "2 colheres de sopa + 1 colher de chá"). Seções: comprar (por `KITCHEN_AISLES`), "🏠 Já tem em casa" (está no `pantry`) e "🧂 Básicos" (`staple`). Só cálculo; o que fica gravado são os marcados em `shopping`.
+- **Fiz / comi**: `kitchenMarkCooked` (modo cozinha no fim, "✅ Já fiz" na receita ou "✅ Fiz / comi" na semana, este com `planId`). Desfazer = apagar a entrada. Nada de XP por enquanto (se ganhar XP: `kitchen-metrics.js` + bloco em `computePlayer()`, ver 3.9).
+- **Modo cozinha**: guarda em `toba_kitchen_live`; timer por passo é horário (`endsAt`), nunca contagem. Tela acesa igual ao treino ao vivo (Wake Lock / `TOBA_NATIVE.keepScreenOn`), obedecendo `toba_kitchen_prefs.keepAwake`.
+- Backup do app: `toba_kitchen_backup_*.json` (objeto puro, precisa de `cooked` e `plan`). Importar passa pelo `normalizeKitchenDb()`.
+
 ---
 
 ## 4. Service worker / PWA
 
 - [sw.js](sw.js): páginas/JS/CSS **network-first** (timeout 4 s, cai no cache); jsdelivr **cache-first**. Sem cópia no cache, só **navegação** (`request.mode === "navigate"`) cai no `index.html`; JS/CSS faltando devolvem erro (desde v1.37 — antes o HTML ia no lugar do script e a tela quebrava offline sem aviso). O network-first usa `fetch(..., { cache: "no-cache" })` de propósito: o GitHub Pages manda `max-age=600`, e sem isso o celular misturava HTML novo com JS antigo logo depois de publicar. Não tire.
-- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v13"` → `"toba-v14"`…). Sem isso, o app offline fica sem o arquivo.
+- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v14"` → `"toba-v15"`…). Sem isso, o app offline fica sem o arquivo.
 - Atualizar a versão do Chart.js exige trocar a URL nos HTML **e** no `PRECACHE`.
 - Toda página nova deve incluir `<script src="../assets/pwa-register.js"></script>` (ou `assets/...` na raiz), as metas de `color-scheme: dark` e o link do manifest, como as existentes.
 

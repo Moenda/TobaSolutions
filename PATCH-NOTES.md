@@ -704,3 +704,57 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 - Perfil → extrato com "🛠️ Tasks".
 
 **Commit sugerido:** `v1.42 - Routine vira hub com Rotina e Task, dia fixo e sugestao do melhor dia, tarefa que expira e lista de amanha`
+
+---
+
+## v1.43 — Card do Toba Routine com números e nasce o Toba Kitchen 🍳
+
+**Arquivos novos:** `TobaKitchen/TobaKitchen-Index.html` (NOVO), `TobaKitchen/TobaKitchen-Receitas.html` (NOVO), `TobaKitchen/TobaKitchen-Semana.html` (NOVO), `TobaKitchen/css/kitchen-base.css` (NOVO), `TobaKitchen/js/kitchen-recipes.js` (NOVO), `TobaKitchen/js/kitchen-core.js` (NOVO), `TobaKitchen/js/receitas.js` (NOVO), `TobaKitchen/js/semana.js` (NOVO)
+
+**Arquivos alterados:** `index.html`, `assets/portal.js`, `assets/portal.css`, `TobaRoutine/js/routine-metrics.js`, `sw.js`, `CLAUDE.md`
+
+### Parte 1: card do Toba Routine personalizável
+
+1. **⚡ Card do Routine com números:** igual aos do Bank e do Health. ⚙️ do portal → 🧩 Configurador de cards → **⚡ Toba Routine**. Dá pra escolher:
+   - ✅ **Tarefas de hoje** (feitas/total), 🆓 **Tempo livre na semana** (de hoje até domingo, o mesmo número do hub do Routine), 📆 **Tarefas feitas no mês** e 🛠️ **Tasks em aberto** (ligados por padrão).
+   - ⏳ Tempo livre hoje, 📅 Feitas na semana, 🌅 Agendadas pra amanhã, ⏰ Atrasadas, 🔥 Maior sequência (e de qual tarefa) e ⭐ XP da rotina no mês (desligados, é só marcar).
+   - 🔗 **Atalhos Rotina e Task** direto no card.
+   - **Simples** volta pro card de antes (a frase + a linha "✅ 1/2 hoje · ⏰ atrasadas").
+   - Quem não tem nenhuma tarefa vê a frase do card e os atalhos, sem um monte de zero.
+2. **🎯 Toba Tasks (em breve) saiu do portal:** virou o módulo Task do Routine na v1.42, então o card fantasma foi de base. 🪦
+
+### Parte 2: Toba Kitchen (beta) 🍳
+
+O card do Kitchen no portal agora abre o app de verdade, com dois módulos:
+
+1. **📖 Livro de Receitas**
+   - **11 receitas de exemplo** já carregadas: ovos mexidos, tapioca de queijo, tapioca com abacate, panqueca de banana, frango com batata-doce, feijoada, onigiri de atum, espaguete alho e óleo, omelete, brigadeiro de panela e a mousse de maracujá do Maracujeba 🍮. As receitas ficam no código (a gente vai acrescentando por aqui).
+   - **Categorias:** ☕ Café da manhã, 🍛 Almoço, 🥪 Lanche da tarde, 🌙 Janta e 🍰 Sobremesa (uma receita pode estar em mais de uma), mais a busca por nome ou ingrediente.
+   - **🧺 O que tem aí na geladeira?** Marca os ingredientes que você tem e a aba **🍳 Dá pra fazer** responde: **"Você tem tudo pra fazer o Onigiri de atum!"**, **"Dá pra fazer, mas falta o tomate"** ou "faltam o tomate e a cebola". Sal, açúcar, óleo, azeite e temperos o Toba já conta que você tem. O que você marcou fica guardado.
+   - **Receita aberta:** tempo, calorias por porção (estimativa), quantas vezes você já fez, **porções com − e +** (as quantidades se ajustam sozinhas), ingredientes com ✅ no que você tem em casa, dica e o passo a passo.
+   - **👨‍🍳 Modo cozinha:** um passo por vez em letra grande, bolinhas de progresso (✓ nos feitos), **timer nos passos que pedem** ("Leva a batata pro forno · 30 min") que vibra e avisa quando acaba, 🧺 pra espiar os ingredientes no meio e **🔆 manter a tela acesa** (ligado por padrão, igual ao treino ao vivo). Minimizou ou fechou? Volta de onde parou.
+   - **Contador:** terminou o modo cozinha (ou tocou em **✅ Já fiz (+1)**), conta mais uma. O hub mostra o placar: receitas feitas, no mês, quantas diferentes já testou e a mais feita.
+2. **📅 Programação da Semana**
+   - Semana de segunda a domingo (‹ › troca de semana). Em cada dia, **➕ Receita** e escolhe (dá pra filtrar por refeição). Também dá pra mandar uma receita pra semana direto do livro: **📅 Pôr na semana**.
+   - Tocar numa receita do dia: trocar a refeição, porções, **👨‍🍳 Cozinhar agora** (abre o modo cozinha), **✅ Fiz / comi** (conta no contador e fica ✅ no dia), ver a receita ou tirar do dia.
+   - **🛒 Lista de compras:** junta tudo da semana, soma as quantidades (2 receitas com alho = alho somado) e separa por seção do mercado (🥬 Hortifruti, 🥩 Açougue, 🧀 Frios, 🥫 Mercearia). O que você marcou no 🧺 vai pra **🏠 Já tem em casa** e os básicos pra **🧂 confere se tem**. Vai marcando no mercado (fica salvo por semana) e **📤 Mandar lista** manda pro WhatsApp (ou copia).
+   - Cada dia mostra as calorias aproximadas (1 porção de cada receita).
+
+**Dados:**
+- Bancos/chaves novas, nada antigo mudou: `TOBA_KITCHEN_DB` (+ `TOBA_KITCHEN_DB_AUTO_BACKUP`) com `cooked`, `pantry`, `plan` e `shopping`; `toba_kitchen_live` (modo cozinha em andamento) e `toba_kitchen_prefs` (tela acesa); `toba_routine_card_config` (o card do Routine). Formatos no `CLAUDE.md` (3.2 e 3.11).
+- As receitas não ficam no banco, só o id delas. Por isso o id de uma receita nunca muda.
+- O ⚙️ do Kitchen tem backup só do Kitchen (`toba_kitchen_backup_*.json`) e "apagar tudo" (apaga contador/programação/despensa, as receitas continuam). O backup geral do portal já leva tudo.
+- Kitchen ainda não dá XP nem fala com o Health/Routine (ver abaixo).
+- Arquivos novos → `sw.js` foi pra `toba-v14`. Não precisa de APK novo (a tela acesa usa o `keepScreenOn` que o APK já tem).
+
+**Como testar:**
+- Portal: ⚙️ → 🧩 Configurador de cards → ⚡ Toba Routine → ligar tudo. Conferir "Livre semana" com a soma dos dias no hub do Routine (de hoje até domingo) e "Hoje" com a tela da Rotina. Trocar pra Simples = card de antes. O card "Toba Tasks" sumiu.
+- Portal → 🍳 Toba Kitchen → 📖 Livro → 🧺 O que tem aí? → marcar ovo, queijo, tapioca → aba Dá pra fazer: tapioca de queijo em "Tem tudo", omelete com "falta o tomate".
+- Abrir Frango com batata-doce → + porção (quantidades sobem) → 👨‍🍳 Modo cozinha → passo 3 → ▶️ Começar o timer → minimizar e voltar (continua contando) → ir até o fim → 🍽️ Terminei! → contador 1×.
+- 📅 Semana → ➕ Receita na terça (feijoada) e na quarta (frango) → 🛒 Lista de compras → marcar uns itens → 📤 Mandar lista.
+- Tocar na feijoada → ✅ Fiz / comi → fica ✅ e o hub conta +1.
+- ⚙️ do Kitchen → baixar backup → apagar tudo → restaurar.
+
+**Ideias pro próximo (não liguei, só deixei o dado pronto):** "comi" virar ✅ de uma tarefa do Routine e as calorias da receita (`kcal` por porção, já em todas) aparecerem no Toba Health ("EITA PAI, 480 KCAL, BORA TREINAR"); XP por receita feita; cadastrar receita pelo app.
+
+**Commit sugerido:** `v1.43 - Card do Routine com numeros, Toba Kitchen com livro de receitas, modo cozinha e programacao da semana com lista de compras`

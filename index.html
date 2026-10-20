@@ -73,25 +73,15 @@
         </div>
       </a>
 
-      <a href="#" class="app-card is-soon" data-id="toba-kitchen" data-click="soonApp" data-msg="👨‍🍳 Culinária de respeito vindo aí!">
+      <a href="./TobaKitchen/TobaKitchen-Index.html" class="app-card" data-id="toba-kitchen">
         <div class="app-card-top">
           <span class="app-icon">🍳</span>
           <span class="app-title">Toba Kitchen</span>
-          <span class="badge badge-dev">Em breve</span>
+          <span class="badge badge-beta">🔥 Beta</span>
         </div>
+        <div class="routine-card-today" id="kitchenCardToday" hidden></div>
         <div class="app-desc">
           Laricas lendárias e gastronomia de rua sem incendiar a casa <b>(˶ڡ˶)⁠و</b>
-        </div>
-      </a>
-
-      <a href="#" class="app-card is-soon" data-id="toba-tasks" data-click="soonApp" data-msg="🎯 O Toba Tasks tá em forno baixo!">
-        <div class="app-card-top">
-          <span class="app-icon">🎯</span>
-          <span class="app-title">Toba Tasks</span>
-          <span class="badge badge-dev">Em breve</span>
-        </div>
-        <div class="app-desc">
-          Checklist lendário pra esmagar as pendências e não dar ruim <b>(▀̿ĺ̯▀̿)</b>
         </div>
       </a>
 
@@ -102,8 +92,15 @@
           <span class="badge badge-beta">🔥 Beta</span>
         </div>
         <div class="routine-card-today" id="routineCardToday" hidden></div>
-        <div class="app-desc">
+        <div class="app-desc" id="tobaRoutineDesc">
           Mandar no seu dia no puro suco da disciplina Toberson <b>(⌐■-■)</b>
+        </div>
+        <div class="card-custom-body is-routine" id="tobaRoutineCustomBody" hidden>
+          <div class="toba-stats" id="tobaRoutineMetricsGrid"></div>
+          <div class="quick-add-row" id="tobaRoutineQuickRow" hidden>
+            <span class="quick-add-btn" role="button" tabindex="0" data-click="goRoutinePage" data-page="TobaRoutine-Rotina.html">🔁 Rotina</span>
+            <span class="quick-add-btn" role="button" tabindex="0" data-click="goRoutinePage" data-page="TobaRoutine-Task.html">🛠️ Task</span>
+          </div>
         </div>
       </a>
 
@@ -176,6 +173,14 @@
           </span>
           <span class="toba-hub-chevron">›</span>
         </button>
+        <button type="button" class="toba-menu-btn" data-click="openRoutineCardConfig">
+          <span class="toba-menu-icon">⚡</span>
+          <span class="toba-menu-text">
+            <span class="toba-menu-title">Toba Routine</span>
+            <span class="toba-menu-desc">Tarefas do dia, tempo livre, mês e mais</span>
+          </span>
+          <span class="toba-hub-chevron">›</span>
+        </button>
       </div>
     </div>
   </div>
@@ -236,6 +241,32 @@
     </div>
   </div>
 
+  <div class="toba-modal" id="routineCardModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>⚡ Card do Toba Routine</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="card-type-selector">
+        <label class="radio-card" id="radioRoutineSimplesLabel">
+          <input type="radio" name="trCardType" value="simples" id="radioRoutineSimples" data-change="updateRoutineCardConfig" />
+          <span>Simples</span>
+        </label>
+        <label class="radio-card active" id="radioRoutinePersonalizadoLabel">
+          <input type="radio" name="trCardType" value="personalizado" id="radioRoutinePersonalizado" data-change="updateRoutineCardConfig" checked />
+          <span>Com números</span>
+        </label>
+      </div>
+
+      <div class="check-list" id="trCustomDrawer">
+        <div class="check-list-hint">Escolha o que aparece. Par fica mais bonito 😎</div>
+        <div class="check-group" id="routineCardChecks"></div>
+        <label class="check-row"><span>🔗 Atalhos Rotina e Task</span><input type="checkbox" id="chkRoutineLinks" data-change="updateRoutineCardConfig" checked /></label>
+      </div>
+    </div>
+  </div>
+
   <div class="toba-modal" id="orderModal">
     <div class="toba-sheet">
       <div class="toba-sheet-header">
@@ -252,6 +283,7 @@
   <script src="TobaRoutine/js/routine-metrics.js"></script>
   <script src="assets/toba-player.js"></script>
   <script src="TobaRoutine/js/routine-alerts.js"></script>
+  <script src="TobaKitchen/js/kitchen-recipes.js"></script>
   <script src="assets/portal.js"></script>
   <script src="assets/pwa-register.js"></script>
 </body>

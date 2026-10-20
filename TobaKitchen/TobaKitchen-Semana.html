@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="icon" href="../icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="css/kitchen-base.css" />
+  <title>Toba Kitchen | Semana</title>
+</head>
+
+<body>
+  <div class="container">
+    <header class="toba-header">
+      <a class="toba-back" href="TobaKitchen-Index.html" data-label="Voltar para o Toba Kitchen" aria-label="Voltar para o Toba Kitchen">‹</a>
+      <a class="toba-titles" href="TobaKitchen-Index.html">
+        <span class="toba-app">🍳 Toba Kitchen</span>
+        <span class="toba-page">📅 Semana</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Programação: semana de seg a dom -->
+    <section class="app-view active" id="viewWeek">
+      <div class="kt-week-nav">
+        <button type="button" class="round-btn" data-click="moveWeek" data-dir="-1" aria-label="Semana anterior">‹</button>
+        <span class="kt-week-label" id="weekLabel"></span>
+        <button type="button" class="round-btn" data-click="moveWeek" data-dir="1" aria-label="Próxima semana">›</button>
+      </div>
+      <div class="toba-stats" id="weekStats"></div>
+      <button type="button" class="btn kt-btn-fire kt-shop-btn" id="shopBtn" data-click="openShopping">🛒 Gerar lista de compras</button>
+      <div id="weekDays"></div>
+    </section>
+
+    <!-- Lista de compras da semana -->
+    <section class="app-view" id="viewShopping">
+      <div class="kt-shop-progress"><span id="shopWeekLabel"></span><span id="shopProgress"></span></div>
+      <div class="progress-track"><div class="progress-fill kt-fill" id="shopFill"></div></div>
+      <div id="shopList"></div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-secondary" data-click="uncheckAll">↺ Desmarcar tudo</button>
+        <button type="button" class="btn kt-btn-fire" data-click="copyShopping">📤 Mandar lista</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="tobaSettingsExtra" hidden></div>
+
+  <!-- Escolher receita pra um dia -->
+  <div class="toba-modal" id="pickerSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="pickerTitle">➕ Receita</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <input type="search" class="form-control kt-search" id="pickerSearch" placeholder="🔎 Buscar receita" data-input="filterPicker" autocomplete="off" />
+      <div class="kt-chips" id="pickerMeals"></div>
+      <div class="kt-picker-list" id="pickerList"></div>
+    </div>
+  </div>
+
+  <!-- Uma receita do dia -->
+  <div class="toba-modal" id="entrySheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="entryTitle">🍽️ Receita</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="entryBody"></div>
+    </div>
+  </div>
+
+  <script src="../assets/toba-common.js"></script>
+  <script src="js/kitchen-recipes.js"></script>
+  <script src="js/kitchen-core.js"></script>
+  <script src="js/semana.js"></script>
+  <script src="../assets/pwa-register.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,160 @@
+/* =====================================================================
+ * Toba Kitchen · núcleo do app (desde v1.43)
+ * - Depende de ../assets/toba-common.js e de kitchen-recipes.js (catálogo).
+ * - Banco único no localStorage: "TOBA_KITCHEN_DB". Depois de publicado,
+ *   NUNCA mude a chave nem renomeie campos (ver CLAUDE.md, seção 3.11).
+ * - As receitas NÃO ficam no banco (moram no catálogo); aqui só os ids.
+ * - Cada página define onKitchenDataReplaced() para redesenhar a tela
+ *   depois de importar backup ou apagar tudo.
+ * ===================================================================== */
+const KITCHEN_KEY = "TOBA_KITCHEN_DB";
+const KITCHEN_BACKUP_KEY = "TOBA_KITCHEN_DB_AUTO_BACKUP";
+
+// Trava: fica false se o banco salvo estiver ilegível, para não sobrescrever.
+let isKitchenDbLoaded = false;
+
+function createEmptyKitchenDb() {
+  return {
+    version: 1,
+    cooked: [], // [{ id: "c-<ts>-<rand4>", recipeId, date: "AAAA-MM-DD", doneAt: ms, servings, planId? }]
+    pantry: [], // [ids de ingrediente] marcados em "O que tem aí?"
+    plan: [], // [{ id: "p-<ts>-<rand4>", date: "AAAA-MM-DD", recipeId, meal, servings }]
+    shopping: {}, // { "<segunda AAAA-MM-DD>": { checked: [ids de ingrediente] } }
+  };
+}
+
+// "Migração": todo campo novo ganha default AQUI (load e import passam por ela).
+function normalizeKitchenDb(db) {
+  const base = createEmptyKitchenDb();
+  const out = { ...base, ...(db && typeof db === "object" && !Array.isArray(db) ? db : {}) };
+  out.cooked = Array.isArray(out.cooked) ? out.cooked.filter((c) => c && typeof c === "object") : [];
+  out.pantry = Array.isArray(out.pantry) ? out.pantry.map(String) : [];
+  out.plan = Array.isArray(out.plan) ? out.plan.filter((p) => p && typeof p === "object") : [];
+  out.shopping = out.shopping && typeof out.shopping === "object" && !Array.isArray(out.shopping) ? out.shopping : {};
+  out.plan.forEach((p) => {
+    if (!(Number(p.servings) > 0)) p.servings = (kitchenRecipe(p.recipeId) || { servings: 1 }).servings;
+  });
+  Object.values(out.shopping).forEach((week) => {
+    if (week && typeof week === "object" && !Array.isArray(week.checked)) week.checked = [];
+  });
+  return out;
+}
+
+function loadKitchenDb() {
+  const raw = localStorage.getItem(KITCHEN_KEY);
+  if (!raw) {
+    isKitchenDbLoaded = true;
+    return createEmptyKitchenDb();
+  }
+  try {
+    const db = normalizeKitchenDb(JSON.parse(raw));
+    isKitchenDbLoaded = true;
+    return db;
+  } catch (err) {
+    console.error("Banco do Kitchen ilegível; gravação travada.", err);
+    return createEmptyKitchenDb();
+  }
+}
+
+let kitchenDb = loadKitchenDb();
+
+function saveKitchenDb(options = {}) {
+  if (!isKitchenDbLoaded) {
+    showPageMessage("Os dados salvos do Kitchen estão ilegíveis, então nada foi gravado por cima. Restaure um backup em ⚙️.", { title: "Dados protegidos", icon: "🛡️" });
+    return false;
+  }
+  try {
+    const previous = localStorage.getItem(KITCHEN_KEY);
+    if (previous) localStorage.setItem(KITCHEN_BACKUP_KEY, previous);
+    localStorage.setItem(KITCHEN_KEY, JSON.stringify(kitchenDb));
+  } catch (err) {
+    showPageMessage("A memória do navegador encheu e isso não foi salvo. Baixe um backup e libere espaço.", { title: "Não salvou", icon: "💾" });
+    return false;
+  }
+  if (!options.silent) tobaSaved();
+  return true;
+}
+
+function kitchenNewId(prefix) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+/* Contador: "fiz essa receita". Volta a entrada gravada (ou null). */
+function kitchenMarkCooked(recipeId, options = {}) {
+  const recipe = kitchenRecipe(recipeId);
+  if (!recipe) return null;
+  const entry = {
+    id: kitchenNewId("c"),
+    recipeId: recipe.id,
+    date: toIsoDate(),
+    doneAt: Date.now(),
+    servings: Number(options.servings) || recipe.servings,
+  };
+  if (options.planId) entry.planId = String(options.planId);
+  kitchenDb.cooked.push(entry);
+  if (!saveKitchenDb({ silent: true })) {
+    kitchenDb.cooked.pop();
+    return null;
+  }
+  return entry;
+}
+
+function kitchenUndoCooked(id) {
+  const before = kitchenDb.cooked.length;
+  kitchenDb.cooked = kitchenDb.cooked.filter((c) => String(c.id) !== String(id));
+  if (kitchenDb.cooked.length === before) return false;
+  return saveKitchenDb();
+}
+
+// Frase do contador depois de fazer uma receita
+function kitchenCookedQuip(count) {
+  if (count === 1) return "Primeira vez dessa! Já é chef de respeito. 👨‍🍳";
+  if (count === 5) return "5 vezes! Essa já é receita da casa. 🏠";
+  if (count === 10) return "10 vezes?! Abre um restaurante logo. 🍽️";
+  return `Essa já saiu ${count} vezes. Nunca foi sorte. 🙏`;
+}
+
+function onKitchenDataReplaced() {}
+
+/* Backup do app (objeto do banco puro; não confundir com o backup geral) */
+function exportKitchenBackup() {
+  tobaDownloadJson(kitchenDb, `toba_kitchen_backup_${toIsoDate()}.json`);
+}
+
+async function importKitchenBackup(text) {
+  let data;
+  try {
+    data = JSON.parse(text);
+    if (!data || typeof data !== "object" || !Array.isArray(data.cooked) || !Array.isArray(data.plan)) throw new Error("Não é backup do Kitchen");
+  } catch (err) {
+    showPageMessage("Esse arquivo não é um backup do Toba Kitchen.", { title: "Arquivo inválido", icon: "🤨" });
+    return;
+  }
+  kitchenDb = normalizeKitchenDb(data);
+  isKitchenDbLoaded = true;
+  saveKitchenDb({ silent: true });
+  closeDataModal();
+  onKitchenDataReplaced();
+  showPageMessage("Backup restaurado!", { title: "Tudo de volta", icon: "✅" });
+}
+
+async function resetKitchenData() {
+  const ok = await showPageMessage("Apaga TUDO do Toba Kitchen (contador, programação e despensa). As receitas continuam. Não dá para desfazer!", { title: "Apagar tudo?", icon: "🚨", confirm: true, confirmLabel: "Apagar tudo" });
+  if (!ok) return;
+  localStorage.removeItem(KITCHEN_KEY); // só a chave deste app
+  kitchenDb = createEmptyKitchenDb();
+  isKitchenDbLoaded = true;
+  closeDataModal();
+  onKitchenDataReplaced();
+}
+
+tobaSetupApp({
+  name: "Toba Kitchen",
+  exportBackup: exportKitchenBackup,
+  importBackup: importKitchenBackup,
+  resetData: resetKitchenData,
+});
+
+if (!isKitchenDbLoaded) {
+  showPageMessage("Não consegui ler os dados salvos, então nada será gravado por cima. Restaure um backup em ⚙️.", { title: "Dados protegidos", icon: "🛡️" });
+}

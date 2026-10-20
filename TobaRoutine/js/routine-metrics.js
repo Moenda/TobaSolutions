@@ -199,6 +199,58 @@ function calcRoutineToday(data, today = toIsoDate()) {
   return { total: due.length, done: done.length, overdue, tasks: tasks.length };
 }
 
+/* Números do card do Routine no portal (desde v1.43): mesma regra das telas
+ * (calcRoutineToday, calcRoutineDayLoad, routineOneoffStatus, calcRoutinePlayer). */
+function calcRoutineSummary(data, now = new Date()) {
+  const db = data && typeof data === "object" ? data : {};
+  const today = toIsoDate(now);
+  const month = today.slice(0, 7);
+  const monday = routineAddDays(today, -((now.getDay() + 6) % 7));
+  const sunday = routineAddDays(monday, 6);
+  const tomorrow = routineAddDays(today, 1);
+  const tasks = (Array.isArray(db.tasks) ? db.tasks : []).filter((t) => t && t.id && !t.archivedAt);
+  const log = (Array.isArray(db.log) ? db.log : []).filter((e) => e && routineIsIso(e.date) && e.date <= today);
+  const oneoffs = routineOneoffsOf(db).filter((o) => !o.archivedAt);
+
+  let freeWeek = 0;
+  for (let day = today; day <= sunday; day = routineAddDays(day, 1)) freeWeek += calcRoutineDayLoad(db, day, { now }).free;
+
+  let monthSessions = 0;
+  oneoffs.forEach((o) => (o.sessions || []).forEach((s) => {
+    if (s && Number(s.doneAt) && toIsoDate(new Date(Number(s.doneAt))).startsWith(month)) monthSessions += 1;
+  }));
+  const open = oneoffs.filter((o) => !o.doneAt);
+
+  const doneKeys = routineDoneKeys(log);
+  let streak = { len: 0, name: "", emoji: "" };
+  tasks.forEach((task) => {
+    const run = calcRoutineTaskStreak(task, doneKeys, today).current;
+    if (run > streak.len) streak = { len: run, name: task.name || "Tarefa", emoji: task.emoji || "✅" };
+  });
+
+  const monthXp = calcRoutinePlayer(db, today).events
+    .filter((e) => e.date.startsWith(month))
+    .reduce((sum, e) => sum + (Number(e.xp) || 0), 0);
+
+  return {
+    today: calcRoutineToday(db, today),
+    freeToday: calcRoutineDayLoad(db, today, { now }).free,
+    freeWeek,
+    weekDaysLeft: Math.round((new Date(`${sunday}T12:00:00`) - new Date(`${today}T12:00:00`)) / 86400000) + 1,
+    weekDone: log.filter((e) => e.date >= monday).length,
+    monthDone: log.filter((e) => e.date.startsWith(month)).length,
+    monthSessions,
+    monthXp,
+    tomorrow: tasks.filter((t) => isRoutineTaskDue(t, tomorrow)).length
+      + open.filter((o) => (o.sessions || []).some((s) => s.date === tomorrow && !s.doneAt)).length,
+    oneoffsOpen: open.length,
+    oneoffsToday: open.filter((o) => (o.sessions || []).some((s) => s.date === today && !s.doneAt)).length,
+    oneoffsQueue: open.filter((o) => routineOneoffStatus(o, today).toPlan > 0).length,
+    streak,
+    isEmpty: !tasks.length && !oneoffs.length,
+  };
+}
+
 /* =====================================================================
  * Task (tarefas não rotineiras) e Meu dia fixo (desde v1.42)
  * Tudo puro: recebe o banco e devolve números. Nada é gravado aqui.

@@ -4,16 +4,19 @@
  *   Bank usa o MESMO cálculo da tela de Gastos: calcBankMonthSummary) e de
  *   TobaHealth/js/health-metrics.js (card do Health), de toba-player.js
  *   (card do Perfil do jogador no topo) e de TobaRoutine/js/routine-metrics.js
- *   + routine-alerts.js (linha "hoje" do card do Routine e avisos das tarefas).
+ *   + routine-alerts.js (card do Routine e avisos das tarefas) e de
+ *   TobaKitchen/js/kitchen-recipes.js (linha do card do Kitchen).
  * - Preferências de UI: "toba_modules_config" (ordem/visibilidade dos
  *   cards), "toba_bank_card_config" (o que o card do Bank mostra),
- *   "toba_health_card_config" (o que o card do Health mostra).
+ *   "toba_health_card_config" (o que o card do Health mostra),
+ *   "toba_routine_card_config" (o que o card do Routine mostra, desde v1.43).
  * - Backup GERAL: { "<chave localStorage>": "<valor como TEXTO>" }.
  *   Não mude o formato: backups antigos precisam continuar restaurando.
  * ===================================================================== */
 const MODULES_KEY = "toba_modules_config";
 const BANK_CARD_KEY = "toba_bank_card_config";
 const HEALTH_CARD_KEY = "toba_health_card_config";
+const ROUTINE_CARD_KEY = "toba_routine_card_config";
 
 const BANK_CARD_DEFAULTS = {
   type: "personalizado",
@@ -44,6 +47,27 @@ const HEALTH_CARD_DEFAULTS = {
   metrics: Object.fromEntries(HEALTH_CARD_METRICS.map((m) => [m.key, m.on])),
   links: true,
   privacy: false,
+};
+
+// Números do card do Routine (desde v1.43). Mesma regra do Health: a key é
+// gravada em toba_routine_card_config.metrics, número novo = item novo.
+const ROUTINE_CARD_METRICS = [
+  { key: "hoje", label: "✅ Tarefas de hoje", on: true },
+  { key: "livreSemana", label: "🆓 Tempo livre na semana", on: true },
+  { key: "mes", label: "📆 Tarefas feitas no mês", on: true },
+  { key: "tasks", label: "🛠️ Tasks em aberto", on: true },
+  { key: "livreHoje", label: "⏳ Tempo livre hoje", on: false },
+  { key: "semana", label: "📅 Feitas na semana", on: false },
+  { key: "amanha", label: "🌅 Agendadas pra amanhã", on: false },
+  { key: "atrasadas", label: "⏰ Atrasadas", on: false },
+  { key: "streak", label: "🔥 Maior sequência", on: false },
+  { key: "xp", label: "⭐ XP da rotina no mês", on: false },
+];
+
+const ROUTINE_CARD_DEFAULTS = {
+  type: "personalizado",
+  metrics: Object.fromEntries(ROUTINE_CARD_METRICS.map((m) => [m.key, m.on])),
+  links: true,
 };
 
 // Cada item guarda a referência do <a> original: reordenar só move o nó.
@@ -424,11 +448,18 @@ function updateHealthCardConfigFromUI() {
   tobaSaved();
 }
 
-// Linha "hoje" do card do Toba Routine (só leitura do TOBA_ROUTINE_DB)
-function renderRoutineCard() {
+/* ---------------------------------------------------------------------
+ * Card do Toba Routine (só leitura do TOBA_ROUTINE_DB)
+ * ------------------------------------------------------------------- */
+function getRoutineCardConfig() {
+  const cfg = readPortalJson(ROUTINE_CARD_KEY, ROUTINE_CARD_DEFAULTS);
+  cfg.metrics = { ...ROUTINE_CARD_DEFAULTS.metrics, ...(cfg.metrics || {}) };
+  return cfg;
+}
+
+// Linha "hoje" (card simples): como era até a v1.42
+function renderRoutineChips(data) {
   const box = document.getElementById("routineCardToday");
-  if (!box) return;
-  const data = readRoutineDbRaw();
   const today = data ? calcRoutineToday(data) : null;
   if (!today || !today.tasks) {
     box.hidden = true;
@@ -440,10 +471,130 @@ function renderRoutineCard() {
   box.hidden = false;
 }
 
+function buildRoutineTile(key, r) {
+  const tile = (label, value, sub = "") => `
+    <div class="toba-stat">
+      <span class="toba-stat-label">${label}</span>
+      <span class="toba-stat-value">${value}</span>
+      ${sub ? `<span class="toba-stat-sub">${sub}</span>` : ""}
+    </div>`;
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  const t = r.today;
+  switch (key) {
+    case "hoje":
+      if (!t.total) return tile("✅ Hoje", "🏖️ Livre", "nada agendado");
+      return tile("✅ Hoje", `<span class="${t.done === t.total ? "text-green" : ""}">${t.done}/${t.total}</span>`,
+        t.done === t.total ? "tudo feito 🔥" : `faltam ${t.total - t.done}`);
+    case "livreHoje":
+      return tile("⏳ Livre hoje", `<span class="text-blue">${routineFormatMinutes(r.freeToday)}</span>`, "até a hora de dormir");
+    case "livreSemana":
+      return tile("🆓 Livre semana", `<span class="text-blue">${routineFormatMinutes(r.freeWeek)}</span>`,
+        r.weekDaysLeft === 1 ? "só hoje (domingo)" : `hoje até domingo`);
+    case "mes":
+      return tile("📆 Feitas mês", `<span class="text-green">${r.monthDone}</span>`,
+        r.monthSessions ? `+ ${plural(r.monthSessions, "sessão", "sessões")} de task` : plural(r.monthDone, "tarefa", "tarefas"));
+    case "semana":
+      return tile("📅 Semana", `<span class="text-green">${r.weekDone}</span>`, "desde segunda");
+    case "tasks":
+      return tile("🛠️ Tasks", `${r.oneoffsOpen}`,
+        r.oneoffsToday ? `🎯 ${r.oneoffsToday} pra hoje` : r.oneoffsQueue ? `📥 ${r.oneoffsQueue} na fila` : "em aberto");
+    case "amanha":
+      return tile("🌅 Amanhã", `${r.tomorrow}`, r.tomorrow === 1 ? "agendada" : "agendadas");
+    case "atrasadas":
+      return tile("⏰ Atrasadas", `<span class="${t.overdue ? "text-red" : "text-green"}">${t.overdue}</span>`, t.overdue ? "bora zerar" : "em dia 😎");
+    case "streak":
+      if (!r.streak.len) return tile("🔥 Sequência", "0", "faça hoje e comece");
+      return tile("🔥 Sequência", `<span class="text-gold">${plural(r.streak.len, "seguida", "seguidas")}</span>`, `${r.streak.emoji} ${escapeHtml(r.streak.name)}`);
+    case "xp":
+      return tile("⭐ XP no mês", `<span class="text-gold">${r.monthXp}</span>`, "rotina + tasks");
+    default:
+      return "";
+  }
+}
+
+function renderRoutineCard(cfg = getRoutineCardConfig()) {
+  const desc = document.getElementById("tobaRoutineDesc");
+  const body = document.getElementById("tobaRoutineCustomBody");
+  if (!body) return;
+  const data = readRoutineDbRaw();
+
+  if (cfg.type === "simples") {
+    renderRoutineChips(data);
+    desc.hidden = false;
+    body.hidden = true;
+    return;
+  }
+
+  // Sem tarefa nenhuma: fica a frase e os atalhos, sem um monte de zeros.
+  document.getElementById("routineCardToday").hidden = true;
+  const r = data ? calcRoutineSummary(data) : null;
+  const isEmpty = !r || r.isEmpty;
+  desc.hidden = !isEmpty;
+  body.hidden = isEmpty && !cfg.links;
+  const html = isEmpty ? "" : ROUTINE_CARD_METRICS.filter((m) => cfg.metrics[m.key])
+    .map((m) => buildRoutineTile(m.key, r))
+    .join("");
+  const grid = document.getElementById("tobaRoutineMetricsGrid");
+  grid.innerHTML = html;
+  grid.hidden = !html;
+  document.getElementById("tobaRoutineQuickRow").hidden = !cfg.links;
+}
+
+function fillRoutineCardForm(cfg) {
+  const isCustom = cfg.type !== "simples";
+  document.getElementById("radioRoutinePersonalizado").checked = isCustom;
+  document.getElementById("radioRoutineSimples").checked = !isCustom;
+  document.getElementById("radioRoutinePersonalizadoLabel").classList.toggle("active", isCustom);
+  document.getElementById("radioRoutineSimplesLabel").classList.toggle("active", !isCustom);
+  document.getElementById("trCustomDrawer").hidden = !isCustom;
+  document.getElementById("routineCardChecks").innerHTML = ROUTINE_CARD_METRICS.map((m) => `
+    <label class="check-row"><span>${m.label}</span><input type="checkbox" data-metric="${m.key}" data-change="updateRoutineCardConfig"${cfg.metrics[m.key] ? " checked" : ""} /></label>`).join("");
+  document.getElementById("chkRoutineLinks").checked = cfg.links;
+}
+
+function updateRoutineCardConfigFromUI() {
+  const metrics = {};
+  document.querySelectorAll("#routineCardChecks [data-metric]").forEach((input) => {
+    metrics[input.dataset.metric] = input.checked;
+  });
+  const cfg = {
+    type: document.getElementById("radioRoutinePersonalizado").checked ? "personalizado" : "simples",
+    metrics,
+    links: document.getElementById("chkRoutineLinks").checked,
+  };
+  fillRoutineCardForm(cfg);
+  writePortalJson(ROUTINE_CARD_KEY, cfg);
+  renderRoutineCard(cfg);
+  tobaSaved();
+}
+
+/* ---------------------------------------------------------------------
+ * Card do Toba Kitchen: o que tem pra hoje na programação e o contador
+ * (só leitura do TOBA_KITCHEN_DB; nomes das receitas vêm do catálogo)
+ * ------------------------------------------------------------------- */
+function renderKitchenCard() {
+  const box = document.getElementById("kitchenCardToday");
+  if (!box || typeof calcKitchenSummary !== "function") return;
+  let data = null;
+  try {
+    data = JSON.parse(localStorage.getItem("TOBA_KITCHEN_DB") || "null");
+  } catch (e) {
+    console.error("Erro ao ler os dados do Toba Kitchen", e);
+  }
+  const k = calcKitchenSummary(data);
+  const parts = [];
+  if (k.todayPlan.length === 1) parts.push(`🍽️ Hoje: ${k.todayPlan[0].emoji} ${escapeHtml(k.todayPlan[0].name)}`);
+  else if (k.todayPlan.length) parts.push(`🍽️ Hoje: ${k.todayPlan.map((r) => r.emoji).join(" ")} ${k.todayPlan.length} receitas`);
+  if (k.cookedTotal) parts.push(`👨‍🍳 ${k.cookedTotal} ${k.cookedTotal === 1 ? "receita feita" : "receitas feitas"}`);
+  box.innerHTML = parts.map((part) => `<span class="routine-chip">${part}</span>`).join("");
+  box.hidden = !parts.length;
+}
+
 function renderPortalPanels() {
   renderBankCard(getBankCardConfig());
   renderHealthCard(getHealthCardConfig());
   renderRoutineCard();
+  renderKitchenCard();
   tobaPlayerCheck();
   // App Android: refaz os avisos das tarefas a cada abertura (o portal é a tela mais aberta)
   syncRoutineAlerts(readRoutineDbRaw());
@@ -515,7 +666,7 @@ tobaSetupApp({
   name: "Toba Solutions",
   exportBackup: exportAllData,
   importBackup: importAllData,
-  dataHint: "Backup geral: um .json com TODOS os apps Toba (Bank, Health e preferências) de uma vez. Backup de um app só se restaura dentro dele.",
+  dataHint: "Backup geral: um .json com TODOS os apps Toba (Bank, Health, Routine, Kitchen e preferências) de uma vez. Backup de um app só se restaura dentro dele.",
 });
 
 tobaActions({
@@ -549,6 +700,16 @@ tobaActions({
     openTobaModal("healthCardModal");
   },
   updateHealthCardConfig: updateHealthCardConfigFromUI,
+  openRoutineCardConfig: () => {
+    fillRoutineCardForm(getRoutineCardConfig());
+    openTobaModal("routineCardModal");
+  },
+  updateRoutineCardConfig: updateRoutineCardConfigFromUI,
+  goRoutinePage: (el, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    window.location.href = `./TobaRoutine/${el.dataset.page}`;
+  },
   openBankCardConfig: () => {
     fillBankCardForm(getBankCardConfig());
     openTobaModal("bankCardModal");

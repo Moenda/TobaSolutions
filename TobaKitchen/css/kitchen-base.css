@@ -1,0 +1,716 @@
+/* Toba Kitchen · só o que é do app. A base vem de ../assets/toba-common.css. */
+
+:root {
+  --accent: var(--coral);
+}
+
+.kt-small {
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+/* Chips de refeição / ingrediente (linha que rola ou quebra) */
+.kt-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 0.8rem;
+  scrollbar-width: none;
+}
+
+.kt-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.kt-chips.is-wrap {
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+.kt-chip {
+  flex: 0 0 auto;
+  height: 34px;
+}
+
+.kt-chip.is-on {
+  color: var(--text);
+  border-color: var(--coral);
+  background: rgba(255, 123, 114, 0.16);
+}
+
+.kt-search {
+  margin-bottom: 0.7rem;
+}
+
+.kt-hint {
+  margin-bottom: 0.9rem;
+  font-size: 0.78rem;
+}
+
+/* Botão grande "O que tem aí?" */
+.kt-launch {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+  padding: 0.9rem 1rem;
+  color: var(--text);
+  text-align: left;
+  background: linear-gradient(140deg, #6b2a24, #2a1513 75%);
+  border: 1px solid rgba(255, 123, 114, 0.6);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.kt-launch:active {
+  transform: scale(0.98);
+}
+
+.kt-launch-icon {
+  flex: 0 0 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--coral);
+  font-size: 1.3rem;
+}
+
+.kt-launch-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.kt-launch-title {
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.kt-launch-detail {
+  font-size: 0.75rem;
+  color: #f3c3be;
+  line-height: 1.35;
+}
+
+/* Cards de receita */
+.kt-recipe {
+  justify-content: flex-start;
+}
+
+.kt-recipe-emoji {
+  flex: 0 0 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+  background: var(--surface-3);
+  border-radius: var(--radius);
+}
+
+.kt-recipe-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.kt-recipe-name {
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+
+.kt-recipe-meta {
+  font-size: 0.74rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.kt-count {
+  flex: 0 0 auto;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--coral);
+  background: rgba(255, 123, 114, 0.12);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+/* Receita aberta */
+.kt-hero {
+  text-align: center;
+  margin: 0.2rem 0 1rem;
+}
+
+.kt-hero-emoji {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.kt-hero-name {
+  font-size: 1.25rem;
+  font-weight: 900;
+  margin: 0.4rem 0 0.5rem;
+}
+
+.kt-tags {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.kt-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+
+.kt-stepper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kt-stepper .round-btn {
+  color: var(--coral);
+}
+
+.kt-stepper .round-btn:disabled {
+  opacity: 0.35;
+}
+
+.kt-cook-btn {
+  margin-top: 0.9rem;
+  min-height: 50px;
+  font-size: 1rem;
+}
+
+.kt-recipe-actions {
+  margin-top: 8px;
+}
+
+.kt-ing-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.4rem 0.8rem;
+}
+
+.kt-ing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 0.86rem;
+}
+
+.kt-ing:last-child {
+  border-bottom: none;
+}
+
+.kt-ing-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.kt-ing-qty {
+  flex: 0 0 auto;
+  font-weight: 700;
+  color: var(--text-2);
+  text-align: right;
+  max-width: 45%;
+}
+
+.kt-ing-flag {
+  flex: 0 0 18px;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.kt-legend {
+  font-size: 0.7rem;
+  margin: 0.4rem 0 0.9rem;
+}
+
+.kt-steps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kt-step-preview {
+  display: flex;
+  gap: 10px;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.kt-step-num {
+  flex: 0 0 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--coral);
+  font-weight: 800;
+  font-size: 0.76rem;
+}
+
+.kt-timer-tag {
+  white-space: nowrap;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--gold-2);
+}
+
+.kt-history {
+  font-size: 0.82rem;
+  cursor: default;
+}
+
+/* Continuar receita em andamento */
+.kt-resume {
+  margin-bottom: 12px;
+  padding: 0.9rem;
+  background: #2a1513;
+  border: 1px solid rgba(255, 123, 114, 0.6);
+  border-radius: var(--radius);
+}
+
+.kt-resume-title {
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.kt-resume-sub {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 4px 0 10px;
+}
+
+/* Despensa */
+.kt-pantry-top {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.kt-pantry-top .kt-search {
+  flex: 1 1 auto;
+  margin-bottom: 0;
+}
+
+.kt-pantry-top + .kt-hint {
+  margin-top: 0.7rem;
+}
+
+.kt-aisle {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0.4rem 0 0.5rem;
+}
+
+.kt-pantry-go {
+  position: sticky;
+  bottom: 12px;
+  margin-top: 0.6rem;
+  min-height: 48px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5);
+}
+
+/* Folha "Pôr na semana" */
+.kt-day-pick {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 0.6rem;
+}
+
+.kt-day-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0.55rem 0.2rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.kt-day-btn strong {
+  font-size: 0.84rem;
+}
+
+.kt-day-btn:hover {
+  border-color: var(--coral);
+}
+
+/* ---------------------------------------------------------------------
+ * Modo cozinha
+ * ------------------------------------------------------------------- */
+.kt-cook {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kt-cook-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kt-cook-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 800;
+  font-size: 0.9rem;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kt-cook-progress {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.kt-fill {
+  background: var(--coral);
+}
+
+.kt-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.kt-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.kt-dot.is-done {
+  background: rgba(63, 185, 80, 0.18);
+  border-color: rgba(63, 185, 80, 0.6);
+  color: var(--green);
+}
+
+.kt-dot.is-current {
+  border-color: var(--coral);
+  color: var(--text);
+  box-shadow: 0 0 0 2px rgba(255, 123, 114, 0.35);
+}
+
+.kt-step-card {
+  position: relative;
+  padding: 1.4rem 1.1rem 1.2rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  min-height: 34vh;
+  display: flex;
+  align-items: center;
+}
+
+.kt-step-card.is-done {
+  border-color: rgba(63, 185, 80, 0.5);
+}
+
+.kt-step-big-num {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: var(--coral);
+}
+
+.kt-step-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.kt-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0.9rem;
+  background: #2a2210;
+  border: 1px solid rgba(210, 153, 34, 0.5);
+  border-radius: var(--radius);
+}
+
+.kt-timer.is-running {
+  border-color: var(--gold-2);
+}
+
+.kt-timer-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gold-2);
+}
+
+.kt-timer-value {
+  font-size: 2.6rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+}
+
+.kt-timer .btn-row {
+  width: 100%;
+}
+
+.kt-timer-chip {
+  align-self: flex-start;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(210, 153, 34, 0.6);
+  background: #2a2210;
+  color: var(--gold-2);
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.kt-cook-nav .btn {
+  min-height: 54px;
+  font-size: 0.95rem;
+}
+
+.kt-cook-nav .btn:disabled {
+  opacity: 0.4;
+}
+
+.kt-awake {
+  font-size: 0.8rem;
+  color: var(--muted);
+  justify-content: center;
+}
+
+/* ---------------------------------------------------------------------
+ * Programação da semana
+ * ------------------------------------------------------------------- */
+.kt-week-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0.9rem;
+}
+
+.kt-week-label {
+  flex: 1 1 auto;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.kt-day {
+  margin-bottom: 10px;
+  padding: 0.75rem 0.85rem;
+}
+
+.kt-day.is-today {
+  border-color: rgba(255, 123, 114, 0.6);
+}
+
+.kt-day.is-past {
+  opacity: 0.6;
+}
+
+.kt-day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.kt-day-name {
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.kt-day-kcal {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.kt-plan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kt-plan-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.5rem 0.6rem;
+  background: var(--surface-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.kt-plan-item.is-done .kt-plan-name {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.kt-plan-emoji {
+  font-size: 1.2rem;
+}
+
+.kt-plan-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.kt-plan-name {
+  font-weight: 700;
+  font-size: 0.86rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kt-plan-meta {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.kt-add-day {
+  margin-top: 6px;
+  width: 100%;
+  justify-content: center;
+  border-style: dashed;
+}
+
+.kt-shop-btn {
+  min-height: 50px;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Lista de compras */
+.kt-shop-progress {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.kt-shop-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.55rem 0.2rem;
+  border-bottom: 1px solid var(--border-soft);
+  cursor: pointer;
+}
+
+.kt-shop-item:last-child {
+  border-bottom: none;
+}
+
+.kt-shop-item input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--coral);
+  flex: 0 0 auto;
+}
+
+.kt-shop-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.kt-shop-name {
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.kt-shop-for {
+  font-size: 0.7rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kt-shop-qty {
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-2);
+  text-align: right;
+  max-width: 40%;
+}
+
+.kt-shop-item.is-checked .kt-shop-name,
+.kt-shop-item.is-checked .kt-shop-qty {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.kt-shop-group {
+  padding: 0.3rem 0.8rem;
+  margin-bottom: 10px;
+}
+
+.kt-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 48vh;
+  overflow-y: auto;
+}
+
+/* Botão principal do Kitchen (cor de fogão) */
+.kt-btn-fire {
+  background: #c9463d;
+  border-color: #e0574d;
+  color: #fff;
+}
+
+.kt-btn-fire:hover {
+  background: #e0574d;
+}
