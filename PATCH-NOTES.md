@@ -758,3 +758,43 @@ O card do Kitchen no portal agora abre o app de verdade, com dois módulos:
 **Ideias pro próximo (não liguei, só deixei o dado pronto):** "comi" virar ✅ de uma tarefa do Routine e as calorias da receita (`kcal` por porção, já em todas) aparecerem no Toba Health ("EITA PAI, 480 KCAL, BORA TREINAR"); XP por receita feita; cadastrar receita pelo app.
 
 **Commit sugerido:** `v1.43 - Card do Routine com numeros, Toba Kitchen com livro de receitas, modo cozinha e programacao da semana com lista de compras`
+
+---
+
+## v1.44 — Conquistas da 🍳 Cozinha no Perfil do jogador
+
+**Arquivos alterados:** `assets/toba-player.js`, `assets/perfil.js`, `Toba-Perfil.html`, `index.html`, `TobaHealth/TobaHealth-Treinos.html`, `TobaRoutine/TobaRoutine-Rotina.html`, `TobaRoutine/TobaRoutine-Task.html`, `TobaKitchen/TobaKitchen-Receitas.html`, `TobaKitchen/TobaKitchen-Semana.html`, `TobaKitchen/js/kitchen-recipes.js`, `TobaKitchen/js/kitchen-core.js`, `TobaKitchen/js/receitas.js`, `TobaKitchen/js/semana.js`, `CLAUDE.md`
+
+Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o XP vem da medalha: bronze 50, prata 150, ouro 400, lendária 1000):
+
+| | Conquista | Como pega |
+|---|---|---|
+| 🍳 | Adeus, miojo (bronze) | 1ª receita feita |
+| 👨‍🍳 | Cozinheiro de respeito (prata) | 10 receitas |
+| 🔪 | Chef de cozinha (ouro) | 50 receitas · título **👨‍🍳 Chef Toba** |
+| 🏆 | MasterChef Toba (lendária) | 100 receitas · título **🏆 MasterChef** |
+| 📖 | Zerou o livro (ouro) | fez todas as receitas do livro. Chegou receita nova? Tranca de novo até fazer ela (DLC de comida) |
+| 🍽️ | Cardápio completo (prata) | café, almoço, lanche, janta e sobremesa |
+| 🌞 | Rango o dia inteiro (ouro) | café, almoço e janta no mesmo dia |
+| 🩹 | Gambiarra gourmet (bronze) | fez faltando 1 ingrediente |
+| 🧪 | Cientista maluco (ouro) | 10 gambiarras · título **🧪 Rei da Gambiarra** |
+| 🏠 | Prato da casa (bronze) | a mesma receita 5 vezes |
+| 🫘 | Paciência de feijoada (prata) | receita de 2 h ou mais |
+| 🐜 | Formiga (bronze) | 5 sobremesas |
+| 🌙 | Larica da madrugada (bronze) | terminou uma receita entre 0h e 5h |
+| 📅 | Semana no controle (prata) | 7 receitas da programação feitas na mesma semana |
+
+- **Gambiarra:** na hora de contar a receita (fim do modo cozinha, ✅ Já fiz ou ✅ Fiz / comi), se pelo seu 🧺 faltava exatamente 1 ingrediente o Toba pergunta: **"Pelo seu 🧺 faltava o tomate 🍅. Fez sem mesmo? 😂"** → **Fiz sem! 🩹** ou **Não, eu tinha**. Sem nada marcado no 🧺 ele não pergunta.
+- Contou a receita = comemoração de conquista/level up ali mesmo no Kitchen.
+
+**Dados:**
+- Campo opcional novo `cooked[].improvised` (o ingrediente que faltou). Nada muda no Perfil (`TOBA_PLAYER_DB`): as conquistas são calculadas do `TOBA_KITCHEN_DB`, igual às outras. Desfazer uma receita tira a conquista (e o XP) se ela dependia dela.
+- `kitchen-recipes.js` agora carrega em todas as páginas que mostram o Perfil (portal, Perfil, Treinos, Rotina, Task, Kitchen), pro XP bater em todas.
+- Nenhum arquivo novo, então o `sw.js` não mudou. Não precisa de APK novo.
+
+**Como testar:**
+- Kitchen → 🧺 marcar só ovo e queijo → abrir Omelete → ✅ Já fiz → "faltava o tomate" → Fiz sem! → +XP com 🍳 Adeus, miojo e 🩹 Gambiarra gourmet.
+- Perfil → categoria 🍳 Cozinha. O XP tem que ser o mesmo no portal, Perfil, Treinos, Rotina e Task.
+- Desfazer a receita (📜 Vezes que você fez → ↩ Desfazer): as duas conquistas trancam de novo e o XP volta.
+
+**Commit sugerido:** `v1.44 - Conquistas da cozinha no perfil do jogador (14 medalhas e a gambiarra gourmet)`

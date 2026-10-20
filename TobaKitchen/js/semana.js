@@ -199,15 +199,17 @@ function setEntryServings(dir) {
   renderWeek();
 }
 
-function entryDone() {
+async function entryDone() {
   const entry = findEntry();
   if (!entry) return;
-  const saved = kitchenMarkCooked(entry.recipeId, { servings: entry.servings, planId: entry.id });
+  const improvised = await kitchenAskImprovised(kitchenRecipe(entry.recipeId));
+  const saved = kitchenMarkCooked(entry.recipeId, { servings: entry.servings, planId: entry.id, improvised });
   if (!saved) return;
   const count = kitchenCookedCount(kitchenDb, entry.recipeId);
   closeTobaModal("entrySheet");
   renderWeek();
   tobaSaved(`👨‍🍳 +1! ${count}× feita`);
+  kitchenPlayerCheck();
 }
 
 async function undoEntryDone() {

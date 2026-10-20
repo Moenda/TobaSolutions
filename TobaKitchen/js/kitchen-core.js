@@ -16,7 +16,8 @@ let isKitchenDbLoaded = false;
 function createEmptyKitchenDb() {
   return {
     version: 1,
-    cooked: [], // [{ id: "c-<ts>-<rand4>", recipeId, date: "AAAA-MM-DD", doneAt: ms, servings, planId? }]
+    cooked: [], // [{ id: "c-<ts>-<rand4>", recipeId, date: "AAAA-MM-DD", doneAt: ms, servings, planId?, improvised? }]
+    //            improvised: [id do ingrediente] que faltou e você fez mesmo assim (conquista "Gambiarra gourmet")
     pantry: [], // [ids de ingrediente] marcados em "O que tem aí?"
     plan: [], // [{ id: "p-<ts>-<rand4>", date: "AAAA-MM-DD", recipeId, meal, servings }]
     shopping: {}, // { "<segunda AAAA-MM-DD>": { checked: [ids de ingrediente] } }
@@ -91,12 +92,30 @@ function kitchenMarkCooked(recipeId, options = {}) {
     servings: Number(options.servings) || recipe.servings,
   };
   if (options.planId) entry.planId = String(options.planId);
+  if (Array.isArray(options.improvised) && options.improvised.length) entry.improvised = options.improvised.map(String);
   kitchenDb.cooked.push(entry);
   if (!saveKitchenDb({ silent: true })) {
     kitchenDb.cooked.pop();
     return null;
   }
   return entry;
+}
+
+/* Antes de contar: pelo 🧺, faltou exatamente 1 ingrediente? Pergunta se fez
+ * sem ele (vale a conquista "Gambiarra gourmet"). Devolve [id] ou []. */
+async function kitchenAskImprovised(recipe) {
+  const missing = kitchenOneMissing(kitchenDb, recipe);
+  if (!missing) return [];
+  const info = kitchenIngredient(missing);
+  const yes = await showPageMessage(`Pelo seu 🧺 faltava ${info.art || "o"} ${info.name.toLowerCase()} ${info.emoji}. Fez sem mesmo? 😂`, {
+    title: "Gambiarra detectada", icon: "🩹", confirm: true, danger: false, confirmLabel: "Fiz sem! 🩹", cancelLabel: "Não, eu tinha",
+  });
+  return yes ? [missing] : [];
+}
+
+// Depois de contar uma receita: o Perfil do jogador confere as conquistas da cozinha
+function kitchenPlayerCheck() {
+  if (typeof tobaPlayerCheck === "function") tobaPlayerCheck({ reason: "Rango no capricho 🍳" });
 }
 
 function kitchenUndoCooked(id) {

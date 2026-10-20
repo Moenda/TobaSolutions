@@ -520,3 +520,65 @@ function calcKitchenSummary(data, today = toIsoDate()) {
     weekPlanned: kitchenPlanOfWeek(db, kitchenWeekMonday(today)).length,
   };
 }
+
+/* ---------------------------------------------------------------------
+ * Conquistas do Kitchen no Perfil do jogador (desde v1.44)
+ * toba-player.js chama calcKitchenPlayer e confere as conquistas "kt-*" a
+ * cada data. Receita feita não dá XP sozinha: só as conquistas dão.
+ * timeline: [{ date, stats }] com os números acumulados até aquela vez.
+ * ------------------------------------------------------------------- */
+const KITCHEN_LONG_MINUTES = 120; // "Paciência de feijoada": receita de 2 h ou mais
+
+function calcKitchenPlayer(data, today) {
+  const db = data && typeof data === "object" && !Array.isArray(data) ? data : {};
+  const plans = Object.fromEntries((Array.isArray(db.plan) ? db.plan : []).filter((p) => p && p.id).map((p) => [String(p.id), p]));
+  const cooked = kitchenCookedOf(db)
+    .filter((c) => kitchenRecipe(c.recipeId) && /^\d{4}-\d{2}-\d{2}$/.test(String(c.date || "")) && c.date <= today)
+    .sort((a, b) => a.date.localeCompare(b.date) || (Number(a.doneAt) || 0) - (Number(b.doneAt) || 0));
+  const stats = {
+    kitchenCooked: 0, kitchenDistinct: 0, kitchenMeals: 0, kitchenFullDay: 0, kitchenImprovised: 0,
+    kitchenRepeat: 0, kitchenLong: 0, kitchenSweet: 0, kitchenNight: 0, kitchenWeekPlan: 0,
+  };
+  const distinct = new Set();
+  const meals = new Set();
+  const perRecipe = {};
+  const dayMeals = {};
+  const weekPlanned = {};
+  const timeline = cooked.map((entry) => {
+    const recipe = kitchenRecipe(entry.recipeId);
+    const plan = entry.planId ? plans[String(entry.planId)] : null;
+    // Refeição: a da programação; feita fora dela, vale toda refeição da receita
+    const entryMeals = plan && kitchenMeal(plan.meal) ? [plan.meal] : recipe.meals;
+    stats.kitchenCooked += 1;
+    distinct.add(recipe.id);
+    stats.kitchenDistinct = distinct.size;
+    entryMeals.forEach((m) => meals.add(m));
+    stats.kitchenMeals = meals.size;
+    const day = dayMeals[entry.date] || (dayMeals[entry.date] = new Set());
+    entryMeals.forEach((m) => day.add(m));
+    if (day.has("cafe") && day.has("almoco") && day.has("janta")) stats.kitchenFullDay = 1;
+    if (Array.isArray(entry.improvised) && entry.improvised.length) stats.kitchenImprovised += 1;
+    perRecipe[recipe.id] = (perRecipe[recipe.id] || 0) + 1;
+    stats.kitchenRepeat = Math.max(stats.kitchenRepeat, perRecipe[recipe.id]);
+    if (recipe.minutes >= KITCHEN_LONG_MINUTES) stats.kitchenLong += 1;
+    if (entryMeals.includes("sobremesa")) stats.kitchenSweet += 1;
+    const hour = Number(entry.doneAt) ? new Date(Number(entry.doneAt)).getHours() : 12;
+    if (hour < 5) stats.kitchenNight += 1;
+    if (plan) {
+      const monday = kitchenWeekMonday(plan.date);
+      weekPlanned[monday] = (weekPlanned[monday] || 0) + 1;
+      stats.kitchenWeekPlan = Math.max(stats.kitchenWeekPlan, weekPlanned[monday]);
+    }
+    return { date: entry.date, stats: { ...stats } };
+  });
+  return { events: [], timeline, stats };
+}
+
+// Faltou exatamente 1 ingrediente (pelo que está marcado no 🧺)? Devolve o id.
+// Despensa vazia = não sabemos, então não pergunta.
+function kitchenOneMissing(db, recipe) {
+  const pantry = db && Array.isArray(db.pantry) ? db.pantry : [];
+  if (!pantry.length || !recipe) return null;
+  const match = kitchenMatchRecipe(recipe, new Set(pantry));
+  return match.missing.length === 1 ? match.missing[0] : null;
+}

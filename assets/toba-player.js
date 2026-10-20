@@ -2,9 +2,10 @@
  * Toba · Perfil do jogador (XP, nível, streak, conquistas)
  * Um perfil só para o Toba inteiro. Carregue depois do toba-common.js, do
  * TobaHealth/js/health-metrics.js (catálogo, escalas do Hall e kg levantado)
- * e do TobaRoutine/js/routine-metrics.js (XP das tarefas, desde v1.41):
- *   toba-common.js -> health-metrics.js -> routine-metrics.js -> toba-player.js
- * Sem routine-metrics.js o cálculo fica "incompleto" (state.ok = false) e
+ * do TobaRoutine/js/routine-metrics.js (XP das tarefas, desde v1.41) e do
+ * TobaKitchen/js/kitchen-recipes.js (conquistas da cozinha, desde v1.44):
+ *   toba-common.js -> health-metrics.js -> routine-metrics.js -> kitchen-recipes.js -> toba-player.js
+ * Sem routine-metrics.js ou kitchen-recipes.js o cálculo fica "incompleto" (state.ok = false) e
  * nada é comemorado nem gravado, para o XP não oscilar entre as telas.
  *
  * PRINCÍPIO: o XP é CALCULADO, nunca somado.
@@ -121,7 +122,11 @@ const PLAYER_ACHIEVEMENT_CATS = [
   { id: "streak", name: "🔥 Streak" },
   { id: "pesagem", name: "⚖️ Pesagem" },
   { id: "rotina", name: "✅ Rotina" },
+  { id: "cozinha", name: "🍳 Cozinha" },
 ];
+
+// Tamanho do livro de receitas pra conquista "Zerou o livro" (sem kitchen-recipes.js = inalcançável)
+const KITCHEN_BOOK_SIZE = typeof KITCHEN_RECIPES !== "undefined" ? KITCHEN_RECIPES.length : Infinity;
 
 const PLAYER_SAITAMA_GOAL = 100 * 365 * 3 * 3; // 100 de cada por dia durante 3 anos
 
@@ -190,6 +195,21 @@ function buildPlayerAchievements() {
     { id: "tk-10", cat: "rotina", tier: "prata", icon: "🧰", name: "Faz-tudo", desc: "10 tasks terminadas. O marido de aluguel tá com medo da concorrência.", hint: "Termine 10 tasks.", metric: (s) => s.routineOneoffs, goal: 10 },
     { id: "tk-grande", cat: "rotina", tier: "prata", icon: "🧱", name: "Pedreiro de fim de semana", desc: "Terminou uma task de 4 horas ou mais. Merece uma cerveja.", hint: "Termine uma task de 4 h ou mais.", metric: (s) => s.routineBigOneoff, goal: 1 },
     { id: "tk-50", cat: "rotina", tier: "ouro", icon: "🏗️", name: "Empreiteiro", desc: "50 tasks terminadas. Já pode abrir CNPJ.", hint: "Termine 50 tasks.", metric: (s) => s.routineOneoffs, goal: 50, title: "🏗️ Empreiteiro" },
+    // Toba Kitchen (desde v1.44; números de calcKitchenPlayer em kitchen-recipes.js)
+    { id: "kt-1", cat: "cozinha", tier: "bronze", icon: "🍳", name: "Adeus, miojo", desc: "Primeira receita do livro feita. O miojo sentiu a traição.", hint: "Faça uma receita do Toba Kitchen.", metric: (s) => s.kitchenCooked, goal: 1 },
+    { id: "kt-10", cat: "cozinha", tier: "prata", icon: "👨‍🍳", name: "Cozinheiro de respeito", desc: "10 receitas feitas. A vizinhança já sente o cheiro.", hint: "Faça 10 receitas.", metric: (s) => s.kitchenCooked, goal: 10 },
+    { id: "kt-50", cat: "cozinha", tier: "ouro", icon: "🔪", name: "Chef de cozinha", desc: "50 receitas feitas. O Jacquin aprovaria (talvez).", hint: "Faça 50 receitas.", metric: (s) => s.kitchenCooked, goal: 50, title: "👨‍🍳 Chef Toba" },
+    { id: "kt-100", cat: "cozinha", tier: "lenda", icon: "🏆", name: "MasterChef Toba", desc: "100 receitas feitas. É uma vergonha pra profissão... dos outros.", hint: "Faça 100 receitas.", metric: (s) => s.kitchenCooked, goal: 100, title: "🏆 MasterChef" },
+    { id: "kt-livro", cat: "cozinha", tier: "ouro", icon: "📖", name: "Zerou o livro", desc: "Fez todas as receitas do livro. Receita nova chegou? Tranca de novo até fazer ela também (DLC de comida).", hint: "Faça todas as receitas do Livro de Receitas.", metric: (s) => s.kitchenDistinct, goal: KITCHEN_BOOK_SIZE },
+    { id: "kt-tipos", cat: "cozinha", tier: "prata", icon: "🍽️", name: "Cardápio completo", desc: "Já fez café, almoço, lanche, janta e sobremesa.", hint: "Faça uma receita de cada refeição (café, almoço, lanche, janta e sobremesa).", metric: (s) => s.kitchenMeals, goal: 5 },
+    { id: "kt-dia", cat: "cozinha", tier: "ouro", icon: "🌞", name: "Rango o dia inteiro", desc: "Café, almoço e janta feitos no mesmo dia. iFood chorou.", hint: "Faça café, almoço e janta no mesmo dia.", metric: (s) => s.kitchenFullDay, goal: 1 },
+    { id: "kt-gambiarra", cat: "cozinha", tier: "bronze", icon: "🩹", name: "Gambiarra gourmet", desc: "Fez a receita faltando um ingrediente. Ninguém percebeu (mentira).", hint: "Faça uma receita faltando 1 ingrediente (marcado no 🧺 O que tem aí?).", metric: (s) => s.kitchenImprovised, goal: 1 },
+    { id: "kt-gambiarra10", cat: "cozinha", tier: "ouro", icon: "🧪", name: "Cientista maluco", desc: "10 receitas com ingrediente faltando. Isso já é outra receita.", hint: "Faça 10 receitas faltando 1 ingrediente.", metric: (s) => s.kitchenImprovised, goal: 10, title: "🧪 Rei da Gambiarra" },
+    { id: "kt-casa", cat: "cozinha", tier: "bronze", icon: "🏠", name: "Prato da casa", desc: "A mesma receita 5 vezes. Já é tradição de família.", hint: "Faça a mesma receita 5 vezes.", metric: (s) => s.kitchenRepeat, goal: 5 },
+    { id: "kt-paciencia", cat: "cozinha", tier: "prata", icon: "🫘", name: "Paciência de feijoada", desc: "Fez uma receita de 2 horas ou mais. Mereceu a sesta.", hint: "Faça uma receita de 2 h ou mais.", metric: (s) => s.kitchenLong, goal: 1 },
+    { id: "kt-formiga", cat: "cozinha", tier: "bronze", icon: "🐜", name: "Formiga", desc: "5 sobremesas feitas. O dentista mandou um abraço.", hint: "Faça 5 sobremesas.", metric: (s) => s.kitchenSweet, goal: 5 },
+    { id: "kt-larica", cat: "cozinha", tier: "bronze", icon: "🌙", name: "Larica da madrugada", desc: "Cozinhou entre meia-noite e 5 da manhã. A geladeira tem câmera.", hint: "Termine uma receita entre 0h e 5h.", metric: (s) => s.kitchenNight, goal: 1 },
+    { id: "kt-semana", cat: "cozinha", tier: "prata", icon: "📅", name: "Semana no controle", desc: "7 receitas da programação feitas na mesma semana. Planejou e cumpriu!", hint: "Marque 7 receitas da Programação da Semana como feitas na mesma semana.", metric: (s) => s.kitchenWeekPlan, goal: 7 },
   );
   return list;
 }
@@ -525,6 +545,8 @@ function computePlayer(options = {}) {
     weekend: 0, types: 0, weighIns: 0, streakBest: 0,
     routineTasks: 0, routineHard: 0, routineBestSeq: 0, routineSleepSeq: 0, routinePerfect: 0,
     routineOneoffs: 0, routineBigOneoff: 0,
+    kitchenCooked: 0, kitchenDistinct: 0, kitchenMeals: 0, kitchenFullDay: 0, kitchenImprovised: 0,
+    kitchenRepeat: 0, kitchenLong: 0, kitchenSweet: 0, kitchenNight: 0, kitchenWeekPlan: 0,
   };
   const checkAchievements = (date) => {
     PLAYER_ACHIEVEMENTS.forEach((a) => {
@@ -658,6 +680,18 @@ function computePlayer(options = {}) {
   } else {
     console.warn("toba-player: routine-metrics.js não carregado; XP da rotina fora da conta.");
   }
+
+  /* ---------- Cozinha (TOBA_KITCHEN_DB, desde v1.44): só conquistas ---------- */
+  const kitchenSource = readPlayerSource("TOBA_KITCHEN_DB");
+  const hasKitchenRules = typeof calcKitchenPlayer === "function";
+  if (hasKitchenRules) {
+    calcKitchenPlayer(kitchenSource.data, today).timeline.forEach((step) => {
+      Object.assign(stats, step.stats);
+      checkAchievements(step.date);
+    });
+  } else {
+    console.warn("toba-player: kitchen-recipes.js não carregado; conquistas da cozinha fora da conta.");
+  }
   checkAchievements(today);
 
   /* ---------- Conquistas ---------- */
@@ -675,7 +709,7 @@ function computePlayer(options = {}) {
   const info = playerLevelInfo(xp);
   const unlockedIds = new Set(achievements.filter((a) => a.unlocked).map((a) => a.id));
   return {
-    ok: healthSource.ok && routineSource.ok && hasRoutineRules,
+    ok: healthSource.ok && routineSource.ok && hasRoutineRules && kitchenSource.ok && hasKitchenRules,
     today,
     xp,
     ...info,

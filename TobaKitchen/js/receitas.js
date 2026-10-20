@@ -278,11 +278,13 @@ function renderRecipe() {
 }
 
 async function cookedNow() {
-  const entry = kitchenMarkCooked(recipeId, { servings: recipeServings });
+  const improvised = await kitchenAskImprovised(kitchenRecipe(recipeId));
+  const entry = kitchenMarkCooked(recipeId, { servings: recipeServings, improvised });
   if (!entry) return;
   renderRecipe();
   const count = kitchenCookedCount(kitchenDb, recipeId);
   tobaSaved(`👨‍🍳 +1! ${count}× feita`);
+  kitchenPlayerCheck();
 }
 
 async function undoCooked(id) {
@@ -535,13 +537,15 @@ async function finishCook() {
   const live = readCookLive();
   if (!live) return;
   const recipe = kitchenRecipe(live.recipeId);
-  const entry = kitchenMarkCooked(recipe.id, { servings: live.servings, planId: live.planId });
+  const improvised = await kitchenAskImprovised(recipe);
+  const entry = kitchenMarkCooked(recipe.id, { servings: live.servings, planId: live.planId, improvised });
   if (!entry) return; // não gravou: o modo cozinha continua guardado
   storeCookLive(null);
   stopCookTicker();
   const count = kitchenCookedCount(kitchenDb, recipe.id);
   openRecipe(recipe.id);
   await showPageMessage(`${recipe.emoji} ${recipe.name} saiu! ${kitchenCookedQuip(count)}`, { title: "Chef Toba 👨‍🍳", icon: "🍽️" });
+  kitchenPlayerCheck();
 }
 
 function leaveCook() {

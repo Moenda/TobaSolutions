@@ -87,7 +87,7 @@ TobaBank/
 TobaHealth/
   TobaHealth-Index.html    Hub do Health (carrega o health-core só para a ⚙️/backup)
   TobaHealth-Pesagem.html    -> js/health-core.js + js/pesagem.js
-  TobaHealth-Treinos.html    -> js/health-core.js + js/health-metrics.js + ../TobaRoutine/js/routine-metrics.js + ../assets/toba-player.js + js/hall.js + js/forca.js + js/sessao.js + js/sessao-saitama.js + js/treinos.js
+  TobaHealth-Treinos.html    -> js/health-core.js + js/health-metrics.js + ../TobaRoutine/js/routine-metrics.js + ../TobaKitchen/js/kitchen-recipes.js + ../assets/toba-player.js + js/hall.js + js/forca.js + js/sessao.js + js/sessao-saitama.js + js/treinos.js
   css/health-base.css + 1 css por módulo
 TobaRoutine/
   TobaRoutine-Index.html   Hub do Routine (desde v1.42; antes era a rotina). Chegou com ?task=... (notificação/atalho
@@ -104,7 +104,8 @@ TobaRoutine/
 TobaKitchen/                 (desde v1.43; ver 3.11)
   TobaKitchen-Index.html   Hub do Kitchen (placar de receitas feitas) -> js/kitchen-recipes.js + js/kitchen-core.js
   TobaKitchen-Receitas.html  Livro de Receitas + "O que tem aí?" + detalhe + Modo cozinha
-                             -> js/kitchen-recipes.js + js/kitchen-core.js + js/receitas.js
+                             -> js/kitchen-recipes.js + ../TobaHealth/js/health-metrics.js + ../TobaRoutine/js/routine-metrics.js
+                                + ../assets/toba-player.js + js/kitchen-core.js + js/receitas.js
   TobaKitchen-Semana.html    Programação da Semana + lista de compras -> mesma ordem, com js/semana.js no fim
   js/kitchen-recipes.js    CATÁLOGO das receitas e ingredientes (no código, não no banco) + regras puras
                            (falta o quê, lista de compras, resumo). Também no portal
@@ -331,7 +332,7 @@ Arquivo: [assets/toba-player.js](assets/toba-player.js). Variável global `playe
 - **Conquistas** (`PLAYER_ACHIEVEMENTS`): `id` gravado em `seen.achievements` → nunca troque. As de peso/distância usam o `id` de `WORKOUT_LIFT_EQUIVALENTS`/`WORKOUT_DISTANCE_DESTINATIONS` (health-metrics.js). Conquista nova = item novo com `metric(stats)` e `goal`.
 - **Recompensas** (`PLAYER_AVATARS`, `PLAYER_FRAMES`, `PLAYER_COLORS`, títulos de `PLAYER_LEVEL_TITLES` e `title` das conquistas): só visual; `equipped` guarda o `id` ("" = automático). Item bloqueado/sumido cai no automático.
 - **Comemorações**: `tobaPlayerCheck({ reason, silent })` (com espera de 200 ms) compara o calculado com `seen`: +XP, medalha nova, level up, e na 1ª vez (sem `TOBA_PLAYER_DB`) a tela de boas-vindas "você já é nível X". Depois grava o novo `seen`. Se algum banco não pôde ser lido (`state.ok === false`) ou o perfil está travado, só mostra, não comemora nem grava. Chame depois de gravar algo que vale XP (Treinos já chama em `renderWorkoutScreen`, `saveWorkout`, `registerStrengthWorkout`, fim do treino ao vivo e do Saitama). A tela escuta o evento `toba:player` para redesenhar.
-- **Toda página que carrega `toba-player.js` precisa carregar também `health-metrics.js` e `routine-metrics.js` antes.** Sem eles o XP sairia diferente entre as telas; por isso, sem `routine-metrics.js`, `state.ok` fica `false` (não comemora nem grava `seen`). App novo que dê XP: regra pura num `*-metrics.js` próprio, carregado em todas essas páginas, e um bloco em `computePlayer()`.
+- **Toda página que carrega `toba-player.js` precisa carregar também `health-metrics.js`, `routine-metrics.js` e `TobaKitchen/js/kitchen-recipes.js` (desde v1.44) antes.** Sem eles o XP sairia diferente entre as telas; por isso, sem `routine-metrics.js` ou `kitchen-recipes.js`, `state.ok` fica `false` (não comemora nem grava `seen`). Hoje carregam o player: portal, Toba-Perfil, Treinos, Rotina, Task, Kitchen Receitas e Kitchen Semana. App novo que dê XP: regra pura num `*-metrics.js` próprio, carregado em todas essas páginas, e um bloco em `computePlayer()`.
 - **Backup**: o geral do portal já leva `TOBA_PLAYER_DB`; a ⚙️ do Toba-Perfil.html tem backup só do perfil (`toba_perfil_backup_*.json`, objeto puro) e "Recomeçar perfil" (apaga só `TOBA_PLAYER_DB`; XP e conquistas voltam do cálculo).
 
 ### 3.10 Toba Routine — `TOBA_ROUTINE_DB` (desde v1.41)
@@ -397,7 +398,8 @@ Arquivos: [TobaKitchen/js/kitchen-core.js](TobaKitchen/js/kitchen-core.js) (dono
 - Receita: `{ id, name, emoji, meals: [keys], minutes, servings, kcal /* por porção, estimativa */, ingredients: [{ id, qty /* null = a gosto */, unit /* KITCHEN_UNITS */, note?, optional? }], steps: [{ text, timer? /* min */ }], tip? }`.
 - **Falta o quê** (`kitchenMatchRecipe`): só ingrediente não `optional` e não `staple` (sal, açúcar, óleo, azeite, temperos) conta como falta.
 - **Lista de compras** (`kitchenShoppingList`): soma as receitas da semana (seg–dom, `kitchenWeekMonday`) já na quantidade de porções de cada entrada, por ingrediente (unidades diferentes ficam "2 colheres de sopa + 1 colher de chá"). Seções: comprar (por `KITCHEN_AISLES`), "🏠 Já tem em casa" (está no `pantry`) e "🧂 Básicos" (`staple`). Só cálculo; o que fica gravado são os marcados em `shopping`.
-- **Fiz / comi**: `kitchenMarkCooked` (modo cozinha no fim, "✅ Já fiz" na receita ou "✅ Fiz / comi" na semana, este com `planId`). Desfazer = apagar a entrada. Nada de XP por enquanto (se ganhar XP: `kitchen-metrics.js` + bloco em `computePlayer()`, ver 3.9).
+- **Fiz / comi**: `kitchenMarkCooked` (modo cozinha no fim, "✅ Já fiz" na receita ou "✅ Fiz / comi" na semana, este com `planId`). Desfazer = apagar a entrada. Antes de contar, `kitchenAskImprovised` pergunta "fez sem o X?" quando pelo `pantry` faltava exatamente 1 ingrediente (despensa vazia = não pergunta); sim = `cooked[].improvised: [id]` (campo opcional).
+- **Conquistas no Perfil** (desde v1.44): `calcKitchenPlayer()` (kitchen-recipes.js) devolve a `timeline` de números (`kitchenCooked`, `kitchenDistinct`, `kitchenMeals`, `kitchenFullDay`, `kitchenImprovised`, `kitchenRepeat`, `kitchenLong`, `kitchenSweet`, `kitchenNight`, `kitchenWeekPlan`) e o `computePlayer()` confere as conquistas `kt-*` (categoria "🍳 Cozinha"). Receita feita **não** dá XP sozinha, só as conquistas. "Zerou o livro" usa o tamanho atual de `KITCHEN_RECIPES`: receita nova tranca de novo até ser feita. Refeição de uma vez feita = a da programação (`planId`); fora dela vale toda `meals` da receita.
 - **Modo cozinha**: guarda em `toba_kitchen_live`; timer por passo é horário (`endsAt`), nunca contagem. Tela acesa igual ao treino ao vivo (Wake Lock / `TOBA_NATIVE.keepScreenOn`), obedecendo `toba_kitchen_prefs.keepAwake`.
 - Backup do app: `toba_kitchen_backup_*.json` (objeto puro, precisa de `cooked` e `plan`). Importar passa pelo `normalizeKitchenDb()`.
 
