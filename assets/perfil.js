@@ -157,6 +157,7 @@ const PLAYER_EVENT_KINDS = {
   record: "📈 Recordes",
   achievement: "🏅 Conquistas",
   streak: "🔥 Bônus de streak",
+  task: "✅ Rotina",
 };
 
 function renderProfileLedger(state) {
@@ -177,7 +178,7 @@ function renderProfileLedger(state) {
         <span class="pf-ledger-text"><strong>${escapeHtml(e.label)}</strong><span>${formatProfileDate(e.date)}</span></span>
         <span class="pf-ledger-xp">+${formatPlayerNumber(e.xp)}</span>
       </div>`).join("") : tobaEmpty("🫙", "Nenhum XP ainda", "Registre um treino no Toba Health.", { compact: true })}</div>
-    <p class="pf-note">Treino: 40 XP + 1 por minuto (até 90) + 3 por série (até 60) + 1 a cada 10 flexões/abdominais/agachamentos (até 60) + 8 por km (até 80). Máximo de ${PLAYER_XP.dayCap} XP de treino por dia${capped ? " (alguns dias bateram no teto)" : ""}. Recorde pessoal: +${PLAYER_XP.record} (até ${PLAYER_XP.recordsPerWorkout} por treino). Apagou um treino? O XP dele sai junto.</p>`;
+    <p class="pf-note">Treino: 40 XP + 1 por minuto (até 90) + 3 por série (até 60) + 1 a cada 10 flexões/abdominais/agachamentos (até 60) + 8 por km (até 80). Máximo de ${PLAYER_XP.dayCap} XP de treino por dia${capped ? " (alguns dias bateram no teto)" : ""}. Recorde pessoal: +${PLAYER_XP.record} (até ${PLAYER_XP.recordsPerWorkout} por treino). Rotina: ☕ fácil 10, 😐 médio 25, 🧘 difícil 60 (atrasada vale metade; até ${ROUTINE_XP_DAY_CAP} XP de rotina por dia). Apagou um treino ou desmarcou uma tarefa? O XP sai junto.</p>`;
 }
 
 function renderProfileLevels(state) {

@@ -37,7 +37,7 @@ final class TobaBridge {
 
     @JavascriptInterface
     public int version() {
-        return 1;
+        return 2; // 2 = APK 1.2 (avisos do Toba Routine)
     }
 
     /* ---------------- Notificações do Toba ---------------- */
@@ -184,6 +184,37 @@ final class TobaBridge {
     @JavascriptInterface
     public void keepScreenOn(boolean on) {
         activity.keepScreenOn(on);
+    }
+
+    /* ---------------- Toba Routine ---------------- */
+
+    // json: [{ key, at, title, body, url, taskId, date }]. Substitui a lista inteira.
+    @JavascriptInterface
+    public boolean setTaskAlerts(String json) {
+        try {
+            JSONArray list = new JSONArray(json);
+            TobaStore.put(app, TobaStore.KEY_TASK_ALERTS, list.toString());
+            Alarms.scheduleTaskAlerts(app);
+            return true;
+        } catch (JSONException e) {
+            return false;
+        }
+    }
+
+    // "✅ Feito" tocados na notificação: [{ taskId, date, at }]
+    @JavascriptInterface
+    public String getDoneTasks() {
+        return TobaStore.getArray(app, TobaStore.KEY_TASK_DONE).toString();
+    }
+
+    // keys: ["taskId|AAAA-MM-DD"] que o site já gravou no banco
+    @JavascriptInterface
+    public void ackDoneTasks(String keysJson) {
+        try {
+            TobaStore.ackDoneTasks(app, new JSONArray(keysJson));
+        } catch (JSONException ignored) {
+            // nada a tirar
+        }
     }
 
     /* ---------------- Arquivos (backup) ---------------- */

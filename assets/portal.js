@@ -2,8 +2,9 @@
  * Portal Toba Solutions (index.html)
  * - Depende de toba-common.js, de TobaBank/js/bank-metrics.js (o card do
  *   Bank usa o MESMO cálculo da tela de Gastos: calcBankMonthSummary) e de
- *   TobaHealth/js/health-metrics.js (card do Health) e de toba-player.js
- *   (card do Perfil do jogador no topo).
+ *   TobaHealth/js/health-metrics.js (card do Health), de toba-player.js
+ *   (card do Perfil do jogador no topo) e de TobaRoutine/js/routine-metrics.js
+ *   + routine-alerts.js (linha "hoje" do card do Routine e avisos das tarefas).
  * - Preferências de UI: "toba_modules_config" (ordem/visibilidade dos
  *   cards), "toba_bank_card_config" (o que o card do Bank mostra),
  *   "toba_health_card_config" (o que o card do Health mostra).
@@ -423,10 +424,29 @@ function updateHealthCardConfigFromUI() {
   tobaSaved();
 }
 
+// Linha "hoje" do card do Toba Routine (só leitura do TOBA_ROUTINE_DB)
+function renderRoutineCard() {
+  const box = document.getElementById("routineCardToday");
+  if (!box) return;
+  const data = readRoutineDbRaw();
+  const today = data ? calcRoutineToday(data) : null;
+  if (!today || !today.tasks) {
+    box.hidden = true;
+    return;
+  }
+  const parts = [today.total ? `✅ ${today.done}/${today.total} hoje` : "🏖️ Nada agendado hoje"];
+  if (today.overdue) parts.push(`⏰ ${today.overdue} ${today.overdue === 1 ? "atrasada" : "atrasadas"}`);
+  box.innerHTML = parts.map((part) => `<span class="routine-chip">${part}</span>`).join("");
+  box.hidden = false;
+}
+
 function renderPortalPanels() {
   renderBankCard(getBankCardConfig());
   renderHealthCard(getHealthCardConfig());
+  renderRoutineCard();
   tobaPlayerCheck();
+  // App Android: refaz os avisos das tarefas a cada abertura (o portal é a tela mais aberta)
+  syncRoutineAlerts(readRoutineDbRaw());
 }
 
 // O perfil do jogador avisa quando recalcula (e já comemora o que for novo)
@@ -547,6 +567,7 @@ document.addEventListener("DOMContentLoaded", () => {
   applyPortalCards();
   fillBankCardForm(getBankCardConfig());
   renderPortalPanels();
+  startRoutineWatcher(readRoutineDbRaw);
 });
 
 // Voltou de um app pelo "‹" (ou reabriu o PWA): o navegador pode

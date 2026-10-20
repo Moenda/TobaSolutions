@@ -587,3 +587,51 @@ TobaHealth/  TobaHealth-Index / -Pesagem / -Treinos .html
 - APK: nada muda no app Android; ele abre o site novo normalmente.
 
 **Commit sugerido:** `v1.40 - Perfil do jogador com XP, nivel, streak semanal e conquistas`
+
+---
+
+## v1.41 — Toba Routine: tarefas com XP e notificações que cobram
+
+**Arquivos novos/alterados:** `TobaRoutine/TobaRoutine-Index.html` (NOVO), `TobaRoutine/js/routine-core.js` (NOVO), `TobaRoutine/js/routine-metrics.js` (NOVO), `TobaRoutine/js/routine-alerts.js` (NOVO), `TobaRoutine/js/routine.js` (NOVO), `TobaRoutine/css/routine-base.css` (NOVO), `assets/toba-player.js`, `assets/perfil.js`, `assets/portal.js`, `assets/portal.css`, `index.html`, `Toba-Perfil.html`, `TobaHealth/TobaHealth-Treinos.html`, `manifest.webmanifest`, `sw.js`, `CLAUDE.md`, `TobaAndroid/README.md`, `TobaAndroid/app/build.gradle`, `TobaAndroid/app/src/main/java/br/com/toba/app/` (`TobaBridge.java`, `TobaStore.java`, `Alarms.java`, `AlarmReceiver.java`, `Notifier.java`)
+
+1. **⚡ Toba Routine saiu do "em breve":** o card do portal agora abre o app e mostra como está o dia ("✅ 2/5 hoje · ⏰ 1 atrasada"). Tem também um atalho "Rotina de hoje" no ícone do app.
+2. **📋 Tarefas:** cada tarefa tem nome, emoji, quando (todo dia, dias da semana, um dia do mês ou "quando der", sem agenda), horário opcional e dificuldade. Na primeira abertura aparecem sugestões (lavar banheiro, regar plantas, passear com o cachorro, dormir na hora certa e outras). Apagar uma tarefa tira ela da lista, mas o histórico e o XP que ela já deu ficam.
+3. **✅ Tela de hoje:** um toque no círculo marca como feita, com "+XP" subindo e a barra do nível andando. Tocar de novo desmarca, e o XP sai junto. As atrasadas dos últimos 7 dias aparecem logo abaixo e valem metade do XP. As tarefas "quando der" têm o botão **Fiz agora**.
+4. **🔥 Streak por tarefa e histórico:** cada tarefa tem o 🔥 de vezes seguidas e o recorde. O histórico mostra os últimos 14 dias, com ✨ nos dias perfeitos.
+5. **☕😐🧘 Dificuldade:**
+   - Fácil, "Café com leite": 10 XP.
+   - Médio, "Não fez mais que sua obrigação": 25 XP.
+   - Difícil, "Monge tibetano da proatividade": 60 XP.
+   - Teto de 250 XP de rotina por dia. Para comparar, um treino comum dá entre 100 e 200 XP.
+6. **😈 Cobranças zoeiras:** tarefa com horário avisa na hora e, se continuar sem fazer, cobra de novo depois de 30 min e de 2 h, cada vez mais debochado. São no máximo 3 avisos por tarefa por dia, e dá para desligar a cobrança em cada tarefa. As frases mudam pela dificuldade e pelo assunto (banheiro, planta, cachorro, dormir, lixo, louça, roupa, água, remédio). Marcar a tarefa cancela as cobranças. Tocar na notificação abre o Routine com a tarefa destacada.
+7. **🏅 Conquistas da rotina no Perfil do jogador:** 10 novas, entre elas "Adulto funcional", "Sono de bebê" (7 dias seguidos dormindo na hora), "Hábito de ferro/titânio/vibranium" (7/30/100 seguidas), "Dia perfeito", "Monge tibetano" e "CEO da própria vida". O XP das tarefas entra no mesmo perfil dos treinos, e o extrato do perfil ganhou a linha "✅ Rotina".
+
+**Onde a cobrança funciona:**
+- **App Android (APK 1.2):** avisa no horário e cobra com o app fechado. A notificação tem o botão **✅ Feito**, que marca sem abrir o app. Os avisos dos próximos 3 dias são refeitos sempre que você abre o portal ou o Routine; se passar mais de 3 dias sem abrir o Toba, os avisos param até a próxima abertura.
+- **Navegador (site/PWA):** não existe aviso agendado com o site fechado, porque o Toba não tem servidor e os navegadores não deixam agendar notificação. Com o portal ou o Routine abertos (ou recém-minimizados), o Toba avisa e cobra normalmente. Fora isso, as tarefas do dia e as atrasadas aparecem quando você abrir. Opção: dentro da tarefa, **📅 Pôr na agenda do celular**; a agenda avisa no horário, mas não sabe quando você fez.
+- **APK antigo (1.1):** o Routine funciona, mas mostra um aviso pedindo o APK novo para as cobranças.
+
+**APK novo:** versão 1.2 (versionCode 3). Precisa gerar e instalar de novo para as cobranças e o botão Feito. Sem ele, o resto do site funciona normal.
+
+**Dados:**
+- Chave nova `TOBA_ROUTINE_DB` (+ `TOBA_ROUTINE_DB_AUTO_BACKUP`) com as tarefas e o histórico (formato no `CLAUDE.md`, seção 3.10). Entra sozinha no backup geral do portal, e o Routine tem backup próprio na ⚙️.
+- O XP não é gravado: o perfil recalcula a partir do histórico.
+- Nada muda no `TOBA_HEALTH_DB` nem no `TOBA_PLAYER_DB`.
+- O app Android guarda os avisos e os "Feito" pendentes nas preferências dele (`task_alerts`, `task_done`), nunca no `localStorage`.
+
+**Como testar:**
+- Navegador (`python -m http.server 8080`):
+  - Portal → card Toba Routine → aparecem as sugestões → Adicionar.
+  - Marcar uma tarefa: "+XP" e a conquista "Adulto funcional". Desmarcar: o XP volta, sem aviso.
+  - Criar tarefa semanal, mensal e "quando der": conferir que aparecem só nos dias certos (aba Tarefas).
+  - Para ver atrasadas: no console, `routineDb.tasks.forEach(t => t.createdAt = "2026-10-12"); saveRoutineDb(); renderRoutine()`.
+  - Avisos: ⚙️ → Permitir notificações; criar tarefa para daqui a 2 minutos e deixar a aba aberta.
+  - Perfil e Treinos: o XP total é o mesmo do portal; a categoria "✅ Rotina" aparece nas conquistas.
+  - Backup: ⚙️ do Routine → baixar → apagar tudo → restaurar. Backup geral do portal: exportar/importar.
+- APK 1.2: Android Studio → Rebuild → gerar o APK assinado → instalar por cima.
+  - Criar tarefa para daqui a 2 minutos e fechar o app: chega "🐕 Passear com o cachorro". Sem tocar, chega "😒 Ainda não: …" 30 min depois.
+  - Tocar em **✅ Feito**: vira "✅ Anotado!" e as próximas cobranças não chegam. Abrir o Routine: a tarefa está marcada e o XP entrou.
+  - Tocar na notificação (sem o Feito): abre o Routine com a tarefa destacada.
+  - Reiniciar o celular: os avisos continuam agendados.
+
+**Commit sugerido:** `v1.41 - Toba Routine com tarefas, XP por dificuldade e cobrancas por notificacao`

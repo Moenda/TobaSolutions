@@ -8,6 +8,8 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.Icon;
+import android.net.Uri;
 import android.os.Build;
 
 import org.json.JSONObject;
@@ -21,6 +23,7 @@ final class Notifier {
     static final String CH_REMINDER = "lembretes";
     static final String CH_REST = "descanso";
     static final String CH_WORKOUT = "treino";
+    static final String CH_ROUTINE = "rotina";
     static final int REST_ID = 3001;
     static final int WORKOUT_ID = 3002;
     static final String WORKOUT_URL = BuildConfig.START_URL + "TobaHealth/TobaHealth-Treinos.html?live=1";
@@ -46,6 +49,9 @@ final class Notifier {
         workout.setDescription("Fica na barra com o tempo do treino ao vivo enquanto ele estiver aberto");
         nm.createNotificationChannel(rest);
         nm.createNotificationChannel(workout);
+        NotificationChannel routine = new NotificationChannel(CH_ROUTINE, "Cobranças da rotina", NotificationManager.IMPORTANCE_HIGH);
+        routine.setDescription("Tarefas do Toba Routine no horário e as cobranças se você não fizer");
+        nm.createNotificationChannel(routine);
     }
 
     static boolean canPost(Context c) {
@@ -110,6 +116,59 @@ final class Notifier {
                 .build();
         NotificationManager nm = c.getSystemService(NotificationManager.class);
         if (nm != null) nm.notify(WORKOUT_ID, notification);
+    }
+
+    // Uma notificação por tarefa e dia: a cobrança seguinte substitui a anterior.
+    static int taskNotifId(String taskId, String date) {
+        return 5000 + ((taskId + "|" + date).hashCode() & 0xfff);
+    }
+
+    // Aviso de tarefa com o botão "✅ Feito" (marca sem abrir o app).
+    static void showTask(Context c, JSONObject alert) {
+        if (!canPost(c)) return;
+        ensureChannels(c);
+        String taskId = alert.optString("taskId");
+        String date = alert.optString("date");
+        int id = taskNotifId(taskId, date);
+        Intent done = new Intent(c, AlarmReceiver.class);
+        done.putExtra(Alarms.EXTRA_TYPE, Alarms.TYPE_TASK_DONE);
+        done.putExtra(Alarms.EXTRA_TASK, taskId);
+        done.putExtra(Alarms.EXTRA_DATE, date);
+        done.putExtra(Alarms.EXTRA_NOTIF, id);
+        PendingIntent onDone = PendingIntent.getBroadcast(c, id, done,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        String url = alert.optString("url", "");
+        if (!MainActivity.isOwnSite(Uri.parse(url))) url = BuildConfig.START_URL + "TobaRoutine/TobaRoutine-Index.html";
+        String body = alert.optString("body", "");
+        Notification notification = new Notification.Builder(c, CH_ROUTINE)
+                .setSmallIcon(R.drawable.ic_stat_toba)
+                .setColor(0xFFE3B341)
+                .setContentTitle(alert.optString("title", "Toba Routine"))
+                .setContentText(body)
+                .setStyle(new Notification.BigTextStyle().bigText(body))
+                .setAutoCancel(true)
+                .setContentIntent(openIntent(c, id, url))
+                .addAction(new Notification.Action.Builder(
+                        Icon.createWithResource(c, R.drawable.ic_stat_toba), "✅ Feito", onDone).build())
+                .build();
+        NotificationManager nm = c.getSystemService(NotificationManager.class);
+        if (nm != null) nm.notify(id, notification);
+    }
+
+    // Depois do "✅ Feito": troca a cobrança por um ok que some sozinho.
+    static void showTaskDone(Context c, int id) {
+        if (!canPost(c)) return;
+        Notification notification = new Notification.Builder(c, CH_ROUTINE)
+                .setSmallIcon(R.drawable.ic_stat_toba)
+                .setColor(0xFF3FB950)
+                .setContentTitle("✅ Anotado!")
+                .setContentText("O XP cai na conta quando você abrir o Toba.")
+                .setOnlyAlertOnce(true)
+                .setAutoCancel(true)
+                .setTimeoutAfter(4000)
+                .build();
+        NotificationManager nm = c.getSystemService(NotificationManager.class);
+        if (nm != null) nm.notify(id, notification);
     }
 
     static void showPurchase(Context c, double amount, String desc) {

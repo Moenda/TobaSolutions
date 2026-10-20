@@ -1,0 +1,494 @@
+/* Toba Routine · só o que é do app. A base vem de ../assets/toba-common.css */
+
+:root {
+  --accent: var(--gold-2);
+}
+
+.rt-tabs {
+  margin-bottom: 0.9rem;
+}
+
+.rt-wide-btn {
+  width: 100%;
+  margin-top: 0.8rem;
+}
+
+/* Topo do Hoje */
+.rt-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(227, 179, 65, 0.14), transparent 55%),
+    var(--surface);
+}
+
+.rt-hero-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.rt-ring {
+  --p: 0;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: conic-gradient(var(--green) calc(var(--p) * 1%), var(--surface-3) 0);
+  transition: background 0.4s ease;
+}
+
+.rt-ring span {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--surface);
+  font-weight: 900;
+  font-size: 1rem;
+}
+
+.rt-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.rt-hero-text strong {
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.rt-hero-level {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+  color: inherit;
+  text-decoration: none;
+  font-size: 0.75rem;
+  color: var(--text-2);
+}
+
+.rt-hero-level > span:nth-child(2) {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rt-chevron {
+  color: var(--muted);
+  font-size: 1.2rem;
+}
+
+.rt-notice-btn {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+/* Listas de tarefas */
+.rt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rt-task {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  transition: opacity 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+}
+
+.rt-task.is-list {
+  cursor: pointer;
+}
+
+.rt-task.is-done {
+  opacity: 0.55;
+}
+
+.rt-task.is-done .rt-task-name {
+  text-decoration: line-through;
+}
+
+.rt-task.is-overdue {
+  border-color: rgba(248, 81, 73, 0.35);
+}
+
+.rt-task.is-highlight {
+  border-color: var(--gold-2);
+  box-shadow: 0 0 0 2px rgba(227, 179, 65, 0.3);
+  animation: rt-glow 1.2s ease-in-out 3;
+}
+
+@keyframes rt-glow {
+  50% { box-shadow: 0 0 0 6px rgba(227, 179, 65, 0.15); }
+}
+
+.rt-task.is-popping {
+  transform: scale(1.03);
+  border-color: var(--green);
+}
+
+.rt-check {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface-2);
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.rt-check:hover {
+  border-color: var(--green);
+}
+
+.rt-check[aria-pressed="true"] {
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.rt-task.is-popping .rt-check {
+  background: var(--green);
+  border-color: var(--green);
+  animation: rt-pop 0.35s ease;
+}
+
+@keyframes rt-pop {
+  50% { transform: scale(1.3); }
+}
+
+.rt-task-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.rt-task-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rt-task-emoji {
+  margin-right: 6px;
+}
+
+.rt-task-emoji.is-big {
+  margin: 0;
+  font-size: 1.5rem;
+  width: 36px;
+  text-align: center;
+}
+
+.rt-task-meta {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.rt-day-label {
+  margin-top: 4px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--coral);
+}
+
+.rt-more {
+  margin-top: 6px;
+}
+
+.rt-more summary {
+  padding: 0.4rem 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.rt-overdue-title span {
+  margin-left: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.rt-undo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.rt-streak {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.rt-streak.is-on {
+  color: var(--coral);
+}
+
+/* +XP subindo do botão */
+.rt-float {
+  position: fixed;
+  z-index: 1500;
+  transform: translate(-50%, 0);
+  font-weight: 900;
+  font-size: 1rem;
+  color: var(--green);
+  text-shadow: 0 0 12px rgba(63, 185, 80, 0.6);
+  pointer-events: none;
+  animation: rt-float 1.1s ease-out forwards;
+}
+
+@keyframes rt-float {
+  0% { opacity: 0; transform: translate(-50%, 0) scale(0.6); }
+  20% { opacity: 1; transform: translate(-50%, -14px) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -60px) scale(1); }
+}
+
+/* Histórico */
+.rt-stats,
+.rt-days {
+  display: flex;
+  flex-direction: column;
+}
+
+.rt-stat-row,
+.rt-day-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.rt-stat-row:last-child,
+.rt-day-row:last-child {
+  border-bottom: 0;
+}
+
+.rt-stat-streak {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 0.85rem;
+  color: var(--coral);
+}
+
+.rt-stat-streak small {
+  font-size: 0.66rem;
+  color: var(--muted);
+}
+
+.rt-day-name {
+  width: 74px;
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.rt-day-icons {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.95rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.rt-day-count {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--text-2);
+}
+
+.rt-day-row.is-perfect .rt-day-count {
+  color: var(--gold-2);
+}
+
+/* Folha da tarefa */
+.rt-name-row {
+  display: flex;
+  gap: 8px;
+}
+
+.rt-emoji-group {
+  flex: 0 0 72px;
+}
+
+.rt-name-group {
+  flex: 1 1 auto;
+}
+
+.rt-emoji-input {
+  text-align: center;
+  font-size: 1.3rem;
+}
+
+.rt-emoji-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: -0.3rem 0 0.9rem;
+}
+
+.rt-emoji-pick {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-soft);
+  background: var(--surface-2);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.rt-segment {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.rt-segment input,
+.rt-diff-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.rt-segment span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+}
+
+.rt-segment input:checked + span {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0d1117;
+}
+
+.rt-help {
+  display: block;
+  margin: 4px 0 0.8rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.rt-diff {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group .rt-diff-card {
+  position: relative;
+  display: flex;
+  margin: 0;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+  align-items: center;
+  gap: 10px;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius);
+  border: 2px solid var(--border-soft);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.form-group .rt-diff-card:has(input:checked) {
+  border-color: var(--accent);
+  background: rgba(227, 179, 65, 0.1);
+}
+
+.rt-diff-icon {
+  font-size: 1.5rem;
+}
+
+.rt-diff-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+}
+
+.rt-diff-text small {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+#taskNagRow {
+  margin-bottom: 0.9rem;
+}
+
+/* Sugestões */
+.rt-suggest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rt-suggest {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-soft);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.rt-suggest input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}
+
+.rt-suggest.is-have {
+  opacity: 0.5;
+}

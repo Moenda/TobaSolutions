@@ -1,11 +1,15 @@
 /* =====================================================================
  * Toba · Perfil do jogador (XP, nível, streak, conquistas)
- * Um perfil só para o Toba inteiro. Carregue depois do toba-common.js e do
- * TobaHealth/js/health-metrics.js (catálogo, escalas do Hall e kg levantado):
- *   toba-common.js -> health-metrics.js -> toba-player.js -> resto da página
+ * Um perfil só para o Toba inteiro. Carregue depois do toba-common.js, do
+ * TobaHealth/js/health-metrics.js (catálogo, escalas do Hall e kg levantado)
+ * e do TobaRoutine/js/routine-metrics.js (XP das tarefas, desde v1.41):
+ *   toba-common.js -> health-metrics.js -> routine-metrics.js -> toba-player.js
+ * Sem routine-metrics.js o cálculo fica "incompleto" (state.ok = false) e
+ * nada é comemorado nem gravado, para o XP não oscilar entre as telas.
  *
  * PRINCÍPIO: o XP é CALCULADO, nunca somado.
- * - computePlayer() relê os treinos do TOBA_HEALTH_DB e devolve XP, nível,
+ * - computePlayer() relê os treinos do TOBA_HEALTH_DB e as tarefas do
+ *   TOBA_ROUTINE_DB e devolve XP, nível,
  *   streak, recordes e conquistas. Apagou um treino? O XP dele some junto.
  *   Não existe XP duplicado e o histórico antigo já conta.
  * - O TOBA_PLAYER_DB só guarda o que não dá para calcular:
@@ -116,6 +120,7 @@ const PLAYER_ACHIEVEMENT_CATS = [
   { id: "recordes", name: "📈 Recordes" },
   { id: "streak", name: "🔥 Streak" },
   { id: "pesagem", name: "⚖️ Pesagem" },
+  { id: "rotina", name: "✅ Rotina" },
 ];
 
 const PLAYER_SAITAMA_GOAL = 100 * 365 * 3 * 3; // 100 de cada por dia durante 3 anos
@@ -171,6 +176,16 @@ function buildPlayerAchievements() {
     { id: "sk-365", cat: "streak", tier: "lenda", icon: "🌞", name: "Um ano pegando fogo", desc: "Streak de 365 dias. Você é o sol agora.", hint: "Chegue a um streak de 365 dias.", metric: (s) => s.streakBest, goal: 365, title: "🌞 Um Ano Pegando Fogo" },
     { id: "wi-10", cat: "pesagem", tier: "bronze", icon: "⚖️", name: "Amigo da balança", desc: "10 pesagens registradas.", hint: "Registre 10 pesagens.", metric: (s) => s.weighIns, goal: 10 },
     { id: "wi-50", cat: "pesagem", tier: "prata", icon: "📏", name: "Íntimo da balança", desc: "50 pesagens. Ela já sabe seu signo.", hint: "Registre 50 pesagens.", metric: (s) => s.weighIns, goal: 50 },
+    { id: "rt-1", cat: "rotina", tier: "bronze", icon: "🧹", name: "Adulto funcional", desc: "Primeira tarefa da rotina feita. Sua mãe sorriu.", hint: "Marque uma tarefa no Toba Routine.", metric: (s) => s.routineTasks, goal: 1 },
+    { id: "rt-50", cat: "rotina", tier: "prata", icon: "🏠", name: "Dono de casa", desc: "50 tarefas feitas. A casa agradece.", hint: "Faça 50 tarefas da rotina.", metric: (s) => s.routineTasks, goal: 50 },
+    { id: "rt-250", cat: "rotina", tier: "ouro", icon: "💼", name: "CEO da própria vida", desc: "250 tarefas. Já pode dar palestra de produtividade.", hint: "Faça 250 tarefas da rotina.", metric: (s) => s.routineTasks, goal: 250, title: "💼 CEO da Própria Vida" },
+    { id: "rt-monge", cat: "rotina", tier: "prata", icon: "🧘", name: "Monge tibetano", desc: "10 tarefas difíceis feitas. Proatividade nível templo.", hint: "Faça 10 tarefas difíceis.", metric: (s) => s.routineHard, goal: 10 },
+    { id: "rt-sono", cat: "rotina", tier: "bronze", icon: "😴", name: "Sono de bebê", desc: "7 dias seguidos dormindo na hora. O travesseiro te ama.", hint: "Faça 7 seguidas uma tarefa de dormir na hora.", metric: (s) => s.routineSleepSeq, goal: 7 },
+    { id: "rt-seq7", cat: "rotina", tier: "bronze", icon: "⛓️", name: "Hábito de ferro", desc: "7 vezes seguidas a mesma tarefa.", hint: "Faça 7 vezes seguidas a mesma tarefa.", metric: (s) => s.routineBestSeq, goal: 7 },
+    { id: "rt-seq30", cat: "rotina", tier: "ouro", icon: "🔩", name: "Hábito de titânio", desc: "30 vezes seguidas a mesma tarefa. Virou piloto automático.", hint: "Faça 30 vezes seguidas a mesma tarefa.", metric: (s) => s.routineBestSeq, goal: 30 },
+    { id: "rt-seq100", cat: "rotina", tier: "lenda", icon: "🛡️", name: "Hábito de vibranium", desc: "100 vezes seguidas. Nem o Thanos te para.", hint: "Faça 100 vezes seguidas a mesma tarefa.", metric: (s) => s.routineBestSeq, goal: 100, title: "🛡️ Inabalável" },
+    { id: "rt-perfeito", cat: "rotina", tier: "prata", icon: "✨", name: "Dia perfeito", desc: "Todas as tarefas do dia feitas no dia.", hint: "Faça todas as tarefas de um dia (mínimo 2) no próprio dia.", metric: (s) => s.routinePerfect, goal: 1 },
+    { id: "rt-perfeito7", cat: "rotina", tier: "ouro", icon: "🌟", name: "7 dias perfeitos", desc: "Sete dias com tudo feito. Quem é você e o que fez com o preguiçoso?", hint: "Tenha 7 dias perfeitos.", metric: (s) => s.routinePerfect, goal: 7 },
   );
   return list;
 }
@@ -504,6 +519,7 @@ function computePlayer(options = {}) {
     workouts: 0, kcal: 0, km: 0, liftKg: 0, saitamaReps: 0, saitamaWorkouts: 0,
     carecaDay: 0, carecaFull: 0, groups: 0, monthGroups: 0, records: 0,
     weekend: 0, types: 0, weighIns: 0, streakBest: 0,
+    routineTasks: 0, routineHard: 0, routineBestSeq: 0, routineSleepSeq: 0, routinePerfect: 0,
   };
   const checkAchievements = (date) => {
     PLAYER_ACHIEVEMENTS.forEach((a) => {
@@ -623,6 +639,20 @@ function computePlayer(options = {}) {
     });
   });
   stats.streakBest = streak.best;
+
+  /* ---------- Rotina (TOBA_ROUTINE_DB) ---------- */
+  const routineSource = readPlayerSource("TOBA_ROUTINE_DB");
+  const hasRoutineRules = typeof calcRoutinePlayer === "function";
+  if (hasRoutineRules) {
+    const routine = calcRoutinePlayer(routineSource.data, today);
+    events.push(...routine.events);
+    routine.timeline.forEach((step) => {
+      Object.assign(stats, step.stats);
+      checkAchievements(step.date);
+    });
+  } else {
+    console.warn("toba-player: routine-metrics.js não carregado; XP da rotina fora da conta.");
+  }
   checkAchievements(today);
 
   /* ---------- Conquistas ---------- */
@@ -640,7 +670,7 @@ function computePlayer(options = {}) {
   const info = playerLevelInfo(xp);
   const unlockedIds = new Set(achievements.filter((a) => a.unlocked).map((a) => a.id));
   return {
-    ok: healthSource.ok,
+    ok: healthSource.ok && routineSource.ok && hasRoutineRules,
     today,
     xp,
     ...info,

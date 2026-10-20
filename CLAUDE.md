@@ -48,9 +48,10 @@ Ao terminar um patch, informe a lista de arquivos alterados e o que testar — n
 
 - PWA estático (HTML + CSS + JS puro, **sem build, sem npm, sem framework, sem módulos ES**). Publicado no **GitHub Pages**.
 - Idioma da interface, comentários e commits: **português (pt-BR)**. Valores em **BRL**, datas exibidas como `dd/mm/aaaa`.
-- Dois apps dentro do portal:
+- Três apps dentro do portal, mais o Perfil do jogador (XP de tudo):
   - **Toba Bank** — Gastos, Investimentos, Raxador (divisão de contas).
   - **Toba Health** — Pesagem (balança) e Treinos (inclui Treino de Força).
+  - **Toba Routine** — tarefas da rotina com XP e cobranças (desde v1.41).
 - Única dependência externa: Chart.js **fixado** em `chart.js@4.4.7` (jsdelivr). Nunca usar versão flutuante.
 - Commits seguem o padrão `vX.YY - descrição` (ex.: `v1.16 - Novo modulo de treino de força...`).
 
@@ -83,8 +84,15 @@ TobaBank/
 TobaHealth/
   TobaHealth-Index.html    Hub do Health (carrega o health-core só para a ⚙️/backup)
   TobaHealth-Pesagem.html    -> js/health-core.js + js/pesagem.js
-  TobaHealth-Treinos.html    -> js/health-core.js + js/health-metrics.js + ../assets/toba-player.js + js/hall.js + js/forca.js + js/sessao.js + js/sessao-saitama.js + js/treinos.js
+  TobaHealth-Treinos.html    -> js/health-core.js + js/health-metrics.js + ../TobaRoutine/js/routine-metrics.js + ../assets/toba-player.js + js/hall.js + js/forca.js + js/sessao.js + js/sessao-saitama.js + js/treinos.js
   css/health-base.css + 1 css por módulo
+TobaRoutine/
+  TobaRoutine-Index.html   Página única (Hoje / Tarefas / Histórico; sem hub)
+                             -> js/routine-metrics.js + js/routine-core.js + ../TobaHealth/js/health-metrics.js
+                                + ../assets/toba-player.js + js/routine-alerts.js + js/routine.js
+  js/routine-metrics.js    Regras puras (quando a tarefa cai, streak por tarefa, XP). Também no portal, Perfil e Treinos
+  js/routine-alerts.js     Frases das cobranças + agenda de avisos (APK) / conferência com a página aberta. Também no portal
+  css/routine-base.css
 TobaAndroid/               App Android (APK): WebView que abre o site publicado + ponte window.TobaNative
                            (gastos lidos das notificações, alarmes, salvar arquivo). Java puro, Android Studio.
                            Fora do PRECACHE. Passo a passo em TobaAndroid/README.md (ver seção 4.1)
@@ -92,7 +100,7 @@ PATCH-NOTES.md             Notas de cada patch (antigo LEIA-ME.md — ver seçã
 CLAUDE.md                  Este guia
 ```
 
-- Tudo é **global** (funções e variáveis no `window`). A ordem dos `<script>` importa: `../assets/toba-common.js` vem **primeiro** em toda página, depois o `*-core.js`, depois o módulo; em Treinos a ordem é `health-core.js` → `health-metrics.js` (catálogo de força, escalas do Hall e conta do kg levantado, desde v1.40) → `../assets/toba-player.js` → `hall.js` (páginas de detalhe do Hall do Herói, view `viewDetail`; só leitura do banco) → `forca.js` → `sessao.js` (treino ao vivo, view `viewSession`) → `sessao-saitama.js` (Saitama ao vivo, mesma view) → `treinos.js`; `hall.js`, `forca.js`, `sessao.js`, `sessao-saitama.js` (e qualquer arquivo novo carregado antes de `treinos.js`) só chama funções de `treinos.js` dentro de funções (nunca na carga do arquivo). Arquivo JS novo: acrescente o `<script>` na ordem certa **e** no `PRECACHE` do `sw.js`.
+- Tudo é **global** (funções e variáveis no `window`). A ordem dos `<script>` importa: `../assets/toba-common.js` vem **primeiro** em toda página, depois o `*-core.js`, depois o módulo; em Treinos a ordem é `health-core.js` → `health-metrics.js` (catálogo de força, escalas do Hall e conta do kg levantado, desde v1.40) → `../TobaRoutine/js/routine-metrics.js` → `../assets/toba-player.js` → `hall.js` (páginas de detalhe do Hall do Herói, view `viewDetail`; só leitura do banco) → `forca.js` → `sessao.js` (treino ao vivo, view `viewSession`) → `sessao-saitama.js` (Saitama ao vivo, mesma view) → `treinos.js`; `hall.js`, `forca.js`, `sessao.js`, `sessao-saitama.js` (e qualquer arquivo novo carregado antes de `treinos.js`) só chama funções de `treinos.js` dentro de funções (nunca na carga do arquivo). Arquivo JS novo: acrescente o `<script>` na ordem certa **e** no `PRECACHE` do `sw.js`.
 - Desde a v1.22 os cores não repetem mais helpers (tudo comum está no `toba-common.js`) e cada um tem nomes próprios (`exportBankBackup`/`exportHealthBackup`...). Ainda assim cada página registra **um** app em `tobaSetupApp` (a ⚙️ faz backup de um app só); não misture dois cores numa página sem necessidade.
 - Os nomes dos arquivos HTML **não podem mudar** (links, favoritos, atalhos do manifest e o atalho `?action=add_expense` dependem deles).
 
@@ -128,6 +136,8 @@ CLAUDE.md                  Este guia
 | `TOBA_PLAYER_DB_AUTO_BACKUP` | `assets/toba-player.js` | Cópia do valor **anterior** do perfil, atualizada a cada `savePlayerDb()` e no load |
 | `TOBA_PLAYER_DB_CORRUPT_<timestamp>` | `assets/toba-player.js` | Texto original quando o perfil não pôde ser lido (uma cópia por conteúdo); com ele ilegível nada é gravado até restaurar ou "Recomeçar perfil" |
 | `toba_player_prefs` | `assets/toba-player.js` | `{ sound, vibrate }` das comemorações (desde v1.40). Ausente = os dois ligados |
+| `TOBA_ROUTINE_DB` | `TobaRoutine/js/routine-core.js` | Banco do Toba Routine (desde v1.41), ver 3.10 |
+| `TOBA_ROUTINE_DB_AUTO_BACKUP` | `TobaRoutine/js/routine-core.js` | Cópia do valor **anterior** da rotina, atualizada a cada `saveRoutineDb()` e no load |
 | `toba_modules_config` | `assets/portal.js` | `[{ id, visible }]` — ordem/visibilidade dos cards do portal |
 | `toba_bank_card_config` | `assets/portal.js` | `{ type: "personalizado"\|"simples", orcamento, cofre, gastos, sobra, addGasto, privacy }` (mesclado com defaults) |
 | `toba_health_card_config` | `assets/portal.js` | Desde v1.37: `{ type: "personalizado"\|"simples", metrics: { peso, pesoMes, treinos, km, semana, kcal, minutos, saitama, gordura }, links, privacy }`. `metrics` é mesclado com os defaults de `HEALTH_CARD_METRICS` (número novo = item novo na lista, nunca renomear a `key`) |
@@ -280,6 +290,7 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 - [ ] Testado o backup **geral** do portal (exportar/importar).
 - [ ] Se mudou algo do Gastos: o card do Toba Bank no portal continua batendo com a tela de Gastos.
 - [ ] Se mudou pesagens/treinos: o card do Toba Health continua batendo com Pesagem e Treinos (`health-metrics.js`).
+- [ ] Se mudou tarefas/log da rotina: o Perfil do jogador e o card do Routine no portal continuam batendo (`routine-metrics.js`).
 - [ ] Se mudou treinos/pesagens: o Perfil do jogador (`computePlayer` em `toba-player.js`) continua lendo o formato (XP, kg levantado igual ao Hall).
 - [ ] Datas gravadas em `AAAA-MM-DD` local; dinheiro como `number` em reais; IDs no tipo da coleção.
 - [ ] Migração idempotente (abrir a página duas vezes dá o mesmo resultado).
@@ -289,21 +300,50 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 
 Arquivo: [assets/toba-player.js](assets/toba-player.js). Variável global `playerDb`; estado calculado em `tobaPlayerState`.
 
-- **O XP é calculado, nunca somado.** `computePlayer()` relê o `TOBA_HEALTH_DB` (direto do `localStorage`, só leitura) e devolve XP, nível, streak, recordes, conquistas e o extrato (`events`). Apagar um treino tira o XP dele; o histórico antigo já conta. Não crie "XP ganho" gravado: some regra nova em `computePlayer()`.
+- **O XP é calculado, nunca somado.** `computePlayer()` relê o `TOBA_HEALTH_DB` e o `TOBA_ROUTINE_DB` (direto do `localStorage`, só leitura; a rotina via `calcRoutinePlayer` de routine-metrics.js, desde v1.41) e devolve XP, nível, streak, recordes, conquistas e o extrato (`events`). Apagar um treino tira o XP dele; o histórico antigo já conta. Não crie "XP ganho" gravado: some regra nova em `computePlayer()`.
 - **Regras** (todas no topo do arquivo): `PLAYER_XP` (treino: 40 + 1/min até 90 + 3/série até 60 + 1 a cada 10 reps de flexão/abdominal/agachamento até 60 + 8/km até 80; teto 300 XP de treino por dia; recorde +30, até 3 por treino), `PLAYER_TIERS` (conquista 50/150/400/1000), `PLAYER_STREAK_MILESTONES` (7/30/100/365 dias, a cada streak). Nível: `playerXpToNext(n) = 60·n + 3·n²` arredondado para dezenas.
 - **Recorde pessoal** = mesma regra do `getStrengthRecords` (maior carga; empate, mais reps; 1ª vez não conta), mais maior distância e mais reps do Saitama num treino.
 - **Streak "dias + meta semanal"** (`calcPlayerStreak`): conta os dias desde o 1º treino da sequência; não quebra enquanto toda semana seg–dom fechada tiver `settings.weeklyGoal` dias com treino; a semana atual só quebra quando não dá mais para bater a meta. Mudar a meta recalcula o histórico inteiro (sem comemoração).
 - **Conquistas** (`PLAYER_ACHIEVEMENTS`): `id` gravado em `seen.achievements` → nunca troque. As de peso/distância usam o `id` de `WORKOUT_LIFT_EQUIVALENTS`/`WORKOUT_DISTANCE_DESTINATIONS` (health-metrics.js). Conquista nova = item novo com `metric(stats)` e `goal`.
 - **Recompensas** (`PLAYER_AVATARS`, `PLAYER_FRAMES`, `PLAYER_COLORS`, títulos de `PLAYER_LEVEL_TITLES` e `title` das conquistas): só visual; `equipped` guarda o `id` ("" = automático). Item bloqueado/sumido cai no automático.
 - **Comemorações**: `tobaPlayerCheck({ reason, silent })` (com espera de 200 ms) compara o calculado com `seen`: +XP, medalha nova, level up, e na 1ª vez (sem `TOBA_PLAYER_DB`) a tela de boas-vindas "você já é nível X". Depois grava o novo `seen`. Se algum banco não pôde ser lido (`state.ok === false`) ou o perfil está travado, só mostra, não comemora nem grava. Chame depois de gravar algo que vale XP (Treinos já chama em `renderWorkoutScreen`, `saveWorkout`, `registerStrengthWorkout`, fim do treino ao vivo e do Saitama). A tela escuta o evento `toba:player` para redesenhar.
+- **Toda página que carrega `toba-player.js` precisa carregar também `health-metrics.js` e `routine-metrics.js` antes.** Sem eles o XP sairia diferente entre as telas; por isso, sem `routine-metrics.js`, `state.ok` fica `false` (não comemora nem grava `seen`). App novo que dê XP: regra pura num `*-metrics.js` próprio, carregado em todas essas páginas, e um bloco em `computePlayer()`.
 - **Backup**: o geral do portal já leva `TOBA_PLAYER_DB`; a ⚙️ do Toba-Perfil.html tem backup só do perfil (`toba_perfil_backup_*.json`, objeto puro) e "Recomeçar perfil" (apaga só `TOBA_PLAYER_DB`; XP e conquistas voltam do cálculo).
+
+### 3.10 Toba Routine — `TOBA_ROUTINE_DB` (desde v1.41)
+
+Arquivo: [TobaRoutine/js/routine-core.js](TobaRoutine/js/routine-core.js). Variável global `routineDb`; trava `isRoutineDbLoaded` (ilegível = não grava).
+
+```js
+{
+  version: 1,
+  seeded: bool,                       // já mostrou as sugestões da 1ª abertura
+  tasks: [ {
+    id: "t-<ts>-<rand4>", name, emoji,
+    recurrence: { type: "daily"|"weekly"|"monthly"|"situational", days?: ["MO","WE"], monthDay?: 1-31 },
+    time: "HH:MM" | "",               // sem horário = sem aviso
+    difficulty: "easy"|"medium"|"hard",
+    nag: bool,                        // cobrar de novo +30 min e +2 h
+    createdAt: "AAAA-MM-DD",
+    archivedAt?: "AAAA-MM-DD"         // "apagada": não cai mais desse dia em diante; histórico e XP ficam
+  } ],
+  log: [ { id, taskId, date: "AAAA-MM-DD" /* dia da tarefa */, doneAt: ms, difficulty /* cópia na hora */ } ]
+}
+```
+
+- **Quando cai** (`isRoutineTaskDue`, routine-metrics.js): diária todo dia; semanal nos `days`; mensal no `monthDay` (dia 31 em mês curto = último dia); situacional nunca (aparece em "Quando acontecer", vale XP até 3× por dia). Nada antes de `createdAt` nem a partir de `archivedAt`.
+- **XP** (`ROUTINE_DIFFICULTIES`: fácil 10, médio 25, difícil 60): sai do `log` com a dificuldade **copiada** na entrada; feita depois do dia (`doneAt` > `date`) vale metade; teto `ROUTINE_XP_DAY_CAP` (250) por dia. Desmarcar = apagar a entrada do log (o XP sai junto). A `key` da dificuldade é gravada: não renomeie.
+- **Atrasadas**: ocorrências dos últimos 7 dias sem entrada no log. **Streak por tarefa** (`calcRoutineTaskStreak`): ocorrências seguidas feitas; a de hoje aberta não quebra.
+- **Avisos** (`routine-alerts.js`): `buildRoutineAlerts` monta os próximos 3 dias `[{ key: "taskId|data|nível", at, title, body, url, taskId, date }]` (nível 0 no horário, 1 = +30 min, 2 = +2 h; no máximo 300), com frases sorteadas de `ROUTINE_NAG_LINES`/`ROUTINE_TOPIC_LINES`. No APK vão por `TOBA_NATIVE.setTaskAlerts` (substitui a lista), refeito ao abrir o portal ou a rotina e a cada gravação (`onRoutineDataSaved`). No navegador `startRoutineWatcher` confere a cada 30 s só com a página aberta.
+- **"✅ Feito" da notificação** (APK): o Android guarda em `task_done` e cancela as cobranças do dia; `importNativeRoutineDone()` (routine.js, no load e no `onTobaAppResume`) vira entrada do log e só chama `ackDoneTasks` depois de gravar. O `buildRoutineAlerts` já trata os pendentes da fila como feitos.
+- Backup do app: `toba_routine_backup_*.json` (objeto puro, precisa de `tasks`). Importar passa pelo `normalizeRoutineDb()`.
 
 ---
 
 ## 4. Service worker / PWA
 
 - [sw.js](sw.js): páginas/JS/CSS **network-first** (timeout 4 s, cai no cache); jsdelivr **cache-first**. Sem cópia no cache, só **navegação** (`request.mode === "navigate"`) cai no `index.html`; JS/CSS faltando devolvem erro (desde v1.37 — antes o HTML ia no lugar do script e a tela quebrava offline sem aviso). O network-first usa `fetch(..., { cache: "no-cache" })` de propósito: o GitHub Pages manda `max-age=600`, e sem isso o celular misturava HTML novo com JS antigo logo depois de publicar. Não tire.
-- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v11"` → `"toba-v12"`…). Sem isso, o app offline fica sem o arquivo.
+- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v12"` → `"toba-v13"`…). Sem isso, o app offline fica sem o arquivo.
 - Atualizar a versão do Chart.js exige trocar a URL nos HTML **e** no `PRECACHE`.
 - Toda página nova deve incluir `<script src="../assets/pwa-register.js"></script>` (ou `assets/...` na raiz), as metas de `color-scheme: dark` e o link do manifest, como as existentes.
 
@@ -311,7 +351,7 @@ Arquivo: [assets/toba-player.js](assets/toba-player.js). Variável global `playe
 
 - O APK só abre `https://moenda.github.io/TobaSolutions/` (`START_URL`/`SITE_HOST` em `app/build.gradle`). **Patch no site não precisa de APK novo.** Mudou algo em `TobaAndroid/`? Aumente `versionCode`/`versionName` e avise o usuário que precisa gerar e instalar o APK de novo.
 - O armazenamento do app (WebView) é **separado** do Chrome: os dados vão por backup geral. Mudar o domínio/caminho do site também esvazia o app (mesma regra da 3.1).
-- No site, a ponte é `TOBA_NATIVE` (toba-common; `null` no navegador) / `tobaIsApp()`. Todo uso tem que funcionar sem ela. Métodos (todos texto/JSON): `getPendingPurchases`, `ackPurchases`, `getPurchaseLog`, `allowApp`, `hasNotificationAccess`, `openNotificationAccess`, `openAppInfo`, `getReminder`/`setReminder`/`clearReminder`, `scheduleRest`/`cancelRest`, `showWorkout`/`hideWorkout` (notificação fixa do treino ao vivo, desde v1.39; o site checa se existe, APK antigo não tem), `keepScreenOn`, `saveFile`, `canPostNotifications`/`requestNotificationPermission`. Mudou um método? Mude em `TobaBridge.java` e no site juntos.
+- No site, a ponte é `TOBA_NATIVE` (toba-common; `null` no navegador) / `tobaIsApp()`. Todo uso tem que funcionar sem ela. Métodos (todos texto/JSON): `getPendingPurchases`, `ackPurchases`, `getPurchaseLog`, `allowApp`, `hasNotificationAccess`, `openNotificationAccess`, `openAppInfo`, `getReminder`/`setReminder`/`clearReminder`, `scheduleRest`/`cancelRest`, `showWorkout`/`hideWorkout` (notificação fixa do treino ao vivo, desde v1.39; o site checa se existe, APK antigo não tem), `keepScreenOn`, `saveFile`, `canPostNotifications`/`requestNotificationPermission`, `setTaskAlerts`/`getDoneTasks`/`ackDoneTasks` (avisos do Toba Routine, desde v1.41 / APK 1.2; o site checa se existem). `version()` devolve 2 no APK 1.2. Mudou um método? Mude em `TobaBridge.java` e no site juntos.
 - No app o WebView não baixa arquivo gerado pelo site: `tobaDownloadJson` usa `TOBA_NATIVE.saveFile` (Downloads/Toba). Download novo deve passar por ela.
 - Texto de notificação de banco mudou? Ajuste `PurchaseParser.java` (listas de apps e palavras). Fila/log/lembretes ficam em SharedPreferences (`TobaStore.java`), nunca no `localStorage`.
 - Nunca commitar a chave de assinatura (`*.jks`, já no `TobaAndroid/.gitignore`): o repositório é público.

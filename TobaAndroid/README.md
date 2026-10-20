@@ -65,6 +65,8 @@ Como funciona: a cada compra aparece "💸 R$ 25,90 · PADARIA". Ao abrir o Gast
 
 Gastos / Pesagem / Treinos → ⚙️ → 🔔 Lembretes. No app, o botão vira **🔔 Ligar lembrete** (e **Desligar** depois). No navegador continua criando o evento na agenda (.ics).
 
+**Toba Routine (APK 1.2+):** toda tarefa com horário avisa na hora e, se continuar sem fazer, cobra de novo depois de 30 min e de 2 h (canal "Cobranças da rotina"). A notificação tem o botão **✅ Feito**: marca a tarefa sem abrir o app e cancela as cobranças do dia; o XP entra quando você abrir o Toba. Os avisos dos próximos 3 dias são refeitos cada vez que você abre o portal ou o Routine.
+
 ---
 
 ## Para quem for mexer no código
@@ -72,5 +74,5 @@ Gastos / Pesagem / Treinos → ⚙️ → 🔔 Lembretes. No app, o botão vira 
 - `MainActivity.java`: o WebView. Só abre páginas de `SITE_HOST`; links de fora vão para o navegador. Chama `window.onTobaAppResume()` ao voltar para a frente.
 - `TobaBridge.java`: vira `window.TobaNative` no site. O site testa `TOBA_NATIVE` / `tobaIsApp()` (toba-common.js); no navegador é `null`.
 - `PurchaseListener.java` + `PurchaseParser.java`: leem as notificações e guardam a fila em SharedPreferences (`TobaStore.java`). Nada é gravado no banco do site por aqui: o `gastos.js` (`importNativePurchases`) é quem lança, e só tira da fila (`ackPurchases`) depois que o `saveDatabase()` gravou.
-- `Alarms.java` + `AlarmReceiver.java` + `BootReceiver.java`: lembretes e descanso.
+- `Alarms.java` + `AlarmReceiver.java` + `BootReceiver.java`: lembretes, descanso e os avisos de uma vez só do Toba Routine (`setTaskAlerts` recebe a lista inteira; o "✅ Feito" vai para a fila `task_done`, lida pelo `routine.js` com `getDoneTasks`/`ackDoneTasks`).
 - `targetSdk 34` de propósito (no 35 o site fica embaixo da barra de status). Não vai para a Play Store: usa `USE_EXACT_ALARM` e leitura de notificações.

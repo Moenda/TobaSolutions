@@ -19,6 +19,10 @@ import java.util.Set;
  * - reminders: lembretes { id: { title, message, times, days, url } }
  * - rest: fim do descanso agendado { endsAt, title, body }
  * - workout: treino ao vivo em andamento { startedAt, title } (notificação fixa)
+ * - task_alerts: avisos de tarefas do Toba Routine, de uma vez só
+ *   [{ key, at, title, body, url, taskId, date }] (a lista inteira vem do site)
+ * - task_done: "✅ Feito" tocados na notificação esperando o site gravar
+ *   [{ taskId, date, at }]
  */
 final class TobaStore {
     private static final String PREFS = "toba_native";
@@ -29,6 +33,9 @@ final class TobaStore {
     static final String KEY_REMINDER_CODES = "reminder_codes";
     static final String KEY_REST = "rest";
     static final String KEY_WORKOUT = "workout";
+    static final String KEY_TASK_ALERTS = "task_alerts";
+    static final String KEY_TASK_CODES = "task_alert_codes";
+    static final String KEY_TASK_DONE = "task_done";
     private static final int LOG_MAX = 25;
     private static final Object LOCK = new Object();
 
@@ -113,6 +120,60 @@ final class TobaStore {
                     && Math.abs(at - e.optLong("at")) < windowMs) return true;
         }
         return false;
+    }
+
+    /* ---------------- Toba Routine ---------------- */
+
+    // Tira da lista os avisos de uma tarefa num dia (taskId + date) ou um só (key).
+    static void removeTaskAlerts(Context c, String taskId, String date, String key) {
+        synchronized (LOCK) {
+            JSONArray list = getArray(c, KEY_TASK_ALERTS);
+            JSONArray keep = new JSONArray();
+            for (int i = 0; i < list.length(); i++) {
+                JSONObject a = list.optJSONObject(i);
+                if (a == null) continue;
+                boolean sameTask = taskId != null && date != null
+                        && taskId.equals(a.optString("taskId")) && date.equals(a.optString("date"));
+                boolean sameKey = key != null && key.equals(a.optString("key"));
+                if (!sameTask && !sameKey) keep.put(a);
+            }
+            put(c, KEY_TASK_ALERTS, keep.toString());
+        }
+    }
+
+    static void addDoneTask(Context c, String taskId, String date, long at) {
+        synchronized (LOCK) {
+            JSONArray list = getArray(c, KEY_TASK_DONE);
+            for (int i = 0; i < list.length(); i++) {
+                JSONObject d = list.optJSONObject(i);
+                if (d != null && taskId.equals(d.optString("taskId")) && date.equals(d.optString("date"))) return;
+            }
+            try {
+                JSONObject d = new JSONObject();
+                d.put("taskId", taskId);
+                d.put("date", date);
+                d.put("at", at);
+                list.put(d);
+            } catch (JSONException ignored) {
+                return;
+            }
+            put(c, KEY_TASK_DONE, list.toString());
+        }
+    }
+
+    // keys: ["taskId|AAAA-MM-DD"] que o site confirmou que gravou no banco.
+    static void ackDoneTasks(Context c, JSONArray keys) {
+        synchronized (LOCK) {
+            Set<String> done = new HashSet<>();
+            for (int i = 0; i < keys.length(); i++) done.add(keys.optString(i));
+            JSONArray list = getArray(c, KEY_TASK_DONE);
+            JSONArray keep = new JSONArray();
+            for (int i = 0; i < list.length(); i++) {
+                JSONObject d = list.optJSONObject(i);
+                if (d != null && !done.contains(d.optString("taskId") + "|" + d.optString("date"))) keep.put(d);
+            }
+            put(c, KEY_TASK_DONE, keep.toString());
+        }
     }
 
     static boolean isExtraApp(Context c, String pkg) {

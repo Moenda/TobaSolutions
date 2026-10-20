@@ -12,8 +12,8 @@ android {
         // 34 de propósito: no 35 o Android desenha o site por baixo da barra de status.
         targetSdk 34
         // Mudou algo na parte nativa? Aumente os dois antes de gerar o APK.
-        versionCode 2
-        versionName "1.1"
+        versionCode 3
+        versionName "1.2"
         // O app abre o site publicado: patch no site = app atualizado, sem APK novo.
         buildConfigField "String", "START_URL", "\"https://moenda.github.io/TobaSolutions/\""
         buildConfigField "String", "SITE_HOST", "\"moenda.github.io\""

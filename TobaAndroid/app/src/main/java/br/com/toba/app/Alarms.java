@@ -24,6 +24,12 @@ final class Alarms {
     static final String TYPE_REST = "rest";
     static final String TYPE_REMINDER = "reminder";
     static final String TYPE_WORKOUT = "workout";
+    static final String TYPE_TASK = "task";
+    static final String TYPE_TASK_DONE = "task_done";
+    static final String EXTRA_TASK = "taskId";
+    static final String EXTRA_DATE = "date";
+    static final String EXTRA_NOTIF = "notif";
+    private static final int TASK_ALERTS_MAX = 300;
     private static final int REST_CODE = 9001;
     private static final String[] DAY_CODES = {"SU", "MO", "TU", "WE", "TH", "FR", "SA"}; // Calendar.SUNDAY = 1
 
@@ -31,6 +37,7 @@ final class Alarms {
 
     static void rescheduleAll(Context c) {
         scheduleReminders(c);
+        scheduleTaskAlerts(c);
         Notifier.showWorkout(c); // reiniciou no meio do treino: a notificação volta
         JSONObject rest = TobaStore.getObject(c, TobaStore.KEY_REST);
         long endsAt = rest.optLong("endsAt", 0);
@@ -110,6 +117,44 @@ final class Alarms {
             }
         }
         TobaStore.put(c, TobaStore.KEY_REMINDER_CODES, codes.toString());
+    }
+
+    /* ---------------- Toba Routine (avisos de uma vez só) ---------------- */
+
+    // Cancela os alarmes antigos das tarefas e agenda cada aviso futuro da lista.
+    // Aviso que já passou sai da lista (cada um toca uma vez só).
+    static void scheduleTaskAlerts(Context c) {
+        AlarmManager am = c.getSystemService(AlarmManager.class);
+        if (am == null) return;
+        JSONArray oldCodes = TobaStore.getArray(c, TobaStore.KEY_TASK_CODES);
+        for (int i = 0; i < oldCodes.length(); i++) {
+            Intent probe = new Intent(c, AlarmReceiver.class);
+            PendingIntent pi = PendingIntent.getBroadcast(c, oldCodes.optInt(i), probe,
+                    PendingIntent.FLAG_NO_CREATE | PendingIntent.FLAG_IMMUTABLE);
+            if (pi != null) am.cancel(pi);
+        }
+        JSONArray alerts = TobaStore.getArray(c, TobaStore.KEY_TASK_ALERTS);
+        JSONArray keep = new JSONArray();
+        JSONArray codes = new JSONArray();
+        long now = System.currentTimeMillis();
+        for (int i = 0; i < alerts.length() && keep.length() < TASK_ALERTS_MAX; i++) {
+            JSONObject a = alerts.optJSONObject(i);
+            if (a == null) continue;
+            long at = a.optLong("at", 0);
+            String key = a.optString("key", "");
+            if (at <= now || key.isEmpty()) continue;
+            int code = ("t:" + key).hashCode() & 0x3fffffff;
+            Intent intent = new Intent(c, AlarmReceiver.class);
+            intent.putExtra(EXTRA_TYPE, TYPE_TASK);
+            intent.putExtra(EXTRA_ID, key);
+            PendingIntent pi = PendingIntent.getBroadcast(c, code, intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            setExact(c, at, pi);
+            keep.put(a);
+            codes.put(code);
+        }
+        TobaStore.put(c, TobaStore.KEY_TASK_ALERTS, keep.toString());
+        TobaStore.put(c, TobaStore.KEY_TASK_CODES, codes.toString());
     }
 
     // Próximo "HH:MM" (depois de agora) que cai num dos dias ("MO", "TU"...).
