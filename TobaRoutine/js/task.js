@@ -39,7 +39,7 @@ function oneoffMeta(oneoff, status) {
   return [
     status.doneMin && !oneoff.doneAt ? `⏱️ falta ${routineFormatMinutes(oneoff.minutes - status.doneMin)} de ${routineFormatMinutes(oneoff.minutes)}` : `⏱️ ${routineFormatMinutes(oneoff.minutes)}`,
     oneoff.split ? "🍕 em pedaços" : "",
-    oneoff.heavy ? "🏋️ pesada" : "",
+    routineOneoffWhen(oneoff) === "weekend" ? "🛋️ fim de semana" : routineOneoffWhen(oneoff) === "weekday" ? "💼 dia de semana" : "",
     oneoff.deadline && !oneoff.doneAt ? `📌 até ${oneoffDateLabel(oneoff.deadline)}` : "",
   ].filter(Boolean).join(" · ");
 }
@@ -154,7 +154,7 @@ function openOneoffSheet(oneoff = null) {
   const chunk = oneoff ? oneoff.chunk : 60;
   const chunks = ONEOFF_CHUNKS.includes(chunk) ? ONEOFF_CHUNKS : [...ONEOFF_CHUNKS, chunk].sort((a, b) => a - b);
   document.getElementById("oneoffChunk").innerHTML = chunks.map((c) => `<option value="${c}"${c === chunk ? " selected" : ""}>${routineFormatMinutes(c)}</option>`).join("");
-  document.getElementById("oneoffHeavy").checked = oneoff ? oneoff.heavy : false;
+  setOneoffWhen(oneoff ? routineOneoffWhen(oneoff) : "any");
   document.getElementById("oneoffDeadline").value = oneoff ? oneoff.deadline : "";
   document.getElementById("oneoffDeadline").min = toIsoDate();
   document.getElementById("deleteOneoffBtn").hidden = !oneoff;
@@ -164,6 +164,15 @@ function openOneoffSheet(oneoff = null) {
   updateOneoffForm();
   closeTobaModal("oneoffDetail");
   openTobaModal("oneoffSheet");
+}
+
+function setOneoffWhen(when) {
+  const input = document.querySelector(`input[name="oneoffWhen"][value="${when}"]`);
+  if (input) input.checked = true;
+}
+
+function readOneoffWhen() {
+  return document.querySelector('input[name="oneoffWhen"]:checked')?.value || "any";
 }
 
 function updateOneoffForm() {
@@ -180,10 +189,10 @@ function guessOneoff() {
     return;
   }
   fillOneoffTime(guess.minutes);
-  document.getElementById("oneoffHeavy").checked = guess.heavy;
+  setOneoffWhen(guess.heavy ? "weekend" : "any");
   document.getElementById("oneoffSplit").checked = guess.split;
   updateOneoffForm();
-  help.textContent = `🤖 Chute do Toba: ${routineFormatMinutes(guess.minutes)}${guess.heavy ? ", pesada" : ""}${guess.split ? ", dá pra fatiar" : ""}. Ajusta se ele viajou.`;
+  help.textContent = `🤖 Chute do Toba: ${routineFormatMinutes(guess.minutes)}${guess.heavy ? ", pesada (melhor no fim de semana)" : ""}${guess.split ? ", dá pra fatiar" : ""}. Ajusta se ele viajou.`;
 }
 
 function saveOneoff() {
@@ -203,7 +212,8 @@ function saveOneoff() {
     minutes,
     split: document.getElementById("oneoffSplit").checked,
     chunk: Number(document.getElementById("oneoffChunk").value) || 60,
-    heavy: document.getElementById("oneoffHeavy").checked,
+    when: readOneoffWhen(),
+    heavy: readOneoffWhen() === "weekend", // leitores antigos
     deadline: document.getElementById("oneoffDeadline").value || "",
   };
   const existing = findRoutineOneoff(document.getElementById("oneoffId").value);
@@ -397,7 +407,7 @@ function openSuggestion(oneoff) {
         ? `OLHA PAI, MELHOR ${describeOneoffDay(best.date, today) === "Hoje" ? "HOJE" : `${oneoffWeekday(best.date).toUpperCase()} ${oneoffDateLabel(best.date)}`}, TU TÁ COM ${routineFormatMinutes(best.free).toUpperCase()} LIVRE`
         : `Ixi, ${routineFormatMinutes(result.need)} de uma vez não cabe em nenhum dia dos próximos ${ROUTINE_PLAN_DAYS} 😬`;
     const why = best && result.fits
-      ? [best.easyDay ? (best.load.weekend ? "é fim de semana" : "é dia de folga") : "", best.tight ? "vai ficar justo, hein" : `ainda sobra ${routineFormatMinutes(best.free - result.need)}`].filter(Boolean).join(", ")
+      ? [best.easyDay ? (best.load.weekend ? "é fim de semana" : "é dia de folga") : routineOneoffWhen(subject) === "weekday" ? "é dia de semana, como tu pediu" : "", best.tight ? "vai ficar justo, hein" : `ainda sobra ${routineFormatMinutes(best.free - result.need)}`].filter(Boolean).join(", ")
       : "Dá pra fatiar em pedaços ou escolher um dia na mão";
     body.innerHTML = `
       <div class="rt-oracle"><strong>${headline}</strong><span>${why ? `${why.charAt(0).toUpperCase()}${why.slice(1)}.` : ""}</span></div>

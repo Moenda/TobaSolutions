@@ -798,3 +798,32 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Desfazer a receita (📜 Vezes que você fez → ↩ Desfazer): as duas conquistas trancam de novo e o XP volta.
 
 **Commit sugerido:** `v1.44 - Conquistas da cozinha no perfil do jogador (14 medalhas e a gambiarra gourmet)`
+
+---
+
+## v1.45 — Músculos que trabalham junto, Task com dia preferido e o "pisou na jaca" do Bank
+
+**Arquivos alterados:** `TobaHealth/js/health-metrics.js`, `TobaHealth/js/hall.js`, `TobaHealth/TobaHealth-Treinos.html`, `TobaRoutine/js/routine-metrics.js`, `TobaRoutine/js/routine-core.js`, `TobaRoutine/js/routine.js`, `TobaRoutine/js/task.js`, `TobaRoutine/TobaRoutine-Rotina.html`, `TobaRoutine/TobaRoutine-Task.html`, `TobaRoutine/css/routine-base.css`, `TobaBank/js/bank-metrics.js`, `TobaBank/js/gastos.js`, `TobaBank/TobaBank-Gastos.html`, `sw.js`, `CLAUDE.md`
+
+1. **Mapa de calor mais esperto (ideia do Rafa com o Maracujeba):** nenhum exercício trabalha um músculo só. Os 68 exercícios do catálogo foram revisados e cada um divide o esforço entre os músculos que trabalham de verdade. Exemplos:
+   - Flexão: 55% peito, 15% tríceps, 10% ombro, 10% costas, 10% abdômen (pedido era 60/20/20 com bíceps; ficou tríceps porque flexão empurra, quem puxa é o bíceps).
+   - Agachamento: 50% quadríceps, 25% glúteo, 10% posterior, 5% panturrilha, 5% abdômen, 5% costas (lombar). **A parte de trás da coxa agora pega** 🦵
+   - Barra fixa: 55% costas, 20% bíceps, 10% antebraço, 10% abdômen, 5% ombro. Supino: peito + tríceps + ombro. Terra: costas, posterior, glúteo, quadríceps e antebraço. E por aí vai.
+2. **O peso agora conta:** cada rep vale o kg levantado (carga da série ou a parte do peso do corpo na flexão/agachamento/barra...), não só a contagem de reps. Série sem carga anotada vale 20 kg por rep. O ranking e o toque no músculo mostram **pts** de esforço.
+3. **Perna conta metade:** quadríceps, posterior, glúteo e panturrilha valem 50% do esforço, pra o leg press de 200 kg não pintar o boneco inteiro de vermelho. O Hall do Herói (tronco x perna) usa a mesma conta. O "?" do mapa explica tudo.
+4. **Task: "📅 Melhor fazer quando?"** no lugar do "É pesada": 🎲 Tanto faz, 🛋️ No FDS (fim de semana ou folga sem trampo) ou 💼 Na semana. O Toba sugere primeiro os dias que você escolheu; se não couber em nenhum, aí ele oferece os outros. Task antiga marcada como pesada vira "No FDS" sozinha.
+5. **Rotina: tarefa de 0 min.** No "⏱️ Quanto tempo leva" tem "0 min (não ocupa tempo)", pra coisa tipo dormir às 23h, tomar remédio... Ela não come o tempo livre do dia na hora do Toba encaixar uma task.
+6. **Bank: "Eita pai, pisou na jaca."** Com o 💵 Livre hoje negativo aparece uma faixa vermelha em cima do card: "Economize por X dias pra voltar pro verdin 🤑". X = quantos dias seguidos **sem gastar nada** (a partir de amanhã) até o Livre ficar positivo, pela mesma regra da dívida que passa de um dia pro outro. Se nem zerando dá antes do mês acabar (a dívida some na virada), a faixa avisa que só a virada salva.
+
+**Dados:**
+- Mapa de calor e Bank: só cálculo, nada gravado. O XP do Perfil não muda (ele não usa o mapa).
+- `TOBA_ROUTINE_DB`: campo novo opcional `oneoffs[].when` (`"any"`, `"weekend"`, `"weekday"`); sem ele, vale `heavy` (pesada = `"weekend"`). Ao salvar, `heavy` acompanha (`when === "weekend"`) pra leitor antigo. `tasks[].minutes` agora aceita `0` (não ocupa tempo); ausente continua sendo o chute pela dificuldade. Backups antigos continuam importando igual.
+- `sw.js` VERSION `toba-v15` (nenhum arquivo novo, só pra renovar o cache). Não precisa de APK novo.
+
+**Como testar:**
+- Treinos → abrir um treino do Saitama → "🔥 Músculos do treino": costas, posterior e glúteo agora pintam; tocar no posterior mostra os pts. Um treino de força com leg press pesado não deixa só a perna vermelha.
+- Task → ➕ → escolher 💼 Na semana → Salvar e achar o dia: as opções são dias de semana. Com 🛋️ No FDS, sábado/domingo primeiro. Escrever "Faxina geral" no nome já marca No FDS.
+- Rotina → ✏️ numa tarefa → ⏱️ "0 min (não ocupa tempo)" → salvar e reabrir: continua 0. O tempo livre do hub não muda com ela.
+- Gastos → lançar um gasto maior que o Livre hoje → aparece a faixa com X dias. Exemplo: Livre de R$ 100/dia e gastou R$ 250 hoje = -R$ 150 → 2 dias. Apagar o gasto → a faixa some. Card do portal continua batendo.
+
+**Commit sugerido:** `v1.45 - Mapa de calor com esforco dividido entre musculos e peso levantado, task com dia preferido, tarefa de 0 min e aviso do pisou na jaca no Gastos`

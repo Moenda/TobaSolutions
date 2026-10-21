@@ -23,13 +23,14 @@
  *                            minutes? (só commute: ida + volta) } ] },
  *     oneoffs: [ { id: "o-<ts>-<rand4>", name, emoji, minutes (duração total),
  *                  split: bool (dá pra quebrar), chunk: minutos por sessão,
- *                  heavy: bool, deadline: "AAAA-MM-DD" | "", createdAt,
+ *                  heavy: bool, when: "any"|"weekend"|"weekday" (v1.45), deadline: "AAAA-MM-DD" | "", createdAt,
  *                  doneAt?: ms (terminou), archivedAt?: "AAAA-MM-DD",
  *                  sessions: [ { id: "s-<ts>-<rand4>", date: "AAAA-MM-DD",
  *                                minutes, doneAt?: ms } ] } ]
  *   }
  *   tasks[].minutes? (desde v1.42): quanto tempo a tarefa ocupa do dia;
  *   sem ele vale o chute pela dificuldade (ROUTINE_DEFAULT_MINUTES).
+ *   minutes: 0 (desde v1.45) = não ocupa tempo do dia (ex: dormir às 23h).
  * - O XP sai do log (routine-metrics.js); nada de XP gravado aqui.
  * - Carregue DEPOIS de routine-metrics.js (usa ROUTINE_DIFFICULTIES).
  * ===================================================================== */
@@ -65,6 +66,7 @@ function normalizeRoutineDb(db) {
     if (task.minutes !== undefined) {
       const minutes = Math.round(Number(task.minutes) || 0);
       if (minutes > 0) task.minutes = Math.min(1440, minutes);
+      else if (task.minutes === 0 || task.minutes === "0") task.minutes = 0; // desde v1.45: não ocupa tempo (ex: dormir às 23h)
       else delete task.minutes; // sem duração = chute pela dificuldade
     }
   });
@@ -113,6 +115,7 @@ function normalizeRoutineOneoffs(db) {
     o.split = o.split === true;
     o.chunk = Math.min(480, Math.max(30, Math.round(Number(o.chunk) || 60)));
     o.heavy = o.heavy === true;
+    if (!ROUTINE_ONEOFF_WHEN[o.when]) o.when = o.heavy ? "weekend" : "any"; // desde v1.45
     o.deadline = routineIsIso(o.deadline) ? o.deadline : "";
     if (!routineIsIso(o.createdAt)) o.createdAt = toIsoDate();
     if (o.doneAt !== undefined && !Number(o.doneAt)) delete o.doneAt;

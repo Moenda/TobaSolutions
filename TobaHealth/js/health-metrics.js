@@ -118,6 +118,117 @@ const STRENGTH_EXERCISES = [
   { id: "abdominal-maquina", name: "Abdominal na máquina", group: "abdomen" },
 ];
 
+/* ---------------------------------------------------------------------
+ * DIVISÃO DO ESFORÇO ENTRE OS MÚSCULOS (mapa de calor, desde v1.45)
+ * Nenhum exercício trabalha um músculo só: cada um reparte o esforço entre
+ * os grupos do STRENGTH_GROUPS (fatias somam 1). O grupo do catálogo continua
+ * sendo o "principal" (filtros e chips); isto aqui só pesa o mapa de calor.
+ * Exercício fora da lista = 100% no grupo dele. Exercício novo no catálogo =
+ * linha nova aqui (chave = id do exercício).
+ * ------------------------------------------------------------------- */
+const MUSCLE_SPLITS = {
+  // Peito: empurrar leva tríceps e ombro junto
+  "supino-reto-barra": { peito: 0.6, triceps: 0.25, ombros: 0.15 },
+  "supino-reto-halter": { peito: 0.65, triceps: 0.2, ombros: 0.15 },
+  "supino-inclinado-barra": { peito: 0.5, ombros: 0.3, triceps: 0.2 },
+  "supino-inclinado-halter": { peito: 0.55, ombros: 0.3, triceps: 0.15 },
+  "supino-declinado": { peito: 0.65, triceps: 0.25, ombros: 0.1 },
+  "supino-maquina": { peito: 0.6, triceps: 0.25, ombros: 0.15 },
+  "crucifixo-halter": { peito: 0.8, ombros: 0.15, biceps: 0.05 },
+  "crossover": { peito: 0.8, ombros: 0.15, biceps: 0.05 },
+  "peck-deck": { peito: 0.85, ombros: 0.15 },
+  // Flexão: costas (escápula/serrátil) e abdômen (prancha) seguram o corpo
+  "flexao": { peito: 0.55, triceps: 0.15, ombros: 0.1, costas: 0.1, abdomen: 0.1 },
+  // Costas: puxar leva bíceps e antebraço (pegada)
+  "puxada-frente": { costas: 0.65, biceps: 0.2, antebraco: 0.1, ombros: 0.05 },
+  "puxada-triangulo": { costas: 0.6, biceps: 0.25, antebraco: 0.1, ombros: 0.05 },
+  "barra-fixa": { costas: 0.55, biceps: 0.2, antebraco: 0.1, abdomen: 0.1, ombros: 0.05 },
+  "remada-curvada": { costas: 0.55, biceps: 0.15, ombros: 0.1, posterior: 0.1, antebraco: 0.05, abdomen: 0.05 },
+  "remada-baixa": { costas: 0.65, biceps: 0.2, ombros: 0.1, antebraco: 0.05 },
+  "remada-baixa-unilateral": { costas: 0.65, biceps: 0.2, ombros: 0.1, antebraco: 0.05 },
+  "remada-unilateral": { costas: 0.65, biceps: 0.2, ombros: 0.1, antebraco: 0.05 },
+  "remada-maquina": { costas: 0.65, biceps: 0.2, ombros: 0.1, antebraco: 0.05 },
+  "pulldown": { costas: 0.75, triceps: 0.1, ombros: 0.1, abdomen: 0.05 },
+  "terra": { costas: 0.3, posterior: 0.25, gluteos: 0.25, quadriceps: 0.1, antebraco: 0.1 },
+  // Ombros
+  "desenvolvimento-halter": { ombros: 0.65, triceps: 0.25, peito: 0.1 },
+  "desenvolvimento-barra": { ombros: 0.6, triceps: 0.25, abdomen: 0.1, peito: 0.05 },
+  "desenvolvimento-maquina": { ombros: 0.65, triceps: 0.25, peito: 0.1 },
+  "elevacao-lateral": { ombros: 0.9, costas: 0.1 },
+  "elevacao-frontal": { ombros: 0.85, peito: 0.15 },
+  "crucifixo-inverso": { ombros: 0.6, costas: 0.4 },
+  "encolhimento": { costas: 0.5, ombros: 0.4, antebraco: 0.1 }, // trapézio fica nas costas do boneco
+  "face-pull": { ombros: 0.6, costas: 0.3, biceps: 0.1 },
+  // Bíceps: antebraço segura junto (martelo pega mais)
+  "rosca-direta": { biceps: 0.8, antebraco: 0.2 },
+  "rosca-alternada": { biceps: 0.8, antebraco: 0.2 },
+  "rosca-martelo": { biceps: 0.6, antebraco: 0.4 },
+  "rosca-scott": { biceps: 0.85, antebraco: 0.15 },
+  "rosca-concentrada": { biceps: 0.9, antebraco: 0.1 },
+  "rosca-polia": { biceps: 0.8, antebraco: 0.2 },
+  // Tríceps
+  "triceps-pulley-corda": { triceps: 0.95, antebraco: 0.05 },
+  "triceps-pulley-barra": { triceps: 0.95, antebraco: 0.05 },
+  "triceps-testa": { triceps: 0.95, antebraco: 0.05 },
+  "triceps-frances": { triceps: 0.9, ombros: 0.1 },
+  "triceps-coice": { triceps: 0.9, ombros: 0.1 },
+  "mergulho": { triceps: 0.5, peito: 0.3, ombros: 0.2 },
+  "supino-fechado": { triceps: 0.55, peito: 0.35, ombros: 0.1 },
+  // Antebraço
+  "rosca-punho": { antebraco: 1 },
+  "rosca-punho-inversa": { antebraco: 1 },
+  "rosca-inversa": { antebraco: 0.6, biceps: 0.4 },
+  "rosca-zottman": { antebraco: 0.5, biceps: 0.5 },
+  "rolo-punho": { antebraco: 0.9, ombros: 0.1 },
+  // Quadríceps: agachar leva glúteo, posterior e o core segurando
+  "agachamento-livre": { quadriceps: 0.45, gluteos: 0.25, posterior: 0.1, costas: 0.1, abdomen: 0.05, panturrilha: 0.05 },
+  "agachamento-corpo": { quadriceps: 0.5, gluteos: 0.25, posterior: 0.1, panturrilha: 0.05, abdomen: 0.05, costas: 0.05 },
+  "agachamento-smith": { quadriceps: 0.55, gluteos: 0.25, posterior: 0.1, panturrilha: 0.05, abdomen: 0.05 },
+  "agachamento-hack": { quadriceps: 0.65, gluteos: 0.2, posterior: 0.1, panturrilha: 0.05 },
+  "agachamento-bulgaro": { quadriceps: 0.45, gluteos: 0.35, posterior: 0.1, panturrilha: 0.05, abdomen: 0.05 },
+  "leg-press": { quadriceps: 0.6, gluteos: 0.25, posterior: 0.1, panturrilha: 0.05 },
+  "cadeira-extensora": { quadriceps: 1 },
+  "afundo": { quadriceps: 0.45, gluteos: 0.3, posterior: 0.15, panturrilha: 0.05, abdomen: 0.05 },
+  // Posterior de coxa
+  "mesa-flexora": { posterior: 0.9, panturrilha: 0.1 },
+  "cadeira-flexora": { posterior: 0.9, panturrilha: 0.1 },
+  "stiff": { posterior: 0.55, gluteos: 0.25, costas: 0.15, antebraco: 0.05 },
+  // Glúteos
+  "elevacao-pelvica": { gluteos: 0.65, posterior: 0.2, quadriceps: 0.1, abdomen: 0.05 },
+  "cadeira-abdutora": { gluteos: 1 },
+  "gluteo-polia": { gluteos: 0.8, posterior: 0.2 },
+  "gluteo-maquina": { gluteos: 0.8, posterior: 0.2 },
+  // Panturrilha
+  "panturrilha-pe": { panturrilha: 1 },
+  "panturrilha-sentado": { panturrilha: 1 },
+  "panturrilha-leg": { panturrilha: 1 },
+  // Abdômen: subir o tronco/pernas puxa o flexor do quadril (frente da coxa)
+  "abdominal-crunch": { abdomen: 0.9, quadriceps: 0.1 },
+  "abdominal-infra": { abdomen: 0.8, quadriceps: 0.2 },
+  "abdominal-polia": { abdomen: 1 },
+  "abdominal-maquina": { abdomen: 1 },
+};
+
+// Perna carrega muito mais peso (leg press de 200 kg x rosca de 12 kg):
+// o esforço da perna conta só esta fração, senão ela pintava tudo de vermelho.
+const MUSCLE_LEG_GROUPS = ["quadriceps", "posterior", "gluteos", "panturrilha"];
+const MUSCLE_LEG_FACTOR = 0.5;
+// Série sem carga anotada (e o personalizado sem km) conta como este peso por rep.
+const MUSCLE_NO_LOAD_KG = 20;
+// Cardio: cada "rep equivalente" por km vale esta parte do peso do corpo.
+const MUSCLE_CARDIO_BODY_FRACTION = 0.5;
+
+// [[grupo, fatia], ...] do exercício; sem divisão = tudo no grupo dele.
+function calcMuscleShares(exerciseId, fallbackGroup) {
+  const split = MUSCLE_SPLITS[exerciseId];
+  if (split) return Object.entries(split);
+  return fallbackGroup ? [[fallbackGroup, 1]] : [];
+}
+
+function calcMuscleFactor(group) {
+  return MUSCLE_LEG_GROUPS.includes(group) ? MUSCLE_LEG_FACTOR : 1;
+}
+
 const WORKOUT_DISTANCE_DESTINATIONS = [
   { id: "km-rio", icon: "🏖️", size: 360, label: "São Paulo → Rio de Janeiro", done: "foi de São Paulo ao Rio de Janeiro", note: "Com direito a biscoito Globo e farofa na areia." },
   { id: "km-buenos-aires", icon: "🧉", size: 1680, label: "São Paulo → Buenos Aires", done: "foi de São Paulo a Buenos Aires", note: "Alfajor, empanada e nenhuma conversa sobre o placar." },

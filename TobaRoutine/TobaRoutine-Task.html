@@ -91,7 +91,15 @@
           <select id="oneoffChunk" class="form-control"></select>
           <span class="rt-help">Em folga e fim de semana o Toba deixa até 3× isso.</span>
         </div>
-        <label class="check-row"><span>🏋️ É pesada (melhor em dia de folga)</span><input type="checkbox" id="oneoffHeavy" /></label>
+        <div class="form-group">
+          <label>📅 Melhor fazer quando?</label>
+          <div class="rt-when" id="oneoffWhen">
+            <label class="rt-when-opt"><input type="radio" name="oneoffWhen" value="any" checked /><span>🎲 Tanto faz</span></label>
+            <label class="rt-when-opt"><input type="radio" name="oneoffWhen" value="weekend" /><span>🛋️ No FDS</span></label>
+            <label class="rt-when-opt"><input type="radio" name="oneoffWhen" value="weekday" /><span>💼 Na semana</span></label>
+          </div>
+          <span class="rt-help">O Toba prioriza esses dias na sugestão. Se não couber, ele cai pro outro. Folga sem trampo conta como fim de semana.</span>
+        </div>
         <div class="form-group">
           <label for="oneoffDeadline">📌 Prazo (opcional)</label>
           <input type="date" id="oneoffDeadline" class="form-control" />

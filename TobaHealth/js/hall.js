@@ -254,10 +254,12 @@ function closeWorkoutDetail() {
 }
 
 /* ---------------------------------------------------------------------
- * MAPA DE CALOR DOS MÚSCULOS (1ª versão, v1.30)
+ * MAPA DE CALOR DOS MÚSCULOS (v1.30; esforço por peso desde v1.45)
  * Boneco em SVG (frente e costas), uma peça por grupo do STRENGTH_GROUPS.
- * Mede REPETIÇÕES por grupo (kg puro faria a perna sempre ganhar) e pinta
- * em 5 níveis comparando com o grupo mais treinado do período, do verde
+ * Mede ESFORÇO (pts) por grupo: kg levantado (reps × carga, peso do corpo
+ * incluso) repartido entre os músculos do exercício (MUSCLE_SPLITS em
+ * health-metrics.js), com a perna valendo MUSCLE_LEG_FACTOR pra não disparar.
+ * Pinta em 5 níveis comparando com o grupo mais treinado do período, do verde
  * (pouco) ao vermelho (o que mais treinou); cinza = nada.
  * Só cálculo: usa getWorkoutMuscleWork (Saitama) + as séries dos treinos de força
  * + caminhada/bike/elíptico (e km do Saitama/personalizado) como "reps
@@ -316,10 +318,15 @@ function getCardioKm(workout) {
 // "Todo exercício conta": além do cardio puro, os km do Saitama e do treino
 // personalizado entram como caminhada/corrida. O personalizado sem distância
 // (só séries×reps ou só minutos) não diz o músculo, então espalha leve no corpo todo.
+// Devolve [[grupo, reps, kg]]: cada rep de cardio vale parte do peso do corpo
+// (MUSCLE_CARDIO_BODY_FRACTION); a do personalizado, MUSCLE_NO_LOAD_KG.
 function getMuscleExtras(workout) {
   const items = [];
-  const addMap = (perKm, km) => Object.entries(perKm)
-    .forEach(([group, value]) => items.push([group, Math.round(km * value)]));
+  const repKg = getBodyWeightOn(workout.date) * MUSCLE_CARDIO_BODY_FRACTION;
+  const addMap = (perKm, km) => Object.entries(perKm).forEach(([group, value]) => {
+    const reps = Math.round(km * value);
+    items.push([group, reps, reps * repKg]);
+  });
   const km = getCardioKm(workout);
   if (km > 0) addMap(CARDIO_MUSCLES[workout.type].perKm, km);
   const loose = Number(workout.distanceKm) || 0;
@@ -328,39 +335,47 @@ function getMuscleExtras(workout) {
   } else if (workout.type === "custom") {
     const reps = (Number(workout.sets) || 0) * (Number(workout.reps) || 0) || Number(workout.durationMinutes) || 0;
     const each = Math.max(1, Math.round(reps / STRENGTH_GROUPS.length));
-    if (reps > 0) STRENGTH_GROUPS.forEach((group) => items.push([group.id, each]));
+    if (reps > 0) STRENGTH_GROUPS.forEach((group) => items.push([group.id, each, each * MUSCLE_NO_LOAD_KG]));
   }
   return items;
 }
 
-// Soma por grupo: { peito: { reps, kg, lastDate }, ... }
+// Soma por grupo: { peito: { effort, reps, kg, lastDate }, ... }
+// effort (pts) = kg × fatia do músculo × fator da perna; reps e kg já vêm
+// repartidos pela fatia (só pra mostrar no toque).
 function getMuscleHeat(workouts) {
   const heat = {};
   const add = (group, reps, kg, date) => {
-    if (!group || !(reps > 0)) return;
-    const item = heat[group] || (heat[group] = { reps: 0, kg: 0, lastDate: "" });
+    if (!group || !(reps > 0) || !(kg > 0)) return;
+    const item = heat[group] || (heat[group] = { effort: 0, reps: 0, kg: 0, lastDate: "" });
+    item.effort += kg * calcMuscleFactor(group);
     item.reps += reps;
-    item.kg += kg || 0;
+    item.kg += kg;
     if (String(date) > item.lastDate) item.lastDate = String(date);
   };
+  const addSplit = (exerciseId, group, reps, kg, date) => calcMuscleShares(exerciseId, group)
+    .forEach(([target, share]) => add(target, reps * share, kg * share, date));
   (workouts || []).forEach((workout) => {
     getWorkoutMuscleWork(workout, { bodyweightOnly: true })
-      .forEach((item) => add(item.group, item.reps, item.kg, workout.date));
-    getMuscleExtras(workout).forEach(([group, reps]) => add(group, reps, 0, workout.date));
+      .forEach((item) => addSplit(item.exerciseId, item.group, item.reps, item.kg, workout.date));
+    getMuscleExtras(workout).forEach(([group, reps, kg]) => add(group, reps, kg, workout.date));
     if (!Array.isArray(workout.exercises)) return;
     workout.exercises.forEach((exercise) => {
-      const reps = (exercise.sets || []).reduce((sum, set) => sum + (Number(set.reps) || 0), 0);
-      const kg = getStrengthLift({ date: workout.date, exercises: [exercise] }).kg;
-      add(exercise.group, reps, kg, workout.date);
+      const lift = getStrengthLift({ date: workout.date, exercises: [exercise] });
+      // Reps sem carga anotada (e sem peso do corpo) entram com MUSCLE_NO_LOAD_KG
+      const unilateral = getExerciseLoad(exercise.exerciseId).unilateral;
+      const allReps = (exercise.sets || []).reduce((sum, set) => sum + (Number(set.reps) || 0), 0) * (unilateral ? 2 : 1);
+      const looseReps = Math.max(0, allReps - lift.reps);
+      addSplit(exercise.exerciseId, exercise.group, allReps, lift.kg + looseReps * MUSCLE_NO_LOAD_KG, workout.date);
     });
   });
   return heat;
 }
 
 function getMuscleLevel(heat, group) {
-  const max = Math.max(0, ...Object.values(heat).map((item) => item.reps));
-  const reps = heat[group]?.reps || 0;
-  return max && reps ? Math.max(1, Math.ceil((reps / max) * 5)) : 0;
+  const max = Math.max(0, ...Object.values(heat).map((item) => item.effort));
+  const effort = heat[group]?.effort || 0;
+  return max && effort ? Math.max(1, Math.ceil((effort / max) * 5)) : 0;
 }
 
 // interactive: cada músculo vira botão (toque mostra os números)
@@ -390,7 +405,7 @@ function renderMuscleMap(heat, { interactive = false, scope = "" } = {}) {
 
 // Linha curta: top 3 + a zoeira com quem ficou de fora
 function describeMuscleHeat(heat) {
-  const ranked = Object.entries(heat).sort((a, b) => b[1].reps - a[1].reps);
+  const ranked = Object.entries(heat).sort((a, b) => b[1].effort - a[1].effort);
   const lazy = STRENGTH_GROUPS.find((group) => !heat[group.id]);
   return {
     top: ranked.slice(0, 3).map(([group]) => getStrengthGroupName(group)),
@@ -422,8 +437,8 @@ function renderMuscleSection(workouts, scope, title = "🔥 Mapa de calor", { te
   muscleHeatScopes[scope] = heat;
   if (!Object.keys(heat).length) return "";
   const { lazy } = describeMuscleHeat(heat);
-  const ranked = Object.entries(heat).sort((a, b) => b[1].reps - a[1].reps);
-  const max = ranked[0][1].reps;
+  const ranked = Object.entries(heat).sort((a, b) => b[1].effort - a[1].effort);
+  const max = ranked[0][1].effort;
   return `
     <div class="section-title">
       <span>${title}</span>
@@ -436,8 +451,8 @@ function renderMuscleSection(workouts, scope, title = "🔥 Mapa de calor", { te
       <ul class="muscle-rank">${ranked.map(([group, item]) => `
         <li>
           <span class="muscle-rank-name">${getStrengthGroupName(group).replace(" de coxa", "")}</span>
-          <span class="muscle-rank-bar"><span class="lv-${getMuscleLevel(heat, group)}" style="width:${Math.max(6, (item.reps / max) * 100)}%"></span></span>
-          <span class="muscle-rank-value">${formatWorkoutNumber(item.reps, 0)} reps</span>
+          <span class="muscle-rank-bar"><span class="lv-${getMuscleLevel(heat, group)}" style="width:${Math.max(6, (item.effort / max) * 100)}%"></span></span>
+          <span class="muscle-rank-value">${formatWorkoutNumber(item.effort, 0)} pts</span>
         </li>`).join("")}
       </ul>
       ${lazy && teaseLazy ? `<p class="muscle-lazy">${lazy}</p>` : ""}
@@ -454,12 +469,11 @@ function showMuscleHeat(group, scope) {
   }
   const days = Math.round((new Date(`${toIsoDate(new Date())}T12:00:00`) - new Date(`${item.lastDate}T12:00:00`)) / 86400000);
   const when = days <= 0 ? "hoje" : days === 1 ? "ontem" : `há ${days} dias`;
-  const kg = item.kg > 0 ? ` · ${formatWorkoutNumber(item.kg, 0)} kg` : "";
-  tobaToast(`${name}: ${formatWorkoutNumber(item.reps, 0)} reps${kg} · último ${when}`);
+  tobaToast(`${name}: ${formatWorkoutNumber(item.effort, 0)} pts · ~${formatWorkoutNumber(item.reps, 0)} reps · último ${when}`);
 }
 
 /* ---------------------------------------------------------------------
- * FORMATO DO CORPO (Hall do Herói, vida toda): tronco x perna em reps.
+ * FORMATO DO CORPO (Hall do Herói, vida toda): tronco x perna em esforço (pts).
  * ------------------------------------------------------------------- */
 const MUSCLE_UPPER = ["peito", "costas", "ombros", "biceps", "triceps", "antebraco", "abdomen"];
 
@@ -467,8 +481,8 @@ function getBodyShape(heat) {
   let upper = 0;
   let lower = 0;
   Object.entries(heat).forEach(([group, item]) => {
-    if (MUSCLE_UPPER.includes(group)) upper += item.reps;
-    else lower += item.reps;
+    if (MUSCLE_UPPER.includes(group)) upper += item.effort;
+    else lower += item.effort;
   });
   const total = upper + lower;
   const upperPct = total ? Math.round((upper / total) * 100) : 0;
@@ -505,7 +519,7 @@ function renderMusclePage(workouts) {
   }
   const shape = getBodyShape(heat);
   return `
-    ${eqSummary(`${shape.icon} ${shape.name}`, `Tronco ${shape.upperPct}% · Perna ${shape.lowerPct}% das repetições da vida toda`, shape.note)}
+    ${eqSummary(`${shape.icon} ${shape.name}`, `Tronco ${shape.upperPct}% · Perna ${shape.lowerPct}% do esforço da vida toda`, shape.note)}
     ${renderMuscleSection(workouts, "life", "🔥 Músculo por músculo")}`;
 }
 

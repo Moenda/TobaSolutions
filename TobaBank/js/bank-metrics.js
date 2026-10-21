@@ -155,6 +155,17 @@ function calcBankMonthSummary(bankDb, now = new Date()) {
   }
   const todayAvailable = carryDebt + netDailyBudget - todaySpent;
 
+  // Pisou na jaca (desde v1.45): com o Livre hoje negativo, quantos dias
+  // seguidos sem gastar nada (a partir de amanhã) até o Livre voltar a ficar
+  // positivo, pela mesma regra do carryDebt (cada dia paga netDailyBudget da
+  // dívida). Hoje não entra: já fechou no vermelho. A dívida morre na virada
+  // do mês, então recoveryInMonth diz se dá pra pagar antes disso.
+  let recoveryDays = 0;
+  if (todayAvailable < 0 && netDailyBudget > 0) {
+    recoveryDays = Math.floor(-todayAvailable / netDailyBudget) + 1;
+  }
+  const recoveryInMonth = recoveryDays > 0 && recoveryDays <= diasRestantes;
+
   return {
     monthKey, todayIso, totalDaysInMonth, effectiveDays,
     baseDailyBudget, grossMonthlyBudget, netDailyBudget,
@@ -165,5 +176,6 @@ function calcBankMonthSummary(bankDb, now = new Date()) {
     diasPassados, diasRestantes, mediaDiariaVista, mediaDiariaTotal,
     projecaoRestanteVista, projecaoTotalMes, sobraPrevista,
     vaultBalance, todayAvailable, carryDebt,
+    recoveryDays, recoveryInMonth,
   };
 }

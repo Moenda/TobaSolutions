@@ -18,7 +18,7 @@ const ROUTINE_SUGGESTIONS = [
   { emoji: "💸", name: "Pagar as contas", recurrence: { type: "monthly", monthDay: 5 }, time: "09:00", difficulty: "medium", on: false },
 ];
 
-const ROUTINE_MINUTE_OPTIONS = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180];
+const ROUTINE_MINUTE_OPTIONS = [0, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180];
 
 const ROUTINE_VIEW_TITLES = { viewToday: "✅ Hoje", viewTasks: "📋 Tarefas", viewHistory: "📜 Histórico" };
 let routineView = "viewToday";
@@ -468,10 +468,11 @@ function openTaskSheet(task = null) {
   document.getElementById("taskTime").value = task ? task.time : "";
   document.getElementById("taskNag").checked = task ? task.nag !== false : true;
   document.getElementById("taskCarry").checked = routineCarriesOver(task);
-  const minutes = task && task.minutes ? Number(task.minutes) : "";
-  const minuteOptions = ROUTINE_MINUTE_OPTIONS.includes(minutes) || !minutes ? ROUTINE_MINUTE_OPTIONS : [...ROUTINE_MINUTE_OPTIONS, minutes].sort((a, b) => a - b);
+  // 0 = não ocupa tempo (ex: dormir às 23h); vazio = chute pela dificuldade
+  const minutes = task && task.minutes !== undefined ? Number(task.minutes) : "";
+  const minuteOptions = ROUTINE_MINUTE_OPTIONS.includes(minutes) || minutes === "" ? ROUTINE_MINUTE_OPTIONS : [...ROUTINE_MINUTE_OPTIONS, minutes].sort((a, b) => a - b);
   document.getElementById("taskMinutes").innerHTML = `<option value="">Chute pela dificuldade (15/30/60 min)</option>${minuteOptions
-    .map((m) => `<option value="${m}"${m === minutes ? " selected" : ""}>${routineFormatMinutes(m)}</option>`).join("")}`;
+    .map((m) => `<option value="${m}"${m === minutes ? " selected" : ""}>${m === 0 ? "0 min (não ocupa tempo)" : routineFormatMinutes(m)}</option>`).join("")}`;
   const difficulty = task ? task.difficulty : "medium";
   document.getElementById("taskDifficulty").innerHTML = Object.entries(ROUTINE_DIFFICULTIES).map(([key, d]) => `
     <label class="rt-diff-card">
@@ -512,8 +513,14 @@ function readTaskForm() {
     nag: document.getElementById("taskNag").checked,
     carryOver: type === "situational" || document.getElementById("taskCarry").checked,
     difficulty: document.querySelector('input[name="taskDiff"]:checked')?.value || "medium",
-    minutes: type === "situational" ? 0 : Number(document.getElementById("taskMinutes").value) || 0,
+    minutes: type === "situational" ? null : routineReadMinutesField(document.getElementById("taskMinutes").value),
   };
+}
+
+// "" = sem duração (chute pela dificuldade) -> null; "0" = não ocupa tempo -> 0
+function routineReadMinutesField(value) {
+  if (value === "") return null;
+  return Math.max(0, Math.round(Number(value) || 0));
 }
 
 function saveTask() {
@@ -529,10 +536,10 @@ function saveTask() {
   const existing = findRoutineTask(document.getElementById("taskId").value);
   const minutes = data.minutes;
   delete data.minutes; // sem duração escolhida = campo ausente (chute pela dificuldade)
-  if (minutes) data.minutes = minutes;
+  if (minutes !== null) data.minutes = minutes;
   if (existing) {
     Object.assign(existing, data);
-    if (!minutes) delete existing.minutes;
+    if (minutes === null) delete existing.minutes;
   } else routineDb.tasks.push({ id: `t-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, ...data, createdAt: toIsoDate() });
   if (!saveRoutineDb()) return;
   closeTobaModal("taskSheet");

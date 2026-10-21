@@ -330,6 +330,7 @@ function routineDefaultBlocks() {
 }
 
 function routineTaskMinutes(task) {
+  if (task && task.minutes === 0) return 0; // desde v1.45: tarefa que não ocupa tempo (dormir às 23h)
   const own = Number(task && task.minutes);
   if (own > 0) return own;
   return ROUTINE_DEFAULT_MINUTES[task && task.difficulty] || 15;
@@ -420,6 +421,21 @@ function calcRoutineDayLoad(db, iso, options = {}) {
  * se não cabe em nenhum, devolve os dias mais livres com fits = false.
  * Quebrável: devolve um plano de sessões (1 h nos dias de trabalho, até 3 h
  * nos de folga) até completar. */
+/* Dia preferido da task (desde v1.45): "any" tanto faz, "weekend" fim de
+ * semana/folga, "weekday" durante a semana. Task antiga sem `when` usa o
+ * heavy (pesada = melhor na folga). */
+const ROUTINE_ONEOFF_WHEN = {
+  any: { icon: "🎲", name: "Tanto faz" },
+  weekend: { icon: "🛋️", name: "Fim de semana / folga" },
+  weekday: { icon: "💼", name: "Durante a semana" },
+};
+
+function routineOneoffWhen(oneoff) {
+  const when = oneoff && oneoff.when;
+  if (ROUTINE_ONEOFF_WHEN[when]) return when;
+  return oneoff && oneoff.heavy ? "weekend" : "any";
+}
+
 function suggestRoutineOneoff(db, oneoff, options = {}) {
   const now = options.now instanceof Date ? options.now : new Date();
   const today = toIsoDate(now);
@@ -428,6 +444,7 @@ function suggestRoutineOneoff(db, oneoff, options = {}) {
   const lastDay = routineIsIso(oneoff.deadline) && oneoff.deadline >= today
     ? [routineAddDays(today, ROUTINE_PLAN_DAYS - 1), oneoff.deadline].sort()[0]
     : routineAddDays(today, ROUTINE_PLAN_DAYS - 1);
+  const when = routineOneoffWhen(oneoff);
   const days = [];
   for (let day = today; day <= lastDay; day = routineAddDays(day, 1)) {
     const load = calcRoutineDayLoad(db, day, { skipOneoff: oneoff.id, now });
@@ -435,16 +452,18 @@ function suggestRoutineOneoff(db, oneoff, options = {}) {
     const ahead = days.length;
     let score = load.free / 60 - ahead * 0.15;
     const easyDay = load.weekend || !load.hasWork;
-    if (oneoff.heavy && easyDay) score += 3;
-    if (oneoff.heavy && !easyDay) score -= 1.5;
+    // Dia preferido (v1.45) vem antes de tudo; os outros só completam a lista
+    const preferred = when === "weekend" ? easyDay : when === "weekday" ? !load.weekend : true;
     if (load.oneoffList.some((s) => !s.done)) score -= 3; // não empilhar task
     if (day === today) score -= 1; // hoje só se for o melhor mesmo
-    days.push({ date: day, free: load.free, load, score, ownToday, easyDay });
+    days.push({ date: day, free: load.free, load, score, ownToday, easyDay, preferred });
   }
   if (!need) return { need, mode: "none", options: [], days };
 
   if (!oneoff.split) {
-    const fit = days.filter((d) => d.free >= need).sort((a, b) => b.score - a.score);
+    // Cabe no dia preferido? Esses primeiro (por nota); o resto completa.
+    const fit = days.filter((d) => d.free >= need)
+      .sort((a, b) => Number(b.preferred) - Number(a.preferred) || b.score - a.score);
     const picks = (fit.length ? fit : [...days].sort((a, b) => b.free - a.free)).slice(0, 3);
     return {
       need,
@@ -457,12 +476,17 @@ function suggestRoutineOneoff(db, oneoff, options = {}) {
 
   // Quebrável: 1 sessão por dia, em ordem de data, nos dias que têm espaço.
   // 1ª passada pula dia que já tem outra task; só usa eles se faltar.
+  // Com dia preferido, as passadas nos dias preferidos vêm antes.
   const chunk = Math.max(30, Number(oneoff.chunk) || 60);
   const picked = {};
   let left = need;
-  [false, true].forEach((allowBusy) => {
+  const passes = when === "any"
+    ? [[false, false], [true, false]]
+    : [[false, true], [true, true], [false, false], [true, false]];
+  passes.forEach(([allowBusy, onlyPreferred]) => {
     days.forEach((d) => {
       if (left <= 0 || picked[d.date]) return;
+      if (onlyPreferred && !d.preferred) return;
       if (!allowBusy && d.load.oneoffList.some((s) => !s.done)) return;
       const cap = d.easyDay ? chunk * 3 : chunk;
       const room = Math.floor(Math.min(cap, d.free) / 15) * 15;

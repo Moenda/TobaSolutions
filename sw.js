@@ -4,7 +4,7 @@
  * - Chart.js (CDN): cache primeiro, para os gráficos funcionarem offline.
  * - NUNCA mexe no localStorage: seus dados não passam por aqui.
  * Mudou a lista de arquivos? Aumente a versão abaixo. */
-const VERSION = "toba-v14";
+const VERSION = "toba-v15";
 const NETWORK_TIMEOUT_MS = 4000;
 
 const PRECACHE = [

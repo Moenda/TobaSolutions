@@ -63,6 +63,27 @@ function switchTab(tabName) {
   }
 }
 
+// Faixa vermelha em cima do card: Livre hoje negativo = quantos dias sem
+// gastar até voltar pro verde (recoveryDays em bank-metrics.js).
+function renderJacaBanner(summary) {
+  const banner = document.getElementById("adviceBanner");
+  const text = document.getElementById("adviceText");
+  if (!banner || !text) return;
+  const { todayAvailable, recoveryDays, recoveryInMonth, diasRestantes } = summary;
+  banner.classList.toggle("active", todayAvailable < 0);
+  if (todayAvailable >= 0) return;
+  const debt = formatCurrency(-todayAvailable);
+  if (!recoveryDays) {
+    text.innerHTML = `<b>Eita pai, pisou na jaca.</b> Tá ${debt} no vermelho hoje. Segura a carteira 🫣`;
+  } else if (recoveryInMonth) {
+    const days = recoveryDays === 1 ? "1 dia" : `${recoveryDays} dias`;
+    text.innerHTML = `<b>Eita pai, pisou na jaca.</b> Economize por ${days} pra voltar pro verdin 🤑`;
+  } else {
+    const left = diasRestantes === 1 ? "1 dia" : `${diasRestantes} dias`;
+    text.innerHTML = `<b>Eita pai, pisou na jaca.</b> Nem zerando os gastos dá pra voltar pro verdin esse mês. Só a virada te salva (faltam ${left}) 🙏`;
+  }
+}
+
 function renderDashboard() {
   const now = new Date();
   const currentMonthKey = getCurrentMonthKey();
@@ -128,6 +149,9 @@ function renderDashboard() {
   } else {
     barraEl.style.background = '#f85149'; // Sangrando
   }
+
+  // Faixa "pisou na jaca" em cima do card (Livre hoje negativo)
+  renderJacaBanner(summary);
 
   // 3. Pílulas Inferiores
   const availableHeroEl = document.getElementById("dashAvailableHero");
