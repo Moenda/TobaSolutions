@@ -1,0 +1,434 @@
+/* Toba Routine · Agenda (desde v1.46): calendário de 24 h em Dia ou Semana */
+
+:root {
+  --ag-gutter: 34px;
+  --ag-sleep: #a371f7;
+  --ag-work: var(--blue);
+  --ag-commute: var(--muted);
+  --ag-custom: var(--coral);
+  --ag-routine: var(--gold-2);
+  --ag-oneoff: var(--green);
+}
+
+.ag-tabs {
+  margin-bottom: 0.7rem;
+}
+
+.ag-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0.7rem;
+}
+
+.ag-nav-label {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ag-today-btn {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+}
+
+.ag-notice {
+  width: 100%;
+  margin-bottom: 0.7rem;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Resumo do dia / legenda da semana */
+.ag-chips,
+.ag-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 0.7rem;
+}
+
+.ag-chip {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ag-legend {
+  gap: 10px;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.ag-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ag-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.ag-dot.is-sleep { background: var(--ag-sleep); }
+.ag-dot.is-work { background: var(--ag-work); }
+.ag-dot.is-custom { background: var(--ag-custom); }
+.ag-dot.is-routine { background: var(--ag-routine); }
+.ag-dot.is-free { background: rgba(63, 185, 80, 0.35); border: 1px dashed var(--green); }
+
+/* Faixa "sem horário" (Dia) */
+.ag-untimed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 0.7rem;
+  padding: 0.7rem;
+}
+
+.ag-untimed-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.ag-untimed-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border-left: 3px solid var(--ag-routine);
+  font-size: 0.82rem;
+  min-width: 0;
+}
+
+.ag-untimed-item.is-oneoff { border-left-color: var(--ag-oneoff); }
+.ag-untimed-item.is-commute { border-left-color: var(--ag-commute); }
+.ag-untimed-item.is-done { opacity: 0.55; }
+.ag-untimed-item.is-missed { border-left-style: dashed; border-left-color: var(--red); }
+
+.ag-untimed-emoji {
+  flex: 0 0 auto;
+}
+
+.ag-untimed-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 700;
+}
+
+.ag-untimed-meta {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+/* Grade */
+.ag-grid {
+  --ag-cols: repeat(var(--cols), minmax(0, 1fr));
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  overflow: clip;
+  margin-bottom: 1.5rem;
+}
+
+.ag-head,
+.ag-allday {
+  display: grid;
+  grid-template-columns: var(--ag-gutter) var(--ag-cols);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.ag-head {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.ag-day-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 6px 0 5px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.66rem;
+  cursor: pointer;
+}
+
+.ag-day-head strong {
+  color: var(--text);
+  font-size: 0.86rem;
+  width: 26px;
+  height: 26px;
+  line-height: 26px;
+  border-radius: 50%;
+}
+
+.ag-day-head.is-today strong {
+  background: var(--gold-2);
+  color: #1b1405;
+}
+
+.ag-day-head.is-past {
+  opacity: 0.5;
+}
+
+.ag-allday-label {
+  font-size: 0.55rem;
+  line-height: 1.1;
+  color: var(--muted);
+  text-align: center;
+  align-self: center;
+}
+
+.ag-allday-cell {
+  min-height: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 2px 1px;
+  background: none;
+  border: none;
+  border-left: 1px solid var(--border-soft);
+  font: inherit;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.ag-allday-cell .is-done {
+  opacity: 0.4;
+}
+
+.ag-allday-cell em {
+  font-style: normal;
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+
+.ag-body {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--ag-gutter) var(--ag-cols);
+  height: calc(var(--hour) * 24);
+}
+
+.ag-gutter {
+  position: relative;
+}
+
+.ag-hour {
+  position: absolute;
+  right: 5px;
+  transform: translateY(-50%);
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+
+.ag-col {
+  position: relative;
+  display: block;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-left: 1px solid var(--border-soft);
+  background: repeating-linear-gradient(to bottom, var(--border-soft) 0 1px, transparent 1px var(--hour));
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  overflow: hidden;
+}
+
+button.ag-col {
+  cursor: pointer;
+}
+
+.ag-col.is-today {
+  background-color: rgba(227, 179, 65, 0.05);
+}
+
+.ag-col.is-past > * {
+  opacity: 0.6;
+}
+
+/* Brecha livre */
+.ag-gap {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  border: 1px dashed rgba(63, 185, 80, 0.4);
+  background: rgba(63, 185, 80, 0.07);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(126, 231, 135, 0.85);
+  pointer-events: none;
+}
+
+/* Dia fixo: faixas de fundo */
+.ag-band {
+  --c: var(--ag-custom);
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: color-mix(in srgb, var(--c) 18%, transparent);
+  border-left: 3px solid var(--c);
+  pointer-events: none;
+}
+
+.ag-band.is-sleep {
+  --c: var(--ag-sleep);
+  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--c) 20%, transparent) 0 6px, color-mix(in srgb, var(--c) 12%, transparent) 6px 12px);
+}
+
+.ag-band.is-work { --c: var(--ag-work); }
+.ag-band.is-commute { --c: var(--ag-commute); }
+
+.ag-band-label {
+  position: absolute;
+  top: 2px;
+  left: 6px;
+  right: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ag-band.is-wake .ag-band-label {
+  top: auto;
+  bottom: 3px;
+}
+
+.is-week .ag-band-label {
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.68rem;
+}
+
+/* Rotina com horário */
+.ag-event {
+  --c: var(--ag-routine);
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--c) 30%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--c) 70%, transparent);
+  font-size: 0.7rem;
+  line-height: 1.2;
+  color: var(--text);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ag-event strong,
+.ag-event span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ag-event span {
+  color: var(--text-2);
+  font-size: 0.64rem;
+}
+
+.ag-event.is-short {
+  justify-content: center;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.ag-event.is-short strong span {
+  font-weight: 600;
+}
+
+.ag-event.is-done {
+  opacity: 0.55;
+}
+
+.ag-event.is-missed {
+  border-style: dashed;
+  border-color: var(--red);
+}
+
+.ag-event.is-zero {
+  border-radius: 999px;
+  justify-content: center;
+}
+
+.is-week .ag-event {
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 0.62rem;
+}
+
+.ag-now {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  height: 2px;
+  background: var(--red);
+  pointer-events: none;
+}
+
+.ag-now::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+}
+
+@media (max-width: 380px) {
+  :root {
+    --ag-gutter: 30px;
+  }
+}

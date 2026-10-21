@@ -803,14 +803,14 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 
 ## v1.45 — Músculos que trabalham junto, Task com dia preferido e o "pisou na jaca" do Bank
 
-**Arquivos alterados:** `TobaHealth/js/health-metrics.js`, `TobaHealth/js/hall.js`, `TobaHealth/TobaHealth-Treinos.html`, `TobaRoutine/js/routine-metrics.js`, `TobaRoutine/js/routine-core.js`, `TobaRoutine/js/routine.js`, `TobaRoutine/js/task.js`, `TobaRoutine/TobaRoutine-Rotina.html`, `TobaRoutine/TobaRoutine-Task.html`, `TobaRoutine/css/routine-base.css`, `TobaBank/js/bank-metrics.js`, `TobaBank/js/gastos.js`, `TobaBank/TobaBank-Gastos.html`, `sw.js`, `CLAUDE.md`
+**Arquivos alterados:** `TobaHealth/js/health-metrics.js`, `TobaHealth/js/hall.js`, `TobaHealth/TobaHealth-Treinos.html`, `TobaHealth/css/treinos.css`, `TobaRoutine/js/routine-metrics.js`, `TobaRoutine/js/routine-core.js`, `TobaRoutine/js/routine.js`, `TobaRoutine/js/task.js`, `TobaRoutine/TobaRoutine-Rotina.html`, `TobaRoutine/TobaRoutine-Task.html`, `TobaRoutine/css/routine-base.css`, `TobaBank/js/bank-metrics.js`, `TobaBank/js/gastos.js`, `TobaBank/TobaBank-Gastos.html`, `sw.js`, `CLAUDE.md`
 
 1. **Mapa de calor mais esperto (ideia do Rafa com o Maracujeba):** nenhum exercício trabalha um músculo só. Os 68 exercícios do catálogo foram revisados e cada um divide o esforço entre os músculos que trabalham de verdade. Exemplos:
    - Flexão: 55% peito, 15% tríceps, 10% ombro, 10% costas, 10% abdômen (pedido era 60/20/20 com bíceps; ficou tríceps porque flexão empurra, quem puxa é o bíceps).
    - Agachamento: 50% quadríceps, 25% glúteo, 10% posterior, 5% panturrilha, 5% abdômen, 5% costas (lombar). **A parte de trás da coxa agora pega** 🦵
    - Barra fixa: 55% costas, 20% bíceps, 10% antebraço, 10% abdômen, 5% ombro. Supino: peito + tríceps + ombro. Terra: costas, posterior, glúteo, quadríceps e antebraço. E por aí vai.
-2. **O peso agora conta:** cada rep vale o kg levantado (carga da série ou a parte do peso do corpo na flexão/agachamento/barra...), não só a contagem de reps. Série sem carga anotada vale 20 kg por rep. O ranking e o toque no músculo mostram **pts** de esforço.
-3. **Perna conta metade:** quadríceps, posterior, glúteo e panturrilha valem 50% do esforço, pra o leg press de 200 kg não pintar o boneco inteiro de vermelho. O Hall do Herói (tronco x perna) usa a mesma conta. O "?" do mapa explica tudo.
+2. **O peso conta, mas comparado com o normal:** cada exercício tem uma **carga normal** (o que um cara comum de 30 anos faz 10 reps: supino 60 kg, rosca 25 kg, leg press 150 kg, flexão ~48 kg do corpo...). Cada rep vale **sua carga ÷ carga normal** (entre 0,25× e 2×). Assim 200 kg no leg press (1,33×) e 25 kg na rosca (1×) pesam parecido, e a perna não fica vermelha só porque o número de kg é maior. Série sem carga anotada vale 0,5×. O ranking e o toque no músculo mostram **pts** (1 pt = 1 rep na carga normal).
+3. **"?" do mapa reescrito:** explica a conta em 3 passos com o exemplo do leg press x rosca. O Hall do Herói (tronco x perna) usa a mesma conta.
 4. **Task: "📅 Melhor fazer quando?"** no lugar do "É pesada": 🎲 Tanto faz, 🛋️ No FDS (fim de semana ou folga sem trampo) ou 💼 Na semana. O Toba sugere primeiro os dias que você escolheu; se não couber em nenhum, aí ele oferece os outros. Task antiga marcada como pesada vira "No FDS" sozinha.
 5. **Rotina: tarefa de 0 min.** No "⏱️ Quanto tempo leva" tem "0 min (não ocupa tempo)", pra coisa tipo dormir às 23h, tomar remédio... Ela não come o tempo livre do dia na hora do Toba encaixar uma task.
 6. **Bank: "Eita pai, pisou na jaca."** Com o 💵 Livre hoje negativo aparece uma faixa vermelha em cima do card: "Economize por X dias pra voltar pro verdin 🤑". X = quantos dias seguidos **sem gastar nada** (a partir de amanhã) até o Livre ficar positivo, pela mesma regra da dívida que passa de um dia pro outro. Se nem zerando dá antes do mês acabar (a dívida some na virada), a faixa avisa que só a virada salva.
@@ -821,9 +821,33 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - `sw.js` VERSION `toba-v15` (nenhum arquivo novo, só pra renovar o cache). Não precisa de APK novo.
 
 **Como testar:**
-- Treinos → abrir um treino do Saitama → "🔥 Músculos do treino": costas, posterior e glúteo agora pintam; tocar no posterior mostra os pts. Um treino de força com leg press pesado não deixa só a perna vermelha.
+- Treinos → abrir um treino do Saitama → "🔥 Músculos do treino": costas, posterior e glúteo agora pintam; tocar no posterior mostra os pts. Um treino de força com leg press 200 kg + rosca 25 kg fica com quadríceps e bíceps parecidos. Tocar no **?** mostra a conta com exemplo.
 - Task → ➕ → escolher 💼 Na semana → Salvar e achar o dia: as opções são dias de semana. Com 🛋️ No FDS, sábado/domingo primeiro. Escrever "Faxina geral" no nome já marca No FDS.
 - Rotina → ✏️ numa tarefa → ⏱️ "0 min (não ocupa tempo)" → salvar e reabrir: continua 0. O tempo livre do hub não muda com ela.
 - Gastos → lançar um gasto maior que o Livre hoje → aparece a faixa com X dias. Exemplo: Livre de R$ 100/dia e gastou R$ 250 hoje = -R$ 150 → 2 dias. Apagar o gasto → a faixa some. Card do portal continua batendo.
 
 **Commit sugerido:** `v1.45 - Mapa de calor com esforco dividido entre musculos e peso levantado, task com dia preferido, tarefa de 0 min e aviso do pisou na jaca no Gastos`
+
+---
+
+## v1.46 — Agenda do Toba Routine: o seu dia em 24 h, estilo Outlook 📅
+
+**Arquivos novos/alterados:** `TobaRoutine/TobaRoutine-Agenda.html` (NOVO), `TobaRoutine/js/agenda.js` (NOVO), `TobaRoutine/css/agenda.css` (NOVO), `TobaRoutine/js/routine-metrics.js`, `TobaRoutine/TobaRoutine-Index.html`, `TobaRoutine/css/routine-base.css`, `sw.js`, `CLAUDE.md`
+
+1. **Tocar no "🆓 Seu tempo livre" agora abre a Agenda** (antes abria o Meu dia fixo, que já mora na ⚙️). Tocar no card abre a semana; tocar num dia (Qua, Sáb...) abre direto aquele dia.
+2. **Visão 📆 Dia e 🗓️ Semana**, com as 24 horas: sono (listrado roxo, com "⏰ acorda" e "😴 dorme"), trabalho, transporte, blocos fixos (curso, faculdade...) e as rotinas com horário no horário delas, lado a lado quando batem. Linha vermelha marca a hora de agora. ‹ › ou arrastar o dedo pro lado troca de dia/semana; o botão **Hoje** volta.
+3. **Rotina sem horário e sessão de task** não têm hora marcada, então ficam na faixa **📌 Sem horário** no topo do dia (tipo o "dia inteiro" do Outlook). Na semana elas aparecem como emojis em cima de cada dia. O Toba não inventa hora que você não marcou: se quiser ela no calendário, é só pôr horário na tarefa.
+4. **Transporte** não tem horário no dia fixo, só minutos: a agenda põe metade antes do trabalho (ida) e metade depois (volta). Dia sem trabalho = vai pro "sem horário".
+5. **Brechas verdes:** o que sobra sem nada marcado aparece pontilhado em verde ("🆓 brecha de 2h"). O "🆓 Livre" lá em cima é o mesmo número do Hub, que também desconta o sem horário e o respiro, por isso pode ser menor que a soma das brechas.
+6. Feita ✅ fica apagadinha; a que passou do dia sem fazer fica com borda vermelha 🙈. Configurar o dia continua na ⚙️ → Meu dia fixo (também dá pra abrir pela ⚙️ da Agenda).
+
+**Dados:** Nenhuma mudança no banco. A Agenda só lê o `TOBA_ROUTINE_DB` (função nova `calcRoutineDayAgenda` em routine-metrics.js, só cálculo). `sw.js` VERSION `toba-v16` (3 arquivos novos no PRECACHE). Não precisa de APK novo.
+
+**Como testar:**
+- Hub do Routine → tocar no texto do card "Seu tempo livre" → abre a Semana desta semana, com hoje em amarelo e a linha vermelha na hora atual.
+- Voltar → tocar em "Sáb" → abre o Dia do sábado. ‹ › troca de dia; "Hoje" volta pra hoje.
+- Uma rotina com horário (ex.: 19h30, 1 h) aparece no bloco certo; uma sem horário aparece no "📌 Sem horário". Marcar como feita na Rotina e voltar: fica com ✅.
+- ⚙️ → Meu dia fixo → mudar a hora de dormir → salvar: a agenda redesenha na hora.
+- Testar em 360px e 384px: nada passa da tela.
+
+**Commit sugerido:** `v1.46 - Agenda do Toba Routine com visao de dia e semana em 24h, aberta pelo tempo livre do hub`

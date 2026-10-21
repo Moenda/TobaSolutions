@@ -256,9 +256,10 @@ function closeWorkoutDetail() {
 /* ---------------------------------------------------------------------
  * MAPA DE CALOR DOS MÚSCULOS (v1.30; esforço por peso desde v1.45)
  * Boneco em SVG (frente e costas), uma peça por grupo do STRENGTH_GROUPS.
- * Mede ESFORÇO (pts) por grupo: kg levantado (reps × carga, peso do corpo
- * incluso) repartido entre os músculos do exercício (MUSCLE_SPLITS em
- * health-metrics.js), com a perna valendo MUSCLE_LEG_FACTOR pra não disparar.
+ * Mede ESFORÇO (pts) por grupo: cada rep vale carga ÷ carga normal daquele
+ * exercício pra um cara de 30 anos (MUSCLE_REF_KG; 1 pt = 1 rep na carga
+ * normal), repartido entre os músculos do exercício (MUSCLE_SPLITS). Assim
+ * leg press de 200 kg e rosca de 25 kg pesam igual: os dois são "normais".
  * Pinta em 5 níveis comparando com o grupo mais treinado do período, do verde
  * (pouco) ao vermelho (o que mais treinou); cinza = nada.
  * Só cálculo: usa getWorkoutMuscleWork (Saitama) + as séries dos treinos de força
@@ -318,14 +319,12 @@ function getCardioKm(workout) {
 // "Todo exercício conta": além do cardio puro, os km do Saitama e do treino
 // personalizado entram como caminhada/corrida. O personalizado sem distância
 // (só séries×reps ou só minutos) não diz o músculo, então espalha leve no corpo todo.
-// Devolve [[grupo, reps, kg]]: cada rep de cardio vale parte do peso do corpo
-// (MUSCLE_CARDIO_BODY_FRACTION); a do personalizado, MUSCLE_NO_LOAD_KG.
+// Devolve [[grupo, reps, pts]]: cada rep equivalente vale MUSCLE_CARDIO_INTENSITY.
 function getMuscleExtras(workout) {
   const items = [];
-  const repKg = getBodyWeightOn(workout.date) * MUSCLE_CARDIO_BODY_FRACTION;
   const addMap = (perKm, km) => Object.entries(perKm).forEach(([group, value]) => {
     const reps = Math.round(km * value);
-    items.push([group, reps, reps * repKg]);
+    items.push([group, reps, reps * MUSCLE_CARDIO_INTENSITY]);
   });
   const km = getCardioKm(workout);
   if (km > 0) addMap(CARDIO_MUSCLES[workout.type].perKm, km);
@@ -335,38 +334,35 @@ function getMuscleExtras(workout) {
   } else if (workout.type === "custom") {
     const reps = (Number(workout.sets) || 0) * (Number(workout.reps) || 0) || Number(workout.durationMinutes) || 0;
     const each = Math.max(1, Math.round(reps / STRENGTH_GROUPS.length));
-    if (reps > 0) STRENGTH_GROUPS.forEach((group) => items.push([group.id, each, each * MUSCLE_NO_LOAD_KG]));
+    if (reps > 0) STRENGTH_GROUPS.forEach((group) => items.push([group.id, each, each * MUSCLE_CARDIO_INTENSITY]));
   }
   return items;
 }
 
 // Soma por grupo: { peito: { effort, reps, kg, lastDate }, ... }
-// effort (pts) = kg × fatia do músculo × fator da perna; reps e kg já vêm
+// effort (pts) = reps × intensidade × fatia do músculo; reps e kg também vêm
 // repartidos pela fatia (só pra mostrar no toque).
 function getMuscleHeat(workouts) {
   const heat = {};
-  const add = (group, reps, kg, date) => {
-    if (!group || !(reps > 0) || !(kg > 0)) return;
+  const add = (group, reps, kg, pts, date) => {
+    if (!group || !(reps > 0) || !(pts > 0)) return;
     const item = heat[group] || (heat[group] = { effort: 0, reps: 0, kg: 0, lastDate: "" });
-    item.effort += kg * calcMuscleFactor(group);
+    item.effort += pts;
     item.reps += reps;
     item.kg += kg;
     if (String(date) > item.lastDate) item.lastDate = String(date);
   };
-  const addSplit = (exerciseId, group, reps, kg, date) => calcMuscleShares(exerciseId, group)
-    .forEach(([target, share]) => add(target, reps * share, kg * share, date));
+  const addSplit = (exerciseId, group, work, date) => calcMuscleShares(exerciseId, group)
+    .forEach(([target, share]) => add(target, work.reps * share, work.kg * share, work.pts * share, date));
   (workouts || []).forEach((workout) => {
-    getWorkoutMuscleWork(workout, { bodyweightOnly: true })
-      .forEach((item) => addSplit(item.exerciseId, item.group, item.reps, item.kg, workout.date));
-    getMuscleExtras(workout).forEach(([group, reps, kg]) => add(group, reps, kg, workout.date));
+    getWorkoutMuscleWork(workout, { bodyweightOnly: true }).forEach((item) => {
+      const pts = item.reps * calcMuscleIntensity(item.exerciseId, item.kg / item.reps);
+      addSplit(item.exerciseId, item.group, { reps: item.reps, kg: item.kg, pts }, workout.date);
+    });
+    getMuscleExtras(workout).forEach(([group, reps, pts]) => add(group, reps, 0, pts, workout.date));
     if (!Array.isArray(workout.exercises)) return;
     workout.exercises.forEach((exercise) => {
-      const lift = getStrengthLift({ date: workout.date, exercises: [exercise] });
-      // Reps sem carga anotada (e sem peso do corpo) entram com MUSCLE_NO_LOAD_KG
-      const unilateral = getExerciseLoad(exercise.exerciseId).unilateral;
-      const allReps = (exercise.sets || []).reduce((sum, set) => sum + (Number(set.reps) || 0), 0) * (unilateral ? 2 : 1);
-      const looseReps = Math.max(0, allReps - lift.reps);
-      addSplit(exercise.exerciseId, exercise.group, allReps, lift.kg + looseReps * MUSCLE_NO_LOAD_KG, workout.date);
+      addSplit(exercise.exerciseId, exercise.group, calcExerciseEffort(exercise, workout.date, healthDb), workout.date);
     });
   });
   return heat;

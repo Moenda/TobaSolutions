@@ -1559,3 +1559,23 @@
   font-weight: 700;
   color: var(--muted);
 }
+
+/* Manual do boneco: passos e exemplo da conta (desde v1.45) */
+.muscle-help-steps {
+  margin: 0.3rem 0 0.6rem;
+  padding-left: 1.2rem;
+}
+
+.muscle-help-steps li {
+  margin-bottom: 0.25rem;
+}
+
+.muscle-help-example {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.7rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}

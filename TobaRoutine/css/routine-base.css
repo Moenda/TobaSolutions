@@ -545,6 +545,13 @@
   background: var(--surface);
 }
 
+button.rt-free-day {
+  font: inherit;
+  font-size: 0.68rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
 .rt-free-day strong {
   color: var(--text);
   font-size: 0.74rem;

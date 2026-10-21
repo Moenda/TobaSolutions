@@ -56,10 +56,10 @@
     </nav>
 
     <div class="section-title">🆓 Seu tempo livre</div>
-    <button type="button" class="card rt-week-card" data-click="openDayPlan" aria-label="Abrir Meu dia fixo">
+    <div class="card rt-week-card" role="button" tabindex="0" data-click="openAgendaWeek" aria-label="Abrir a agenda da semana">
       <div class="rt-week-free" id="hubWeekFree"></div>
       <span class="rt-help" id="hubWeekHelp"></span>
-    </button>
+    </div>
   </main>
 
   <!-- Itens só desta página dentro da ⚙️ -->
@@ -82,7 +82,7 @@
   <script src="js/routine-core.js"></script>
   <script src="js/routine-plan.js"></script>
   <script>
-    // O Hub só mostra um resumo; quem grava é a ⚙️ (backup e Meu dia fixo).
+    // O Hub só mostra um resumo; quem grava é a ⚙️ (backup e Meu dia fixo). O tempo livre abre a Agenda.
     function renderRoutineHub() {
       const today = toIsoDate();
       const summary = calcRoutineToday(routineDb, today);
@@ -100,12 +100,20 @@
         const day = routineAddDays(monday, i);
         const load = calcRoutineDayLoad(routineDb, day, { now: new Date() });
         const past = day < today;
-        return `<div class="rt-free-day${day === today ? " is-today" : ""}${past ? " is-past" : ""}"><span>${label}</span><strong>${past ? "—" : routineFormatMinutes(load.free)}</strong></div>`;
+        return `<button type="button" class="rt-free-day${day === today ? " is-today" : ""}${past ? " is-past" : ""}" data-click="openAgendaDay" data-date="${day}" aria-label="Agenda de ${label}"><span>${label}</span><strong>${past ? "—" : routineFormatMinutes(load.free)}</strong></button>`;
       }).join("");
       document.getElementById("hubWeekHelp").textContent = routineDb.dayPlan.configured
-        ? "Livre depois do dia fixo, da rotina, das tasks e do respiro. Toque pra ajustar."
-        : "⚠️ Tá no chute (9h–18h, dorme 23h30). Toque e conta como é o seu dia.";
+        ? "Livre depois do dia fixo, da rotina, das tasks e do respiro. Toque num dia pra ver a agenda 📅"
+        : "⚠️ Tá no chute (9h–18h, dorme 23h30). Conta como é o seu dia na ⚙️ → Meu dia fixo.";
     }
+    // Agenda (desde v1.46): o card abre a semana; o dia abre direto nele. Ajustar o dia fixo é na ⚙️.
+    function openAgendaWeek() {
+      location.href = `TobaRoutine-Agenda.html?view=week&date=${toIsoDate()}`;
+    }
+    function openAgendaDay(el) {
+      location.href = `TobaRoutine-Agenda.html?view=day&date=${el.dataset.date}`;
+    }
+    tobaActions({ openAgendaWeek, openAgendaDay });
     function onRoutinePlanChanged() {
       renderRoutineHub();
     }

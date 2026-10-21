@@ -499,3 +499,78 @@ function suggestRoutineOneoff(db, oneoff, options = {}) {
   const sessions = Object.values(picked).sort((a, b) => a.date.localeCompare(b.date));
   return { need, mode: "split", fits: left <= 0, missing: Math.max(0, left), options: sessions, days };
 }
+
+/* Agenda do dia (desde v1.46): o que acontece em cada hora, pra visão de
+ * calendário (TobaRoutine-Agenda.html). Minutos contados do 00:00 do dia.
+ * - Dia fixo no horário. Bloco que passa da meia-noite aparece nos dois dias
+ *   (o sono de seg 23h30–07h pinta seg 23h30–24h e ter 00h–07h).
+ * - Transporte só tem minutos: metade antes do trabalho (ida), metade depois
+ *   (volta). Dia sem trabalho = vai pra faixa "sem horário".
+ * - Rotina com horário entra na hora, ocupando routineTaskMinutes (0 = só um
+ *   risquinho). Rotina sem horário e sessão de task (que só tem dia) vão pra
+ *   faixa "sem horário" do topo: o Toba não inventa hora que você não marcou.
+ * Só cálculo, nada gravado. */
+function calcRoutineDayAgenda(db, iso, today = toIsoDate()) {
+  const plan = routineDayPlan(db);
+  const code = routineWeekCode(iso);
+  const prevCode = routineWeekCode(routineAddDays(iso, -1));
+  const onDay = (block, c) => Array.isArray(block.days) && block.days.includes(c);
+  const blocks = [];
+  const timed = [];
+  const untimed = [];
+
+  plan.blocks.forEach((block) => {
+    if (block.kind === "commute") return;
+    const a = routineTimeToMin(block.start);
+    const b = routineTimeToMin(block.end);
+    if (a === null || b === null || a === b) return;
+    const base = { kind: block.kind, emoji: block.emoji || "📌", name: block.name || "Bloco", startAt: a, endAt: b };
+    if (b > a) {
+      if (onDay(block, code)) blocks.push({ ...base, start: a, end: b });
+      return;
+    }
+    if (onDay(block, code)) blocks.push({ ...base, start: a, end: 1440, toTomorrow: true });
+    if (onDay(block, prevCode)) blocks.push({ ...base, start: 0, end: b, fromYesterday: true });
+  });
+
+  const work = blocks.filter((b) => b.kind === "work" && !b.fromYesterday).sort((x, y) => x.start - y.start)[0];
+  plan.blocks.filter((b) => b.kind === "commute" && onDay(b, code)).forEach((block) => {
+    const minutes = routineBlockMinutes(block);
+    if (!minutes) return;
+    const base = { kind: "commute", emoji: block.emoji || "🚌", name: block.name || "Transporte" };
+    if (!work) {
+      untimed.push({ ...base, minutes });
+      return;
+    }
+    const half = Math.round(minutes / 2);
+    blocks.push({ ...base, leg: "ida", start: Math.max(0, work.start - half), end: work.start });
+    if (work.end < 1440) blocks.push({ ...base, leg: "volta", start: work.end, end: Math.min(1440, work.end + minutes - half) });
+  });
+  blocks.sort((x, y) => x.start - y.start);
+
+  const sleeps = blocks.filter((b) => b.kind === "sleep");
+  const wake = sleeps.filter((b) => b.end < 1440 && b.end <= 14 * 60).sort((x, y) => x.end - y.end)[0];
+  const sleep = sleeps.filter((b) => b.start > 0 && b.start >= 12 * 60).sort((x, y) => y.start - x.start)[0];
+
+  const doneKeys = routineDoneKeys(db && db.log);
+  const tasks = (db && Array.isArray(db.tasks) ? db.tasks : []).filter((t) => t && t.id && isRoutineTaskDue(t, iso));
+  tasks.forEach((task) => {
+    const minutes = routineTaskMinutes(task);
+    const done = doneKeys.has(`${task.id}|${iso}`);
+    const item = { kind: "routine", id: task.id, emoji: task.emoji || "✅", name: task.name || "Tarefa", minutes, done, missed: !done && iso < today };
+    const at = routineTimeToMin(task.time);
+    if (at === null) untimed.push(item);
+    else timed.push({ ...item, start: at, end: Math.min(1440, at + minutes) });
+  });
+  timed.sort((x, y) => x.start - y.start || x.name.localeCompare(y.name));
+
+  routineOneoffsOf(db).forEach((o) => {
+    if (o.archivedAt) return;
+    (o.sessions || []).forEach((s) => {
+      if (s.date !== iso) return;
+      untimed.push({ kind: "oneoff", id: o.id, emoji: o.emoji || "🛠️", name: o.name || "Task", minutes: Number(s.minutes) || 0, done: Boolean(s.doneAt), missed: !s.doneAt && iso < today });
+    });
+  });
+
+  return { date: iso, blocks, timed, untimed, wakeAt: wake ? wake.end : null, sleepAt: sleep ? sleep.start : null };
+}

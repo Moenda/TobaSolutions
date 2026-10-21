@@ -209,14 +209,55 @@ const MUSCLE_SPLITS = {
   "abdominal-maquina": { abdomen: 1 },
 };
 
-// Perna carrega muito mais peso (leg press de 200 kg x rosca de 12 kg):
-// o esforço da perna conta só esta fração, senão ela pintava tudo de vermelho.
-const MUSCLE_LEG_GROUPS = ["quadriceps", "posterior", "gluteos", "panturrilha"];
-const MUSCLE_LEG_FACTOR = 0.5;
-// Série sem carga anotada (e o personalizado sem km) conta como este peso por rep.
-const MUSCLE_NO_LOAD_KG = 20;
-// Cardio: cada "rep equivalente" por km vale esta parte do peso do corpo.
-const MUSCLE_CARDIO_BODY_FRACTION = 0.5;
+/* Régua de força: carga "normal" de cada exercício pra um cara comum de
+ * 30 anos, ~80 kg, que treina faz um tempo (peso que ele faz 10 reps bem
+ * feitas). Mesma unidade do calcStrengthLift: halteres = soma dos dois
+ * (com "por halter" ligado); unilateral = carga de um lado; peso do corpo
+ * já entra na conta (flexão ~48 kg, barra ~72 kg).
+ * Intensidade da série = carga ÷ régua (presa entre 0,25 e 2): perna com
+ * 200 kg no leg press e bíceps com 25 kg na rosca valem o MESMO esforço,
+ * porque os dois estão na carga normal de cada um. Isso substitui o
+ * "perna vale metade" (que errava pra perna leve e pra braço pesado).
+ * Exercício novo no catálogo = régua nova aqui. */
+const MUSCLE_REF_KG = {
+  // Peito
+  "supino-reto-barra": 60, "supino-reto-halter": 44, "supino-inclinado-barra": 50,
+  "supino-inclinado-halter": 36, "supino-declinado": 60, "supino-maquina": 55,
+  "crucifixo-halter": 24, "crossover": 30, "peck-deck": 45, "flexao": 48,
+  // Costas
+  "puxada-frente": 55, "puxada-triangulo": 55, "barra-fixa": 72, "remada-curvada": 50,
+  "remada-baixa": 55, "remada-baixa-unilateral": 27, "remada-unilateral": 26,
+  "remada-maquina": 55, "pulldown": 30, "terra": 90,
+  // Ombros
+  "desenvolvimento-halter": 28, "desenvolvimento-barra": 40, "desenvolvimento-maquina": 40,
+  "elevacao-lateral": 14, "elevacao-frontal": 16, "crucifixo-inverso": 14,
+  "encolhimento": 60, "face-pull": 25,
+  // Bíceps
+  "rosca-direta": 25, "rosca-alternada": 24, "rosca-martelo": 24, "rosca-scott": 22,
+  "rosca-concentrada": 12, "rosca-polia": 25,
+  // Tríceps
+  "triceps-pulley-corda": 25, "triceps-pulley-barra": 30, "triceps-testa": 25,
+  "triceps-frances": 20, "triceps-coice": 10, "mergulho": 68, "supino-fechado": 45,
+  // Antebraço
+  "rosca-punho": 20, "rosca-punho-inversa": 12, "rosca-inversa": 20, "rosca-zottman": 20, "rolo-punho": 8,
+  // Quadríceps (agachamento sem peso é leve pra perna: régua acima do peso do corpo)
+  "agachamento-livre": 60, "agachamento-corpo": 110, "agachamento-smith": 60, "agachamento-hack": 80,
+  "agachamento-bulgaro": 20, "leg-press": 150, "cadeira-extensora": 45, "afundo": 20,
+  // Posterior de coxa
+  "mesa-flexora": 35, "cadeira-flexora": 35, "stiff": 50,
+  // Glúteos
+  "elevacao-pelvica": 70, "cadeira-abdutora": 50, "gluteo-polia": 15, "gluteo-maquina": 30,
+  // Panturrilha
+  "panturrilha-pe": 60, "panturrilha-sentado": 40, "panturrilha-leg": 100,
+  // Abdômen (abdominal é leve: 120 do Saitama ≈ 72 reps "normais")
+  "abdominal-crunch": 40, "abdominal-infra": 40, "abdominal-polia": 35, "abdominal-maquina": 35,
+};
+const MUSCLE_INTENSITY_MIN = 0.25;
+const MUSCLE_INTENSITY_MAX = 2;
+// Série sem carga anotada (exercício que não é de peso do corpo): meio esforço.
+const MUSCLE_NO_LOAD_INTENSITY = 0.5;
+// Cardio e personalizado sem músculo: cada "rep equivalente" vale isto.
+const MUSCLE_CARDIO_INTENSITY = 0.4;
 
 // [[grupo, fatia], ...] do exercício; sem divisão = tudo no grupo dele.
 function calcMuscleShares(exerciseId, fallbackGroup) {
@@ -225,8 +266,33 @@ function calcMuscleShares(exerciseId, fallbackGroup) {
   return fallbackGroup ? [[fallbackGroup, 1]] : [];
 }
 
-function calcMuscleFactor(group) {
-  return MUSCLE_LEG_GROUPS.includes(group) ? MUSCLE_LEG_FACTOR : 1;
+// Intensidade de 1 rep com kgPerRep no exercício (1 = carga normal).
+function calcMuscleIntensity(exerciseId, kgPerRep) {
+  const ref = MUSCLE_REF_KG[exerciseId];
+  if (!(kgPerRep > 0)) return MUSCLE_NO_LOAD_INTENSITY;
+  if (!ref) return 1;
+  return Math.min(MUSCLE_INTENSITY_MAX, Math.max(MUSCLE_INTENSITY_MIN, kgPerRep / ref));
+}
+
+// Esforço de um exercício do treino de força, série por série (mesma conta
+// de carga do calcStrengthLift): { reps, kg, pts }. pts = reps × intensidade
+// ("reps na carga normal"); quem divide entre os músculos é o mapa de calor.
+function calcExerciseEffort(exercise, workoutDate, healthData) {
+  const fraction = STRENGTH_EXERCISES.find((item) => item.id === exercise.exerciseId)?.bodyweight || 0;
+  const bodyPart = fraction ? calcBodyWeightOn(healthData, workoutDate) * fraction : 0;
+  const load = calcExerciseLoad(healthData, exercise.exerciseId);
+  const loadFactor = load.perHand && !load.unilateral ? 2 : 1;
+  const repsFactor = load.unilateral ? 2 : 1;
+  const total = { reps: 0, kg: 0, pts: 0 };
+  (exercise.sets || []).forEach((set) => {
+    const reps = (Number(set.reps) || 0) * repsFactor;
+    if (!(reps > 0)) return;
+    const kg = (Number(set.kg) || 0) * loadFactor + bodyPart;
+    total.reps += reps;
+    total.kg += reps * kg;
+    total.pts += reps * calcMuscleIntensity(exercise.exerciseId, kg);
+  });
+  return total;
 }
 
 const WORKOUT_DISTANCE_DESTINATIONS = [

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="icon" href="../icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="css/routine-base.css" />
+  <link rel="stylesheet" href="css/agenda.css" />
+  <title>Toba Routine ⚡ Agenda</title>
+</head>
+
+<body>
+  <main class="container">
+    <header class="toba-header">
+      <a class="toba-back" href="TobaRoutine-Index.html" data-label="Voltar para o hub do Routine" aria-label="Voltar para o hub do Routine">‹</a>
+      <a class="toba-titles" href="TobaRoutine-Index.html">
+        <span class="toba-app">⚡ Toba Routine</span>
+        <span class="toba-page">📅 Agenda</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
+      </div>
+    </header>
+
+    <div class="tab-nav ag-tabs" id="agendaTabs" role="tablist">
+      <button type="button" class="tab-btn" data-click="setAgendaView" data-view="day">📆 Dia</button>
+      <button type="button" class="tab-btn" data-click="setAgendaView" data-view="week">🗓️ Semana</button>
+    </div>
+
+    <div class="ag-nav">
+      <button type="button" class="toba-icon-btn" data-click="agendaPrev" aria-label="Anterior">‹</button>
+      <strong class="ag-nav-label" id="agendaLabel"></strong>
+      <button type="button" class="btn btn-secondary ag-today-btn" id="agendaTodayBtn" data-click="agendaToday" hidden>Hoje</button>
+      <button type="button" class="toba-icon-btn" data-click="agendaNext" aria-label="Próximo">›</button>
+    </div>
+
+    <div id="agendaNotice"></div>
+    <div id="agendaSummary"></div>
+    <div id="agendaUntimed"></div>
+    <div id="agendaGrid"></div>
+  </main>
+
+  <!-- Itens só desta página dentro da ⚙️ -->
+  <div id="tobaSettingsExtra" hidden>
+    <div class="toba-settings-section">
+      <div class="toba-settings-label">🕰️ Seu dia</div>
+      <button type="button" class="toba-menu-btn" data-click="openDayPlan">
+        <span class="toba-menu-icon">🕰️</span>
+        <span class="toba-menu-text">
+          <span class="toba-menu-title">Meu dia fixo</span>
+          <span class="toba-menu-desc">Sono, trabalho, transporte e o que mais tomar tempo</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="../assets/toba-common.js"></script>
+  <script src="js/routine-metrics.js"></script>
+  <script src="js/routine-core.js"></script>
+  <script src="js/routine-plan.js"></script>
+  <script src="js/agenda.js"></script>
+  <script src="../assets/pwa-register.js"></script>
+</body>
+
+</html>
