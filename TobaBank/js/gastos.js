@@ -182,6 +182,10 @@ function renderDashboard() {
   renderExpenseListWithInstallments(currentMonthTransactions, activeInstallmentsMonth);
 }
 
+// v1.48: categoria tocada no "Gastos por categoria" da tela inicial filtra
+// os "Lançamentos do mês" (null = todos). Só tela, nada é gravado.
+let expenseCategoryFilter = null;
+
 function renderCategoryBars(
   transactions,
   totalSpent,
@@ -190,6 +194,7 @@ function renderCategoryBars(
   const container = document.getElementById(containerId);
   if (!container) return;
   container.innerHTML = "";
+  const canFilter = containerId === "categoryBarsContainer";
 
   if (!transactions || transactions.length === 0 || totalSpent <= 0) {
     container.innerHTML = tobaEmpty("📊", "Sem categorias por aqui", "Lance um gasto e o gráfico aparece.", { compact: true });
@@ -211,6 +216,16 @@ function renderCategoryBars(
       );
       const itemEl = document.createElement("div");
       itemEl.className = "category-item";
+      if (canFilter) {
+        itemEl.classList.add("is-filter");
+        itemEl.classList.toggle("is-selected", expenseCategoryFilter === category);
+        itemEl.classList.toggle("is-dim", expenseCategoryFilter !== null && expenseCategoryFilter !== category);
+        itemEl.setAttribute("role", "button");
+        itemEl.tabIndex = 0;
+        itemEl.dataset.click = "filterExpenseCategory";
+        itemEl.dataset.category = category;
+        itemEl.setAttribute("aria-pressed", String(expenseCategoryFilter === category));
+      }
       itemEl.innerHTML = `
                 <div class="category-info">
                     <span>${escapeHtml(category)}</span>
@@ -233,8 +248,17 @@ function renderExpenseListWithInstallments(
     "homeInstallmentsListContainer",
   );
 
-  setText("homeTransCount", transactions.length);
+  // Filtro de categoria: some sozinho se a categoria não tem mais gasto no mês
+  if (expenseCategoryFilter !== null && !transactions.some((t) => getCleanCategory(t.category) === expenseCategoryFilter)) {
+    expenseCategoryFilter = null;
+    document.querySelectorAll("#categoryBarsContainer .category-item").forEach((item) => item.classList.remove("is-selected", "is-dim"));
+  }
+  const filtered = expenseCategoryFilter === null
+    ? transactions
+    : transactions.filter((t) => getCleanCategory(t.category) === expenseCategoryFilter);
+  setText("homeTransCount", expenseCategoryFilter === null ? transactions.length : `${filtered.length}/${transactions.length}`);
   setText("homeInstCount", activeInstallments.length);
+  renderExpenseFilterBar(filtered);
 
   if (transContainer) {
     if (transactions.length === 0) {
@@ -244,7 +268,7 @@ function renderExpenseListWithInstallments(
         "Toque em <b>+ Gasto</b> para começar. Seu bolso agradece.",
       );
     } else {
-      transContainer.innerHTML = [...transactions]
+      transContainer.innerHTML = [...filtered]
         .sort((a, b) => new Date(b.date) - new Date(a.date))
         .map(transactionItemHtml)
         .join("");
@@ -256,6 +280,29 @@ function renderExpenseListWithInstallments(
       activeInstallments.length === 0
         ? tobaEmpty("💳", "Nenhuma parcela neste mês", "Cartão de férias. Aproveite!", { compact: true })
         : activeInstallments.map(installmentItemHtml).join("");
+  }
+}
+
+function renderExpenseFilterBar(filtered) {
+  const bar = document.getElementById("expenseFilterBar");
+  if (!bar) return;
+  bar.hidden = expenseCategoryFilter === null;
+  if (expenseCategoryFilter === null) return;
+  const total = filtered.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+  bar.innerHTML = `
+    <span class="expense-filter-text">🔎 Só <b>${escapeHtml(expenseCategoryFilter)}</b> · ${filtered.length} ${filtered.length === 1 ? "lançamento" : "lançamentos"} · -${formatCurrency(total)}</span>
+    <button type="button" class="chip-btn" data-click="clearExpenseFilter">✕ Limpar</button>`;
+}
+
+function filterExpenseCategory(el) {
+  const category = el.dataset.category;
+  expenseCategoryFilter = expenseCategoryFilter === category ? null : category;
+  renderDashboard();
+  if (expenseCategoryFilter === null) return;
+  const card = document.getElementById("homeTransCard");
+  if (card) {
+    card.classList.add("expanded");
+    card.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
 
@@ -1254,6 +1301,11 @@ tobaActions({
   editFixedExpense: (el) => editFixedExpense(el.dataset.id),
   switchTab: (el) => switchTab(el.dataset.tab),
   toggleCard: (el) => toggleCard(el.dataset.target),
+  filterExpenseCategory,
+  clearExpenseFilter: () => {
+    expenseCategoryFilter = null;
+    renderDashboard();
+  },
   openSobraHelp,
   openSettings: openGastosSettings,
   toggleStartDateArea,

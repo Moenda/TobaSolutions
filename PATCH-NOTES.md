@@ -917,3 +917,35 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px: nada passa da tela.
 
 **Commit sugerido:** `v1.47 - Hall dos Herois no Perfil, 10 marcos novos de peso, manadas e multidoes, adutora e leg press 90 e 180, deslizar pra deixar atrasada pra la, compras do cartao pendentes pra aprovar`
+
+---
+
+## v1.48 — Semana copiada, receitas do Bertoba, card do Routine com tarefas e filtro de categoria no Gastos
+
+**Arquivos alterados:** `TobaKitchen/TobaKitchen-Semana.html`, `TobaKitchen/js/semana.js`, `TobaKitchen/js/receitas.js`, `TobaKitchen/js/kitchen-recipes.js`, `TobaKitchen/css/kitchen-base.css`, `Toba-Perfil.html`, `assets/perfil.css`, `index.html`, `assets/portal.js`, `assets/portal.css`, `TobaRoutine/js/routine-metrics.js`, `TobaBank/TobaBank-Gastos.html`, `TobaBank/js/gastos.js`, `TobaBank/css/gastos.css`, `CLAUDE.md`
+
+1. **📋 Copiar da semana anterior (Kitchen → Semana):** botão novo embaixo dos números. Copia as receitas da semana passada pro mesmo dia, mesma refeição e mesmas porções (o café de sempre, sem programar tudo de novo). O que já está igual nesta semana é pulado, então tocar duas vezes não duplica. Se a semana já tem coisa, ele pergunta antes.
+2. **Folha "➕ Receita" não fecha mais a cada receita:** toca no onigiri, no café, no que quiser, e ela continua aberta até o ✕. As que já estão no dia ficam **contornadas de amarelo** com "✓ no dia: 🍛 Almoço". Tocou numa amarela? Tira do dia (a que já foi feita fica, por causa do contador). Aparece um aviso rápido a cada toque.
+3. **Autor das receitas:** cada receita mostra quem escreveu (🤖 Cloba ou 👨‍🍳 Bertoba), na lista e embaixo do nome da receita. Dá pra buscar "bertoba" no livro.
+4. **Tapioca proteica de queijo (do Bertoba):** 100 g de goma + 1 ovo virando massaroca, frigideira untada com um fio de óleo, timer de 2 min, vira, mais 1,5 min, RANGO. Com 30 g de queijo na hora de virar (QUEIJO, sim). 🧀 Mesma receita de antes: contador e programação continuam valendo.
+5. **Panqueca de banana com aveia e whey (do Bertoba):** igual à de antes + 1 scoop de whey de chocolate, água se ficar viscosa demais e a manha de tirar do fogo por uns segundos (ou usar panela boa) até conseguir virar. Ingrediente novo: Whey de chocolate.
+6. **⚙️ Configurações do Perfil arrumada:** meta do streak, som e vibrar agora são linhas iguais, com o controle alinhado na direita (antes os quadradinhos ficavam tortos colados no texto).
+7. **Portal sem "Beta":** saiu o selo dos cards do Health, Routine e Kitchen.
+8. **Tarefas de hoje no card do Routine:** no configurador de cards (⚡ Card do Toba Routine) tem a opção nova **📋 Tarefas de hoje no card (marca dali)**. Ligada, o card lista as tarefas do dia com o horário; tocar marca como feita (com o XP e a comemoração de sempre) e tocar de novo desmarca. Vale no card simples e no com números. Mais de 8 tarefas: mostra as que faltam primeiro e "+ N na Rotina".
+9. **Filtro por categoria no Gastos:** toca numa categoria em "📊 Gastos por categoria" (ex: ⛽ Combustível) e os "💸 Lançamentos do mês" mostram só ela, com o total e a contagem (2/30). As outras categorias ficam apagadinhas. Toca de novo na mesma ou em "✕ Limpar" pra ver tudo.
+
+**Dados:**
+- `TOBA_KITCHEN_DB`: nenhuma mudança de formato. Copiar a semana só cria entradas novas em `plan` (id novo). Ids das receitas não mudaram (`tapioca-queijo`, `panqueca-banana`); ingrediente novo `whey-chocolate` e unidade nova `scoop` só no catálogo. Campo novo opcional `author` nas receitas do código (sem ele = Cloba).
+- `toba_routine_card_config`: campo novo opcional `todayList` (ausente = desligado).
+- `TOBA_ROUTINE_DB`: sem campo novo. O card do portal grava no `log` do mesmo jeito da Rotina, copiando o valor anterior no auto-backup antes; se o banco estiver ilegível, não grava nada.
+- `TOBA_BANK_DB`: nenhuma mudança (o filtro é só de tela). `sw.js`: sem arquivo novo, VERSION continua `toba-v17`.
+
+**Como testar:**
+- Kitchen → Semana: com receitas na semana passada, aparece "📋 Copiar da semana anterior (N)". Toca e confere os dias. Toca "➕ Receita", escolhe 2 ou 3: a folha fica aberta, as escolhidas ficam amarelas; toca numa amarela e ela sai.
+- Livro de receitas: tapioca e panqueca com "👨‍🍳 Bertoba"; as outras com "🤖 Cloba". Modo cozinha da tapioca: o passo 4 tem timer de 1:30.
+- Perfil → ⚙️: as três linhas alinhadas.
+- Portal → ⚙️ → Configurar cards → Routine → ligar "📋 Tarefas de hoje". Marcar uma no card, abrir a Rotina e ver que ficou ✅ lá também; desmarcar.
+- Gastos: tocar em uma categoria, conferir a lista filtrada e o "✕ Limpar".
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.48 - Copiar semana anterior e folha de receitas que fica aberta no Kitchen, receitas do Bertoba, configuracoes do perfil alinhadas, tarefas de hoje no card do Routine e filtro por categoria no Gastos`

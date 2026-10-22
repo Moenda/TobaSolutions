@@ -68,7 +68,9 @@ const ROUTINE_CARD_DEFAULTS = {
   type: "personalizado",
   metrics: Object.fromEntries(ROUTINE_CARD_METRICS.map((m) => [m.key, m.on])),
   links: true,
+  todayList: false, // v1.48: lista das tarefas de hoje no card (marca dali)
 };
+const ROUTINE_CARD_LIST_MAX = 8;
 
 // Cada item guarda a referência do <a> original: reordenar só move o nó.
 let portalCards = [];
@@ -394,7 +396,7 @@ function renderHealthCard(cfg) {
   if (cfg.type === "simples") {
     desc.hidden = false;
     body.hidden = true;
-    topAction.innerHTML = '<span class="badge badge-beta">🔥 Beta</span>';
+    topAction.innerHTML = "";
     return;
   }
 
@@ -407,7 +409,7 @@ function renderHealthCard(cfg) {
   const hasWeight = cfg.metrics.peso || cfg.metrics.pesoMes || cfg.metrics.gordura;
   topAction.innerHTML = hasWeight
     ? `<span class="eye-toggle-btn is-health" role="button" tabindex="0" data-click="toggleHealthPrivacy" aria-label="${cfg.privacy ? "Mostrar o peso" : "Esconder o peso"}">${cfg.privacy ? "👁️ Mostrar" : "🙈 Esconder"}</span>`
-    : '<span class="badge badge-beta">🔥 Beta</span>';
+    : "";
 
   const html = isEmpty ? "" : HEALTH_CARD_METRICS.filter((m) => cfg.metrics[m.key])
     .map((m) => buildHealthTile(m.key, h, cfg.privacy))
@@ -512,11 +514,81 @@ function buildRoutineTile(key, r) {
   }
 }
 
+// Lista das tarefas de hoje (v1.48, opção do configurador). Tocar marca/
+// desmarca direto daqui (toggleRoutineFromCard), igual ao ✅ da Rotina.
+function renderRoutineTodayList(cfg, data) {
+  const box = document.getElementById("routineCardList");
+  if (!box) return;
+  const list = cfg.todayList && data ? calcRoutineTodayList(data) : [];
+  box.hidden = !list.length;
+  if (!list.length) {
+    box.innerHTML = "";
+    return;
+  }
+  const shown = list.length > ROUTINE_CARD_LIST_MAX
+    ? [...list.filter((t) => !t.done), ...list.filter((t) => t.done)].slice(0, ROUTINE_CARD_LIST_MAX)
+    : list;
+  const rest = list.length - shown.length;
+  box.innerHTML = shown.map((t) => `
+    <span class="rc-task${t.done ? " is-done" : ""}" role="button" tabindex="0" data-click="toggleRoutineFromCard" data-id="${escapeHtml(t.id)}" aria-pressed="${t.done}" aria-label="${t.done ? "Desmarcar" : "Marcar como feita"}: ${escapeHtml(t.name)}">
+      <span class="rc-check" aria-hidden="true">${t.done ? "✓" : ""}</span>
+      <span class="rc-name">${escapeHtml(t.emoji)} ${escapeHtml(t.name)}</span>
+      ${t.time ? `<span class="rc-time">${escapeHtml(t.time)}</span>` : ""}
+    </span>`).join("")
+    + (rest > 0 ? `<span class="rc-more">+ ${rest} na Rotina</span>` : "");
+}
+
+// Grava só o log do TOBA_ROUTINE_DB (mesmo formato da Rotina: routine.js toggleTask).
+// O resto do banco volta como estava; ilegível = não grava nada.
+function toggleRoutineFromCard(el, event) {
+  event.preventDefault();
+  event.stopPropagation();
+  const raw = localStorage.getItem("TOBA_ROUTINE_DB");
+  let data = null;
+  try {
+    data = raw === null ? null : JSON.parse(raw);
+  } catch (err) {
+    data = null;
+  }
+  if (!data || typeof data !== "object" || Array.isArray(data) || !Array.isArray(data.tasks)) {
+    showPageMessage("Não consegui ler os dados do Toba Routine, então nada foi gravado. Abre a Rotina pra conferir.", { title: "Dados protegidos", icon: "🛡️" });
+    return;
+  }
+  const today = toIsoDate();
+  const task = data.tasks.find((t) => t && String(t.id) === String(el.dataset.id) && !t.archivedAt);
+  if (!task || !isRoutineTaskDue(task, today)) {
+    renderRoutineCard();
+    return;
+  }
+  const log = Array.isArray(data.log) ? data.log : [];
+  const isToday = (e) => e && String(e.taskId) === String(task.id) && e.date === today;
+  const wasDone = log.some(isToday);
+  data.log = wasDone
+    ? log.filter((e) => !isToday(e))
+    : [...log, { id: `l-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, taskId: String(task.id), date: today, doneAt: Date.now(), difficulty: ROUTINE_DIFFICULTIES[task.difficulty] ? task.difficulty : "easy" }];
+  try {
+    localStorage.setItem("TOBA_ROUTINE_DB_AUTO_BACKUP", raw);
+    localStorage.setItem("TOBA_ROUTINE_DB", JSON.stringify(data));
+  } catch (err) {
+    showPageMessage("A memória do navegador encheu e isso não foi salvo. Baixe um backup e libere espaço.", { title: "Não salvou", icon: "💾" });
+    return;
+  }
+  syncRoutineAlerts(data);
+  renderRoutineCard();
+  if (wasDone) {
+    tobaToast("↩ Desmarcada (o XP saiu junto)");
+    tobaPlayerCheck();
+  } else {
+    tobaPlayerCheck({ reason: `${task.emoji || "✅"} ${routineDoneLine(task.difficulty, false)}` });
+  }
+}
+
 function renderRoutineCard(cfg = getRoutineCardConfig()) {
   const desc = document.getElementById("tobaRoutineDesc");
   const body = document.getElementById("tobaRoutineCustomBody");
   if (!body) return;
   const data = readRoutineDbRaw();
+  renderRoutineTodayList(cfg, data);
 
   if (cfg.type === "simples") {
     renderRoutineChips(data);
@@ -550,6 +622,7 @@ function fillRoutineCardForm(cfg) {
   document.getElementById("routineCardChecks").innerHTML = ROUTINE_CARD_METRICS.map((m) => `
     <label class="check-row"><span>${m.label}</span><input type="checkbox" data-metric="${m.key}" data-change="updateRoutineCardConfig"${cfg.metrics[m.key] ? " checked" : ""} /></label>`).join("");
   document.getElementById("chkRoutineLinks").checked = cfg.links;
+  document.getElementById("chkRoutineTodayList").checked = cfg.todayList === true;
 }
 
 function updateRoutineCardConfigFromUI() {
@@ -561,6 +634,7 @@ function updateRoutineCardConfigFromUI() {
     type: document.getElementById("radioRoutinePersonalizado").checked ? "personalizado" : "simples",
     metrics,
     links: document.getElementById("chkRoutineLinks").checked,
+    todayList: document.getElementById("chkRoutineTodayList").checked,
   };
   fillRoutineCardForm(cfg);
   writePortalJson(ROUTINE_CARD_KEY, cfg);
@@ -734,6 +808,7 @@ tobaActions({
     openTobaModal("routineCardModal");
   },
   updateRoutineCardConfig: updateRoutineCardConfigFromUI,
+  toggleRoutineFromCard,
   goRoutinePage: (el, event) => {
     event.preventDefault();
     event.stopPropagation();

@@ -221,6 +221,17 @@ function calcRoutineToday(data, today = toIsoDate()) {
   return { total: due.length, done: done.length, overdue, tasks: tasks.length };
 }
 
+// Tarefas que caem hoje, na ordem da tela da Rotina (horário, depois nome),
+// com feita ou não. Lista do card do portal (desde v1.48).
+function calcRoutineTodayList(data, today = toIsoDate()) {
+  const db = data && typeof data === "object" ? data : {};
+  const doneKeys = routineDoneKeys(db.log);
+  return (Array.isArray(db.tasks) ? db.tasks : [])
+    .filter((t) => t && t.id && !t.archivedAt && isRoutineTaskDue(t, today))
+    .sort((a, b) => String(a.time || "99:99").localeCompare(String(b.time || "99:99")) || String(a.name || "").localeCompare(String(b.name || "")))
+    .map((t) => ({ id: String(t.id), name: String(t.name || "Tarefa"), emoji: String(t.emoji || "✅"), time: t.time || "", difficulty: t.difficulty, done: doneKeys.has(`${t.id}|${today}`) }));
+}
+
 /* Números do card do Routine no portal (desde v1.43): mesma regra das telas
  * (calcRoutineToday, calcRoutineDayLoad, routineOneoffStatus, calcRoutinePlayer). */
 function calcRoutineSummary(data, now = new Date()) {

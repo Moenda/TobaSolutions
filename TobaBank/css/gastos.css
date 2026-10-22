@@ -264,6 +264,51 @@
   padding: 0 0.95rem 0.95rem;
 }
 
+/* v1.48: tocar na categoria filtra os lançamentos do mês */
+.category-item.is-filter {
+  cursor: pointer;
+  margin-left: -6px;
+  margin-right: -6px;
+  padding: 4px 6px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  transition: opacity 0.15s ease;
+}
+
+.category-item.is-selected {
+  border-color: var(--blue);
+  background: rgba(88, 166, 255, 0.1);
+}
+
+.category-item.is-dim {
+  opacity: 0.45;
+}
+
+.expense-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0.5rem 0.7rem;
+  margin-bottom: 8px;
+  border-radius: var(--radius);
+  background: rgba(88, 166, 255, 0.1);
+  border: 1px solid var(--blue);
+  font-size: 0.8rem;
+}
+
+.expense-filter-bar[hidden] {
+  display: none;
+}
+
+.expense-filter-text {
+  min-width: 0;
+}
+
+.expense-filter-bar .chip-btn {
+  flex: 0 0 auto;
+}
+
 .acc-card.expanded .history-stats {
   padding-bottom: 0.6rem;
 }

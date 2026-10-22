@@ -59,6 +59,10 @@ function renderWeek() {
   const shopBtn = document.getElementById("shopBtn");
   shopBtn.hidden = !plan.length;
   shopBtn.textContent = `🛒 Lista de compras (${shop.count} ${shop.count === 1 ? "item" : "itens"})`;
+  const toCopy = weekCopyCandidates().length;
+  const copyBtn = document.getElementById("copyWeekBtn");
+  copyBtn.hidden = !toCopy;
+  copyBtn.textContent = `📋 Copiar da semana anterior (${toCopy})`;
 
   document.getElementById("weekDays").innerHTML = KITCHEN_WEEK_NAMES.map((name, i) => {
     const day = kitchenAddDays(weekMonday, i);
@@ -91,7 +95,38 @@ function renderWeek() {
 }
 
 /* ---------------------------------------------------------------------
- * Escolher receita pro dia
+ * Copiar da semana anterior (v1.48): mesma receita, mesmo dia da semana,
+ * mesma refeição e porções, com id novo. O que já está igual na semana
+ * aberta é pulado (tocar duas vezes não duplica).
+ * ------------------------------------------------------------------- */
+function weekCopyCandidates() {
+  const current = new Set(kitchenPlanOfWeek(kitchenDb, weekMonday).map((p) => `${p.date}|${p.recipeId}|${p.meal}`));
+  return kitchenPlanOfWeek(kitchenDb, kitchenAddDays(weekMonday, -7))
+    .map((p) => ({ ...p, date: kitchenAddDays(p.date, 7) }))
+    .filter((p) => !current.has(`${p.date}|${p.recipeId}|${p.meal}`));
+}
+
+async function copyLastWeek() {
+  const list = weekCopyCandidates();
+  if (!list.length) return;
+  const hasPlan = kitchenPlanOfWeek(kitchenDb, weekMonday).length > 0;
+  if (hasPlan) {
+    const ok = await showPageMessage(`Copia ${list.length} ${list.length === 1 ? "receita" : "receitas"} da semana ${weekRangeLabel(kitchenAddDays(weekMonday, -7))} pra esta. O que já tá programado aqui continua.`, { title: "Copiar a semana", confirm: true, confirmLabel: "Copiar" });
+    if (!ok) return;
+  }
+  const added = list.map((p) => ({ id: kitchenNewId("p"), date: p.date, recipeId: p.recipeId, meal: p.meal, servings: Number(p.servings) || kitchenRecipe(p.recipeId).servings }));
+  kitchenDb.plan.push(...added);
+  if (!saveKitchenDb({ silent: true })) {
+    kitchenDb.plan = kitchenDb.plan.filter((p) => !added.includes(p));
+    return;
+  }
+  renderWeek();
+  tobaSaved(`📋 ${added.length} ${added.length === 1 ? "receita copiada" : "receitas copiadas"}`);
+}
+
+/* ---------------------------------------------------------------------
+ * Escolher receita pro dia. A folha fica aberta (fecha no ✕): toca pra pôr,
+ * as que já estão no dia ficam contornadas de amarelo; tocar de novo tira.
  * ------------------------------------------------------------------- */
 function openPicker(date) {
   pickerDate = date;
@@ -112,26 +147,52 @@ function renderPicker() {
   const list = KITCHEN_RECIPES
     .filter((r) => !pickerMeal || r.meals.includes(pickerMeal))
     .filter((r) => !q || r.name.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().includes(q));
+  const dayPlan = kitchenDb.plan.filter((p) => p.date === pickerDate);
   document.getElementById("pickerList").innerHTML = list.length
-    ? list.map((r) => `
-      <div class="toba-list-item kt-recipe" role="button" tabindex="0" data-click="addEntry" data-id="${r.id}">
+    ? list.map((r) => {
+      const picked = dayPlan.filter((p) => p.recipeId === r.id).sort((a, b) => mealOrder(a.meal) - mealOrder(b.meal));
+      const meals = [...new Set(picked.map((p) => kitchenMeal(p.meal)).filter(Boolean).map((m) => `${m.icon} ${m.short}`))].join(" + ");
+      return `
+      <div class="toba-list-item kt-recipe${picked.length ? " is-picked" : ""}" role="button" tabindex="0" data-click="addEntry" data-id="${r.id}" aria-pressed="${picked.length > 0}">
         <span class="kt-recipe-emoji">${r.emoji}</span>
         <span class="kt-recipe-text">
           <span class="kt-recipe-name">${escapeHtml(r.name)}</span>
-          <span class="kt-recipe-meta">⏱️ ${r.minutes} min · 🔥 ${r.kcal} kcal · 🍽️ ${r.servings}</span>
+          <span class="kt-recipe-meta">${picked.length ? `<span class="kt-picked-tag">✓ no dia${meals ? `: ${meals}` : ""}${picked.length > 1 ? ` (${picked.length}×)` : ""}</span>` : `⏱️ ${r.minutes} min · 🔥 ${r.kcal} kcal · 🍽️ ${r.servings}`}</span>
         </span>
-        <span class="toba-hub-chevron">＋</span>
-      </div>`).join("")
+        <span class="toba-hub-chevron">${picked.length ? "✓" : "＋"}</span>
+      </div>`;
+    }).join("")
     : tobaEmpty("🤷", "Nada com esse nome", "Tenta outra palavra.");
 }
 
+// Toque numa receita da folha: põe no dia. Se ela já está no dia, tira a
+// última posta que ainda não foi feita (a feita fica, por causa do contador).
 function addEntry(recipeId) {
   const recipe = kitchenRecipe(recipeId);
   if (!recipe || !pickerDate) return;
-  const meal = pickerMeal && recipe.meals.includes(pickerMeal) ? pickerMeal : pickerMeal || recipe.meals[0];
-  kitchenDb.plan.push({ id: kitchenNewId("p"), date: pickerDate, recipeId: recipe.id, meal, servings: recipe.servings });
-  if (!saveKitchenDb()) return;
-  closeTobaModal("pickerSheet");
+  const day = `${KITCHEN_WEEK_NAMES[(new Date(`${pickerDate}T12:00:00`).getDay() + 6) % 7].slice(0, 3)} ${isoToBrDate(pickerDate).slice(0, 5)}`;
+  const open = kitchenDb.plan.filter((p) => p.date === pickerDate && p.recipeId === recipe.id && !planEntryDone(p));
+  const already = kitchenDb.plan.some((p) => p.date === pickerDate && p.recipeId === recipe.id);
+  if (already && open.length) {
+    const last = open[open.length - 1];
+    kitchenDb.plan = kitchenDb.plan.filter((p) => p !== last);
+    if (!saveKitchenDb({ silent: true })) {
+      kitchenDb.plan.push(last);
+      return;
+    }
+    tobaToast(`↩ ${recipe.emoji} ${recipe.name} saiu de ${day}`);
+  } else {
+    const meal = pickerMeal && recipe.meals.includes(pickerMeal) ? pickerMeal : pickerMeal || recipe.meals[0];
+    const entry = { id: kitchenNewId("p"), date: pickerDate, recipeId: recipe.id, meal, servings: recipe.servings };
+    kitchenDb.plan.push(entry);
+    if (!saveKitchenDb({ silent: true })) {
+      kitchenDb.plan = kitchenDb.plan.filter((p) => p !== entry);
+      return;
+    }
+    const mealInfo = kitchenMeal(meal);
+    tobaToast(`➕ ${recipe.emoji} ${recipe.name}${mealInfo ? ` · ${mealInfo.icon} ${mealInfo.short}` : ""} · ${day}`);
+  }
+  renderPicker();
   renderWeek();
 }
 
@@ -381,6 +442,7 @@ tobaActions({
     const entry = findEntry();
     if (entry) goToRecipePage({ r: entry.recipeId, s: entry.servings });
   },
+  copyLastWeek,
   openShopping,
   backToWeek: openWeek,
   toggleShopItem,

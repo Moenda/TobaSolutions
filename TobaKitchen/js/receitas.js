@@ -46,14 +46,15 @@ function renderBookMeals() {
 }
 
 function recipeMetaLine(recipe) {
-  return `⏱️ ${routineLikeMinutes(recipe.minutes)} · 🔥 ${recipe.kcal} kcal · 🍽️ ${recipe.servings}`;
+  const author = kitchenAuthor(recipe);
+  return `⏱️ ${routineLikeMinutes(recipe.minutes)} · 🔥 ${recipe.kcal} kcal · 🍽️ ${recipe.servings} · ${author.emoji} ${author.name}`;
 }
 
-// 90 -> "1h30", 45 -> "45 min" (o Kitchen não carrega o routine-metrics)
+// 90 -> "1h30", 45 -> "45 min", 1.5 -> "1,5 min" (o Kitchen não carrega o routine-metrics)
 function routineLikeMinutes(minutes) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  if (!h) return `${m} min`;
+  if (!h) return `${String(Math.round(m * 10) / 10).replace(".", ",")} min`;
   return m ? `${h}h${String(m).padStart(2, "0")}` : `${h}h`;
 }
 
@@ -80,7 +81,7 @@ function renderBook() {
   const q = kitchenNormalize(bookQuery.trim());
   const list = KITCHEN_RECIPES.filter((r) => bookMeal === "all" || r.meals.includes(bookMeal)).filter((r) => {
     if (!q) return true;
-    const words = [r.name, ...r.ingredients.map((i) => kitchenIngredient(i.id).name)].map(kitchenNormalize).join(" ");
+    const words = [r.name, kitchenAuthor(r).name, ...r.ingredients.map((i) => kitchenIngredient(i.id).name)].map(kitchenNormalize).join(" ");
     return words.includes(q);
   });
   const box = document.getElementById("bookList");
@@ -242,6 +243,7 @@ function renderRecipe() {
     <div class="kt-hero">
       <span class="kt-hero-emoji">${recipe.emoji}</span>
       <div class="kt-hero-name">${escapeHtml(recipe.name)}</div>
+      <div class="kt-hero-author">✍️ receita do ${kitchenAuthor(recipe).emoji} ${kitchenAuthor(recipe).name}</div>
       <div class="kt-tags">${meals}</div>
     </div>
     <div class="toba-stats">

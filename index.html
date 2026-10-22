@@ -62,7 +62,7 @@
         <div class="app-card-top">
           <span class="app-icon">🥗</span>
           <span class="app-title">Toba Health</span>
-          <span id="tobaHealthCardTopAction"><span class="badge badge-beta">🔥 Beta</span></span>
+          <span id="tobaHealthCardTopAction"></span>
         </div>
         <div class="app-desc" id="tobaHealthDesc">
           Shape de respeito, proteína no teto e água na guela sem choro <b>(•̀_•́)⁠o</b>
@@ -80,7 +80,6 @@
         <div class="app-card-top">
           <span class="app-icon">🍳</span>
           <span class="app-title">Toba Kitchen</span>
-          <span class="badge badge-beta">🔥 Beta</span>
         </div>
         <div class="routine-card-today" id="kitchenCardToday" hidden></div>
         <div class="app-desc">
@@ -92,9 +91,9 @@
         <div class="app-card-top">
           <span class="app-icon">⚡</span>
           <span class="app-title">Toba Routine</span>
-          <span class="badge badge-beta">🔥 Beta</span>
         </div>
         <div class="routine-card-today" id="routineCardToday" hidden></div>
+        <div class="rc-list" id="routineCardList" hidden></div>
         <div class="app-desc" id="tobaRoutineDesc">
           Mandar no seu dia no puro suco da disciplina Toberson <b>(⌐■-■)</b>
         </div>
@@ -266,6 +265,10 @@
         <div class="check-list-hint">Escolha o que aparece. Par fica mais bonito 😎</div>
         <div class="check-group" id="routineCardChecks"></div>
         <label class="check-row"><span>🔗 Atalhos Rotina e Task</span><input type="checkbox" id="chkRoutineLinks" data-change="updateRoutineCardConfig" checked /></label>
+      </div>
+
+      <div class="check-list">
+        <label class="check-row"><span>📋 Tarefas de hoje no card (marca dali)</span><input type="checkbox" id="chkRoutineTodayList" data-change="updateRoutineCardConfig" /></label>
       </div>
     </div>
   </div>

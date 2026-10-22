@@ -45,6 +45,7 @@ const KITCHEN_INGREDIENTS = {
   espaguete: { name: "Espaguete", emoji: "🍝", aisle: "mercearia", art: "o" },
   "feijao-preto": { name: "Feijão preto", emoji: "🫘", aisle: "mercearia", art: "o" },
   chocolate: { name: "Chocolate em pó", emoji: "🍫", aisle: "mercearia", art: "o" },
+  "whey-chocolate": { name: "Whey de chocolate", emoji: "💪", aisle: "mercearia", art: "o" }, // v1.48
   banana: { name: "Banana", emoji: "🍌", aisle: "horti", art: "a" },
   abacate: { name: "Abacate", emoji: "🥑", aisle: "horti", art: "o" },
   tomate: { name: "Tomate", emoji: "🍅", aisle: "horti", art: "o" },
@@ -86,11 +87,18 @@ const KITCHEN_UNITS = {
   folha: ["folha", "folhas"],
   maco: ["maço", "maços"],
   pitada: ["pitada", "pitadas"],
+  scoop: ["scoop", "scoops"], // v1.48 (whey)
   gosto: ["a gosto", "a gosto"],
 };
 
+// Quem escreveu a receita (desde v1.48). Sem "author" = Cloba.
+const KITCHEN_AUTHORS = {
+  cloba: { name: "Cloba", emoji: "🤖" },
+  bertoba: { name: "Bertoba", emoji: "👨‍🍳" },
+};
+
 /* Receitas. Campos:
- *   id (nunca muda), name, emoji, meals: [keys de KITCHEN_MEALS],
+ *   id (nunca muda), name, emoji, author? (key de KITCHEN_AUTHORS), meals: [keys de KITCHEN_MEALS],
  *   minutes (total), servings (porções da receita), kcal (por porção, estimativa),
  *   ingredients: [{ id, qty, unit, note?, optional? }],
  *   steps: [{ text, timer? (minutos) }], tip? */
@@ -118,26 +126,30 @@ const KITCHEN_RECIPES = [
     tip: "O segredo é fogo baixo e paciência. Ovo borrachudo é ovo apressado.",
   },
   {
+    // v1.48: versão proteica do Bertoba (o id continua o mesmo)
     id: "tapioca-queijo",
-    name: "Tapioca de queijo com orégano",
+    name: "Tapioca proteica de queijo",
     emoji: "🫓",
+    author: "bertoba",
     meals: ["cafe", "lanche"],
     minutes: 10,
     servings: 1,
-    kcal: 300,
+    kcal: 520,
     ingredients: [
-      { id: "tapioca", qty: 4, unit: "cs" },
-      { id: "queijo", qty: 50, unit: "g" },
-      { id: "oregano", qty: null, unit: "gosto" },
+      { id: "tapioca", qty: 100, unit: "g" },
+      { id: "ovo", qty: 1, unit: "un" },
+      { id: "oleo", qty: 1, unit: "cc", note: "um fio pra untar" },
+      { id: "queijo", qty: 30, unit: "g", note: "na hora de virar" },
       { id: "sal", qty: null, unit: "gosto" },
     ],
     steps: [
-      { text: "Frigideira antiaderente em fogo médio, sem óleo nenhum." },
-      { text: "Peneira a goma de tapioca direto na frigideira, cobrindo tudo por igual." },
-      { text: "Espera a goma grudar e virar um disco (as bordas soltam).", timer: 2 },
-      { text: "Vira, põe o queijo e o orégano numa metade e dobra." },
-      { text: "Deixa o queijo derreter e tá pronto.", timer: 1 },
+      { text: "Numa tigela, mistura os 100 g de goma de tapioca com o ovo (e uma pitada de sal) até virar a massaroca." },
+      { text: "Unta a frigideira com um fio de óleo, em fogo médio." },
+      { text: "Põe a massaroca lá e espalha por igual. Deu os 2 min, timer pai!", timer: 2 },
+      { text: "Vira, joga o QUEIJO e mais 1,5 min.", timer: 1.5 },
+      { text: "RANGO. 🫓" },
     ],
+    tip: "Com o ovo na massa ela fica bem mais proteica que a tapioca só de goma.",
   },
   {
     id: "tapioca-abacate",
@@ -165,28 +177,32 @@ const KITCHEN_RECIPES = [
     ],
   },
   {
+    // v1.48: versão do Bertoba com whey (o id continua o mesmo)
     id: "panqueca-banana",
-    name: "Panqueca de banana com aveia",
+    name: "Panqueca de banana com aveia e whey",
     emoji: "🥞",
+    author: "bertoba",
     meals: ["cafe", "lanche"],
     minutes: 15,
     servings: 1,
-    kcal: 330,
+    kcal: 450,
     ingredients: [
       { id: "banana", qty: 1, unit: "un" },
       { id: "ovo", qty: 2, unit: "un" },
       { id: "aveia", qty: 3, unit: "cs" },
+      { id: "whey-chocolate", qty: 1, unit: "scoop" },
       { id: "canela", qty: null, unit: "gosto" },
       { id: "oleo", qty: 1, unit: "cc" },
     ],
     steps: [
       { text: "Amassa a banana bem amassada numa tigela." },
-      { text: "Junta os ovos, a aveia e a canela e mistura até virar uma massa." },
+      { text: "Junta os ovos, a aveia, a canela e o scoop de whey de chocolate e mistura até virar uma massa." },
+      { text: "Ficou muito viscosa? Põe um pouquinho de água e mexe de novo." },
       { text: "Frigideira em fogo baixo com um fio de óleo (espalha com papel toalha)." },
-      { text: "Põe metade da massa e deixa dourar embaixo.", timer: 3 },
+      { text: "Põe metade da massa. Pra não queimar embaixo: ou usa uma panela boa, ou tira do fogo e volta por alguns segundos, e repete até conseguir virar.", timer: 3 },
       { text: "Vira com coragem e doura o outro lado. Repete com o resto da massa.", timer: 2 },
     ],
-    tip: "Quanto mais madura a banana, mais doce fica (sem precisar de açúcar).",
+    tip: "Com o whey de chocolate fica supimpa. Quanto mais madura a banana, mais doce fica (sem precisar de açúcar).",
   },
   {
     id: "frango-batata-doce",
@@ -371,6 +387,10 @@ const KITCHEN_RECIPES = [
  * ------------------------------------------------------------------- */
 function kitchenRecipe(id) {
   return KITCHEN_RECIPES.find((r) => r.id === String(id)) || null;
+}
+
+function kitchenAuthor(recipe) {
+  return KITCHEN_AUTHORS[recipe && recipe.author] || KITCHEN_AUTHORS.cloba;
 }
 
 function kitchenIngredient(id) {
