@@ -2,6 +2,7 @@
 
 :root {
   --accent: var(--gold-2);
+  --rt-event: #f778ba; /* eventos do Calendar (v1.49), também na Agenda */
 }
 
 .rt-tabs {
@@ -916,4 +917,13 @@ a.rt-notice-btn {
   .rt-undo-bar {
     transition: none;
   }
+}
+
+/* Folha de evento do Calendar (v1.49) */
+.rt-event-group {
+  margin: 0.7rem 0;
+}
+
+#eventSheet .check-row {
+  margin: 0.8rem 0;
 }

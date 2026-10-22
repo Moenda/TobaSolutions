@@ -3,19 +3,25 @@
  * Calendário estilo Outlook, 24 h, em Dia ou Semana: dormir/acordar, dia
  * fixo, rotinas com horário e, no topo, a faixa "sem horário" (rotina sem
  * hora e sessões de task). Abre tocando no "Seu tempo livre" do Hub.
- * Só leitura: quem grava é a ⚙️ (Meu dia fixo) e as telas Rotina/Task.
+ * Desde v1.49 mostra os eventos do Calendar (com hora na grade, dia inteiro
+ * na faixa "📅 Eventos" do topo) e cria/edita evento pela folha de
+ * routine-events.js (+ Evento ou tocando no evento, na visão Dia). Tocar
+ * numa tarefa da rotina (visão Dia) abre a folha com a bolinha de concluir
+ * e o ✏️ Editar (routine-task-sheet.js, a mesma folha da Rotina).
+ * Fora isso é só leitura: quem grava é a ⚙️ (Meu dia fixo) e as telas Rotina/Task.
  * O que cai em cada hora sai de calcRoutineDayAgenda (routine-metrics.js).
  * URL: ?view=day|week&date=AAAA-MM-DD (o ‹ › e o Hoje atualizam a URL).
  * ===================================================================== */
 const AGENDA_HOUR_PX = { day: 46, week: 24 };
 const AGENDA_MIN_EVENT = { day: 22, week: 14 }; // altura mínima (px) pra dar pra ver
 const AGENDA_MIN_GAP = 30; // brecha livre mostrada a partir de 30 min
-const AGENDA_KIND_LABEL = { sleep: "Sono", work: "Trabalho", commute: "Transporte", custom: "Fixo", routine: "Rotina", oneoff: "Task" };
+const AGENDA_KIND_LABEL = { sleep: "Sono", work: "Trabalho", commute: "Transporte", custom: "Fixo", routine: "Rotina", oneoff: "Task", event: "Evento" };
 
 const agendaState = readAgendaUrl();
 let agendaScrolled = false;
 let agendaClockTimer = null;
 let agendaTouch = null;
+let agendaTaskOpen = null; // { taskId, date } da folha da tarefa
 
 function readAgendaUrl() {
   const params = new URLSearchParams(location.search);
@@ -110,8 +116,11 @@ function renderAgenda() {
     ? `${agendaDayName(date)}, ${agendaShortDate(date)}${date === today ? " · hoje" : ""}`
     : `${agendaShortDate(days[0])} – ${agendaShortDate(days[6])}${days.includes(today) ? " · esta semana" : ""}`;
   document.getElementById("agendaTodayBtn").hidden = days.includes(today);
+  // + Evento já nasce no dia que está na tela (na semana: hoje, se for esta semana)
+  document.getElementById("agendaAddEvent").dataset.date = view === "day" ? date : days.includes(today) ? today : days[0];
 
   document.getElementById("agendaSummary").innerHTML = view === "day" ? renderAgendaDaySummary(agendas[0], today) : renderAgendaLegend();
+  document.getElementById("agendaAllDay").innerHTML = view === "day" ? renderAgendaAllDayList(agendas[0]) : "";
   document.getElementById("agendaUntimed").innerHTML = view === "day" ? renderAgendaUntimedList(agendas[0]) : "";
   document.getElementById("agendaNotice").innerHTML = routineDb.dayPlan.configured
     ? ""
@@ -126,6 +135,7 @@ function renderAgenda() {
 
 function renderAgendaDaySummary(agenda, today) {
   const chips = [];
+  if (agenda.allDay.some((e) => e.busy)) chips.push("🚫 Dia tomado");
   if (agenda.wakeAt !== null) chips.push(`⏰ Acorda ${agendaClock(agenda.wakeAt)}`);
   if (agenda.sleepAt !== null) chips.push(`😴 Dorme ${agendaClock(agenda.sleepAt)}`);
   if (agenda.date >= today) {
@@ -143,6 +153,7 @@ function renderAgendaLegend() {
     <span><i class="ag-dot is-work"></i>Trampo</span>
     <span><i class="ag-dot is-custom"></i>Fixo</span>
     <span><i class="ag-dot is-routine"></i>Rotina</span>
+    <span><i class="ag-dot is-event"></i>Evento</span>
     <span><i class="ag-dot is-free"></i>Livre</span>
   </div>`;
 }
@@ -152,7 +163,8 @@ function renderAgendaUntimedList(agenda) {
   const rows = agenda.untimed.map((item) => {
     const status = item.done ? "✅" : item.skipped ? "🗑️" : item.missed ? "🙈" : "";
     const what = item.kind === "oneoff" ? "Task" : item.kind === "commute" ? "Transporte" : "Rotina";
-    return `<div class="ag-untimed-item is-${item.kind}${item.done ? " is-done" : ""}${item.missed ? " is-missed" : ""}">
+    const tap = item.kind === "routine" ? ` role="button" tabindex="0" data-click="openAgendaTask" data-id="${escapeHtml(item.id)}" data-date="${agenda.date}"` : "";
+    return `<div class="ag-untimed-item is-${item.kind}${item.done ? " is-done" : ""}${item.missed ? " is-missed" : ""}${tap ? " is-tappable" : ""}"${tap}>
       <span class="ag-untimed-emoji">${escapeHtml(item.emoji)}</span>
       <span class="ag-untimed-name">${escapeHtml(item.name)}</span>
       <span class="ag-untimed-meta">${what} · ${item.minutes ? routineFormatMinutes(item.minutes) : "0 min"} ${status}</span>
@@ -160,6 +172,21 @@ function renderAgendaUntimedList(agenda) {
   }).join("");
   return `<div class="card ag-untimed">
     <div class="ag-untimed-title">📌 Sem horário <span class="rt-help">entra onde der no dia</span></div>
+    ${rows}
+  </div>`;
+}
+
+// Eventos de dia inteiro (Calendar, v1.49): tocar abre a folha do evento
+function renderAgendaAllDayList(agenda) {
+  if (!agenda.allDay.length) return "";
+  const rows = agenda.allDay.map((item) => `
+    <div class="ag-untimed-item is-event" role="button" tabindex="0" data-click="openRoutineEvent" data-id="${escapeHtml(item.id)}">
+      <span class="ag-untimed-emoji">${escapeHtml(item.emoji)}</span>
+      <span class="ag-untimed-name">${escapeHtml(item.name)}</span>
+      <span class="ag-untimed-meta">${item.busy ? "🚫 tomado" : escapeHtml(item.when)}</span>
+    </div>`).join("");
+  return `<div class="card ag-untimed">
+    <div class="ag-untimed-title">📅 Eventos <span class="rt-help">dia inteiro</span></div>
     ${rows}
   </div>`;
 }
@@ -191,9 +218,9 @@ function renderAgendaGrid(agendas, view, today) {
 }
 
 function renderAgendaWeekUntimed(agenda) {
-  const items = agenda.untimed;
+  const items = [...agenda.allDay, ...agenda.untimed]; // evento de dia inteiro primeiro (v1.49)
   if (!items.length) return `<button type="button" class="ag-allday-cell" data-click="openAgendaDay" data-date="${agenda.date}" aria-label="Abrir o dia"></button>`;
-  const shown = items.slice(0, 3).map((i) => `<span class="${i.done ? "is-done" : ""}">${escapeHtml(i.emoji)}</span>`).join("");
+  const shown = items.slice(0, 3).map((i) => `<span class="${i.done ? "is-done" : ""}${i.kind === "event" ? " is-event" : ""}">${escapeHtml(i.emoji)}</span>`).join("");
   const more = items.length > 3 ? `<em>+${items.length - 3}</em>` : "";
   return `<button type="button" class="ag-allday-cell has-items" data-click="openAgendaDay" data-date="${agenda.date}" aria-label="${items.length} sem horário">${shown}${more}</button>`;
 }
@@ -209,8 +236,8 @@ function renderAgendaColumn(agenda, view, today) {
   const nowMin = nowDate.getHours() * 60 + nowDate.getMinutes();
   const parts = [];
 
-  // Brechas livres (fora do dia fixo e das rotinas com horário)
-  if (agenda.date >= today) {
+  // Brechas livres (fora do dia fixo e das rotinas com horário). Dia tomado por evento não tem brecha.
+  if (agenda.date >= today && !agenda.allDay.some((e) => e.busy)) {
     agendaFreeGaps(agenda, isToday ? nowMin : 0).forEach(([start, end]) => {
       const label = !week && end - start >= 45 ? `<span>🆓 brecha de ${routineFormatMinutes(end - start)}</span>` : "";
       parts.push(`<div class="ag-gap" style="top:${agendaPx(start, view)}px;height:${agendaPx(end - start, view)}px">${label}</div>`);
@@ -240,16 +267,23 @@ function renderAgendaColumn(agenda, view, today) {
     const left = overBand ? 36 : 0;
     const width = (100 - left) / cols;
     const status = item.done ? " ✅" : item.skipped ? " 🗑️" : item.missed ? " 🙈" : "";
+    const isEvent = item.kind === "event";
     const zero = item.minutes === 0;
     const short = height < 34; // não cabem duas linhas: hora vai do lado do nome
-    const when = `${agendaClock(item.start)}${zero ? "" : ` · ${routineFormatMinutes(item.minutes)}`}`;
+    const when = isEvent
+      ? (item.fromYesterday ? `até ${agendaClock(item.end)}` : item.when)
+      : `${agendaClock(item.start)}${zero ? "" : ` · ${routineFormatMinutes(item.minutes)}`}`;
     let text = escapeHtml(item.emoji);
     if (!week) {
       text = short
         ? `<strong>${escapeHtml(item.emoji)} ${escapeHtml(item.name)}${status} <span>${agendaClock(item.start)}</span></strong>`
         : `<strong>${escapeHtml(item.emoji)} ${escapeHtml(item.name)}${status}</strong><span>${when}</span>`;
     }
-    parts.push(`<div class="ag-event is-${item.kind}${item.done ? " is-done" : ""}${item.missed ? " is-missed" : ""}${zero ? " is-zero" : ""}${short ? " is-short" : ""}"
+    // Visão Dia (v1.49): tocar no evento abre a folha dele; na rotina, a bolinha + editar
+    let tap = "";
+    if (!week && isEvent) tap = ` role="button" tabindex="0" data-click="openRoutineEvent" data-id="${escapeHtml(item.id)}"`;
+    if (!week && item.kind === "routine") tap = ` role="button" tabindex="0" data-click="openAgendaTask" data-id="${escapeHtml(item.id)}" data-date="${agenda.date}"`;
+    parts.push(`<div class="ag-event is-${item.kind}${item.done ? " is-done" : ""}${item.missed ? " is-missed" : ""}${zero ? " is-zero" : ""}${short ? " is-short" : ""}${tap ? " is-tappable" : ""}"${tap}
       style="top:${top}px;height:${height}px;left:calc(${left + col * width}% + 2px);width:calc(${width}% - 4px)" title="${escapeHtml(item.name)} · ${agendaClock(item.start)}">${text}</div>`);
   });
 
@@ -352,7 +386,110 @@ function onRoutinePlanChanged() {
 }
 
 function onRoutineDataReplaced() {
+  syncRoutineAlerts(routineDb);
   renderAgenda();
+}
+
+/* ---------------------------------------------------------------------
+ * Tarefa da rotina tocada (v1.49): concluir aqui mesmo ou editar
+ * ------------------------------------------------------------------- */
+const AGENDA_TASK_STATUS = {
+  done: "✅ Feita",
+  skipped: "🗑️ Deixada pra lá",
+  today: "⏳ Pra fazer",
+  overdue: "⏰ Atrasada (vale metade)",
+  expired: "⌛ Expirou (não passa pro dia seguinte)",
+  missed: "🙈 Passou batido",
+};
+
+function openAgendaTask(el) {
+  const task = findRoutineTask(el.dataset.id);
+  if (!task || !routineIsIso(el.dataset.date)) return;
+  agendaTaskOpen = { taskId: String(task.id), date: el.dataset.date };
+  renderAgendaTaskSheet();
+  openTobaModal("agendaTaskSheet");
+}
+
+function renderAgendaTaskSheet() {
+  const task = agendaTaskOpen && findRoutineTask(agendaTaskOpen.taskId);
+  if (!task) return;
+  const { date } = agendaTaskOpen;
+  const today = toIsoDate();
+  const status = routineOccurrenceStatus(task, date, routineDoneKeys(routineDb.log), routineSkippedKeys(routineDb), today);
+  const entry = routineDb.log.find((e) => e.taskId === String(task.id) && e.date === date);
+  const done = Boolean(entry);
+  const diff = routineDifficulty(task.difficulty);
+  const late = status === "overdue";
+  const future = date > today;
+  const statusText = done
+    ? `✅ Feita ${toIsoDate(new Date(entry.doneAt)) === date ? "" : `em ${agendaShortDate(toIsoDate(new Date(entry.doneAt)))} `}às ${agendaClock(new Date(entry.doneAt).getHours() * 60 + new Date(entry.doneAt).getMinutes())}`
+    : future ? "📅 Ainda não chegou o dia" : AGENDA_TASK_STATUS[status] || "";
+  const meta = [
+    task.time ? `⏰ ${task.time}` : "📌 sem horário",
+    `${diff.icon} ${diff.name}`,
+    `+${late ? Math.round(diff.xp / 2) : diff.xp} XP`,
+  ].join(" · ");
+  const canCheck = done || (!future && status !== "expired" && status !== "missed");
+  document.getElementById("agendaTaskTitle").textContent = `${task.emoji} ${task.name}`;
+  document.getElementById("agendaTaskBody").innerHTML = `
+    <p class="toba-sheet-text">${agendaDayName(date)}, ${agendaShortDate(date)}${date === today ? " · hoje" : ""}</p>
+    <div class="rt-task${late ? " is-overdue" : ""}" id="agendaTaskRow">
+      <button type="button" class="rt-check" data-click="agendaToggleTask" aria-pressed="${done}"${canCheck ? "" : " disabled"} aria-label="${done ? "Desmarcar" : "Marcar como feita"}">${done ? "✓" : ""}</button>
+      <div class="rt-task-body">
+        <span class="rt-task-name">${done ? "Feita! 🎉" : canCheck ? "Toca na bolinha quando fizer" : "Não dá pra marcar esse dia"}</span>
+        <span class="rt-task-meta">${meta}</span>
+      </div>
+    </div>
+    <p class="rt-help">${statusText}${done ? " · tocar na bolinha desmarca" : ""}</p>`;
+}
+
+function agendaToggleTask(el) {
+  const task = agendaTaskOpen && findRoutineTask(agendaTaskOpen.taskId);
+  if (!task) return;
+  const { date } = agendaTaskOpen;
+  if (date > toIsoDate() && !routineDb.log.some((e) => e.taskId === String(task.id) && e.date === date)) {
+    showPageMessage(`Calma, "${task.name}" é de ${agendaShortDate(date)}. Marca no dia 😅`, { title: "Ainda não", icon: "📅" });
+    return;
+  }
+  const { result, entry } = routineToggleOccurrence(task, date);
+  if (!result) return;
+  if (result === "expired") {
+    routineExpiredMessage(task);
+    return;
+  }
+  if (result === "undone") {
+    tobaToast("↩ Desmarcada (o XP saiu junto)");
+    tobaPlayerCheck();
+  } else {
+    const late = routineIsLate(entry);
+    document.getElementById("agendaTaskRow")?.classList.add("is-popping");
+    tobaPlayerCheck({ reason: `${task.emoji} ${routineDoneLine(task.difficulty, late)}` });
+  }
+  setTimeout(() => {
+    renderAgendaTaskSheet();
+    renderAgenda();
+  }, result === "done" ? 350 : 0);
+}
+
+function agendaEditTask() {
+  const task = agendaTaskOpen && findRoutineTask(agendaTaskOpen.taskId);
+  if (!task) return;
+  closeTobaModal("agendaTaskSheet");
+  openTaskSheet(task);
+}
+
+// Folha da tarefa (routine-task-sheet.js) salvou ou apagou
+function onRoutineTaskSaved() {
+  renderAgenda();
+}
+
+// Calendar (v1.49): criou/editou evento aqui. Avisos do Android refeitos a cada gravação.
+function onRoutineEventsChanged() {
+  renderAgenda();
+}
+
+function onRoutineDataSaved() {
+  syncRoutineAlerts(routineDb);
 }
 
 document.addEventListener("visibilitychange", () => {
@@ -365,6 +502,9 @@ tobaActions({
   agendaNext,
   agendaToday,
   openAgendaDay,
+  openAgendaTask,
+  agendaToggleTask,
+  agendaEditTask,
 });
 
 bindAgendaSwipe();

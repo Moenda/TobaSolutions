@@ -949,3 +949,36 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.48 - Copiar semana anterior e folha de receitas que fica aberta no Kitchen, receitas do Bertoba, configuracoes do perfil alinhadas, tarefas de hoje no card do Routine e filtro por categoria no Gastos`
+
+---
+
+## v1.49 — 📅 Toba Calendar no Routine, rotina que conclui e edita pela Agenda e filtro do Gastos mais claro
+
+**Arquivos novos/alterados:** `TobaRoutine/TobaRoutine-Calendar.html` (NOVO), `TobaRoutine/js/calendar.js` (NOVO), `TobaRoutine/css/calendar.css` (NOVO), `TobaRoutine/js/routine-events.js` (NOVO), `TobaRoutine/js/routine-task-sheet.js` (NOVO), `TobaRoutine/TobaRoutine-Index.html`, `TobaRoutine/TobaRoutine-Agenda.html`, `TobaRoutine/TobaRoutine-Rotina.html`, `TobaRoutine/js/agenda.js`, `TobaRoutine/js/routine.js`, `TobaRoutine/js/routine-core.js`, `TobaRoutine/js/routine-metrics.js`, `TobaRoutine/js/routine-alerts.js`, `TobaRoutine/css/agenda.css`, `TobaRoutine/css/routine-base.css`, `TobaBank/js/gastos.js`, `TobaBank/css/gastos.css`, `sw.js`, `CLAUDE.md`
+
+1. **📅 Calendar (módulo novo no Routine):** pra coisa que tem dia marcado mas não é rotina nem task: a cirurgia do dia 04/11, o churrasco do Maracujeba, a viagem. Card novo no Hub (mostra o próximo: "🔜 🏥 Cirurgia em 13 dias"). A página tem o mês em grade (os dias com evento mostram o emoji, ‹ › ou arrastar troca de mês), a lista do dia tocado com "➕ Evento nesse dia", **🔜 Próximos** e **📜 Já foi**.
+2. **Evento com hora ou dia inteiro:** com hora (começa/termina; terminou antes de começar = passou da meia-noite, tipo churras das 14h às 2h) ou **🌞 Dia inteiro**, que pode durar vários dias ("Até"). Escreveu "cirurgia", "churrasco", "dentista", "aniversário"... o Toba chuta o emoji. Tem 📝 observação (ex: jejum de 8 h).
+3. **🚫 Dia tomado:** evento de dia inteiro pode marcar o dia como tomado (cirurgia, viagem e mudança já vêm marcados). Nesse dia o livre fica zerado e o Toba **não sugere task** pra ele.
+4. **Na Agenda:** evento com hora aparece rosa no horário dele (tocar abre pra editar); dia inteiro fica na faixa **📅 Eventos** no topo do dia (na semana, o emoji em cima do dia). Botão **+ Evento** na Agenda já nasce no dia que está na tela. O tempo livre do Hub e da Agenda desconta os eventos com hora.
+5. **🔔 Avisos:** véspera às 20h ("Amanhã: 🏥 Cirurgia") e no dia 1 h antes (ou às 8h, se for dia inteiro), com a observação junto. No app Android vão com os avisos da rotina (o "✅ Feito" ali vale como "ciente"); no navegador, só com o Toba aberto. Dá pra desligar por evento.
+6. **Rotina clicável na Agenda:** na visão Dia, tocar numa tarefa da rotina (a plantinha com horário errado, por exemplo) abre a bolinha pra **concluir** ali mesmo (XP e comemoração de sempre; tocar de novo desmarca) e o **✏️ Editar tarefa**, a mesma folha da Rotina. Atrasada vale metade, igual na Rotina; dia que ainda não chegou não deixa marcar. Na Semana, tocar no dia abre o Dia.
+7. **Filtro de categoria do Gastos:** agora a faixa mostra em cima a categoria (⛽ Combustível) e embaixo "R$ 501,41 em 2 compras". O botão virou **✕ Limpar filtro** (não parece mais que vai apagar os gastos 😅).
+
+**Dados:**
+- `TOBA_ROUTINE_DB`: campo novo opcional `events` (lista de eventos: nome, emoji, dia, hora/fim ou dia inteiro com "até", dia tomado, aviso, observação). Banco e backup antigos sem ele abrem com a lista vazia (`normalizeRoutineEvents`). Eventos não dão XP: Perfil e card do portal não mudam (só o "livre" do card, que agora desconta evento com hora).
+- Marcar pela Agenda grava no `log` do mesmo jeito da Rotina (a regra foi pra uma função só, `routineToggleOccurrence`). A folha de editar tarefa saiu do HTML da Rotina e agora é posta pelo JS (`routine-task-sheet.js`), igualzinha.
+- `TOBA_BANK_DB`: nenhuma mudança (o filtro é só tela).
+- `sw.js` VERSION `toba-v18` (5 arquivos novos no PRECACHE). Não precisa de APK novo.
+
+**Como testar:**
+- Hub do Routine → card 📅 Calendar → + Evento → "Cirurgia no joelho" (vira 🏥 e já marca 🚫 Dia tomado com 🌞 Dia inteiro) → dia 04/11 → Salvar. O dia aparece com 🏥 no mês e em 🔜 Próximos; o Hub mostra a contagem.
+- + Evento → "Churrasco" no sábado, 14h às 02h → aparece rosa na Agenda do sábado e um pedacinho no domingo até 02h. O livre do sábado no Hub diminui.
+- Task → uma task inteira grande → 🔮 Dia? → o dia da cirurgia nunca aparece.
+- Agenda → Dia de hoje → tocar numa rotina com horário → bolinha marca (XP sobe), tocar de novo desmarca → ✏️ Editar tarefa → muda o horário → salva e ela pula pro horário novo. Na Rotina, a mesma tarefa aparece feita/desfeita igual.
+- Rotina → tocar numa tarefa → a folha de editar continua igual (salvar, apagar, 📅 Pôr na agenda do celular).
+- Agenda → tocar no evento → editar/apagar.
+- Gastos → tocar numa categoria → faixa com "⛽ Combustível" / "R$ X em N compras" e "✕ Limpar filtro".
+- ⚙️ → baixar backup do Routine → Apagar tudo → importar → eventos voltam. Importar um backup antigo (sem eventos) → abre normal.
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.49 - Toba Calendar no Routine (eventos com dia marcado, dia tomado, avisos), rotina que conclui e edita pela Agenda e filtro de categoria do Gastos mais claro`

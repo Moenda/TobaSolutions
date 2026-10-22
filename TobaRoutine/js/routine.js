@@ -3,10 +3,9 @@
  * Página TobaRoutine-Rotina.html (desde v1.42; antes era o Index, que virou hub).
  * Depende de toba-common.js, routine-metrics.js, routine-core.js,
  * health-metrics.js + toba-player.js (XP), routine-alerts.js (avisos) e
- * routine-plan.js (Meu dia fixo e as sessões de task que caem hoje).
+ * routine-plan.js (Meu dia fixo e as sessões de task que caem hoje) e
+ * routine-task-sheet.js (folha da tarefa e a regra de marcar, desde v1.49).
  * ===================================================================== */
-const ROUTINE_EMOJI_PICKS = ["🚽", "🪴", "🐕", "😴", "🗑️", "🍽️", "🧺", "🧹", "💧", "💊", "📚", "🛒", "💸", "🧘", "📞", "🐈"];
-
 const ROUTINE_SUGGESTIONS = [
   { emoji: "🚽", name: "Lavar o banheiro", recurrence: { type: "weekly", days: ["SA"] }, time: "10:00", difficulty: "medium", on: true },
   { emoji: "🪴", name: "Regar as plantas", recurrence: { type: "weekly", days: ["MO", "TH"] }, time: "08:00", difficulty: "easy", on: true },
@@ -18,8 +17,6 @@ const ROUTINE_SUGGESTIONS = [
   { emoji: "💸", name: "Pagar as contas", recurrence: { type: "monthly", monthDay: 5 }, time: "09:00", difficulty: "medium", on: false },
 ];
 
-const ROUTINE_MINUTE_OPTIONS = [0, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180];
-
 const ROUTINE_VIEW_TITLES = { viewToday: "✅ Hoje", viewTasks: "📋 Tarefas", viewHistory: "📜 Histórico" };
 let routineView = "viewToday";
 let routineHighlight = null; // { taskId, date } vindo da notificação
@@ -29,10 +26,6 @@ let routineHighlight = null; // { taskId, date } vindo da notificação
  * ------------------------------------------------------------------- */
 function activeRoutineTasks() {
   return routineDb.tasks.filter((t) => !t.archivedAt);
-}
-
-function findRoutineTask(id) {
-  return routineDb.tasks.find((t) => String(t.id) === String(id));
 }
 
 function sortRoutineTasks(list) {
@@ -537,6 +530,11 @@ function onRoutinePlanChanged() {
   renderRoutine();
 }
 
+// Folha da tarefa (routine-task-sheet.js) salvou/apagou
+function onRoutineTaskSaved() {
+  renderRoutine();
+}
+
 // Chamado pelo core depois de cada gravação: refaz os avisos e o XP.
 function onRoutineDataSaved() {
   syncRoutineAlerts(routineDb);
@@ -563,36 +561,22 @@ function floatRoutineXp(anchor, text) {
   setTimeout(() => el.remove(), 1200);
 }
 
-function newRoutineLogId() {
-  return `l-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-}
-
 function toggleTask(el) {
   const task = findRoutineTask(el.dataset.id);
   const date = el.dataset.date;
   if (!task || !routineIsIso(date)) return;
-  const exists = routineDb.log.some((e) => e.taskId === String(task.id) && e.date === date);
-  if (exists) {
-    const before = routineDb.log;
-    routineDb.log = routineDb.log.filter((e) => !(e.taskId === String(task.id) && e.date === date));
-    if (!saveRoutineDb({ silent: true })) {
-      routineDb.log = before;
-      return;
-    }
+  // A regra de gravar mora no routine-task-sheet.js (a Agenda usa a mesma, v1.49)
+  const { result, entry } = routineToggleOccurrence(task, date);
+  if (!result) return;
+  if (result === "undone") {
     tobaToast("↩ Desmarcada (o XP saiu junto)");
     renderRoutine();
     tobaPlayerCheck();
     return;
   }
-  if (!routineCarriesOver(task) && date < toIsoDate()) {
-    showPageMessage(`"${task.name}" não passa pro dia seguinte: o dia dela acabou e não dá mais pra marcar. Amanhã tem revanche 💪`, { title: "Essa expirou", icon: "⌛" });
+  if (result === "expired") {
+    routineExpiredMessage(task);
     renderRoutine();
-    return;
-  }
-  const entry = { id: newRoutineLogId(), taskId: String(task.id), date, doneAt: Date.now(), difficulty: task.difficulty };
-  routineDb.log.push(entry);
-  if (!saveRoutineDb({ silent: true })) {
-    routineDb.log = routineDb.log.filter((e) => e !== entry);
     return;
   }
   const late = routineIsLate(entry);
@@ -629,118 +613,6 @@ function undoSituational(el) {
   if (saveRoutineDb({ silent: true })) tobaToast("↩ Desfeita");
   renderRoutine();
   tobaPlayerCheck();
-}
-
-/* ---------------------------------------------------------------------
- * Folha da tarefa
- * ------------------------------------------------------------------- */
-function openTaskSheet(task = null) {
-  document.getElementById("taskSheetTitle").textContent = task ? "✏️ Editar tarefa" : "➕ Nova tarefa";
-  document.getElementById("taskId").value = task ? task.id : "";
-  document.getElementById("taskName").value = task ? task.name : "";
-  document.getElementById("taskEmoji").value = task ? task.emoji : "✅";
-  document.getElementById("taskEmojiPicks").innerHTML = ROUTINE_EMOJI_PICKS
-    .map((emoji) => `<button type="button" class="rt-emoji-pick" data-click="pickEmoji" data-emoji="${emoji}">${emoji}</button>`).join("");
-  const rec = task ? task.recurrence : { type: "daily" };
-  document.querySelectorAll('input[name="taskRec"]').forEach((input) => {
-    input.checked = input.value === rec.type;
-  });
-  const days = rec.type === "weekly" ? rec.days || [] : ["MO", "WE", "FR"];
-  document.getElementById("taskDays").innerHTML = TOBA_WEEK_DAYS
-    .map(([code, label]) => `<label class="toba-day"><input type="checkbox" value="${code}"${days.includes(code) ? " checked" : ""} /><span>${label}</span></label>`)
-    .join("");
-  document.getElementById("taskMonthDay").value = rec.type === "monthly" ? rec.monthDay : new Date().getDate();
-  document.getElementById("taskTime").value = task ? task.time : "";
-  document.getElementById("taskNag").checked = task ? task.nag !== false : true;
-  document.getElementById("taskCarry").checked = routineCarriesOver(task);
-  // 0 = não ocupa tempo (ex: dormir às 23h); vazio = chute pela dificuldade
-  const minutes = task && task.minutes !== undefined ? Number(task.minutes) : "";
-  const minuteOptions = ROUTINE_MINUTE_OPTIONS.includes(minutes) || minutes === "" ? ROUTINE_MINUTE_OPTIONS : [...ROUTINE_MINUTE_OPTIONS, minutes].sort((a, b) => a - b);
-  document.getElementById("taskMinutes").innerHTML = `<option value="">Chute pela dificuldade (15/30/60 min)</option>${minuteOptions
-    .map((m) => `<option value="${m}"${m === minutes ? " selected" : ""}>${m === 0 ? "0 min (não ocupa tempo)" : routineFormatMinutes(m)}</option>`).join("")}`;
-  const difficulty = task ? task.difficulty : "medium";
-  document.getElementById("taskDifficulty").innerHTML = Object.entries(ROUTINE_DIFFICULTIES).map(([key, d]) => `
-    <label class="rt-diff-card">
-      <input type="radio" name="taskDiff" value="${key}"${key === difficulty ? " checked" : ""} />
-      <span class="rt-diff-icon">${d.icon}</span>
-      <span class="rt-diff-text"><strong>${d.name} · +${d.xp} XP</strong><small>${d.tag}</small></span>
-    </label>`).join("");
-  document.getElementById("deleteTaskBtn").hidden = !task;
-  updateTaskForm();
-  openTobaModal("taskSheet");
-}
-
-function updateTaskForm() {
-  const type = document.querySelector('input[name="taskRec"]:checked')?.value || "daily";
-  const situational = type === "situational";
-  const hasTime = Boolean(document.getElementById("taskTime").value);
-  document.getElementById("taskDaysGroup").hidden = type !== "weekly";
-  document.getElementById("taskMonthGroup").hidden = type !== "monthly";
-  document.getElementById("taskSituationalHelp").hidden = !situational;
-  document.getElementById("taskTimeGroup").hidden = situational;
-  document.getElementById("taskNagRow").hidden = situational || !hasTime;
-  document.getElementById("taskCarryRow").hidden = situational;
-  document.getElementById("taskMinutesGroup").hidden = situational;
-  const editing = Boolean(document.getElementById("taskId").value);
-  document.getElementById("taskCalendarBtn").hidden = !(editing && routineAlertMode() === "browser" && hasTime && (type === "daily" || type === "weekly"));
-}
-
-function readTaskForm() {
-  const type = document.querySelector('input[name="taskRec"]:checked')?.value || "daily";
-  const recurrence = { type };
-  if (type === "weekly") recurrence.days = [...document.querySelectorAll("#taskDays input:checked")].map((i) => i.value);
-  if (type === "monthly") recurrence.monthDay = Math.min(31, Math.max(1, Math.round(Number(document.getElementById("taskMonthDay").value) || 1)));
-  return {
-    name: document.getElementById("taskName").value.trim(),
-    emoji: document.getElementById("taskEmoji").value.trim() || "✅",
-    recurrence,
-    time: type === "situational" ? "" : document.getElementById("taskTime").value,
-    nag: document.getElementById("taskNag").checked,
-    carryOver: type === "situational" || document.getElementById("taskCarry").checked,
-    difficulty: document.querySelector('input[name="taskDiff"]:checked')?.value || "medium",
-    minutes: type === "situational" ? null : routineReadMinutesField(document.getElementById("taskMinutes").value),
-  };
-}
-
-// "" = sem duração (chute pela dificuldade) -> null; "0" = não ocupa tempo -> 0
-function routineReadMinutesField(value) {
-  if (value === "") return null;
-  return Math.max(0, Math.round(Number(value) || 0));
-}
-
-function saveTask() {
-  const data = readTaskForm();
-  if (!data.name) {
-    showPageMessage("Dá um nome pra tarefa, chefia.", { title: "Faltou o nome", icon: "✍️" });
-    return;
-  }
-  if (data.recurrence.type === "weekly" && !data.recurrence.days.length) {
-    showPageMessage("Escolha pelo menos um dia da semana.", { title: "Faltou o dia", icon: "🗓️" });
-    return;
-  }
-  const existing = findRoutineTask(document.getElementById("taskId").value);
-  const minutes = data.minutes;
-  delete data.minutes; // sem duração escolhida = campo ausente (chute pela dificuldade)
-  if (minutes !== null) data.minutes = minutes;
-  if (existing) {
-    Object.assign(existing, data);
-    if (minutes === null) delete existing.minutes;
-  } else routineDb.tasks.push({ id: `t-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, ...data, createdAt: toIsoDate() });
-  if (!saveRoutineDb()) return;
-  closeTobaModal("taskSheet");
-  if (data.time) tobaAskNotify(); // no toque do botão: o navegador deixa pedir
-  renderRoutine();
-}
-
-async function deleteTask() {
-  const task = findRoutineTask(document.getElementById("taskId").value);
-  if (!task) return;
-  const ok = await showPageMessage("A tarefa some da lista e para de cobrar. O histórico e o XP que ela já deu ficam.", { title: `Apagar "${task.name}"?`, icon: "🗑️", confirm: true, confirmLabel: "Apagar" });
-  if (!ok) return;
-  task.archivedAt = toIsoDate(); // não cai mais a partir de hoje; o que já foi feito continua valendo
-  if (!saveRoutineDb()) return;
-  closeTobaModal("taskSheet");
-  renderRoutine();
 }
 
 /* ---------------------------------------------------------------------
@@ -810,20 +682,6 @@ async function enableRoutineNotify() {
   renderRoutine();
 }
 
-function addTaskToCalendar() {
-  const task = findRoutineTask(document.getElementById("taskId").value);
-  if (!task || !task.time) return;
-  const days = task.recurrence.type === "weekly" ? task.recurrence.days : TOBA_WEEK_DAYS.map(([code]) => code);
-  closeTobaModal("taskSheet");
-  tobaOpenReminder({
-    id: `rotina-${task.id}`,
-    title: `${task.emoji} ${task.name}`,
-    message: routineNagText(task, 0).body,
-    times: [task.time],
-    days,
-  });
-}
-
 // O app Android guarda os "✅ Feito" tocados na notificação; aqui viram log.
 function importNativeRoutineDone() {
   const list = readNativeRoutineDone();
@@ -856,8 +714,6 @@ function importNativeRoutineDone() {
 tobaActions({
   newTask: () => openTaskSheet(),
   editTask: (el) => openTaskSheet(findRoutineTask(el.dataset.id)),
-  saveTask,
-  deleteTask,
   toggleTask,
   restoreSkipped,
   routineUndo: () => {
@@ -867,21 +723,15 @@ tobaActions({
   },
   doSituational,
   undoSituational,
-  updateTaskForm,
-  pickEmoji: (el) => {
-    document.getElementById("taskEmoji").value = el.dataset.emoji;
-  },
   showRoutineView: (el) => showRoutineView(el.dataset.view),
   openSuggestions,
   addSuggestions,
   enableRoutineNotify,
-  addTaskToCalendar,
   openOneoffFromRow: (el) => {
     location.href = `TobaRoutine-Task.html?open=${encodeURIComponent(el.dataset.id)}`;
   },
 });
 
-document.getElementById("taskTime").addEventListener("input", updateTaskForm);
 document.addEventListener("toba:player", () => {
   if (routineView === "viewToday") renderRoutineHero(toIsoDate());
 });

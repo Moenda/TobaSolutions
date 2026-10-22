@@ -416,7 +416,15 @@ function calcRoutineDayLoad(db, iso, options = {}) {
   });
   const oneoffs = oneoffList.reduce((sum, s) => sum + s.minutes, 0);
 
-  let free = 1440 - fixed - routine - oneoffs - plan.breathing;
+  // Calendar (v1.49): evento com hora ocupa o pedaço dele; dia inteiro só pesa se for "dia tomado"
+  const eventList = routineEventsOn(db, iso).map((slot) => ({
+    id: slot.event.id, emoji: slot.event.emoji || "📅", name: slot.event.name || "Evento", allDay: slot.allDay,
+    busy: slot.allDay && slot.event.busy === true, start: slot.start, end: slot.end, minutes: slot.allDay ? 0 : slot.end - slot.start,
+  }));
+  const events = eventList.reduce((sum, e) => sum + e.minutes, 0);
+  const busyDay = eventList.some((e) => e.busy);
+
+  let free = 1440 - fixed - routine - oneoffs - events - plan.breathing;
   // Hoje: o que já passou não volta. Livre = até a hora de dormir (ou meia-noite),
   // tirando o trabalho/transporte que ainda falta.
   const now = options.now instanceof Date ? options.now : null;
@@ -442,11 +450,13 @@ function calcRoutineDayLoad(db, iso, options = {}) {
     const doneKeys = routineDoneKeys(db && db.log);
     left -= tasks.filter((t) => isRoutineTaskDue(t, iso) && !doneKeys.has(`${t.id}|${iso}`)).reduce((sum, t) => sum + routineTaskMinutes(t), 0);
     left -= oneoffList.filter((s) => !s.done).reduce((sum, s) => sum + s.minutes, 0);
+    left -= eventList.filter((e) => !e.allDay).reduce((sum, e) => sum + Math.max(0, Math.min(e.end, end) - Math.max(e.start, nowMin)), 0);
     free = Math.min(free, left - Math.min(plan.breathing, Math.max(0, left) / 3));
   }
+  if (busyDay) free = 0; // dia tomado (cirurgia, viagem): nada de task
   const hasWork = items.some((i) => i.kind === "work");
   const weekend = code === "SA" || code === "SU";
-  return { date: iso, items, fixed, routine, oneoffs, oneoffList, breathing: plan.breathing, free: Math.max(0, Math.round(free)), hasWork, weekend };
+  return { date: iso, items, fixed, routine, oneoffs, oneoffList, events, eventList, busyDay, breathing: plan.breathing, free: Math.max(0, Math.round(free)), hasWork, weekend };
 }
 
 /* Sugestão do Toba: os melhores dias para encaixar o que falta da task.
@@ -497,7 +507,8 @@ function suggestRoutineOneoff(db, oneoff, options = {}) {
     // Cabe no dia preferido? Esses primeiro (por nota); o resto completa.
     const fit = days.filter((d) => d.free >= need)
       .sort((a, b) => Number(b.preferred) - Number(a.preferred) || b.score - a.score);
-    const picks = (fit.length ? fit : [...days].sort((a, b) => b.free - a.free)).slice(0, 3);
+    // Sem lugar: os dias mais livres, menos os tomados por evento (v1.49)
+    const picks = (fit.length ? fit : days.filter((d) => !d.load.busyDay).sort((a, b) => b.free - a.free)).slice(0, 3);
     return {
       need,
       mode: "whole",
@@ -533,6 +544,138 @@ function suggestRoutineOneoff(db, oneoff, options = {}) {
   return { need, mode: "split", fits: left <= 0, missing: Math.max(0, left), options: sessions, days };
 }
 
+/* Calendar (desde v1.49): eventos com dia marcado (cirurgia, churrasco,
+ * viagem). Não é rotina (não repete) nem task (não precisa achar dia).
+ * - Com hora (time + end): ocupa esse pedaço do dia. end vazio = 1 h;
+ *   end antes do time = passa da meia-noite (festa até 2h pinta o dia
+ *   seguinte até 02h).
+ * - Dia inteiro (time ""): faixa do topo da Agenda; pode durar vários dias
+ *   (date até endDate). busy = dia tomado: livre 0 e a Task não sugere.
+ * Só cálculo, nada gravado. */
+const ROUTINE_EVENT_DEFAULT_MINUTES = 60;
+const ROUTINE_EVENT_REMIND_EVE = "20:00"; // aviso na véspera
+const ROUTINE_EVENT_REMIND_MORNING = "08:00"; // dia inteiro: aviso no dia
+const ROUTINE_EVENT_REMIND_BEFORE = 60; // com hora: aviso 1 h antes
+
+// Chute do emoji pelo nome (e se costuma tomar o dia inteiro)
+const ROUTINE_EVENT_GUESSES = [
+  { match: /cirurgi|opera[cç][aã]o|interna[cç]/i, emoji: "🏥", busy: true },
+  { match: /mudan[cç]a/i, emoji: "📦", busy: true },
+  { match: /viag|voo|aeroporto|praia|trip/i, emoji: "✈️", busy: true },
+  { match: /dentist|dente|canal|aparelho/i, emoji: "🦷" },
+  { match: /m[eé]dic|consulta|exame|check.?up|hospital|vacina/i, emoji: "🩺" },
+  { match: /churras/i, emoji: "🍖" },
+  { match: /anivers|niver|bday/i, emoji: "🎂" },
+  { match: /casament|noivad/i, emoji: "💍" },
+  { match: /milena|namor|date|jantar a dois/i, emoji: "💘" },
+  { match: /show|festival|rock/i, emoji: "🎸" },
+  { match: /barbe|cabelo|corte/i, emoji: "💈" },
+  { match: /festa|balada|rol[eê]/i, emoji: "🎉" },
+  { match: /\bbar\b|cerveja|happy|chopp/i, emoji: "🍻" },
+  { match: /reuni|entrevista|apresenta|evento da firma/i, emoji: "💼" },
+  { match: /\bvet|gato|killua|\bgon\b/i, emoji: "🐱" },
+  { match: /jogo|futebol|est[aá]dio|pelada/i, emoji: "⚽" },
+  { match: /cinema|filme/i, emoji: "🎬" },
+  { match: /prova|vestibular|concurso/i, emoji: "📝" },
+  { match: /corrida|maratona|trilha/i, emoji: "🏃" },
+  { match: /maracujeba/i, emoji: "🥭" },
+];
+
+function routineGuessEvent(name) {
+  const text = String(name || "");
+  return ROUTINE_EVENT_GUESSES.find((g) => g.match.test(text)) || null;
+}
+
+function routineEventsOf(db) {
+  return (db && Array.isArray(db.events) ? db.events : []).filter((e) => e && e.id && routineIsIso(e.date));
+}
+
+function routineEventIsAllDay(event) {
+  return routineTimeToMin(event && event.time) === null;
+}
+
+// Último dia do evento (dia inteiro pode durar vários; com hora é 1 dia só)
+function routineEventLastDay(event) {
+  if (!routineEventIsAllDay(event)) return event.date;
+  return routineIsIso(event.endDate) && event.endDate > event.date ? event.endDate : event.date;
+}
+
+// Duração do evento com hora, em minutos (0 = dia inteiro)
+function routineEventSpan(event) {
+  const start = routineTimeToMin(event && event.time);
+  if (start === null) return 0;
+  const end = routineTimeToMin(event.end);
+  if (end === null || end === start) return ROUTINE_EVENT_DEFAULT_MINUTES;
+  return routineSpan(event.time, event.end);
+}
+
+// "07h", "19h30"
+function routineClock(minutes) {
+  const total = ((Math.round(Number(minutes) || 0) % 1440) + 1440) % 1440;
+  const h = String(Math.floor(total / 60)).padStart(2, "0");
+  const m = total % 60;
+  return m ? `${h}h${String(m).padStart(2, "0")}` : `${h}h`;
+}
+
+// "07h–09h", "Dia inteiro", "Dia inteiro · até 08/11"
+function routineEventWhen(event) {
+  if (routineEventIsAllDay(event)) {
+    const last = routineEventLastDay(event);
+    return last === event.date ? "Dia inteiro" : `Dia inteiro · até ${last.slice(8, 10)}/${last.slice(5, 7)}`;
+  }
+  const start = routineTimeToMin(event.time);
+  return `${routineClock(start)}–${routineClock(start + routineEventSpan(event))}`;
+}
+
+// Dias de a até b (b - a), contando pelo calendário
+function routineDayDiff(a, b) {
+  return Math.round((new Date(`${b}T12:00:00`) - new Date(`${a}T12:00:00`)) / 86400000);
+}
+
+/* O que cada evento ocupa num dia, em minutos do 00:00:
+ * [{ event, allDay, start, end, fromYesterday?, toTomorrow? }] (dia inteiro = 0–1440). */
+function routineEventsOn(db, iso) {
+  const out = [];
+  const yesterday = routineAddDays(iso, -1);
+  routineEventsOf(db).forEach((event) => {
+    if (routineEventIsAllDay(event)) {
+      if (event.date <= iso && routineEventLastDay(event) >= iso) out.push({ event, allDay: true, start: 0, end: 1440 });
+      return;
+    }
+    const start = routineTimeToMin(event.time);
+    const end = start + routineEventSpan(event);
+    if (event.date === iso) out.push({ event, allDay: false, start, end: Math.min(1440, end), toTomorrow: end > 1440 });
+    else if (event.date === yesterday && end > 1440) out.push({ event, allDay: false, start: 0, end: end - 1440, fromYesterday: true });
+  });
+  return out.sort((a, b) => a.start - b.start || String(a.event.name).localeCompare(String(b.event.name)));
+}
+
+// Ordem de calendário: dia, depois dia inteiro primeiro, depois a hora
+function routineEventSortKey(event) {
+  return `${event.date} ${routineEventIsAllDay(event) ? "00:00" : event.time}`;
+}
+
+// Eventos que ainda não acabaram, do mais perto pro mais longe
+function routineUpcomingEvents(db, now = new Date()) {
+  const today = toIsoDate(now);
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  return routineEventsOf(db).filter((event) => {
+    const last = routineEventLastDay(event);
+    if (last !== today) return last > today;
+    if (routineEventIsAllDay(event)) return true;
+    return routineTimeToMin(event.time) + routineEventSpan(event) > nowMin;
+  }).sort((a, b) => routineEventSortKey(a).localeCompare(routineEventSortKey(b)));
+}
+
+// "hoje", "amanhã", "em 13 dias", "rolando" (dia inteiro de vários dias já começou)
+function routineEventCountdown(event, today = toIsoDate()) {
+  const diff = routineDayDiff(today, event.date);
+  if (diff < 0) return routineEventLastDay(event) >= today ? "rolando agora" : diff === -1 ? "foi ontem" : `foi há ${-diff} dias`;
+  if (diff === 0) return "hoje";
+  if (diff === 1) return "amanhã";
+  return `em ${diff} dias`;
+}
+
 /* Agenda do dia (desde v1.46): o que acontece em cada hora, pra visão de
  * calendário (TobaRoutine-Agenda.html). Minutos contados do 00:00 do dia.
  * - Dia fixo no horário. Bloco que passa da meia-noite aparece nos dois dias
@@ -542,6 +685,8 @@ function suggestRoutineOneoff(db, oneoff, options = {}) {
  * - Rotina com horário entra na hora, ocupando routineTaskMinutes (0 = só um
  *   risquinho). Rotina sem horário e sessão de task (que só tem dia) vão pra
  *   faixa "sem horário" do topo: o Toba não inventa hora que você não marcou.
+ * - Evento do Calendar (v1.49): com hora entra em timed (kind "event"); dia
+ *   inteiro vai em allDay (faixa de cima, antes do "sem horário").
  * Só cálculo, nada gravado. */
 function calcRoutineDayAgenda(db, iso, today = toIsoDate()) {
   const plan = routineDayPlan(db);
@@ -597,6 +742,13 @@ function calcRoutineDayAgenda(db, iso, today = toIsoDate()) {
     if (at === null) untimed.push(item);
     else timed.push({ ...item, start: at, end: Math.min(1440, at + minutes) });
   });
+  const allDay = [];
+  routineEventsOn(db, iso).forEach((slot) => {
+    const e = slot.event;
+    const item = { kind: "event", id: e.id, emoji: e.emoji || "📅", name: e.name || "Evento", note: e.note || "", busy: slot.allDay && e.busy === true, when: routineEventWhen(e) };
+    if (slot.allDay) allDay.push({ ...item, multi: routineEventLastDay(e) !== e.date });
+    else timed.push({ ...item, start: slot.start, end: slot.end, minutes: slot.end - slot.start, fromYesterday: Boolean(slot.fromYesterday), toTomorrow: Boolean(slot.toTomorrow) });
+  });
   timed.sort((x, y) => x.start - y.start || x.name.localeCompare(y.name));
 
   routineOneoffsOf(db).forEach((o) => {
@@ -607,5 +759,5 @@ function calcRoutineDayAgenda(db, iso, today = toIsoDate()) {
     });
   });
 
-  return { date: iso, blocks, timed, untimed, wakeAt: wake ? wake.end : null, sleepAt: sleep ? sleep.start : null };
+  return { date: iso, blocks, timed, untimed, allDay, wakeAt: wake ? wake.end : null, sleepAt: sleep ? sleep.start : null };
 }

@@ -35,6 +35,14 @@
  *   (desde v1.47): atrasadas que você deslizou pra "deixar pra lá". Só tira a
  *   ocorrência das atrasadas (não dá XP, quebra o streak igual a não fazer);
  *   a tarefa continua caindo nos próximos dias. Ausente = [].
+ *   events: [ { id: "e-<ts>-<rand4>", name, emoji, date: "AAAA-MM-DD",
+ *               time: "HH:MM" | "" ("" = dia inteiro), end: "HH:MM" | ""
+ *               (só com time; vazio = 1 h; antes do time = passa da meia-noite),
+ *               endDate: "AAAA-MM-DD" | "" (só dia inteiro: vários dias),
+ *               busy: bool (só dia inteiro: dia tomado, Task não marca),
+ *               remind: bool (avisa na véspera + no dia), note, createdAt } ]
+ *   (desde v1.49, módulo Calendar): eventos com dia marcado, tipo cirurgia
+ *   ou churrasco. Não dão XP. Ausente = [].
  * - O XP sai do log (routine-metrics.js); nada de XP gravado aqui.
  * - Carregue DEPOIS de routine-metrics.js (usa ROUTINE_DIFFICULTIES).
  * ===================================================================== */
@@ -45,7 +53,7 @@ const ROUTINE_BACKUP_KEY = "TOBA_ROUTINE_DB_AUTO_BACKUP";
 let isRoutineDbLoaded = false;
 
 function createEmptyRoutineDb() {
-  return { version: 1, seeded: false, tasks: [], log: [], dayPlan: { configured: false, breathing: 90, blocks: routineDefaultBlocks() }, oneoffs: [], skipped: [] };
+  return { version: 1, seeded: false, tasks: [], log: [], dayPlan: { configured: false, breathing: 90, blocks: routineDefaultBlocks() }, oneoffs: [], skipped: [], events: [] };
 }
 
 // "Migração": todo campo novo ganha default AQUI (load e import passam por ela).
@@ -76,6 +84,7 @@ function normalizeRoutineDb(db) {
   });
   normalizeRoutineDayPlan(db);
   normalizeRoutineOneoffs(db);
+  normalizeRoutineEvents(db);
   db.log = Array.isArray(db.log) ? db.log.filter((e) => e && typeof e === "object" && e.taskId && routineIsIso(e.date)) : [];
   // desde v1.47: ocorrências atrasadas descartadas (uma por taskId|data)
   const skippedSeen = new Set();
@@ -142,6 +151,23 @@ function normalizeRoutineOneoffs(db) {
       s.minutes = Math.max(5, Math.round(Number(s.minutes) || 60));
       if (s.doneAt !== undefined && !Number(s.doneAt)) delete s.doneAt;
     });
+  });
+}
+
+// Calendar (desde v1.49): eventos com dia marcado. Ausente = [].
+function normalizeRoutineEvents(db) {
+  db.events = Array.isArray(db.events) ? db.events.filter((e) => e && typeof e === "object" && e.id && routineIsIso(e.date)) : [];
+  db.events.forEach((e) => {
+    e.id = String(e.id);
+    e.name = String(e.name || "Evento");
+    e.emoji = String(e.emoji || "📅");
+    e.time = routineTimeToMin(e.time) === null ? "" : e.time;
+    e.end = e.time && routineTimeToMin(e.end) !== null && e.end !== e.time ? e.end : "";
+    e.endDate = !e.time && routineIsIso(e.endDate) && e.endDate > e.date ? e.endDate : "";
+    e.busy = !e.time && e.busy === true;
+    e.remind = e.remind !== false;
+    e.note = String(e.note || "").slice(0, 300);
+    if (!routineIsIso(e.createdAt)) e.createdAt = toIsoDate();
   });
 }
 

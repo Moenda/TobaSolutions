@@ -51,7 +51,7 @@ Ao terminar um patch, informe a lista de arquivos alterados e o que testar — n
 - Três apps dentro do portal, mais o Perfil do jogador (XP de tudo):
   - **Toba Bank** — Gastos, Investimentos, Raxador (divisão de contas).
   - **Toba Health** — Pesagem (balança) e Treinos (inclui Treino de Força).
-  - **Toba Routine** — Rotina (tarefas com XP e cobranças, desde v1.41) e Task (tarefas não rotineiras com sugestão de dia, desde v1.42).
+  - **Toba Routine** — Rotina (tarefas com XP e cobranças, desde v1.41), Task (tarefas não rotineiras com sugestão de dia, desde v1.42), Agenda (24 h, desde v1.46) e Calendar (eventos com dia marcado, desde v1.49).
   - **Toba Kitchen** — Livro de Receitas (receitas no código, busca pelo que tem em casa, modo cozinha) e Programação da Semana (lista de compras), desde v1.43.
 - Única dependência externa: Chart.js **fixado** em `chart.js@4.4.7` (jsdelivr). Nunca usar versão flutuante.
 - Commits seguem o padrão `vX.YY - descrição` (ex.: `v1.16 - Novo modulo de treino de força...`).
@@ -98,15 +98,25 @@ TobaRoutine/
                            antigo) = redireciona pra Rotina. -> js/routine-metrics.js + js/routine-core.js + js/routine-plan.js
   TobaRoutine-Rotina.html  Rotina (Hoje / Tarefas / Histórico) + as sessões de task do dia
                              -> js/routine-metrics.js + js/routine-core.js + ../TobaHealth/js/health-metrics.js
-                                + ../assets/toba-player.js + js/routine-alerts.js + js/routine-plan.js + js/routine.js
+                                + ../assets/toba-player.js + js/routine-alerts.js + js/routine-plan.js
+                                + js/routine-task-sheet.js + js/routine.js
   TobaRoutine-Task.html    Task (tarefas não rotineiras, sugestão de dia) -> mesma ordem, com js/task.js no fim
-  TobaRoutine-Agenda.html  Agenda (desde v1.46): calendário 24 h em Dia/Semana, só leitura. Abre do "Seu tempo livre" do
+  TobaRoutine-Agenda.html  Agenda (desde v1.46): calendário 24 h em Dia/Semana. Abre do "Seu tempo livre" do
                            Hub (?view=day|week&date=AAAA-MM-DD) -> js/routine-metrics.js + js/routine-core.js
-                           + js/routine-plan.js + js/agenda.js; css/routine-base.css + css/agenda.css
+                           + ../TobaHealth/js/health-metrics.js + ../TobaKitchen/js/kitchen-recipes.js + ../assets/toba-player.js
+                           + js/routine-alerts.js + js/routine-plan.js + js/routine-task-sheet.js + js/routine-events.js
+                           + js/agenda.js; css/routine-base.css + css/agenda.css. Desde v1.49 grava: concluir/editar
+                           rotina (visão Dia) e criar/editar evento
+  TobaRoutine-Calendar.html  Calendar (desde v1.49): eventos com dia marcado (mês + próximos + já foi, ?date=)
+                           -> js/routine-metrics.js + js/routine-core.js + js/routine-alerts.js + js/routine-plan.js
+                           + js/routine-events.js + js/calendar.js; css/routine-base.css + css/calendar.css
   js/routine-metrics.js    Regras puras (quando a tarefa cai, streak por tarefa, XP, dia livre, sugestão de dia da task).
                            Também no portal, Perfil e Treinos
   js/routine-alerts.js     Frases das cobranças + agenda de avisos (APK) / conferência com a página aberta. Também no portal
-  js/routine-plan.js       ⚙️ "Meu dia fixo" (folha) + marcar sessão de task. Nas três páginas do Routine
+  js/routine-plan.js       ⚙️ "Meu dia fixo" (folha) + marcar sessão de task. Em todas as páginas do Routine
+  js/routine-task-sheet.js Folha da tarefa da rotina (#taskSheet, posta pelo JS) + routineToggleOccurrence (regra única
+                           de marcar/desmarcar). Na Rotina e na Agenda (desde v1.49); cada página define onRoutineTaskSaved()
+  js/routine-events.js     Folha de evento do Calendar (#eventSheet, posta pelo JS). No Calendar e na Agenda (desde v1.49)
   css/routine-base.css
 TobaKitchen/                 (desde v1.43; ver 3.11)
   TobaKitchen-Index.html   Hub do Kitchen (placar de receitas feitas) -> js/kitchen-recipes.js + js/kitchen-core.js
@@ -301,7 +311,7 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 - **Faixa "pisou na jaca"** do Gastos (desde v1.45, `renderJacaBanner` em gastos.js): usa `recoveryDays`/`recoveryInMonth` de `calcBankMonthSummary` = dias sem gastar (a partir de amanhã) até o Livre hoje ficar positivo pela regra do `carryDebt`.
 - **Portal `assets/portal.js` → `obterMetricasReaisTobaBank()`** lê `TOBA_BANK_DB` direto, mas o cálculo é o **mesmo** da tela de Gastos: os dois chamam `calcBankMonthSummary()` de [TobaBank/js/bank-metrics.js](TobaBank/js/bank-metrics.js) (desde v1.21). Regra nova do painel do Gastos entra **só** em `bank-metrics.js`. Esse arquivo não pode depender de `bank-core.js` (o portal carrega ele sozinho) e só lê o banco, nunca grava.
 - **Portal → card do Health** (desde v1.37) lê `TOBA_HEALTH_DB` direto por `calcHealthSummary()` de [TobaHealth/js/health-metrics.js](TobaHealth/js/health-metrics.js) (só leitura, não depende de `health-core.js`). Treinos do mês seguem a **mesma regra** de `getWorkoutMonthStats` (treinos.js): mudou lá, mude aqui. Peso levantado fica de fora do card. Campo novo em pesagem/treino que o card mostre precisa de leitura defensiva ali.
-- **Portal → card do Routine** (desde v1.43) lê `TOBA_ROUTINE_DB` por `readRoutineDbRaw()` + `calcRoutineSummary()` de [routine-metrics.js](TobaRoutine/js/routine-metrics.js), que só junta as regras das telas (`calcRoutineToday`, `calcRoutineDayLoad` = mesmo livre do hub, `routineOneoffStatus`, `calcRoutineTaskStreak`, `calcRoutinePlayer` pro XP do mês). Regra nova da rotina entra nessas funções, não no portal. **Exceção que grava (desde v1.48):** a lista "📋 Tarefas de hoje" do card (`calcRoutineTodayList` + `toggleRoutineFromCard` em portal.js) marca/desmarca a tarefa de **hoje** mexendo só em `log` (entrada no mesmo formato do `toggleTask` da Rotina), relendo o texto cru na hora, copiando o valor anterior em `TOBA_ROUTINE_DB_AUTO_BACKUP` e devolvendo o resto do banco como estava. Banco ilegível = não grava. Mudou o formato do `log` ou a regra de marcar na Rotina? Mude aqui junto.
+- **Portal → card do Routine** (desde v1.43) lê `TOBA_ROUTINE_DB` por `readRoutineDbRaw()` + `calcRoutineSummary()` de [routine-metrics.js](TobaRoutine/js/routine-metrics.js), que só junta as regras das telas (`calcRoutineToday`, `calcRoutineDayLoad` = mesmo livre do hub, `routineOneoffStatus`, `calcRoutineTaskStreak`, `calcRoutinePlayer` pro XP do mês). Regra nova da rotina entra nessas funções, não no portal. **Exceção que grava (desde v1.48):** a lista "📋 Tarefas de hoje" do card (`calcRoutineTodayList` + `toggleRoutineFromCard` em portal.js) marca/desmarca a tarefa de **hoje** mexendo só em `log` (entrada no mesmo formato do `routineToggleOccurrence`, routine-task-sheet.js, usado pela Rotina e pela Agenda), relendo o texto cru na hora, copiando o valor anterior em `TOBA_ROUTINE_DB_AUTO_BACKUP` e devolvendo o resto do banco como estava. Banco ilegível = não grava. Mudou o formato do `log` ou a regra de marcar na Rotina? Mude aqui junto.
 - **Portal → card do Kitchen** (desde v1.43) lê `TOBA_KITCHEN_DB` direto por `calcKitchenSummary()` de [kitchen-recipes.js](TobaKitchen/js/kitchen-recipes.js) (só leitura; ilegível = card sem números).
 - **Backup geral do portal** (`exportAllData`/`importAllData`): formato `{ "<chave localStorage>": "<valor como STRING>" }`. Na importação, cada chave do arquivo é gravada como está (chaves ausentes no arquivo não são apagadas). A importação recusa arquivo sem nenhuma chave `TOBA_`/`toba_` ou com valor que não seja texto (backup de módulo). Não mude para guardar objetos já parseados — quebraria backups existentes.
 - **Backups por módulo** (`toba_bank_backup_*.json`, `toba_health_backup_*.json`): são o objeto do banco puro. Não misturar com o formato do backup geral.
@@ -384,6 +394,11 @@ Arquivo: [TobaRoutine/js/routine-core.js](TobaRoutine/js/routine-core.js). Vari�
 //   (deslizar o card). Uma por taskId|data; ausente = [] (normalizeRoutineDb).
 // tasks[].minutes? (desde v1.42): quanto a tarefa ocupa do dia; ausente = ROUTINE_DEFAULT_MINUTES pela dificuldade;
 //   0 (desde v1.45) = não ocupa tempo (ex: dormir às 23h). Não confunda 0 com ausente.
+// events (desde v1.49, módulo Calendar; ausente = [] em normalizeRoutineEvents):
+//   [ { id: "e-<ts>-<rand4>", name, emoji, date: "AAAA-MM-DD",
+//       time: "HH:MM" | "" /* "" = dia inteiro */, end: "HH:MM" | "" /* só com time; vazio = 1 h; antes do time = passa da meia-noite */,
+//       endDate: "AAAA-MM-DD" | "" /* só dia inteiro: vários dias */, busy: bool /* só dia inteiro: dia tomado */,
+//       remind: bool /* padrão true */, note: texto até 300, createdAt } ]
 ```
 
 - **Quando cai** (`isRoutineTaskDue`, routine-metrics.js): diária todo dia; semanal nos `days`; mensal no `monthDay` (dia 31 em mês curto = último dia); situacional nunca (aparece em "Quando acontecer", vale XP até 3× por dia). Nada antes de `createdAt` nem a partir de `archivedAt`.
@@ -396,7 +411,9 @@ Arquivo: [TobaRoutine/js/routine-core.js](TobaRoutine/js/routine-core.js). Vari�
 - **XP da Task** (`calcRoutinePlayer`, evento `kind: "oneoff"`): cada sessão feita vale `routineOneoffXp(minutes)` = 20/h, mínimo 15, teto 150, no dia do `doneAt`, **fora** do `ROUTINE_XP_DAY_CAP`. Task terminada soma `routineOneoffs` (e `routineBigOneoff` se ≥ 4 h) para as conquistas `tk-*`.
 - **Dia livre e sugestão** (routine-metrics.js): `calcRoutineDayLoad(db, dia)` = 1440 − blocos do dia fixo − rotina do dia (`routineTaskMinutes`) − sessões de task do dia − respiro; hoje só conta o que falta até a hora de dormir. `suggestRoutineOneoff` olha `ROUTINE_PLAN_DAYS` (14) dias ou até o prazo: inteira = até 3 dias onde cabe (dias do `when` preferido primeiro, desde v1.45: "weekend" = fim de semana ou folga sem trabalho, "weekday" = seg–sex; depois a nota: mais livre, perde se já tem task no dia, leve preferência por mais cedo); em pedaços = uma sessão por dia (`chunk` em dia de trabalho, até 3× na folga), primeiro nos dias preferidos sem outra task. Só cálculo, nada gravado; quem grava é `task.js` ao tocar em Agendar.
 - **Agenda** (desde v1.46, `TobaRoutine-Agenda.html` + `js/agenda.js`): `calcRoutineDayAgenda(db, dia)` (routine-metrics.js) diz o que cai em cada hora. Bloco do dia fixo que passa da meia-noite aparece nos dois dias; transporte (só tem minutos) vira metade antes e metade depois do trabalho, e sem trabalho no dia vai pra faixa "sem horário"; rotina com `time` entra na hora (`routineTaskMinutes`, 0 = risquinho); rotina sem `time` e sessão de task (só tem `date`) vão pra faixa "📌 Sem horário" do topo: a agenda **não inventa hora**. As brechas verdes são só o que sobra fora dos blocos e rotinas com hora; o "🆓 Livre" do dia continua sendo o `calcRoutineDayLoad` (que também tira o sem horário e o respiro). Nada gravado; configurar continua na ⚙️ → Meu dia fixo.
-- Backup do app: `toba_routine_backup_*.json` (objeto puro, precisa de `tasks`). Importar passa pelo `normalizeRoutineDb()` (que também dá default ao `dayPlan` e ao `oneoffs`).
+- **Calendar** (desde v1.49, `TobaRoutine-Calendar.html` + `js/calendar.js`; folha em `js/routine-events.js`): eventos com dia marcado (cirurgia, churrasco, viagem). Não dão XP e não repetem. Regras puras em routine-metrics.js: `routineEventsOn(db, dia)` (o que cada evento ocupa no dia; com hora que passa da meia-noite pinta o dia seguinte até o `end`), `routineUpcomingEvents`, `routineEventWhen`, `routineEventCountdown`, `routineGuessEvent` (emoji pelo nome; cirurgia/viagem/mudança já vêm como dia tomado). **Pesam no tempo livre:** `calcRoutineDayLoad` tira os minutos do evento com hora (e, hoje, só o que falta) e dia inteiro com `busy` zera o livre (`busyDay`); por isso `suggestRoutineOneoff` não põe task nesse dia (nem no "não cabe em lugar nenhum"). Na Agenda, com hora entra em `timed` (`kind: "event"`) e dia inteiro em `allDay` (faixa "📅 Eventos" no Dia, emoji no topo da Semana); dia tomado não mostra brecha. **Avisos:** `buildRoutineAlerts` junta `routineEventAlerts` (véspera 20h; no dia 1 h antes, ou 8h no dia inteiro) com `taskId` = id do evento, `key` = `id|date|0/1`; o "✅ Feito" do APK vira "ciente" (o Android cancela os avisos do evento e o `importNativeRoutineDone` só tira da fila, porque não acha tarefa). Apagar evento = some de vez (não tem XP). Calendar e Agenda carregam o routine-alerts.js e chamam `syncRoutineAlerts` a cada gravação.
+- **Concluir/editar na Agenda** (desde v1.49): na visão Dia, tocar numa rotina abre `#agendaTaskSheet` (bolinha + ✏️ Editar). Marcar usa `routineToggleOccurrence` (routine-task-sheet.js), a **mesma** função do `toggleTask` da Rotina (inclui a trava do `carryOver: false` e tira o descarte do `skipped` se marcar uma deixada pra lá); dia futuro não marca. Editar abre a mesma `#taskSheet` da Rotina. O card do portal (`toggleRoutineFromCard`) ainda repete a regra do log: mudou `routineToggleOccurrence`, mude lá junto.
+- Backup do app: `toba_routine_backup_*.json` (objeto puro, precisa de `tasks`). Importar passa pelo `normalizeRoutineDb()` (que também dá default ao `dayPlan`, ao `oneoffs`, ao `skipped` e ao `events`).
 
 ### 3.11 Toba Kitchen — `TOBA_KITCHEN_DB` (desde v1.43)
 
@@ -427,7 +444,7 @@ Arquivos: [TobaKitchen/js/kitchen-core.js](TobaKitchen/js/kitchen-core.js) (dono
 ## 4. Service worker / PWA
 
 - [sw.js](sw.js): páginas/JS/CSS **network-first** (timeout 4 s, cai no cache); jsdelivr **cache-first**. Sem cópia no cache, só **navegação** (`request.mode === "navigate"`) cai no `index.html`; JS/CSS faltando devolvem erro (desde v1.37 — antes o HTML ia no lugar do script e a tela quebrava offline sem aviso). O network-first usa `fetch(..., { cache: "no-cache" })` de propósito: o GitHub Pages manda `max-age=600`, e sem isso o celular misturava HTML novo com JS antigo logo depois de publicar. Não tire.
-- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v17"` → `"toba-v18"`…). Sem isso, o app offline fica sem o arquivo.
+- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v18"` → `"toba-v19"`…). Sem isso, o app offline fica sem o arquivo.
 - Atualizar a versão do Chart.js exige trocar a URL nos HTML **e** no `PRECACHE`.
 - Toda página nova deve incluir `<script src="../assets/pwa-register.js"></script>` (ou `assets/...` na raiz), as metas de `color-scheme: dark` e o link do manifest, como as existentes.
 

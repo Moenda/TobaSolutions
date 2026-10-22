@@ -9,6 +9,10 @@
  *   A lista é refeita a cada abertura e a cada mudança (substitui a anterior).
  * - Navegador: não existe aviso agendado com o site fechado. Com o portal ou
  *   a rotina abertos (ou recém-minimizados) o Toba confere a cada 30 s.
+ * - Eventos do Calendar (v1.49) vão na mesma lista: véspera às 20h e, no
+ *   dia, 1 h antes (com hora) ou 8h (dia inteiro). taskId = id do evento;
+ *   o "✅ Feito" do Android vira "ciente" (cancela o resto dos avisos dele e a
+ *   Rotina só tira da fila, porque não acha tarefa com esse id).
  * ===================================================================== */
 const ROUTINE_NAG_STEPS = [0, 30, 120]; // minutos depois do horário: aviso + 2 cobranças
 const ROUTINE_ALERT_DAYS = 3;
@@ -19,6 +23,15 @@ const ROUTINE_PAGE_URL = (() => {
     return new URL("../TobaRoutine-Rotina.html", document.currentScript.src).href;
   } catch (err) {
     return "TobaRoutine/TobaRoutine-Rotina.html";
+  }
+})();
+
+// Eventos do Calendar abrem a Agenda no dia deles
+const ROUTINE_AGENDA_URL = (() => {
+  try {
+    return new URL("../TobaRoutine-Agenda.html", document.currentScript.src).href;
+  } catch (err) {
+    return "TobaRoutine/TobaRoutine-Agenda.html";
   }
 })();
 
@@ -55,6 +68,25 @@ const ROUTINE_TOPIC_LINES = [
   { match: /[áa]gua|beber/i, lines: ["Bebe água, planta humana 💧", "Seu rim mandou um ofício: ÁGUA 💧", "Você tá mais seco que o sertão em agosto 🏜️"] },
   { match: /rem[eé]dio|vitamina|suplement|creatina/i, lines: ["Hora do remédio/suplemento 💊", "Esqueceu? Seu corpo não esqueceu 💊", "Última chamada pro comprimido 💊"] },
 ];
+
+// Avisos dos eventos: [véspera, no dia]. {quando} = " às 07h" (vazio no dia inteiro)
+const ROUTINE_EVENT_LINES = {
+  eve: [
+    "Amanhã tem {nome}{quando}. Não marca nada por cima, hein 👀",
+    "Lembrete do Cloba: amanhã é dia de {nome}{quando}. Dorme direito 😴",
+    "Spoiler de amanhã: {nome}{quando}. Se organiza, parça 🗓️",
+  ],
+  soon: [
+    "{nome} daqui 1 h. Bora se arrumar 🏃",
+    "Falta 1 h pra {nome}. Já separou o que precisa? 👀",
+    "Uma horinha pra {nome}. Nunca foi sorte, foi planejamento 🙏",
+  ],
+  today: [
+    "Hoje é dia de {nome}! 🎉",
+    "Bom dia! Hoje tem {nome}. Planeja o resto em volta 😎",
+    "Chegou o dia: {nome}. Bora 👊",
+  ],
+};
 
 const ROUTINE_DONE_LINES = {
   easy: ["Café com leite, mas conta ☕", "Fácil, mas feito. Respeito.", "Mais uma pra conta, sem suar."],
@@ -127,7 +159,45 @@ function buildRoutineAlerts(data, now = Date.now()) {
       });
     });
   }
+  routineEventAlerts(db, now, done).forEach((alert) => alerts.push(alert));
   return alerts.sort((a, b) => a.at - b.at).slice(0, ROUTINE_ALERT_MAX);
+}
+
+// Avisos dos eventos do Calendar (v1.49) dentro da mesma janela de dias
+function routineEventAlerts(db, now, done) {
+  if (typeof routineEventsOf !== "function") return [];
+  const limit = now + (ROUTINE_ALERT_DAYS + 1) * 86400000;
+  const alerts = [];
+  routineEventsOf(db).forEach((event) => {
+    if (event.remind === false || done.has(`${event.id}|${event.date}`)) return;
+    const allDay = routineEventIsAllDay(event);
+    const start = allDay ? null : new Date(`${event.date}T${event.time}:00`).getTime();
+    const fill = (text) => text
+      .replace(/\{nome\}/g, `${event.emoji || "📅"} ${event.name}`)
+      .replace(/\{quando\}/g, allDay ? "" : ` às ${routineClock(routineTimeToMin(event.time))}`);
+    const note = event.note ? ` 📝 ${event.note}` : "";
+    const steps = [
+      { level: 0, at: new Date(`${routineAddDays(event.date, -1)}T${ROUTINE_EVENT_REMIND_EVE}:00`).getTime(), title: `📅 Amanhã: ${event.emoji || "📅"} ${event.name}`, lines: ROUTINE_EVENT_LINES.eve },
+      allDay
+        ? { level: 1, at: new Date(`${event.date}T${ROUTINE_EVENT_REMIND_MORNING}:00`).getTime(), title: `📅 Hoje: ${event.emoji || "📅"} ${event.name}`, lines: ROUTINE_EVENT_LINES.today }
+        : { level: 1, at: start - ROUTINE_EVENT_REMIND_BEFORE * 60000, title: `⏰ Daqui 1 h: ${event.emoji || "📅"} ${event.name}`, lines: ROUTINE_EVENT_LINES.soon },
+    ];
+    steps.forEach((step) => {
+      if (step.at <= now || step.at > limit) return;
+      // Evento marcado muito em cima: a véspera não pode vir depois do aviso do dia
+      if (step.level === 0 && start !== null && step.at >= start - ROUTINE_EVENT_REMIND_BEFORE * 60000) return;
+      alerts.push({
+        key: `${event.id}|${event.date}|${step.level}`,
+        at: step.at,
+        title: step.title,
+        body: fill(routinePick(step.lines)) + note,
+        url: `${ROUTINE_AGENDA_URL}?view=day&date=${event.date}`,
+        taskId: String(event.id),
+        date: event.date,
+      });
+    });
+  });
+  return alerts;
 }
 
 // "app": entregue ao Android; "old-apk": APK sem suporte; "browser": só com a página aberta

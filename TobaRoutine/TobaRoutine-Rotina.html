@@ -80,78 +80,6 @@
     </div>
   </div>
 
-  <!-- Criar / editar tarefa -->
-  <div class="toba-modal" id="taskSheet" role="dialog" aria-modal="true" aria-labelledby="taskSheetTitle">
-    <div class="toba-sheet">
-      <div class="toba-sheet-header">
-        <h3 id="taskSheetTitle">➕ Nova tarefa</h3>
-        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
-      </div>
-      <form data-submit="saveTask">
-        <input type="hidden" id="taskId" />
-        <div class="rt-name-row">
-          <div class="form-group rt-emoji-group">
-            <label for="taskEmoji">Emoji</label>
-            <input type="text" id="taskEmoji" class="form-control rt-emoji-input" maxlength="8" autocomplete="off" />
-          </div>
-          <div class="form-group rt-name-group">
-            <label for="taskName">Tarefa</label>
-            <input type="text" id="taskName" class="form-control" maxlength="60" placeholder="Ex: Lavar o banheiro" autocomplete="off" />
-          </div>
-        </div>
-        <div class="rt-emoji-picks" id="taskEmojiPicks"></div>
-
-        <div class="form-group">
-          <label>Quando</label>
-          <div class="rt-segment" id="taskRecurrence">
-            <label><input type="radio" name="taskRec" value="daily" data-change="updateTaskForm" /><span>Todo dia</span></label>
-            <label><input type="radio" name="taskRec" value="weekly" data-change="updateTaskForm" /><span>Semana</span></label>
-            <label><input type="radio" name="taskRec" value="monthly" data-change="updateTaskForm" /><span>Mês</span></label>
-            <label><input type="radio" name="taskRec" value="situational" data-change="updateTaskForm" /><span>Quando der</span></label>
-          </div>
-        </div>
-        <div class="form-group" id="taskDaysGroup">
-          <label>Dias da semana</label>
-          <div class="toba-days" id="taskDays"></div>
-        </div>
-        <div class="form-group" id="taskMonthGroup">
-          <label for="taskMonthDay">Dia do mês</label>
-          <input type="number" id="taskMonthDay" class="form-control" min="1" max="31" inputmode="numeric" />
-          <span class="rt-help">Dia 31 em mês curto cai no último dia.</span>
-        </div>
-        <p class="rt-help" id="taskSituationalHelp">Sem agenda: aparece em "Quando acontecer" e você marca quando fizer (vale XP até 3× por dia).</p>
-
-        <div class="form-group" id="taskTimeGroup">
-          <label for="taskTime">Horário (opcional)</label>
-          <input type="time" id="taskTime" class="form-control" />
-        </div>
-        <label class="check-row" id="taskNagRow"><span>😈 Cobrar se eu não fizer (+30 min e +2 h)</span><input type="checkbox" id="taskNag" /></label>
-        <label class="check-row" id="taskCarryRow"><span>↪️ Se não fizer, passa pro dia seguinte</span><input type="checkbox" id="taskCarry" /></label>
-        <span class="rt-help rt-carry-help">Desligado, ela expira à meia-noite (ex: dormir na hora). Ligado, vira atrasada e vale metade do XP.</span>
-
-        <div class="form-group" id="taskMinutesGroup">
-          <label for="taskMinutes">⏱️ Quanto tempo leva</label>
-          <select id="taskMinutes" class="form-control"></select>
-          <span class="rt-help">Serve pro Toba saber quanto do dia ela ocupa na hora de encaixar uma task. Tarefa de horário (tipo dormir às 23h) vai de 0 min.</span>
-        </div>
-
-        <div class="form-group">
-          <label>Dificuldade</label>
-          <div class="rt-diff" id="taskDifficulty"></div>
-        </div>
-
-        <button type="button" class="btn btn-secondary rt-wide-btn" id="taskCalendarBtn" data-click="addTaskToCalendar" hidden>📅 Pôr na agenda do celular</button>
-
-        <div class="toba-sheet-footer">
-          <div class="btn-row">
-            <button type="button" class="btn btn-danger btn-grow-1" id="deleteTaskBtn" data-click="deleteTask" hidden>🗑️ Apagar</button>
-            <button type="submit" class="btn btn-primary btn-grow-2">Salvar</button>
-          </div>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <!-- Sugestões (1ª abertura e pela aba Tarefas) -->
   <div class="toba-modal" id="suggestSheet" role="dialog" aria-modal="true" aria-labelledby="suggestSheetTitle">
     <div class="toba-sheet">
@@ -175,6 +103,7 @@
   <script src="../assets/toba-player.js"></script>
   <script src="js/routine-alerts.js"></script>
   <script src="js/routine-plan.js"></script>
+  <script src="js/routine-task-sheet.js"></script>
   <script src="js/routine.js"></script>
   <script src="../assets/pwa-register.js"></script>
 </body>

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="icon" href="../icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="css/routine-base.css" />
+  <link rel="stylesheet" href="css/calendar.css" />
+  <title>Toba Routine ⚡ Calendar</title>
+</head>
+
+<body>
+  <main class="container">
+    <header class="toba-header">
+      <a class="toba-back" href="TobaRoutine-Index.html" data-label="Voltar para o hub do Routine" aria-label="Voltar para o hub do Routine">‹</a>
+      <a class="toba-titles" href="TobaRoutine-Index.html">
+        <span class="toba-app">⚡ Toba Routine</span>
+        <span class="toba-page">📅 Calendar</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-add-btn" data-click="newRoutineEvent">+ Evento</button>
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
+      </div>
+    </header>
+
+    <section class="card rt-hero" id="calHero"></section>
+
+    <section class="card cal-card">
+      <div class="cal-nav">
+        <button type="button" class="toba-icon-btn" data-click="calendarPrev" aria-label="Mês anterior">‹</button>
+        <strong class="cal-nav-label" id="calMonthLabel"></strong>
+        <button type="button" class="btn btn-secondary cal-today-btn" id="calTodayBtn" data-click="calendarToday" hidden>Hoje</button>
+        <button type="button" class="toba-icon-btn" data-click="calendarNext" aria-label="Próximo mês">›</button>
+      </div>
+      <div id="calGrid"></div>
+    </section>
+
+    <div id="calDay"></div>
+    <div id="calUpcoming"></div>
+    <div id="calPast"></div>
+  </main>
+
+  <!-- Itens só desta página dentro da ⚙️ -->
+  <div id="tobaSettingsExtra" hidden>
+    <div class="toba-settings-section">
+      <div class="toba-settings-label">🕰️ Seu dia</div>
+      <button type="button" class="toba-menu-btn" data-click="openDayPlan">
+        <span class="toba-menu-icon">🕰️</span>
+        <span class="toba-menu-text">
+          <span class="toba-menu-title">Meu dia fixo</span>
+          <span class="toba-menu-desc">Sono, trabalho, transporte e o que mais tomar tempo</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="../assets/toba-common.js"></script>
+  <script src="js/routine-metrics.js"></script>
+  <script src="js/routine-core.js"></script>
+  <script src="js/routine-alerts.js"></script>
+  <script src="js/routine-plan.js"></script>
+  <script src="js/routine-events.js"></script>
+  <script src="js/calendar.js"></script>
+  <script src="../assets/pwa-register.js"></script>
+</body>
+
+</html>

@@ -301,11 +301,37 @@
   display: none;
 }
 
+/* v1.49: linha 1 = categoria + botão; linha 2 = "R$ X em N compras" na largura toda */
+.expense-filter-bar:not([hidden]) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  row-gap: 2px;
+}
+
 .expense-filter-text {
+  display: contents;
+}
+
+.expense-filter-text b {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
   min-width: 0;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.expense-filter-text span {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  color: var(--text-2);
 }
 
 .expense-filter-bar .chip-btn {
+  grid-column: 2;
+  grid-row: 1;
   flex: 0 0 auto;
 }
 

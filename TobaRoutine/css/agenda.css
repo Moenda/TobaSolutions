@@ -8,6 +8,7 @@
   --ag-custom: var(--coral);
   --ag-routine: var(--gold-2);
   --ag-oneoff: var(--green);
+  --ag-event: var(--rt-event);
 }
 
 .ag-tabs {
@@ -90,6 +91,7 @@
 .ag-dot.is-work { background: var(--ag-work); }
 .ag-dot.is-custom { background: var(--ag-custom); }
 .ag-dot.is-routine { background: var(--ag-routine); }
+.ag-dot.is-event { background: var(--ag-event); }
 .ag-dot.is-free { background: rgba(63, 185, 80, 0.35); border: 1px dashed var(--green); }
 
 /* Faixa "sem horário" (Dia) */
@@ -122,6 +124,7 @@
 }
 
 .ag-untimed-item.is-oneoff { border-left-color: var(--ag-oneoff); }
+.ag-untimed-item.is-event { border-left-color: var(--ag-event); cursor: pointer; }
 .ag-untimed-item.is-commute { border-left-color: var(--ag-commute); }
 .ag-untimed-item.is-done { opacity: 0.55; }
 .ag-untimed-item.is-missed { border-left-style: dashed; border-left-color: var(--red); }
@@ -431,4 +434,34 @@ button.ag-col {
   :root {
     --ag-gutter: 30px;
   }
+}
+
+/* Eventos do Calendar (v1.49) */
+.ag-event.is-event {
+  --c: var(--ag-event);
+}
+
+.ag-event.is-tappable {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.ag-allday-cell .is-event {
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--ag-event) 25%, transparent);
+}
+
+/* Tarefa da rotina tocável na visão Dia (v1.49) */
+.ag-untimed-item.is-tappable {
+  cursor: pointer;
+}
+
+.ag-untimed-item.is-tappable:hover,
+.ag-event.is-tappable:hover {
+  filter: brightness(1.15);
+}
+
+#agendaTaskSheet .rt-check:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }

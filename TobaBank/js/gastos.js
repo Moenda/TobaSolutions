@@ -290,8 +290,11 @@ function renderExpenseFilterBar(filtered) {
   if (expenseCategoryFilter === null) return;
   const total = filtered.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
   bar.innerHTML = `
-    <span class="expense-filter-text">🔎 Só <b>${escapeHtml(expenseCategoryFilter)}</b> · ${filtered.length} ${filtered.length === 1 ? "lançamento" : "lançamentos"} · -${formatCurrency(total)}</span>
-    <button type="button" class="chip-btn" data-click="clearExpenseFilter">✕ Limpar</button>`;
+    <span class="expense-filter-text">
+      <b>${escapeHtml(expenseCategoryFilter)}</b>
+      <span>${formatCurrency(total)} em ${filtered.length} ${filtered.length === 1 ? "compra" : "compras"}</span>
+    </span>
+    <button type="button" class="chip-btn" data-click="clearExpenseFilter">✕ Limpar filtro</button>`;
 }
 
 function filterExpenseCategory(el) {

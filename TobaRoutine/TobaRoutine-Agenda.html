@@ -14,6 +14,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Toba" />
   <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="../assets/toba-player.css" />
   <link rel="stylesheet" href="css/routine-base.css" />
   <link rel="stylesheet" href="css/agenda.css" />
   <title>Toba Routine ⚡ Agenda</title>
@@ -28,6 +29,7 @@
         <span class="toba-page">📅 Agenda</span>
       </a>
       <div class="toba-header-actions">
+        <button type="button" class="toba-add-btn" id="agendaAddEvent" data-click="newRoutineEvent">+ Evento</button>
         <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
       </div>
     </header>
@@ -46,6 +48,7 @@
 
     <div id="agendaNotice"></div>
     <div id="agendaSummary"></div>
+    <div id="agendaAllDay"></div>
     <div id="agendaUntimed"></div>
     <div id="agendaGrid"></div>
   </main>
@@ -65,10 +68,30 @@
     </div>
   </div>
 
+  <!-- Tarefa da rotina tocada na Agenda (v1.49): concluir com a bolinha ou editar -->
+  <div class="toba-modal" id="agendaTaskSheet" role="dialog" aria-modal="true" aria-labelledby="agendaTaskTitle">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="agendaTaskTitle">✅ Tarefa</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="agendaTaskBody"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-secondary" data-click="agendaEditTask">✏️ Editar tarefa</button>
+      </div>
+    </div>
+  </div>
+
   <script src="../assets/toba-common.js"></script>
   <script src="js/routine-metrics.js"></script>
   <script src="js/routine-core.js"></script>
+  <script src="../TobaHealth/js/health-metrics.js"></script>
+  <script src="../TobaKitchen/js/kitchen-recipes.js"></script>
+  <script src="../assets/toba-player.js"></script>
+  <script src="js/routine-alerts.js"></script>
   <script src="js/routine-plan.js"></script>
+  <script src="js/routine-task-sheet.js"></script>
+  <script src="js/routine-events.js"></script>
   <script src="js/agenda.js"></script>
   <script src="../assets/pwa-register.js"></script>
 </body>
