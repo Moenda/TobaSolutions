@@ -590,7 +590,36 @@ function renderKitchenCard() {
   box.hidden = !parts.length;
 }
 
+// App Android (v1.47): compras lidas das notificações esperando aprovação
+// no Gastos. Só lê a fila do app e o TOBA_BANK_DB (tira o que já foi lançado).
+function renderPortalPending() {
+  const box = document.getElementById("portalPending");
+  if (!box) return;
+  let count = 0;
+  let total = 0;
+  if (TOBA_NATIVE && typeof TOBA_NATIVE.getPendingPurchases === "function") {
+    try {
+      const queue = JSON.parse(TOBA_NATIVE.getPendingPurchases() || "[]");
+      const bank = JSON.parse(localStorage.getItem("TOBA_BANK_DB") || "{}") || {};
+      const launched = new Set((Array.isArray(bank.transactions) ? bank.transactions : []).map((t) => String(t?.notifId || "")));
+      (Array.isArray(queue) ? queue : []).forEach((p) => {
+        const amount = Number(p?.amount) || 0;
+        if (!p?.id || amount <= 0 || launched.has(String(p.id))) return;
+        count += 1;
+        total += amount;
+      });
+    } catch (err) {
+      count = 0;
+    }
+  }
+  box.hidden = !count;
+  box.innerHTML = count
+    ? `<span class="portal-pending-icon">🤖<b>${count}</b></span><span class="portal-pending-text"><strong>${count === 1 ? "1 compra do cartão" : `${count} compras do cartão`} esperando aprovação</strong><span>${formatCurrency(total)} · toque pra lançar ou descartar no Gastos</span></span><span class="toba-hub-chevron">›</span>`
+    : "";
+}
+
 function renderPortalPanels() {
+  renderPortalPending();
   renderBankCard(getBankCardConfig());
   renderHealthCard(getHealthCardConfig());
   renderRoutineCard();

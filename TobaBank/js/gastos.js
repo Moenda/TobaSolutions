@@ -418,6 +418,8 @@ function openExpenseModal(id = null, presetDateIso = null) {
   const isInstCheckbox = document.getElementById("isInstallmentCheckbox");
   const instGroupEl = document.getElementById("installmentCheckboxGroup");
   const deleteBtn = document.getElementById("deleteExpenseModalBtn");
+  document.getElementById("expensePendingId").value = "";
+  document.getElementById("expensePendingHint").hidden = true;
 
   if (id) {
     const item = db.transactions.find((t) => String(t.id) === String(id));
@@ -476,6 +478,7 @@ function saveExpense() {
   const isInstallment = document.getElementById(
     "isInstallmentCheckbox",
   ).checked;
+  const pendingId = document.getElementById("expensePendingId").value;
 
   if (!desc || rawAmount <= 0 || !startDate) {
     showPageMessage("Faltou a descrição, o valor ou a data.", { title: "Quase lá", icon: "✍️" });
@@ -513,18 +516,21 @@ function saveExpense() {
         };
       }
     } else {
-      db.transactions.push({
+      const transaction = {
         id: Date.now().toString(),
         description: desc,
         amount: rawAmount,
         category,
         date: startDate,
-      });
+      };
+      if (pendingId) transaction.notifId = pendingId; // veio da notificação (não entra duas vezes)
+      db.transactions.push(transaction);
     }
   }
 
-  saveDatabase();
+  const saved = saveDatabase();
   closeTobaModal("expenseModal");
+  if (saved && pendingId && !id) finishPendingLaunch(pendingId); // só tira da fila depois de gravar
 }
 
 function openEditInstallmentModal(instId) {
@@ -917,9 +923,10 @@ function saveStartDate(input) {
 
 /* ---------------------------------------------------------------------
  * Gastos automáticos (só no app Android, TobaAndroid/): o app lê as
- * notificações de compra do banco/carteira e guarda numa fila. Ao abrir o
- * Gastos, a fila vira gasto à vista normal. Cada um leva `notifId` (opcional)
- * para nunca entrar duas vezes; só sai da fila depois de gravar no banco.
+ * notificações de compra do banco/carteira e guarda numa fila. Desde v1.47
+ * a fila vira "pendentes" pra você aprovar (até a v1.46 entrava sozinha).
+ * O gasto lançado leva `notifId` (opcional) para nunca entrar duas vezes;
+ * só sai da fila depois de gravar no banco ou de você descartar.
  * ------------------------------------------------------------------- */
 const AUTO_CATEGORY_HINTS = [
   [/uber|99 ?app|99pop|cabify|taxi|estacion|estapar|zona azul|sem parar|conectcar|veloe|pedagio/, "uber"],
@@ -949,58 +956,185 @@ function guessExpenseCategory(description) {
   return hint ? hint[1] : "outros";
 }
 
-function importNativePurchases() {
-  if (!TOBA_NATIVE || !isDbLoaded) return;
-  let pending;
+/* ---------------------------------------------------------------------
+ * Compras pendentes (desde v1.47): a fila do app Android NÃO entra mais
+ * sozinha no mês. Fica num card "🤖 N compras esperando você" e você lança
+ * (editando antes, se quiser) ou descarta. A fila do app é o único lugar
+ * onde a pendente mora (nada novo no TOBA_BANK_DB): só sai de lá com
+ * ackPurchases DEPOIS de gravar o gasto (com notifId) ou de você descartar.
+ * Funciona com o APK antigo (sem raw/old nos itens). O que já tem gasto com
+ * o mesmo notifId é tirado da fila sozinho (lançado antes, não repete).
+ * ------------------------------------------------------------------- */
+let nativePending = [];
+
+// Lê a fila do app, tira o lixo e o que já foi lançado; devolve as pendentes.
+function readNativePending() {
+  if (!TOBA_NATIVE || !isDbLoaded) return [];
+  let raw;
   try {
-    pending = JSON.parse(TOBA_NATIVE.getPendingPurchases() || "[]");
+    raw = JSON.parse(TOBA_NATIVE.getPendingPurchases() || "[]");
   } catch (err) {
     console.error("Fila de compras do app ilegível:", err);
-    return;
+    return [];
   }
-  if (!Array.isArray(pending) || !pending.length) return;
-
-  const handled = [];
-  const added = [];
-  const baseId = Date.now();
-  pending.forEach((p) => {
+  if (!Array.isArray(raw)) return [];
+  const drop = [];
+  const list = [];
+  raw.forEach((p) => {
     const id = String(p?.id || "");
     const amount = Math.round((Number(p?.amount) || 0) * 100) / 100;
-    if (!id || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(String(p.date))) {
-      if (id) handled.push(id); // lixo: tira da fila
+    if (!id) return;
+    if (amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(String(p.date))) {
+      drop.push(id); // lixo
       return;
     }
     if (db.transactions.some((t) => String(t.notifId) === id)) {
-      handled.push(id); // já lançado numa abertura anterior
+      drop.push(id); // já lançado numa abertura anterior
       return;
     }
-    const description = String(p.desc || "Compra no cartão").slice(0, 60);
-    const transaction = {
-      id: (baseId + added.length).toString(),
-      description,
-      amount,
-      category: guessExpenseCategory(description),
-      date: p.date,
-      notifId: id,
-    };
-    db.transactions.push(transaction);
-    added.push(transaction);
-    handled.push(id);
+    const desc = String(p.desc || "Compra no cartão").slice(0, 60);
+    list.push({
+      id, amount, desc, date: p.date,
+      app: String(p.app || ""),
+      raw: String(p.raw || ""),
+      old: p.old === true,
+      category: guessExpenseCategory(desc),
+    });
   });
+  if (drop.length) TOBA_NATIVE.ackPurchases(JSON.stringify(drop));
+  return list.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+}
 
-  if (added.length && !saveDatabase({ silent: true })) return; // fica na fila para a próxima
-  if (handled.length) TOBA_NATIVE.ackPurchases(JSON.stringify(handled));
-  if (!added.length) return;
+// Mesmo valor + mesma loja + mesmo dia já lançado (ou em outra pendente): avisa, não bloqueia.
+function findPendingTwin(p) {
+  const same = (amount, desc, date) => Math.abs(amount - p.amount) < 0.005 && date === p.date && plainText(desc) === plainText(p.desc);
+  if (db.transactions.some((t) => same(Number(t.amount) || 0, t.description, t.date))) return "já tem um gasto igual nesse dia";
+  if (nativePending.some((o) => o.id !== p.id && same(o.amount, o.desc, o.date))) return "tem outra pendente igual";
+  return "";
+}
 
-  const lines = added.map((t) => `• ${t.description} · ${formatCurrency(t.amount)} (${getCleanCategory(t.category)})`).join("\n");
-  showPageMessage(
-    `${lines}\n\nLidos das notificações do cartão. Categoria errada ou não era gasto? Toque nele no histórico para editar ou apagar.`,
-    { title: added.length === 1 ? "1 gasto lançado" : `${added.length} gastos lançados`, icon: "🤖" },
-  );
+function refreshPendingPurchases() {
+  nativePending = readNativePending();
+  renderPendingCard();
+  if (document.getElementById("pendingModal")?.classList.contains("active")) renderPendingList();
+}
+
+function renderPendingCard() {
+  const box = document.getElementById("pendingPurchases");
+  if (!box) return;
+  const n = nativePending.length;
+  if (!n) {
+    box.innerHTML = "";
+    return;
+  }
+  const total = nativePending.reduce((sum, p) => sum + p.amount, 0);
+  box.innerHTML = `
+    <button type="button" class="pending-card" data-click="openPendingPurchases">
+      <span class="pending-card-icon">🤖<span class="pending-badge">${n}</span></span>
+      <span class="pending-card-text">
+        <strong>${n === 1 ? "1 compra do cartão esperando você" : `${n} compras do cartão esperando você`}</strong>
+        <span>${formatCurrency(total)} no total · toque pra lançar ou descartar</span>
+      </span>
+      <span class="toba-hub-chevron">›</span>
+    </button>`;
+}
+
+function renderPendingList() {
+  const list = document.getElementById("pendingList");
+  const n = nativePending.length;
+  document.getElementById("pendingModalTitle").textContent = n ? `🤖 ${n} ${n === 1 ? "compra" : "compras"} pra aprovar` : "🤖 Compras pra aprovar";
+  document.getElementById("pendingFooter").hidden = n < 2;
+  document.getElementById("pendingAllBtn").textContent = `✅ Lançar todas (${formatCurrency(nativePending.reduce((s, p) => s + p.amount, 0))})`;
+  if (!n) {
+    list.innerHTML = tobaEmpty("🧘", "Nada esperando", "Todas as compras lidas já foram lançadas ou descartadas.", { compact: true });
+    return;
+  }
+  list.innerHTML = nativePending.map((p) => {
+    const twin = findPendingTwin(p);
+    return `
+      <div class="pending-item">
+        <div class="pending-head">
+          <strong>${formatCurrency(p.amount)}</strong>
+          <span>${isoToBrDate(p.date)}${p.app ? ` · ${escapeHtml(p.app)}` : ""}</span>
+        </div>
+        <div class="pending-desc">${escapeHtml(p.desc)} · <span class="pending-cat">${escapeHtml(getCleanCategory(p.category))}</span></div>
+        ${p.old ? '<div class="pending-flag">⏳ Notificação antiga reenviada pelo app. Confere se não é repetida.</div>' : ""}
+        ${twin ? `<div class="pending-flag">⚠️ Parece repetida: ${twin}.</div>` : ""}
+        ${p.raw ? `<details class="pending-raw"><summary>Texto da notificação</summary><p>${escapeHtml(p.raw)}</p></details>` : ""}
+        <div class="pending-actions">
+          <button type="button" class="btn btn-secondary" data-click="discardPending" data-id="${escapeHtml(p.id)}">❌ Descartar</button>
+          <button type="button" class="btn btn-primary" data-click="launchPending" data-id="${escapeHtml(p.id)}">✅ Lançar</button>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function openPendingPurchases() {
+  refreshPendingPurchases();
+  renderPendingList();
+  openTobaModal("pendingModal");
+}
+
+// Abre o formulário de gasto já preenchido; o salvar (saveExpense) grava com notifId e tira da fila.
+function launchPending(el) {
+  const p = nativePending.find((item) => item.id === el.dataset.id);
+  if (!p) return;
+  closeTobaModal("pendingModal");
+  openExpenseModal(null, p.date);
+  document.getElementById("expenseModalTitle").innerText = "🤖 Lançar compra do cartão";
+  document.getElementById("expenseDescInput").value = p.desc;
+  document.getElementById("expenseAmountInput").value = formatMoneyInput(p.amount);
+  setCategoryField("expenseCategorySelect", p.category);
+  document.getElementById("expensePendingId").value = p.id;
+  document.getElementById("installmentCheckboxGroup").hidden = true;
+  const hint = document.getElementById("expensePendingHint");
+  hint.textContent = `Lida da notificação${p.app ? ` do ${p.app}` : ""}. Confere e salva; dá pra mudar tudo.`;
+  hint.hidden = false;
+}
+
+// Chamado pelo saveExpense quando o gasto veio de uma pendente.
+function finishPendingLaunch(pendingId) {
+  TOBA_NATIVE?.ackPurchases(JSON.stringify([pendingId]));
+  refreshPendingPurchases();
+  if (nativePending.length) setTimeout(() => openPendingPurchases(), 300);
+}
+
+async function discardPending(el) {
+  const p = nativePending.find((item) => item.id === el.dataset.id);
+  if (!p || !TOBA_NATIVE) return;
+  const ok = await showPageMessage(`${formatCurrency(p.amount)} · ${p.desc} (${isoToBrDate(p.date)}) sai da lista e não volta mais.`, {
+    title: "Descartar essa?", icon: "❌", confirm: true, confirmLabel: "Descartar",
+  });
+  if (!ok) return;
+  TOBA_NATIVE.ackPurchases(JSON.stringify([p.id]));
+  refreshPendingPurchases();
+  tobaToast("❌ Descartada");
+  if (nativePending.length) openPendingPurchases();
+}
+
+async function launchAllPending() {
+  if (!nativePending.length) return;
+  const items = [...nativePending];
+  const total = items.reduce((s, p) => s + p.amount, 0);
+  const ok = await showPageMessage(`${items.length} compras (${formatCurrency(total)}) entram no mês com a categoria sugerida. Dá pra editar cada uma depois no histórico.`, {
+    title: "Lançar todas?", icon: "✅", confirm: true, confirmLabel: "Lançar todas",
+  });
+  if (!ok) return;
+  const baseId = Date.now();
+  const added = items.map((p, i) => ({ id: (baseId + i).toString(), description: p.desc, amount: p.amount, category: p.category, date: p.date, notifId: p.id }));
+  db.transactions.push(...added);
+  if (!saveDatabase({ silent: true })) {
+    db.transactions = db.transactions.filter((t) => !added.includes(t));
+    return; // fica tudo na fila
+  }
+  TOBA_NATIVE.ackPurchases(JSON.stringify(items.map((p) => p.id)));
+  closeTobaModal("pendingModal");
+  refreshPendingPurchases();
+  tobaToast(`✅ ${items.length} gastos lançados`);
 }
 
 const PURCHASE_LOG_STATUS = {
-  detectada: "✅ Lançada",
+  detectada: "📥 Foi pras pendentes",
   ignorada: "🙈 Ignorada",
   repetida: "♻️ Repetida",
   fora: "🚫 App fora da lista",
@@ -1059,6 +1193,31 @@ function openPurchaseLog() {
   openTobaModal("purchaseLogModal");
 }
 
+// Texto puro do log, pra colar no WhatsApp / mandar pro suporte
+async function copyPurchaseLog() {
+  let log = [];
+  try {
+    log = JSON.parse(TOBA_NATIVE?.getPurchaseLog() || "[]");
+  } catch (err) {
+    log = [];
+  }
+  const fmt = (ms) => {
+    const d = new Date(Number(ms) || 0);
+    return `${isoToBrDate(toIsoDate(d))} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  };
+  const text = log.map((e) => [
+    `[${fmt(e.at)}]${e.when && Math.abs(Number(e.when) - Number(e.at)) > 60000 ? ` (compra: ${fmt(e.when)})` : ""} ${e.app || e.pkg} (${e.pkg})`,
+    `  ${e.raw}`,
+    `  → ${e.status}${e.reason ? ` · ${e.reason}` : ""}${e.amount ? ` · R$ ${e.amount} · ${e.desc || ""}` : ""}`,
+  ].join("\n")).join("\n\n") || "(log vazio)";
+  try {
+    await navigator.clipboard.writeText(text);
+    tobaToast("📋 Copiado! Cola onde quiser");
+  } catch (err) {
+    showPageMessage(text, { title: "Copie o texto abaixo", icon: "📋" });
+  }
+}
+
 function allowNativeApp(el) {
   if (!TOBA_NATIVE) return;
   TOBA_NATIVE.allowApp(el.dataset.pkg);
@@ -1067,7 +1226,7 @@ function allowNativeApp(el) {
 
 // O app chama ao voltar para a frente (compras feitas com o app fechado).
 window.onTobaAppResume = () => {
-  importNativePurchases();
+  refreshPendingPurchases();
   refreshNativeAutoSection();
 };
 
@@ -1075,7 +1234,12 @@ tobaActions({
   openNativeAccess,
   openNativeRestricted: () => TOBA_NATIVE && TOBA_NATIVE.openAppInfo(),
   openPurchaseLog,
+  copyPurchaseLog,
   allowNativeApp,
+  openPendingPurchases,
+  launchPending,
+  discardPending,
+  launchAllPending,
   openExpenseReminder: () =>
     tobaOpenReminder({
       id: "gastos",
@@ -1116,5 +1280,10 @@ document.addEventListener("DOMContentLoaded", () => {
     openExpenseModal();
     window.history.replaceState({}, document.title, window.location.pathname);
   }
-  importNativePurchases();
+  refreshPendingPurchases();
+  // Tocou na notificação "💸 R$ X" do app: abre direto as pendentes
+  if (urlParams.get("pending") === "1") {
+    window.history.replaceState({}, document.title, window.location.pathname);
+    if (nativePending.length) openPendingPurchases();
+  }
 });

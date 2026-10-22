@@ -114,6 +114,7 @@ const PLAYER_XP_LINES = [
 const PLAYER_ACHIEVEMENT_CATS = [
   { id: "treinos", name: "🏋️ Treinos" },
   { id: "peso", name: "💪 Peso levantado" },
+  { id: "multidao", name: "🐘 Manadas & multidões" },
   { id: "distancia", name: "🌍 Distância" },
   { id: "energia", name: "🔥 Energia" },
   { id: "saitama", name: "👊 Saitama" },
@@ -130,6 +131,65 @@ const KITCHEN_BOOK_SIZE = typeof KITCHEN_RECIPES !== "undefined" ? KITCHEN_RECIP
 
 const PLAYER_SAITAMA_GOAL = 100 * 365 * 3 * 3; // 100 de cada por dia durante 3 anos
 
+// Nível das conquistas de peso, por id (ver buildPlayerAchievements).
+const PLAYER_LIFT_TIERS = {
+  "lift-gato": "bronze", "lift-caramelo": "bronze", "lift-pessoa": "bronze", "lift-moto": "bronze",
+  "lift-leao": "prata", "lift-piano": "prata", "lift-fusca": "prata", "lift-hipopotamo": "prata", "lift-elefante": "prata",
+  "lift-onibus": "ouro", "lift-boeing": "ouro", "lift-liberdade": "ouro", "lift-cristo": "ouro",
+  "lift-eiffel": "lenda", "lift-titanic": "lenda",
+  // v1.47
+  "lift-tanque": "prata", "lift-rodotrem": "prata", "lift-baleia": "prata",
+  "lift-a380": "ouro", "lift-747-lotado": "ouro", "lift-falcon9": "ouro", "lift-trem-bala": "ouro",
+  "lift-belaz": "ouro", "lift-longa-marcha": "ouro", "lift-baalbek": "ouro",
+};
+
+/* Manadas & multidões (v1.47): coleções de coisa pesada. Mesmo número do
+ * Hall (kg levantado da vida toda), com o peso de cada item tirado da escala
+ * WORKOUT_LIFT_EQUIVALENTS (boi e torcedor têm peso próprio aqui).
+ * XP = metade do nível (é o mesmo número que já dá os marcos sozinhos).
+ * mystery: bloqueada aparece como ??? (com dica e barra). Ids gravados no
+ * seen do perfil: nunca troque. */
+const PLAYER_CROWD_XP = { bronze: 25, prata: 75, ouro: 200, lenda: 500 };
+const PLAYER_BOI_KG = 500; // boi gordo vivo, ~500 kg
+const PLAYER_TORCEDOR_KG = 75;
+const PLAYER_MARACANA = 78838; // lugares do Maracanã
+
+function buildPlayerCrowdAchievements() {
+  const kg = (id) => WORKOUT_LIFT_EQUIVALENTS.find((item) => item.id === id)?.size || 0;
+  const fmt = (value) => (value >= 1000 ? `${Number((value / 1000).toFixed(1)).toLocaleString("pt-BR")} t` : `${value.toLocaleString("pt-BR")} kg`);
+  const arca = 2 * ["lift-gato", "lift-caramelo", "lift-leao", "lift-hipopotamo", "lift-elefante", "lift-baleia"].reduce((sum, id) => sum + kg(id), 0);
+  const items = [
+    { id: "gr-gatos", tier: "bronze", icon: "🐈", name: "Gateiro profissional", count: 50, each: kg("lift-gato"), unit: "gatos", desc: "Uma colônia inteira no colo, e nenhum pediu.", hint: "Miau em escala industrial." },
+    { id: "gr-caramelos", tier: "bronze", icon: "🐕", name: "Abrigo de caramelos", count: 100, each: kg("lift-caramelo"), unit: "caramelos", desc: "Adotou todos de uma vez. No supino.", hint: "Patrimônio nacional, no atacado." },
+    { id: "gr-leoes", tier: "bronze", icon: "🦁", name: "Bando do Rei Leão", count: 20, each: kg("lift-leao"), unit: "leões", desc: "Hakuna matata pra lombar.", hint: "Juba, rugido e uma savana inteira." },
+    { id: "gr-metro", tier: "prata", icon: "🚇", name: "Vagão do metrô às 18h", count: 300, each: kg("lift-pessoa"), unit: "pessoas", desc: "Lotado, abafado e você ainda segurou a porta.", hint: "Hora do rush em São Paulo." },
+    { id: "gr-fuscas", tier: "prata", icon: "🚗", name: "Estacionamento de Fuscas", count: 50, each: kg("lift-fusca"), unit: "Fuscas", desc: "Um encontro de antigos inteiro, sem manobrista.", hint: "Um pátio cheio de besouro." },
+    { id: "gr-elefantes", tier: "prata", icon: "🐘", name: "Manada de elefantes", count: 10, each: kg("lift-elefante"), unit: "elefantes", desc: "A manada inteira, com tromba e tudo.", hint: "Um monte de bicho de tromba.", title: "🐘 Dono da Manada" },
+    { id: "gr-boiada", tier: "ouro", icon: "🐂", name: "Passando a boiada", count: 300, each: PLAYER_BOI_KG, unit: "bois", desc: "Uma boiada inteira. O peão pediu demissão.", hint: "Muuuuita coisa passando." },
+    { id: "gr-arca", tier: "ouro", icon: "🛶", name: "Arca de Noé", goalKg: arca, conta: `2 de cada bicho do Hall: gato, caramelo, leão, hipopótamo, elefante e baleia-azul = ${fmt(arca)}`, desc: "Dois de cada. O dilúvio que espere.", hint: "Dois de cada bicho, rumo ao barco.", title: "🛶 Capitão Noé" },
+    { id: "gr-baleias", tier: "ouro", icon: "🐳", name: "Família de baleias", count: 5, each: kg("lift-baleia"), unit: "baleias-azuis", desc: "Pai, mãe e três filhotes. Natação nunca mais.", hint: "Uma família do maior bicho do mundo." },
+    { id: "gr-onibus", tier: "ouro", icon: "🚌", name: "Garagem de ônibus", count: 50, each: kg("lift-onibus"), unit: "ônibus", desc: "A frota toda. O motorista ficou a pé.", hint: "Uma garagem inteira de busão." },
+    { id: "gr-desfile", tier: "ouro", icon: "🪖", name: "Desfile de 7 de Setembro", count: 12, each: kg("lift-tanque"), unit: "tanques Leopard 2", desc: "Os blindados do desfile, em fila indiana, nas suas costas.", hint: "Feriado, Esplanada e esteira de blindado.", title: "🪖 General do Supino" },
+    { id: "gr-maracana", tier: "lenda", icon: "🏟️", name: "Maracanã lotado", count: PLAYER_MARACANA, each: PLAYER_TORCEDOR_KG, unit: "torcedores", desc: "O estádio inteiro, com a torcida cantando.", hint: "Uma final inteira de arquibancada.", title: "🏟️ Levanta Arquibancada" },
+    { id: "gr-aeroporto", tier: "lenda", icon: "✈️", name: "Pátio de aeroporto", count: 20, each: kg("lift-747-lotado"), unit: "Boeings 747 lotados", desc: "O pátio inteiro de jumbos prontos pra decolar.", hint: "Um pátio cheio de jumbo lotado.", title: "✈️ Controlador de Pátio" },
+  ];
+  return items.map((item) => {
+    const goal = item.goalKg || item.count * item.each;
+    const conta = item.conta || `${item.count.toLocaleString("pt-BR")} ${item.unit} × ${fmt(item.each)} = ${fmt(goal)}`;
+    return {
+      id: item.id, cat: "multidao", tier: item.tier, icon: item.icon, name: item.name, mystery: true,
+      desc: `${item.desc} (${conta})`,
+      hint: `${item.hint} Some ${fmt(goal)} levantados.`,
+      metric: (s) => s.liftKg, goal, xp: PLAYER_CROWD_XP[item.tier], title: item.title,
+    };
+  });
+}
+
+// Bloqueada e escondida (lendária ou secreta): mostra ??? no lugar do nome.
+function isPlayerAchievementHidden(a, state) {
+  return (a.tier === "lenda" || a.mystery) && !state.unlockedIds.has(a.id);
+}
+
 function buildPlayerAchievements() {
   const list = [
     { id: "tr-1", cat: "treinos", tier: "bronze", icon: "🐣", name: "Primeiro passo", desc: "Registrou o primeiro treino. O sofá sentiu sua falta.", hint: "Registre 1 treino.", metric: (s) => s.workouts, goal: 1 },
@@ -141,16 +201,18 @@ function buildPlayerAchievements() {
     { id: "tr-tipos", cat: "treinos", tier: "prata", icon: "🎭", name: "Multiatleta", desc: "Fez 4 tipos diferentes de treino. Versátil igual canivete suíço.", hint: "Faça 4 tipos diferentes de treino.", metric: (s) => s.types, goal: 4 },
     { id: "tr-fds", cat: "treinos", tier: "bronze", icon: "📅", name: "Guerreiro de fim de semana", desc: "Treinou no sábado E no domingo. O churrasco esperou.", hint: "Treine no sábado e no domingo da mesma semana.", metric: (s) => s.weekend, goal: 1 },
   ];
-  const liftTier = (i) => (i < 4 ? "bronze" : i < 9 ? "prata" : i < 13 ? "ouro" : "lenda");
+  // Nível de cada marco fixado por id (desde v1.47): antes era pela posição na
+  // lista, e marco novo no meio mudaria o nível (e o XP) das conquistas antigas.
   const liftTitles = { "lift-cristo": "🙌 Abraçador de Cristo", "lift-titanic": "🚢 Rebocador de Titanic" };
-  const liftArticles = { "lift-pessoa": "uma", "lift-moto": "uma", "lift-liberdade": "a", "lift-cristo": "o", "lift-eiffel": "a", "lift-titanic": "o" };
-  WORKOUT_LIFT_EQUIVALENTS.forEach((item, i) => list.push({
-    id: item.id, cat: "peso", tier: liftTier(i), icon: item.icon,
+  const liftArticles = { "lift-pessoa": "uma", "lift-moto": "uma", "lift-liberdade": "a", "lift-cristo": "o", "lift-eiffel": "a", "lift-titanic": "o", "lift-baleia": "uma", "lift-baalbek": "a" };
+  WORKOUT_LIFT_EQUIVALENTS.forEach((item) => list.push({
+    id: item.id, cat: "peso", tier: PLAYER_LIFT_TIERS[item.id] || "ouro", icon: item.icon,
     name: `Levantou ${liftArticles[item.id] || "um"} ${item.one}`,
     desc: `${item.note} (${Number(item.size).toLocaleString("pt-BR")} kg no total)`,
     hint: `Some ${Number(item.size).toLocaleString("pt-BR")} kg levantados.`,
     metric: (s) => s.liftKg, goal: item.size, title: liftTitles[item.id],
   }));
+  list.push(...buildPlayerCrowdAchievements());
   const kmTier = (i) => (i < 3 ? "bronze" : i < 6 ? "prata" : i < 9 ? "ouro" : "lenda");
   WORKOUT_DISTANCE_DESTINATIONS.forEach((item, i) => list.push({
     id: item.id, cat: "distancia", tier: kmTier(i), icon: item.icon, name: item.label,
@@ -231,6 +293,8 @@ const PLAYER_AVATARS = [
   { id: "caramelo", icon: "🐕", achievement: "lift-caramelo" },
   { id: "leao", icon: "🦁", achievement: "lift-leao" },
   { id: "elefante", icon: "🐘", achievement: "lift-elefante" },
+  { id: "baleia", icon: "🐋", achievement: "lift-baleia" },
+  { id: "boi", icon: "🐂", achievement: "gr-boiada" },
   { id: "planeta", icon: "🌍", achievement: "km-mundo" },
   { id: "vulcao", icon: "🌋", achievement: "sk-30" },
   { id: "careca", icon: "🦲", achievement: "st-completo" },
@@ -243,6 +307,7 @@ const PLAYER_FRAMES = [
   { id: "diamante", name: "Diamante", level: 40 },
   { id: "chamas", name: "Em chamas", level: 50 },
   { id: "brasa", name: "Brasa", achievement: "sk-100" },
+  { id: "arquibancada", name: "Arquibancada", achievement: "gr-maracana" },
 ];
 const PLAYER_COLORS = [
   { id: "azul", name: "Azul", color: "#58a6ff", level: 1 },
@@ -279,7 +344,7 @@ function getPlayerTitles(state) {
   const fromLevels = PLAYER_LEVEL_TITLES.map((t) => ({ id: `nivel-${t.min}`, icon: t.icon, name: t.name, need: `Nível ${t.min}`, unlocked: state.level >= t.min }));
   const fromAchievements = PLAYER_ACHIEVEMENTS.filter((a) => a.title).map((a) => {
     const [icon, ...rest] = a.title.split(" ");
-    return { id: `conq-${a.id}`, icon, name: rest.join(" "), need: a.tier === "lenda" && !state.unlockedIds.has(a.id) ? "Conquista ???" : `Conquista: ${a.name}`, unlocked: state.unlockedIds.has(a.id) };
+    return { id: `conq-${a.id}`, icon, name: rest.join(" "), need: isPlayerAchievementHidden(a, state) ? "Conquista ???" : `Conquista: ${a.name}`, unlocked: state.unlockedIds.has(a.id) };
   });
   return [...fromLevels, ...fromAchievements];
 }
@@ -698,7 +763,7 @@ function computePlayer(options = {}) {
   const achievements = PLAYER_ACHIEVEMENTS.map((a) => {
     const value = a.metric(stats);
     const date = unlockedAt[a.id] || "";
-    return { ...a, value, date, unlocked: Boolean(date), progress: Math.min(1, a.goal ? value / a.goal : 0), xp: PLAYER_TIERS[a.tier].xp };
+    return { ...a, value, date, unlocked: Boolean(date), progress: Math.min(1, a.goal ? value / a.goal : 0), xp: a.xp ?? PLAYER_TIERS[a.tier].xp };
   });
   achievements.filter((a) => a.unlocked).forEach((a) => {
     events.push({ date: a.date, kind: "achievement", xp: a.xp, icon: a.icon, label: `Conquista: ${a.name}` });

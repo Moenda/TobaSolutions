@@ -37,7 +37,7 @@ final class TobaBridge {
 
     @JavascriptInterface
     public int version() {
-        return 2; // 2 = APK 1.2 (avisos do Toba Routine)
+        return 3; // 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
     }
 
     /* ---------------- Notificações do Toba ---------------- */
@@ -215,6 +215,15 @@ final class TobaBridge {
         } catch (JSONException ignored) {
             // nada a tirar
         }
+    }
+
+    // Atrasada "deixada pra lá" no site (v1.47 / APK 1.3): tira da barra a
+    // notificação já mostrada dessa ocorrência. As cobranças futuras já saem
+    // pelo setTaskAlerts (o site manda a lista sem ela).
+    @JavascriptInterface
+    public void clearTaskNotice(String taskId, String date) {
+        if (taskId == null || date == null) return;
+        Notifier.cancel(app, Notifier.taskNotifId(taskId, date));
     }
 
     /* ---------------- Arquivos (backup) ---------------- */

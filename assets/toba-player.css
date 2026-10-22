@@ -94,6 +94,14 @@
   background: linear-gradient(135deg, #ff7b72, #f85149, #9e2a2a);
   animation: tp-pulse 1.6s ease-in-out infinite;
 }
+/* Arquibancada (v1.47, conquista Maracanã lotado): faixas verde e amarelo girando */
+.tp-frame-arquibancada::before {
+  background: repeating-conic-gradient(from 0deg, #2ea043 0 30deg, #e3b341 30deg 60deg);
+  animation: tp-spin 8s linear infinite;
+}
+.tp-frame-arquibancada {
+  box-shadow: 0 0 0 3px var(--bg), 0 0 16px 2px rgba(46, 160, 67, 0.4);
+}
 
 @keyframes tp-spin {
   to { transform: rotate(360deg); }
@@ -527,6 +535,7 @@
   .tp-frame-diamante::before,
   .tp-frame-chamas::before,
   .tp-frame-brasa::before,
+  .tp-frame-arquibancada::before,
   .tp-strip-fire.is-on {
     animation: none;
   }

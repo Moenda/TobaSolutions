@@ -31,6 +31,10 @@
  *   tasks[].minutes? (desde v1.42): quanto tempo a tarefa ocupa do dia;
  *   sem ele vale o chute pela dificuldade (ROUTINE_DEFAULT_MINUTES).
  *   minutes: 0 (desde v1.45) = não ocupa tempo do dia (ex: dormir às 23h).
+ *   skipped: [ { id: "k-<ts>-<rand4>", taskId, date: "AAAA-MM-DD", at: ms } ]
+ *   (desde v1.47): atrasadas que você deslizou pra "deixar pra lá". Só tira a
+ *   ocorrência das atrasadas (não dá XP, quebra o streak igual a não fazer);
+ *   a tarefa continua caindo nos próximos dias. Ausente = [].
  * - O XP sai do log (routine-metrics.js); nada de XP gravado aqui.
  * - Carregue DEPOIS de routine-metrics.js (usa ROUTINE_DIFFICULTIES).
  * ===================================================================== */
@@ -41,7 +45,7 @@ const ROUTINE_BACKUP_KEY = "TOBA_ROUTINE_DB_AUTO_BACKUP";
 let isRoutineDbLoaded = false;
 
 function createEmptyRoutineDb() {
-  return { version: 1, seeded: false, tasks: [], log: [], dayPlan: { configured: false, breathing: 90, blocks: routineDefaultBlocks() }, oneoffs: [] };
+  return { version: 1, seeded: false, tasks: [], log: [], dayPlan: { configured: false, breathing: 90, blocks: routineDefaultBlocks() }, oneoffs: [], skipped: [] };
 }
 
 // "Migração": todo campo novo ganha default AQUI (load e import passam por ela).
@@ -73,6 +77,18 @@ function normalizeRoutineDb(db) {
   normalizeRoutineDayPlan(db);
   normalizeRoutineOneoffs(db);
   db.log = Array.isArray(db.log) ? db.log.filter((e) => e && typeof e === "object" && e.taskId && routineIsIso(e.date)) : [];
+  // desde v1.47: ocorrências atrasadas descartadas (uma por taskId|data)
+  const skippedSeen = new Set();
+  db.skipped = (Array.isArray(db.skipped) ? db.skipped : []).filter((k) => {
+    if (!k || typeof k !== "object" || !k.taskId || !routineIsIso(k.date)) return false;
+    k.taskId = String(k.taskId);
+    const key = `${k.taskId}|${k.date}`;
+    if (skippedSeen.has(key)) return false;
+    skippedSeen.add(key);
+    if (!k.id) k.id = `k-${k.date}-${Math.random().toString(36).slice(2, 6)}`;
+    k.at = Number(k.at) || new Date(`${k.date}T12:00:00`).getTime();
+    return true;
+  });
   db.log.forEach((entry) => {
     entry.taskId = String(entry.taskId);
     if (!entry.id) entry.id = `l-${entry.date}-${Math.random().toString(36).slice(2, 6)}`;

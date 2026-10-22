@@ -849,5 +849,71 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Uma rotina com horário (ex.: 19h30, 1 h) aparece no bloco certo; uma sem horário aparece no "📌 Sem horário". Marcar como feita na Rotina e voltar: fica com ✅.
 - ⚙️ → Meu dia fixo → mudar a hora de dormir → salvar: a agenda redesenha na hora.
 - Testar em 360px e 384px: nada passa da tela.
+- Rotina (com alguma atrasada): deslizar o card pra esquerda até o meio → ele sai e aparece "Desfazer". Tocar em Desfazer → volta. Deslizar só um pouquinho e soltar → volta pro lugar sem marcar. Rolar a tela passando o dedo em cima dos cards → rola normal.
+- Rotina → 📜 Histórico → o dia mostra 🗑️ na tarefa descartada → tocar → "Trazer de volta?" → ela volta pras atrasadas.
+- APK 1.3: tarefa com horário que já notificou ontem → no app, deslizar ela pra lá → a notificação some da barra e não vem mais cobrança dela.
+- APK (qualquer versão) → fazer uma compra no cartão → a notificação "💸" do Toba aparece → tocar → abre o Gastos com a lista de pendentes. Nada entrou no mês ainda. Lançar uma (mudando a categoria), descartar outra, conferir que o card some quando acabar.
+- Portal (no app): com pendente, aparece a faixa amarela; tocar abre a lista.
+- **Simular notificação repetida/antiga (APK 1.3):** com uma compra recente na barra do celular, reinicie o celular (o Samsung Wallet costuma postar de novo o que estava na barra). No 🧾 O que o Toba leu, a repetição aparece como "♻️ Repetida · Mesma notificação de novo" e não vira pendente. Pra ver uma "antiga": desligue a internet/modo avião, faça um pagamento por aproximação, espere 6 h e reconecte; ela chega nas pendentes com "⏳". Dá pra mandar o log pelo 📋 Copiar tudo.
 
 **Commit sugerido:** `v1.46 - Agenda do Toba Routine com visao de dia e semana em 24h, aberta pelo tempo livre do hub`
+
+---
+
+## v1.47 — Hall dos Heróis no Perfil, marcos novos, manadas, exercícios novos, atrasada deslizando pro lixo e compras do cartão pra aprovar
+
+**Arquivos novos/alterados:** `TobaHealth/js/hall-shared.js` (NOVO), `assets/perfil-hall.js` (NOVO), `TobaHealth/js/health-metrics.js`, `TobaHealth/js/hall.js`, `TobaHealth/js/treinos.js`, `TobaHealth/js/forca.js`, `TobaHealth/js/sessao.js`, `TobaHealth/TobaHealth-Treinos.html`, `TobaHealth/css/treinos.css`, `Toba-Perfil.html`, `assets/perfil.js`, `assets/perfil.css`, `assets/toba-player.js`, `assets/toba-player.css`, `assets/toba-common.css`, `sw.js`, `CLAUDE.md`, `TobaRoutine/js/routine.js`, `TobaRoutine/js/routine-core.js`, `TobaRoutine/js/routine-metrics.js`, `TobaRoutine/js/routine-alerts.js`, `TobaRoutine/js/agenda.js`, `TobaRoutine/css/routine-base.css`, `TobaBank/js/gastos.js`, `TobaBank/TobaBank-Gastos.html`, `TobaBank/css/gastos.css`, `index.html`, `assets/portal.js`, `assets/portal.css`, `TobaAndroid/app/src/main/java/br/com/toba/app/TobaBridge.java`, `TobaAndroid/app/src/main/java/br/com/toba/app/PurchaseListener.java`, `TobaAndroid/app/src/main/java/br/com/toba/app/TobaStore.java`, `TobaAndroid/app/src/main/java/br/com/toba/app/Notifier.java`, `TobaAndroid/app/build.gradle`
+
+**🏋️ Exercícios novos**
+1. **Cadeira adutora** (fecha as pernas, parte de dentro da coxa), **Leg press 90°** (o vertical) e **Leg press 180°** (o horizontal). Os três já entram certinho no mapa de calor e no peso levantado.
+2. **A adutora aparece em dois lugares:** em Glúteos, do lado da abdutora, e em Quadríceps. No mapa de calor ela pinta a coxa (frente e trás) e um pouco o glúteo. O boneco não ganhou peça nova, então "Corpo completo" e "Não pula perna" continuam iguais.
+3. **Leg press 90° e 180°:** você empurra o peso todo (no 45° a rampa alivia uns 30%), então 100 kg neles já é carga "normal" de esforço, contra 150 kg no 45°.
+
+**🏆 Hall dos Heróis mudou pro Perfil do jogador**
+4. **Agora mora no 🎮 Perfil**, logo abaixo do seu nível. No Treinos saiu o Hall da vida toda. O Hall de cada mês (no 📜 Histórico mensal) continua lá, igualzinho.
+5. **Cara nova:** vitrine dourada com o peso levantado da vida em número gigante ("291 t = 1 Airbus A380 🛬"), uma barra do marco atual até o próximo e "faltam X t pro próximo". Embaixo, 4 cards: 🌍 Distância, 🔥 Energia (em coxinhas, rodízios...), 👊 Saitama e 🔥 Mapa de calor.
+6. **Toque num card e abre a página dele:** número que conta do zero, o **🎯 Próximo marco** pulsando e **🪜 a escada toda** (o que você já levantou aceso com "3×", o próximo piscando e os bem distantes recolhidos em "🔒 Mais N marcos lá em cima"). O ‹ e o voltar do celular voltam pro Perfil.
+7. **Marco batido nos últimos 7 dias** ganha o selo brilhante **NOVO!**. Animações desligam sozinhas se o celular estiver com "reduzir movimento".
+
+**💪 10 marcos novos de peso levantado** (com o peso real de cada coisa)
+8. 🪖 Tanque Leopard 2 (62 t), 🚛 Rodotrem carregado (74 t), 🐋 Baleia-azul (110 t), 🛬 Airbus A380 vazio (277 t), 🛫 Boeing 747 lotado (397 t), 🚀 Foguete Falcon 9 (549 t), 🚄 Trem-bala japonês (715 t), ⛏️ BelAZ, o maior caminhão do mundo carregado (810 t), 🐉 Foguete Longa Marcha 5 (870 t) e 🗿 Pedra da Grávida de Baalbek (1.000 t). Cada um vira conquista: os 3 primeiros são prata (+150 XP) e o resto ouro (+400). A baleia libera o avatar 🐋. Nada de argentinossauro: aqui é Brasil.
+
+**🐘 Conquistas novas: Manadas & multidões** (categoria nova no Perfil)
+9. 13 conquistas de coisa pesada em bando, com a conta na descrição: 🐈 Gateiro profissional (50 gatos), 🐕 Abrigo de caramelos (100), 🦁 Bando do Rei Leão (20), 🚇 Vagão do metrô às 18h (300 pessoas), 🚗 Estacionamento de Fuscas (50), 🐘 Manada de elefantes (10), 🐂 Passando a boiada (300 bois), 🛶 Arca de Noé (2 de cada bicho), 🐳 Família de baleias (5), 🚌 Garagem de ônibus (50), 🪖 Desfile de 7 de Setembro (12 tanques), 🏟️ Maracanã lotado (78.838 torcedores) e ✈️ Pátio de aeroporto (20 jumbos lotados).
+10. Bloqueadas aparecem como **❓ ???**, mas com dica e barra de progresso. Valem metade do XP normal (bronze 25, prata 75, ouro 200, lendária 500), porque é o mesmo peso que já dá os marcos.
+11. **Recompensas:** avatar 🐂 (boiada), moldura nova **Arquibancada** verde e amarela (Maracanã) e os títulos 🐘 Dono da Manada, 🛶 Capitão Noé, 🪖 General do Supino, 🏟️ Levanta Arquibancada e ✈️ Controlador de Pátio.
+12. Tudo vale pros treinos que você já registrou: se já levantou o suficiente, a medalha cai na hora em que abrir o app.
+
+**🗑️ Rotina: deixar pra lá uma atrasada**
+13. **Deslize o card da atrasada pro lado** (dedo ou mouse): o fundo vermelho mostra "🗑️ Deixar pra lá" e, passando de um terço da largura, o card sai voando. Soltou antes? Ele volta pro lugar. Rolar a tela pra cima e pra baixo continua normal, e o deslize nunca marca a tarefa como feita sem querer.
+14. Some **só aquela ocorrência**: a tarefa continua na rotina e cai normal nos próximos dias. Sai também do "⏰ X atrasadas" do topo e do card do Routine no portal.
+15. **Desfazer** numa barrinha embaixo por 5 segundos. Depois disso, no **📜 Histórico** toque no 🗑️ do dia pra trazer de volta.
+16. Não dá XP e **quebra o 🔥 da tarefa**, igual a não fazer.
+17. As cobranças que ainda iam tocar pra ela são canceladas. No APK novo (1.3), a notificação que já estava na barra do celular também some.
+18. **Histórico novo:** nos "📅 Últimos 14 dias" cada tarefa aparece com a situação: ✅ feita, ⏰ atrasada, ⌛ expirou (as "só no dia"), 🗑️ deixou pra lá e 💤 perdida (passou dos 7 dias sem fazer). Na Agenda, a deixada pra lá aparece com 🗑️ em vez de 🙈.
+
+**🤖 Bank: compras do cartão agora esperam sua aprovação**
+19. **O "bug" das compras de vários dias:** eram compras de verdade. O app lê a notificação na hora, mas só lançava quando você abria o Gastos; ficou uns dias sem abrir, entrou tudo junto. Mesmo assim, fechamos uma brecha: se o Samsung Wallet (ou outro app) reenviar uma notificação antiga, ela não vira compra nova (APK 1.3).
+20. **Nada entra sozinho no mês.** As compras lidas ficam num card amarelo no topo do Gastos: "🤖 3 compras do cartão esperando você". Tocar abre a lista com valor, loja, data, app de origem, categoria sugerida e o texto original da notificação.
+21. **✅ Lançar** abre o formulário já preenchido, pra você mudar descrição, valor, categoria ou data antes de salvar. **❌ Descartar** tira da lista e ela não volta mais. Com 2 ou mais, aparece **✅ Lançar todas**.
+22. **Avisos:** "⚠️ Parece repetida" quando já tem gasto ou outra pendente com o mesmo valor, loja e dia (só avisa, você decide). "⏳ Notificação antiga reenviada" quando o app mandou a notificação mais de 6 h depois da compra.
+23. **No portal** (app Android) aparece a faixa "🤖 N compras do cartão esperando aprovação", que leva direto pra lista. Tocar na notificação "💸" do Toba também abre a lista.
+24. Fechou o app no meio? Nada se perde: a compra só sai da fila do celular depois que o gasto foi gravado ou você descartou. Gastos que já tinham entrado sozinhos antes continuam como estão.
+25. **🧾 O que o Toba leu** (Gastos → ⚙️) ganhou o botão **📋 Copiar tudo**, com o texto bruto de cada notificação, pra mandar quando algo vier estranho.
+
+**Dados:**
+- `TOBA_ROUTINE_DB`: campo novo opcional `skipped: [{ id, taskId, date, at }]` (as atrasadas deixadas pra lá). Banco e backup antigos abrem com a lista vazia. Nada mais muda na rotina: o XP continua saindo só do log.
+- Os exercícios novos são só catálogo, com IDs novos (`cadeira-adutora`, `leg-press-90`, `leg-press-180`).
+- Hall, marcos e conquistas são só cálculo. O XP vem dos treinos, como sempre. As conquistas que você já tinha **continuam com o mesmo nível e XP**: o nível delas passou a ser fixado pelo id, então marco novo no meio da lista não mexe nas antigas.
+- `sw.js` VERSION `toba-v17` (2 arquivos novos no PRECACHE).
+- `TOBA_BANK_DB`: nenhuma mudança. As compras pendentes moram na fila do app Android (como antes); o gasto lançado continua levando `notifId`.
+- **APK novo (1.3, versionCode 4)**: tira da barra a notificação de uma atrasada deixada pra lá (`clearTaskNotice`), dá id estável pras compras lidas (a mesma notificação reenviada não vira compra de novo), usa a hora original da compra como data, marca as reenviadas com atraso e abre a lista de pendentes ao tocar na notificação "💸". **Com o APK 1.2 o site novo funciona**: as compras vão pras pendentes do mesmo jeito, só sem essas proteções. E o APK 1.3 com um site antigo em cache continua lançando como antes, sem quebrar.
+
+**Como testar:**
+- Treinos → Treino de Força → Montar treino → Glúteos: tem "Cadeira adutora". Em Quadríceps: adutora, "Leg press 90°" e "Leg press 180° (horizontal)". No treino ao vivo (➕ exercício), a mesma coisa.
+- Treinos: o botão "🏆 Hall do Herói" sumiu. 📜 Histórico mensal → tocar num mês → o Hall do mês e as páginas dele (energia, distância, peso, Saitama) continuam abrindo.
+- Perfil → 🏆 Hall dos Heróis: os números contam do zero, a barra enche. Tocar na vitrine abre a escada do peso, e no fim as 🐘 Manadas. Tocar numa manada abre a medalha (bloqueada = ???). ‹ volta pro Perfil, e o voltar do celular também.
+- Perfil → Conquistas: a categoria "🐘 Manadas & multidões" aparece. O XP total das medalhas antigas não mudou (compare a aba "📜 De onde veio seu XP" com antes).
+- Testar em 360px e 384px: nada passa da tela.
+
+**Commit sugerido:** `v1.47 - Hall dos Herois no Perfil, 10 marcos novos de peso, manadas e multidoes, adutora e leg press 90 e 180, deslizar pra deixar atrasada pra la, compras do cartao pendentes pra aprovar`

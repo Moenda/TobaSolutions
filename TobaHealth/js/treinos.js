@@ -15,12 +15,6 @@ function formatWorkoutDate(dateValue) {
     : date.toLocaleDateString("pt-BR");
 }
 
-function formatWorkoutNumber(value, maximumFractionDigits = 1) {
-  return Number(value || 0).toLocaleString("pt-BR", {
-    maximumFractionDigits,
-  });
-}
-
 function getWorkoutMonthKey(dateValue) {
   const match = /^(\d{4})-(\d{2})-\d{2}$/.exec(String(dateValue || ""));
   return match ? `${match[1]}-${match[2]}` : "";
@@ -256,34 +250,9 @@ function renderWorkoutView() {
   return true;
 }
 
+// Conta em hall-shared.js (o Perfil usa a mesma)
 function getWorkoutLifetimeStats(workouts = healthDb.workouts) {
-  return workouts.reduce(
-    (totals, workout) => {
-      totals.durationMinutes += Number(workout.durationMinutes) || 0;
-      totals.calories += Number(workout.calories) || 0;
-      const distance = Number(workout.distanceKm) || 0;
-      totals.distance += distance;
-      if (workout.type === "walking" || workout.type === "saitama") {
-        totals.walkDistance += distance;
-      } else if (workout.type === "bike") {
-        totals.bikeDistance += distance;
-      } else if (workout.type === "elliptical") {
-        totals.ellipticalDistance += distance;
-      } else {
-        totals.otherDistance += distance;
-      }
-      const lift = getWorkoutLift(workout);
-      totals.liftKg += lift.kg;
-      totals.liftReps += lift.reps;
-      if (workout.type === "saitama") {
-        totals.pushups += Number(workout.pushups) || 0;
-        totals.situps += Number(workout.situps) || 0;
-        totals.squats += Number(workout.squats) || 0;
-      }
-      return totals;
-    },
-    { durationMinutes: 0, calories: 0, distance: 0, walkDistance: 0, bikeDistance: 0, ellipticalDistance: 0, otherDistance: 0, pushups: 0, situps: 0, squats: 0, liftKg: 0, liftReps: 0 },
-  );
+  return calcHallLifetimeStats(workouts, healthDb);
 }
 
 /* ---------------------------------------------------------------------
@@ -301,28 +270,9 @@ function getBodyWeightOn(dateStr) {
   return calcBodyWeightOn(healthDb, dateStr);
 }
 
-/* Trabalho por grupo muscular de um treino: base do futuro mapa de calor.
- * Devolve [{ group, exerciseId, reps, kg }] juntando os exercícios do treino
- * de força (grupo gravado no próprio treino) e os campos de peso do corpo
- * (flexão/agachamento/abdominal), que ganham grupo por BODYWEIGHT_FIELDS. */
-function getWorkoutMuscleWork(workout, { bodyweightOnly = false } = {}) {
-  const items = [];
-  const counts = Object.keys(BODYWEIGHT_FIELDS)
-    .map((field) => [field, Number(workout[field]) || 0])
-    .filter(([, count]) => count > 0);
-  if (counts.length) {
-    const bodyKg = getBodyWeightOn(workout.date);
-    counts.forEach(([field, count]) => {
-      const info = BODYWEIGHT_FIELDS[field];
-      items.push({ group: info.group, exerciseId: info.exerciseId, reps: count, kg: count * bodyKg * info.fraction });
-    });
-  }
-  if (bodyweightOnly || !Array.isArray(workout.exercises)) return items;
-  workout.exercises.forEach((exercise) => {
-    const single = getStrengthLift({ date: workout.date, exercises: [exercise] });
-    items.push({ group: exercise.group || "", exerciseId: exercise.exerciseId, reps: single.reps, kg: single.kg });
-  });
-  return items;
+// Trabalho por grupo muscular de um treino: conta em hall-shared.js.
+function getWorkoutMuscleWork(workout, options = {}) {
+  return calcWorkoutMuscleWork(workout, healthDb, options);
 }
 
 function getWorkoutLift(workout) {
@@ -385,7 +335,6 @@ function renderWorkoutHeroCards(stats, workoutCount, { monthKey = "", intro = ""
         <strong class="workout-legacy-value">${formatWorkoutNumber(stats.situps, 0)} abd · ${formatWorkoutNumber(stats.pushups, 0)} flex · ${formatWorkoutNumber(stats.squats, 0)} agach</strong>
         <span class="workout-legacy-detail">Toque para descobrir quanto falta para o careca fictício</span>
       </div>
-      ${monthKey ? "" : renderMuscleHallTile(healthDb.workouts)}
     </div>
   `;
 }
@@ -429,7 +378,6 @@ function renderWorkoutScreen() {
   const today = new Date();
   const currentMonthKey = getWorkoutMonthKey(toIsoDate(today));
   const currentMonth = getWorkoutMonthStats(workouts, currentMonthKey, today);
-  const allTimeStats = getWorkoutLifetimeStats(workouts);
   const dailyAverage = (value) =>
     currentMonth.elapsedDays ? value / currentMonth.elapsedDays : 0;
 
@@ -465,11 +413,6 @@ function renderWorkoutScreen() {
     tile("saitamaReps", "👊 Saitama", `<span class="text-coral">${formatWorkoutNumber(saitamaTotal, 0)} reps</span>`, `${formatWorkoutNumber(saitama.situps, 0)} abd · ${formatWorkoutNumber(saitama.pushups, 0)} flex · ${formatWorkoutNumber(saitama.squats, 0)} agach`),
     tile("lifted", "🏋️ Levantado", `<span class="text-green">${formatWorkoutNumber(currentMonth.lift.kg, 0)} kg</span>`, `em ${formatWorkoutNumber(currentMonth.lift.reps, 0)} repetições`),
   ].join("");
-
-  const heroContent = document.getElementById("workoutHallContent");
-  heroContent.innerHTML = renderWorkoutHeroCards(allTimeStats, workouts.length, {
-    intro: "O shape não veio por carta registrada. Olha o que você já construiu:",
-  });
 
   const historyMonths = [...new Set([
     currentMonthKey,
@@ -876,10 +819,10 @@ async function deleteWorkout(workoutId) {
   renderWorkoutScreen();
 }
 
-/* NAVEGAÇÃO ENTRE AS TELAS DO MÓDULO (Treinos / Hall do Herói / mês / detalhe / ao vivo)
- * O "‹" do cabeçalho sobe um nível: detalhe -> Hall/mês -> Treinos -> Hub. */
+/* NAVEGAÇÃO ENTRE AS TELAS DO MÓDULO (Treinos / mês / detalhe / ao vivo)
+ * O "‹" do cabeçalho sobe um nível: detalhe -> mês -> Treinos -> Hub.
+ * O Hall dos Heróis da vida toda mora no Perfil desde v1.47. */
 const WORKOUT_VIEW_BACK = {
-  viewHero: "backToTraining",
   viewMonth: "backToTraining",
   viewDetail: "closeWorkoutDetail",
   viewSummary: "closeStrengthSummary",
@@ -891,12 +834,11 @@ function openModule(viewId) {
   document
     .querySelectorAll(".app-view")
     .forEach((v) => v.classList.toggle("active", v.id === viewId));
-  if (["viewTraining", "viewHero", "viewMonth"].includes(viewId)) renderWorkoutScreen();
+  if (["viewTraining", "viewMonth"].includes(viewId)) renderWorkoutScreen();
   if (viewId === "viewTraining") renderLiveSessionLaunch();
 
   const titles = {
     viewTraining: "🏋️ Treinos",
-    viewHero: "🏆 Hall do Herói",
     viewMonth: document.getElementById("workoutMonthDetailTitle").textContent,
     viewDetail: document.getElementById("workoutDetailTitle").textContent,
     viewSummary: "💪 Resumo do treino",

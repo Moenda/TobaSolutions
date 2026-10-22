@@ -150,7 +150,7 @@ function renderAgendaLegend() {
 function renderAgendaUntimedList(agenda) {
   if (!agenda.untimed.length) return "";
   const rows = agenda.untimed.map((item) => {
-    const status = item.done ? "✅" : item.missed ? "🙈" : "";
+    const status = item.done ? "✅" : item.skipped ? "🗑️" : item.missed ? "🙈" : "";
     const what = item.kind === "oneoff" ? "Task" : item.kind === "commute" ? "Transporte" : "Rotina";
     return `<div class="ag-untimed-item is-${item.kind}${item.done ? " is-done" : ""}${item.missed ? " is-missed" : ""}">
       <span class="ag-untimed-emoji">${escapeHtml(item.emoji)}</span>
@@ -239,7 +239,7 @@ function renderAgendaColumn(agenda, view, today) {
     const overBand = !week && agenda.blocks.some((b) => b.kind !== "commute" && b.start < Math.max(item.end, item.start + 1) && b.end > item.start);
     const left = overBand ? 36 : 0;
     const width = (100 - left) / cols;
-    const status = item.done ? " ✅" : item.missed ? " 🙈" : "";
+    const status = item.done ? " ✅" : item.skipped ? " 🗑️" : item.missed ? " 🙈" : "";
     const zero = item.minutes === 0;
     const short = height < 34; // não cabem duas linhas: hora vai do lado do nome
     const when = `${agendaClock(item.start)}${zero ? "" : ` · ${routineFormatMinutes(item.minutes)}`}`;

@@ -63,7 +63,7 @@ function routineTodayXp(today) {
   return calcRoutinePlayer(routineDb, today).events.filter((e) => e.date === today).reduce((sum, e) => sum + e.xp, 0);
 }
 
-function renderRoutineTask(task, date, { done = false, overdue = false, streak = 0 } = {}) {
+function renderRoutineTask(task, date, { done = false, overdue = false, streak = 0, swipe = false } = {}) {
   const diff = routineDifficulty(task.difficulty);
   const xp = overdue ? Math.round(diff.xp / 2) : diff.xp;
   const highlight = routineHighlight && routineHighlight.taskId === String(task.id) && routineHighlight.date === date;
@@ -74,13 +74,20 @@ function renderRoutineTask(task, date, { done = false, overdue = false, streak =
     streak >= 2 ? `🔥 ${streak}` : "",
     !done && !routineCarriesOver(task) ? "⌛ só hoje" : "",
   ].filter(Boolean).join(" · ");
-  return `
+  const card = `
     <div class="rt-task${done ? " is-done" : ""}${overdue ? " is-overdue" : ""}${highlight ? " is-highlight" : ""}" id="rt-${escapeHtml(task.id)}-${date}">
       <button type="button" class="rt-check" data-click="toggleTask" data-id="${escapeHtml(task.id)}" data-date="${date}" aria-pressed="${done}" aria-label="${done ? "Desmarcar" : "Marcar como feita"}: ${escapeHtml(task.name)}">${done ? "✓" : ""}</button>
       <div class="rt-task-body" role="button" tabindex="0" data-click="editTask" data-id="${escapeHtml(task.id)}">
         <span class="rt-task-name"><span class="rt-task-emoji">${escapeHtml(task.emoji)}</span>${escapeHtml(task.name)}</span>
         <span class="rt-task-meta">${meta}</span>
       </div>
+    </div>`;
+  if (!swipe) return card;
+  // Atrasada: deslizar pro lado = deixar pra lá (v1.47)
+  return `
+    <div class="rt-swipe" data-id="${escapeHtml(task.id)}" data-date="${date}">
+      <div class="rt-swipe-bg" aria-hidden="true"><span>🗑️ Deixar pra lá</span><span>Deixar pra lá 🗑️</span></div>
+      ${card}
     </div>`;
 }
 
@@ -131,23 +138,26 @@ function renderRoutineToday() {
   renderRoutineHero(today);
   renderRoutineNotice();
 
-  // Atrasadas: últimos 7 dias, vale metade do XP (a que não passa pro dia seguinte expira)
+  // Atrasadas: últimos 7 dias, vale metade do XP (a que não passa pro dia
+  // seguinte expira; a deixada pra lá, desde v1.47, sai da lista)
+  const skippedKeys = routineSkippedKeys(routineDb);
   const overdue = [];
-  for (let i = 1; i <= 7; i++) {
+  for (let i = 1; i <= ROUTINE_OVERDUE_DAYS; i++) {
     const day = routineAddDays(today, -i);
-    sortRoutineTasks(tasks.filter(routineCarriesOver)).forEach((task) => {
-      if (isRoutineTaskDue(task, day) && !doneKeys.has(`${task.id}|${day}`)) overdue.push({ task, day });
+    sortRoutineTasks(tasks).forEach((task) => {
+      if (isRoutineTaskDue(task, day) && routineOccurrenceStatus(task, day, doneKeys, skippedKeys, today) === "overdue") overdue.push({ task, day });
     });
   }
   // Dia escrito uma vez só; passou de 5, o resto fica recolhido
   const overdueHtml = (items) => items.map(({ task, day }, i) =>
-    `${i === 0 || items[i - 1].day !== day ? `<div class="rt-day-label">${describeRoutineDay(day, today)}</div>` : ""}${renderRoutineTask(task, day, { overdue: true })}`).join("");
+    `${i === 0 || items[i - 1].day !== day ? `<div class="rt-day-label">${describeRoutineDay(day, today)}</div>` : ""}${renderRoutineTask(task, day, { overdue: true, swipe: true })}`).join("");
   const firstOverdue = overdue.slice(0, 5);
   const moreOverdue = overdue.slice(5);
   document.getElementById("rtOverdue").innerHTML = overdue.length
     ? `<div class="section-title rt-overdue-title">⏰ Atrasadas <span>vale metade do XP</span></div>
        <div class="rt-list">${overdueHtml(firstOverdue)}</div>
-       ${moreOverdue.length ? `<details class="rt-more"><summary>Ver mais ${moreOverdue.length} atrasadas</summary><div class="rt-list">${overdueHtml(moreOverdue)}</div></details>` : ""}`
+       ${moreOverdue.length ? `<details class="rt-more"><summary>Ver mais ${moreOverdue.length} atrasadas</summary><div class="rt-list">${overdueHtml(moreOverdue)}</div></details>` : ""}
+       <p class="rt-swipe-hint">👈 Não vai fazer? Deslize pro lado pra deixar pra lá 👉</p>`
     : "";
 
   const due = sortRoutineTasks(tasks.filter((t) => isRoutineTaskDue(t, today)));
@@ -215,6 +225,168 @@ function renderRoutineToday() {
        }).join("")}</div>`
     : "";
 }
+
+/* ---------------------------------------------------------------------
+ * Deixar pra lá uma atrasada (v1.47): deslizar o card pro lado.
+ * Grava em routineDb.skipped (só a ocorrência; a tarefa continua). Não dá XP
+ * e quebra o streak igual a não fazer. "Desfazer" por 5 s; depois, tocando
+ * no 🗑️ do Histórico. O gesto só pega movimento claramente horizontal
+ * (touch-action: pan-y deixa a rolagem com o navegador) e o toque que vem
+ * logo depois de deslizar é engolido, pra não marcar como feita sem querer.
+ * ------------------------------------------------------------------- */
+const ROUTINE_OCCURRENCE_LABELS = {
+  done: { mark: "✅", name: "feita" },
+  overdue: { mark: "⏰", name: "atrasada" },
+  expired: { mark: "⌛", name: "expirou" },
+  skipped: { mark: "🗑️", name: "deixou pra lá" },
+  missed: { mark: "💤", name: "perdida (7+ dias)" },
+  today: { mark: "", name: "pra hoje" },
+};
+const ROUTINE_SWIPE_RATIO = 0.35; // passou de 35% da largura = descarta
+const ROUTINE_UNDO_MS = 5000;
+
+function skipOverdue(taskId, date) {
+  const task = findRoutineTask(taskId);
+  if (!task || !routineIsIso(date)) return;
+  if (routineDb.skipped.some((k) => k.taskId === String(task.id) && k.date === date)) return;
+  const entry = { id: `k-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, taskId: String(task.id), date, at: Date.now() };
+  routineDb.skipped.push(entry);
+  if (!saveRoutineDb({ silent: true })) {
+    routineDb.skipped = routineDb.skipped.filter((k) => k !== entry);
+    renderRoutine();
+    return;
+  }
+  clearNativeTaskNotice(task.id, date); // a notificação que já está na barra (APK novo)
+  renderRoutine();
+  showRoutineUndo(`🗑️ Deixou pra lá: ${task.emoji} ${task.name}`, () => unskipOverdue(entry.taskId, entry.date));
+}
+
+// Tira o descarte (Desfazer ou Histórico). Devolve true se gravou.
+function unskipOverdue(taskId, date, { toast = "↩ Voltou pras atrasadas" } = {}) {
+  const before = routineDb.skipped;
+  routineDb.skipped = routineDb.skipped.filter((k) => !(k.taskId === String(taskId) && k.date === date));
+  if (routineDb.skipped.length === before.length) return false;
+  if (!saveRoutineDb({ silent: true })) {
+    routineDb.skipped = before;
+    return false;
+  }
+  renderRoutine();
+  if (toast) tobaToast(toast);
+  return true;
+}
+
+async function restoreSkipped(el) {
+  const task = findRoutineTask(el.dataset.id);
+  const date = el.dataset.date;
+  if (!task || !routineIsIso(date)) return;
+  const today = toIsoDate();
+  const stillOverdue = routineCarriesOver(task) && date >= routineAddDays(today, -ROUTINE_OVERDUE_DAYS);
+  const ok = await showPageMessage(
+    stillOverdue
+      ? `"${task.name}" de ${describeRoutineDay(date, today).toLowerCase()} volta pras atrasadas (ainda vale metade do XP).`
+      : `"${task.name}" de ${describeRoutineDay(date, today).toLowerCase()} já passou dos ${ROUTINE_OVERDUE_DAYS} dias: volta só como perdida no histórico.`,
+    { title: "Trazer de volta?", icon: "↩", confirm: true, confirmLabel: "Trazer de volta" },
+  );
+  if (ok) unskipOverdue(task.id, date, { toast: stillOverdue ? "↩ Voltou pras atrasadas" : "↩ Trazida de volta" });
+}
+
+/* Barrinha de desfazer (fica por ROUTINE_UNDO_MS) */
+let routineUndoAction = null;
+let routineUndoTimer = null;
+
+function showRoutineUndo(text, action) {
+  let bar = document.getElementById("rtUndo");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "rtUndo";
+    bar.className = "rt-undo-bar";
+    bar.setAttribute("role", "status");
+    document.body.appendChild(bar);
+  }
+  bar.innerHTML = `<span class="rt-undo-text"></span><button type="button" class="rt-undo-btn" data-click="routineUndo">Desfazer</button>`;
+  bar.querySelector(".rt-undo-text").textContent = text;
+  routineUndoAction = action;
+  requestAnimationFrame(() => bar.classList.add("show"));
+  clearTimeout(routineUndoTimer);
+  routineUndoTimer = setTimeout(hideRoutineUndo, ROUTINE_UNDO_MS);
+}
+
+function hideRoutineUndo() {
+  clearTimeout(routineUndoTimer);
+  routineUndoAction = null;
+  document.getElementById("rtUndo")?.classList.remove("show");
+}
+
+/* Gesto (dedo e mouse, pelos pointer events) */
+let routineSwipe = null;
+let routineSwipeEatClick = false;
+
+document.addEventListener("pointerdown", (event) => {
+  const card = event.target.closest(".rt-swipe > .rt-task");
+  if (!card || (event.pointerType === "mouse" && event.button !== 0)) return;
+  routineSwipe = { card, wrap: card.parentElement, pointer: event.pointerId, x: event.clientX, y: event.clientY, dx: 0, active: false };
+});
+
+document.addEventListener("pointermove", (event) => {
+  const s = routineSwipe;
+  if (!s || event.pointerId !== s.pointer) return;
+  const dx = event.clientX - s.x;
+  const dy = event.clientY - s.y;
+  if (!s.active) {
+    if (Math.abs(dy) > 10 && Math.abs(dy) >= Math.abs(dx)) {
+      routineSwipe = null; // é rolagem
+      return;
+    }
+    if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    s.active = true;
+    s.width = s.wrap.getBoundingClientRect().width || 300;
+    try {
+      s.card.setPointerCapture(event.pointerId);
+    } catch (err) {
+      // sem captura: segue assim mesmo
+    }
+    s.wrap.classList.add("is-swiping");
+  }
+  event.preventDefault();
+  s.dx = dx;
+  s.card.style.transform = `translateX(${dx}px)`;
+  s.wrap.dataset.dir = dx < 0 ? "left" : "right";
+  s.wrap.style.setProperty("--swipe", Math.min(1, Math.abs(dx) / (s.width * ROUTINE_SWIPE_RATIO)).toFixed(2));
+});
+
+function endRoutineSwipe(event, cancelled) {
+  const s = routineSwipe;
+  if (!s || event.pointerId !== s.pointer) return;
+  routineSwipe = null;
+  if (!s.active) return;
+  routineSwipeEatClick = true;
+  setTimeout(() => {
+    routineSwipeEatClick = false;
+  }, 400);
+  const out = !cancelled && Math.abs(s.dx) >= s.width * ROUTINE_SWIPE_RATIO;
+  s.card.classList.add("is-settling");
+  if (!out) {
+    s.card.style.transform = "";
+    s.wrap.style.setProperty("--swipe", "0");
+    setTimeout(() => s.wrap.classList.remove("is-swiping"), 250);
+    return;
+  }
+  // Sai voando pro lado, a linha fecha e só então grava
+  s.card.style.transform = `translateX(${s.dx < 0 ? -120 : 120}%)`;
+  s.wrap.style.height = `${s.wrap.offsetHeight}px`;
+  setTimeout(() => s.wrap.classList.add("is-leaving"), 180);
+  setTimeout(() => skipOverdue(s.wrap.dataset.id, s.wrap.dataset.date), 420);
+}
+
+document.addEventListener("pointerup", (event) => endRoutineSwipe(event, false));
+document.addEventListener("pointercancel", (event) => endRoutineSwipe(event, true));
+// O clique que o navegador dispara no fim do arraste não pode marcar a tarefa
+document.addEventListener("click", (event) => {
+  if (!routineSwipeEatClick) return;
+  routineSwipeEatClick = false;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+}, true);
 
 /* ---------------------------------------------------------------------
  * Tasks (módulo Task) que caem hoje: marcar aqui vale igual à página Task
@@ -306,26 +478,39 @@ function renderRoutineHistory() {
       </div>`;
   }).join("");
 
+  // Cada ocorrência com a situação dela (desde v1.47): feita, atrasada,
+  // expirada, deixada pra lá ou perdida. Deixada pra lá: toque traz de volta.
+  const skippedKeys = routineSkippedKeys(routineDb);
   const days = [];
   for (let i = 0; i < 14; i++) {
     const day = routineAddDays(today, -i);
-    const due = routineDb.tasks.filter((t) => isRoutineTaskDue(t, day));
-    const doneEntries = routineDb.log.filter((e) => e.date === day);
-    if (!due.length && !doneEntries.length) continue;
+    const due = sortRoutineTasks(routineDb.tasks.filter((t) => isRoutineTaskDue(t, day)));
+    const loose = routineDb.log.filter((e) => e.date === day && !due.some((t) => String(t.id) === e.taskId));
+    if (!due.length && !loose.length) continue;
     const doneDue = due.filter((t) => doneKeys.has(`${t.id}|${day}`)).length;
-    const icons = doneEntries.map((e) => escapeHtml(findRoutineTask(e.taskId)?.emoji || "✅")).join(" ");
+    const chips = due.map((task) => {
+      const status = routineOccurrenceStatus(task, day, doneKeys, skippedKeys, today);
+      const info = ROUTINE_OCCURRENCE_LABELS[status];
+      const label = `${task.name}: ${info.name}`;
+      if (status === "skipped") {
+        return `<button type="button" class="rt-occ is-${status}" data-click="restoreSkipped" data-id="${escapeHtml(task.id)}" data-date="${day}" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}. Toque pra trazer de volta">${escapeHtml(task.emoji)}<i>${info.mark}</i></button>`;
+      }
+      return `<span class="rt-occ is-${status}" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}">${escapeHtml(task.emoji)}${info.mark ? `<i>${info.mark}</i>` : ""}</span>`;
+    }).concat(loose.map((e) => `<span class="rt-occ is-done" title="Feita">${escapeHtml(findRoutineTask(e.taskId)?.emoji || "✅")}<i>✅</i></span>`)).join("");
     const perfect = due.length >= 2 && doneDue === due.length;
     days.push(`
       <div class="rt-day-row${perfect ? " is-perfect" : ""}">
         <span class="rt-day-name">${describeRoutineDay(day, today)}</span>
-        <span class="rt-day-icons">${icons || "<span class=\"text-muted\">nada feito</span>"}</span>
+        <span class="rt-day-icons rt-occs">${chips}</span>
         <span class="rt-day-count">${due.length ? `${doneDue}/${due.length}` : ""}${perfect ? " ✨" : ""}</span>
       </div>`);
   }
+  const legend = Object.values(ROUTINE_OCCURRENCE_LABELS).filter((item) => item.mark).map((item) => `${item.mark} ${item.name}`).join(" · ");
   box.innerHTML = `
     <div class="section-title is-first">🔥 Por tarefa</div>
     <div class="card rt-stats">${stats || tobaEmpty("📋", "Sem tarefas ativas", "", { compact: true })}</div>
     <div class="section-title">📅 Últimos 14 dias</div>
+    <p class="rt-occ-legend">${legend}. Toque num 🗑️ pra trazer de volta.</p>
     <div class="card rt-days">${days.join("") || tobaEmpty("🦗", "Nada nos últimos 14 dias", "", { compact: true })}</div>`;
 }
 
@@ -652,6 +837,8 @@ function importNativeRoutineDone() {
     // "✅ Feito" tocado depois da meia-noite numa tarefa que não passa pro dia seguinte: expirou
     if (!routineCarriesOver(task) && toIsoDate(new Date(doneAt)) > item.date) return;
     routineDb.log.push({ id: newRoutineLogId(), taskId: String(task.id), date: item.date, doneAt, difficulty: task.difficulty });
+    // Tinha deixado pra lá e tocou "✅ Feito" na notificação: o feito ganha
+    routineDb.skipped = routineDb.skipped.filter((k) => !(k.taskId === String(task.id) && k.date === item.date));
     added += 1;
   });
   // Só tira da fila do app o que ficou gravado no banco
@@ -672,6 +859,12 @@ tobaActions({
   saveTask,
   deleteTask,
   toggleTask,
+  restoreSkipped,
+  routineUndo: () => {
+    const undo = routineUndoAction;
+    hideRoutineUndo();
+    if (undo) undo();
+  },
   doSituational,
   undoSituational,
   updateTaskForm,

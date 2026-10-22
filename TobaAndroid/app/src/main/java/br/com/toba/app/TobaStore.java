@@ -15,6 +15,8 @@ import java.util.Set;
  * continua no site (localStorage); aqui só ficam:
  * - pending_purchases: compras lidas das notificações esperando o Gastos lançar
  * - purchase_log: últimas notificações com "R$" (para conferir o que foi lido)
+ * - purchase_seen: notificações de compra já lidas [{ k, at }] (APK 1.3): a
+ *   mesma notificação reenviada não vira compra de novo (300 / 60 dias)
  * - extra_apps: apps que o usuário mandou ler além da lista padrão
  * - reminders: lembretes { id: { title, message, times, days, url } }
  * - rest: fim do descanso agendado { endsAt, title, body }
@@ -36,7 +38,10 @@ final class TobaStore {
     static final String KEY_TASK_ALERTS = "task_alerts";
     static final String KEY_TASK_CODES = "task_alert_codes";
     static final String KEY_TASK_DONE = "task_done";
+    static final String KEY_SEEN = "purchase_seen";
     private static final int LOG_MAX = 25;
+    private static final int SEEN_MAX = 300;
+    private static final long SEEN_MS = 60L * 24 * 60 * 60 * 1000;
     private static final Object LOCK = new Object();
 
     private TobaStore() {}
@@ -108,6 +113,43 @@ final class TobaStore {
                     && Math.abs(at - e.optLong("at")) < 10 * 60 * 1000L) return true;
         }
         return false;
+    }
+
+    // Notificação de compra já lida antes (mesmo pacote + texto + hora original)?
+    static boolean isSeen(Context c, String key) {
+        String k = seenHash(key);
+        JSONArray list = getArray(c, KEY_SEEN);
+        for (int i = 0; i < list.length(); i++) {
+            JSONObject e = list.optJSONObject(i);
+            if (e != null && k.equals(e.optString("k"))) return true;
+        }
+        return false;
+    }
+
+    static void markSeen(Context c, String key, long at) {
+        synchronized (LOCK) {
+            JSONArray old = getArray(c, KEY_SEEN);
+            JSONArray out = new JSONArray();
+            try {
+                JSONObject e = new JSONObject();
+                e.put("k", seenHash(key));
+                e.put("at", at);
+                out.put(e);
+            } catch (JSONException ignored) {
+                return;
+            }
+            long now = System.currentTimeMillis();
+            for (int i = 0; i < old.length() && out.length() < SEEN_MAX; i++) {
+                JSONObject e = old.optJSONObject(i);
+                if (e != null && now - e.optLong("at") < SEEN_MS) out.put(e);
+            }
+            put(c, KEY_SEEN, out.toString());
+        }
+    }
+
+    // Hash curto do texto (não guarda o texto inteiro de novo)
+    private static String seenHash(String key) {
+        return Integer.toHexString(key.hashCode()) + ":" + key.length();
     }
 
     // Carteira + banco avisando a mesma compra: mesmo valor em poucos minutos.

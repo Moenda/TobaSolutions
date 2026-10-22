@@ -40,6 +40,8 @@
     </nav>
 
     <section class="tab-content active" id="tabCurrent">
+      <!-- Compras lidas das notificações esperando aprovação (app Android, v1.47) -->
+      <div id="pendingPurchases"></div>
       <div class="month-header-row">
         <span class="month-badge" id="dashMonthBadge">Carregando...</span>
         <span class="month-days" id="dashHeaderRestantes">-- dias pela frente</span>
@@ -248,6 +250,23 @@
       </div>
       <p class="toba-sheet-text">Últimas notificações com R$. Só as dos apps de banco e carteira viram gasto; se o seu banco aparecer como "fora da lista", toque em <b>Ler este app</b>.</p>
       <div id="purchaseLogList" class="purchase-log"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-secondary" data-click="copyPurchaseLog">📋 Copiar tudo (pra mandar pro suporte)</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="pendingModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="pendingModalTitle">🤖 Compras pra aprovar</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <p class="toba-sheet-text">Lidas das notificações do cartão. Nada entra no mês até você lançar. Descartou? Não volta mais.</p>
+      <div id="pendingList" class="pending-list"></div>
+      <div class="toba-sheet-footer" id="pendingFooter">
+        <button type="button" class="btn btn-primary" data-click="launchAllPending" id="pendingAllBtn">✅ Lançar todas</button>
+      </div>
     </div>
   </div>
 
@@ -313,6 +332,8 @@
       </div>
       <form id="expenseForm" data-submit="saveExpense">
         <input type="hidden" id="expenseIdInput" />
+        <input type="hidden" id="expensePendingId" />
+        <p class="pending-form-hint" id="expensePendingHint" hidden></p>
 
         <div class="form-group">
           <label for="expenseDescInput">Descrição</label>

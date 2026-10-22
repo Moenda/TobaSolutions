@@ -727,7 +727,7 @@ function renderLiveExercisePicker() {
   const chips = STRENGTH_GROUPS.map((group) => `
     <button type="button" class="strength-chip${livePickerGroup === group.id ? " active" : ""}" data-click="livePickGroup" data-group="${group.id}">${group.name}</button>`).join("");
   const options = livePickerGroup
-    ? STRENGTH_EXERCISES.filter((exercise) => exercise.group === livePickerGroup).map((exercise) => `
+    ? getStrengthExercisesInGroup(livePickerGroup).map((exercise) => `
         <button type="button" class="strength-option${added.has(exercise.id) ? " added" : ""}" data-click="liveAddExercise" data-exercise="${exercise.id}"${added.has(exercise.id) ? " disabled" : ""}>
           <span>${exercise.name}</span><span class="strength-option-mark">${added.has(exercise.id) ? "✓" : "+"}</span>
         </button>`).join("")

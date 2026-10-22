@@ -72,6 +72,26 @@ function routineDoneKeys(log) {
   return new Set((log || []).map((entry) => `${entry.taskId}|${entry.date}`));
 }
 
+// "taskId|AAAA-MM-DD" das atrasadas descartadas (desde v1.47)
+function routineSkippedKeys(db) {
+  return new Set((Array.isArray(db?.skipped) ? db.skipped : []).map((k) => `${k.taskId}|${k.date}`));
+}
+
+const ROUTINE_OVERDUE_DAYS = 7; // atrasada fica na lista por 7 dias
+
+/* Situação de uma ocorrência (tarefa com agenda, num dia em que ela cai):
+ * "done" feita · "skipped" deixada pra lá · "today" hoje, aberta
+ * "overdue" atrasada (ainda dá pra fazer) · "expired" não passa pro dia
+ * seguinte e o dia acabou · "missed" ficou atrasada mais de 7 dias. */
+function routineOccurrenceStatus(task, day, doneKeys, skippedKeys, today) {
+  const key = `${task.id}|${day}`;
+  if (doneKeys.has(key)) return "done";
+  if (skippedKeys.has(key)) return "skipped";
+  if (day >= today) return "today";
+  if (!routineCarriesOver(task)) return "expired";
+  return day >= routineAddDays(today, -ROUTINE_OVERDUE_DAYS) ? "overdue" : "missed";
+}
+
 // Streak de uma tarefa com agenda: ocorrências seguidas feitas (atrasada
 // também conta). A de hoje ainda aberta não quebra.
 function calcRoutineTaskStreak(task, doneKeys, today) {
@@ -189,12 +209,14 @@ function calcRoutineToday(data, today = toIsoDate()) {
   const db = data && typeof data === "object" ? data : {};
   const tasks = (Array.isArray(db.tasks) ? db.tasks : []).filter((t) => t && t.id && !t.archivedAt);
   const doneKeys = routineDoneKeys(db.log);
+  const skippedKeys = routineSkippedKeys(db);
   const due = tasks.filter((t) => isRoutineTaskDue(t, today));
   const done = due.filter((t) => doneKeys.has(`${t.id}|${today}`));
   let overdue = 0;
-  for (let i = 1; i <= 7; i++) {
+  for (let i = 1; i <= ROUTINE_OVERDUE_DAYS; i++) {
     const day = routineAddDays(today, -i);
-    overdue += tasks.filter((t) => routineCarriesOver(t) && isRoutineTaskDue(t, day) && !doneKeys.has(`${t.id}|${day}`)).length;
+    overdue += tasks.filter((t) => isRoutineTaskDue(t, day)
+      && routineOccurrenceStatus(t, day, doneKeys, skippedKeys, today) === "overdue").length;
   }
   return { total: due.length, done: done.length, overdue, tasks: tasks.length };
 }
@@ -553,11 +575,13 @@ function calcRoutineDayAgenda(db, iso, today = toIsoDate()) {
   const sleep = sleeps.filter((b) => b.start > 0 && b.start >= 12 * 60).sort((x, y) => y.start - x.start)[0];
 
   const doneKeys = routineDoneKeys(db && db.log);
+  const skippedKeys = routineSkippedKeys(db);
   const tasks = (db && Array.isArray(db.tasks) ? db.tasks : []).filter((t) => t && t.id && isRoutineTaskDue(t, iso));
   tasks.forEach((task) => {
     const minutes = routineTaskMinutes(task);
     const done = doneKeys.has(`${task.id}|${iso}`);
-    const item = { kind: "routine", id: task.id, emoji: task.emoji || "✅", name: task.name || "Tarefa", minutes, done, missed: !done && iso < today };
+    const skipped = !done && skippedKeys.has(`${task.id}|${iso}`); // deixada pra lá (v1.47)
+    const item = { kind: "routine", id: task.id, emoji: task.emoji || "✅", name: task.name || "Tarefa", minutes, done, skipped, missed: !done && !skipped && iso < today };
     const at = routineTimeToMin(task.time);
     if (at === null) untimed.push(item);
     else timed.push({ ...item, start: at, end: Math.min(1440, at + minutes) });

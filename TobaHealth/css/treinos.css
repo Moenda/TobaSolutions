@@ -1,45 +1,5 @@
 /* Toba Health · estilos exclusivos dos Treinos */
 
-.workout-hero-launch {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding: 0.9rem 1rem;
-  color: #f0f6fc;
-  text-align: left;
-  background: linear-gradient(145deg, #25220f, #161b22 72%);
-  border: 1px solid rgba(210, 153, 34, 0.45);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: border-color 0.2s ease, transform 0.2s ease;
-}
-
-.workout-hero-launch:hover {
-  border-color: #e3b341;
-  transform: translateY(-1px);
-}
-
-.workout-hero-launch-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.workout-hero-launch-title {
-  font-size: 0.95rem;
-  font-weight: 800;
-}
-
-.workout-hero-launch-detail {
-  color: #8b949e;
-  font-size: 0.75rem;
-  line-height: 1.4;
-}
-
 .workout-distance-breakdown {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -897,11 +857,6 @@
 }
 
 /* ---- v1.22: peças do cabeçalho/folhas padrão ---- */
-.workout-hero-launch-arrow {
-  font-size: 1.25rem;
-  color: var(--gold);
-}
-
 .workout-back-types {
   margin-bottom: 0.8rem;
 }
@@ -1318,70 +1273,7 @@
   margin-top: 1rem;
 }
 
-/* ---- Mapa de calor dos músculos (v1.30) ---- */
-.muscle-map {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.muscle-base {
-  fill: var(--surface-3);
-}
-
-.muscle {
-  fill: var(--surface-3);
-  stroke: var(--border);
-  stroke-width: 0.6;
-  transition: fill 0.2s ease;
-}
-
-/* Do verde (pouco) ao vermelho (pegando fogo) */
-.muscle.lv-1, .muscle-rank-bar .lv-1, .muscle-legend .lv-1 { fill: rgba(63, 185, 80, 0.45); background: rgba(63, 185, 80, 0.45); }
-.muscle.lv-2, .muscle-rank-bar .lv-2, .muscle-legend .lv-2 { fill: var(--green); background: var(--green); }
-.muscle.lv-3, .muscle-rank-bar .lv-3, .muscle-legend .lv-3 { fill: var(--gold-2); background: var(--gold-2); }
-.muscle.lv-4, .muscle-rank-bar .lv-4, .muscle-legend .lv-4 { fill: #f0883e; background: #f0883e; }
-.muscle.lv-5, .muscle-rank-bar .lv-5, .muscle-legend .lv-5 { fill: var(--red); background: var(--red); stroke: #ffa198; }
-
-.muscle-legend {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  margin-top: 0.4rem;
-  font-size: 0.66rem;
-  color: var(--muted);
-}
-
-.muscle-legend i {
-  width: 18px;
-  height: 7px;
-  border-radius: 3px;
-}
-
-.muscle-legend span {
-  margin: 0 4px;
-}
-
-.muscle-map.is-interactive .muscle {
-  cursor: pointer;
-}
-
-.muscle-map.is-interactive .muscle:focus-visible,
-.muscle-map.is-interactive .muscle:hover {
-  stroke: var(--text);
-  stroke-width: 1.2;
-  outline: none;
-}
-
-.muscle-side {
-  font-size: 5px;
-  fill: var(--muted);
-  text-anchor: middle;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-
+/* ---- Mapa de calor dos músculos (v1.30): boneco, cores e ranking moram no toba-common.css desde v1.47 ---- */
 /* Mini no card do mês */
 .muscle-mini {
   display: flex;
@@ -1439,76 +1331,9 @@
   margin: 0.4rem 0 0.7rem;
 }
 
-.muscle-rank {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.muscle-rank li {
-  display: grid;
-  grid-template-columns: 5.6rem 1fr auto;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.76rem;
-}
-
-.muscle-rank-name {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.muscle-rank-bar {
-  height: 8px;
-  border-radius: 4px;
-  background: var(--surface-3);
-  overflow: hidden;
-}
-
-.muscle-rank-bar span {
-  display: block;
-  height: 100%;
-  border-radius: 4px;
-}
-
-.muscle-rank-value {
-  font-weight: 700;
-  white-space: nowrap;
-}
-
 .muscle-lazy {
   margin: 0.7rem 0 0;
   font-size: 0.76rem;
-  color: var(--text-2);
-}
-
-/* ---- Mapa de calor da vida no Hall do Herói ---- */
-.muscle-hall-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 4px;
-}
-
-.muscle-hall-row .muscle-map {
-  width: 116px;
-  flex-shrink: 0;
-}
-
-.muscle-hall-text {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.muscle-hall-split {
-  font-size: 0.74rem;
-  font-weight: 700;
   color: var(--text-2);
 }
 

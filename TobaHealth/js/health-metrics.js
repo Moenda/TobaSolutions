@@ -11,8 +11,10 @@
  * (perfil do jogador, toba-player.js) e na tela de Treinos:
  * - Catálogo de força (STRENGTH_GROUPS / STRENGTH_EXERCISES): os ids são
  *   referência gravada nos treinos; nunca renomeie nem remova um id.
- * - Escalas do Hall do Herói (cidades e pesos): o id de cada item é a
- *   conquista do perfil; nunca troque um id.
+ * - Escalas do Hall dos Heróis (cidades e pesos): o id de cada item é a
+ *   conquista do perfil; nunca troque um id. Item novo entra na ordem de
+ *   size; o nível da conquista (bronze...lenda) é fixado por id em
+ *   PLAYER_LIFT_TIERS (toba-player.js), não pela posição na lista.
  * - Conta do peso levantado (calcStrengthLift / calcWorkoutLift): forca.js e
  *   treinos.js só chamam estas funções passando o healthDb.
  * Carregue ANTES de hall.js / forca.js / treinos.js.
@@ -21,6 +23,8 @@
 /* ---------------------------------------------------------------------
  * Catálogo de força
  * bodyweight (opcional): parte do peso do corpo que o exercício levanta.
+ * alsoIn (opcional, desde v1.47): outros grupos onde o exercício também
+ *   aparece na hora de escolher (só a lista; o grupo gravado é o `group`).
  * ------------------------------------------------------------------- */
 const STRENGTH_GROUPS = [
   { id: "peito", name: "Peito" },
@@ -96,6 +100,8 @@ const STRENGTH_EXERCISES = [
   { id: "agachamento-hack", name: "Agachamento hack", group: "quadriceps" },
   { id: "agachamento-bulgaro", name: "Agachamento búlgaro", group: "quadriceps" },
   { id: "leg-press", name: "Leg press 45°", group: "quadriceps" },
+  { id: "leg-press-90", name: "Leg press 90°", group: "quadriceps" },
+  { id: "leg-press-180", name: "Leg press 180° (horizontal)", group: "quadriceps" },
   { id: "cadeira-extensora", name: "Cadeira extensora", group: "quadriceps" },
   { id: "afundo", name: "Afundo / passada", group: "quadriceps" },
   // Posterior de coxa
@@ -105,6 +111,7 @@ const STRENGTH_EXERCISES = [
   // Glúteos
   { id: "elevacao-pelvica", name: "Elevação pélvica", group: "gluteos" },
   { id: "cadeira-abdutora", name: "Cadeira abdutora", group: "gluteos" },
+  { id: "cadeira-adutora", name: "Cadeira adutora", group: "gluteos", alsoIn: ["quadriceps"] },
   { id: "gluteo-polia", name: "Glúteo na polia", group: "gluteos" },
   { id: "gluteo-maquina", name: "Glúteo na máquina (coice)", group: "gluteos" },
   // Panturrilha
@@ -117,6 +124,11 @@ const STRENGTH_EXERCISES = [
   { id: "abdominal-polia", name: "Abdominal na polia", group: "abdomen" },
   { id: "abdominal-maquina", name: "Abdominal na máquina", group: "abdomen" },
 ];
+
+// Exercícios que aparecem na lista de um grupo (o dele + os do alsoIn).
+function getStrengthExercisesInGroup(groupId) {
+  return STRENGTH_EXERCISES.filter((exercise) => exercise.group === groupId || (exercise.alsoIn || []).includes(groupId));
+}
 
 /* ---------------------------------------------------------------------
  * DIVISÃO DO ESFORÇO ENTRE OS MÚSCULOS (mapa de calor, desde v1.45)
@@ -187,6 +199,8 @@ const MUSCLE_SPLITS = {
   "agachamento-hack": { quadriceps: 0.65, gluteos: 0.2, posterior: 0.1, panturrilha: 0.05 },
   "agachamento-bulgaro": { quadriceps: 0.45, gluteos: 0.35, posterior: 0.1, panturrilha: 0.05, abdomen: 0.05 },
   "leg-press": { quadriceps: 0.6, gluteos: 0.25, posterior: 0.1, panturrilha: 0.05 },
+  "leg-press-90": { quadriceps: 0.6, gluteos: 0.25, posterior: 0.1, panturrilha: 0.05 },
+  "leg-press-180": { quadriceps: 0.6, gluteos: 0.25, posterior: 0.1, panturrilha: 0.05 },
   "cadeira-extensora": { quadriceps: 1 },
   "afundo": { quadriceps: 0.45, gluteos: 0.3, posterior: 0.15, panturrilha: 0.05, abdomen: 0.05 },
   // Posterior de coxa
@@ -196,6 +210,9 @@ const MUSCLE_SPLITS = {
   // Glúteos
   "elevacao-pelvica": { gluteos: 0.65, posterior: 0.2, quadriceps: 0.1, abdomen: 0.05 },
   "cadeira-abdutora": { gluteos: 1 },
+  // Adutor fica na parte interna da coxa: o boneco não tem peça própria, então
+  // vai pra coxa (frente e trás) e um pouco pro glúteo.
+  "cadeira-adutora": { quadriceps: 0.55, posterior: 0.25, gluteos: 0.2 },
   "gluteo-polia": { gluteos: 0.8, posterior: 0.2 },
   "gluteo-maquina": { gluteos: 0.8, posterior: 0.2 },
   // Panturrilha
@@ -242,11 +259,14 @@ const MUSCLE_REF_KG = {
   "rosca-punho": 20, "rosca-punho-inversa": 12, "rosca-inversa": 20, "rosca-zottman": 20, "rolo-punho": 8,
   // Quadríceps (agachamento sem peso é leve pra perna: régua acima do peso do corpo)
   "agachamento-livre": 60, "agachamento-corpo": 110, "agachamento-smith": 60, "agachamento-hack": 80,
-  "agachamento-bulgaro": 20, "leg-press": 150, "cadeira-extensora": 45, "afundo": 20,
+  "agachamento-bulgaro": 20, "leg-press": 150,
+  "leg-press-90": 100, // no 90° o peso sobe inteiro (no 45° só ~70% dele)
+  "leg-press-180": 100, // horizontal de placas/cabo: o peso da pilha vai inteiro
+  "cadeira-extensora": 45, "afundo": 20,
   // Posterior de coxa
   "mesa-flexora": 35, "cadeira-flexora": 35, "stiff": 50,
   // Glúteos
-  "elevacao-pelvica": 70, "cadeira-abdutora": 50, "gluteo-polia": 15, "gluteo-maquina": 30,
+  "elevacao-pelvica": 70, "cadeira-abdutora": 50, "cadeira-adutora": 50, "gluteo-polia": 15, "gluteo-maquina": 30,
   // Panturrilha
   "panturrilha-pe": 60, "panturrilha-sentado": 40, "panturrilha-leg": 100,
   // Abdômen (abdominal é leve: 120 do Saitama ≈ 72 reps "normais")
@@ -319,9 +339,20 @@ const WORKOUT_LIFT_EQUIVALENTS = [
   { id: "lift-hipopotamo", icon: "🦛", one: "hipopótamo", name: "hipopótamos", size: 1500, note: "Parece fofo, pesa uma tonelada e meia." },
   { id: "lift-elefante", icon: "🐘", one: "elefante", name: "elefantes", size: 5500, note: "A tromba não ajuda." },
   { id: "lift-onibus", icon: "🚌", one: "ônibus urbano", name: "ônibus urbanos", size: 12000, note: "Vazio, mas a lotação já saiu na foto." },
+  // v1.47: marcos novos com o peso real de cada coisa (fonte no PATCH-NOTES)
+  { id: "lift-tanque", icon: "🪖", one: "tanque Leopard 2", name: "tanques Leopard 2", size: 62300, note: "62 t de blindado. A esteira da academia nunca mais vai te assustar." },
+  { id: "lift-rodotrem", icon: "🚛", one: "rodotrem carregado", name: "rodotrens carregados", size: 74000, note: "O bitrenzão de 9 eixos da BR, com 74 t de soja. Sem parar no posto pro pastel." },
+  { id: "lift-baleia", icon: "🐋", one: "baleia-azul", name: "baleias-azuis", size: 110000, note: "O maior bicho que já existiu (~110 t). E você nem molhou o cabelo." },
   { id: "lift-boeing", icon: "✈️", one: "Boeing 747 (vazio)", name: "Boeings 747 (vazios)", size: 180000, note: "Decolagem por sua conta e risco." },
   { id: "lift-liberdade", icon: "🗽", one: "Estátua da Liberdade", name: "Estátuas da Liberdade", size: 204000, note: "Tocha inclusa." },
+  { id: "lift-a380", icon: "🛬", one: "Airbus A380 (vazio)", name: "Airbus A380 (vazios)", size: 277000, note: "O avião de dois andares. A escada fica por sua conta." },
+  { id: "lift-747-lotado", icon: "🛫", one: "Boeing 747 lotado", name: "Boeings 747 lotados", size: 397000, note: "Agora com passageiro, mala e o carrinho do lanche. Peso máximo de decolagem." },
+  { id: "lift-falcon9", icon: "🚀", one: "foguete Falcon 9", name: "foguetes Falcon 9", size: 549000, note: "Na plataforma, de tanque cheio. Não acende o isqueiro." },
   { id: "lift-cristo", icon: "🙌", one: "Cristo Redentor", name: "Cristos Redentores", size: 635000, note: "De braços abertos, mas agora quem abraça é você." },
+  { id: "lift-trem-bala", icon: "🚄", one: "trem-bala japonês", name: "trens-bala japoneses", size: 715000, note: "16 vagões de Shinkansen. Pontual até no supino." },
+  { id: "lift-belaz", icon: "⛏️", one: "BelAZ 75710 carregado", name: "BelAZ 75710 carregados", size: 810000, note: "O maior caminhão do mundo, com 450 t de pedra na caçamba. Quebra-molas nem sente." },
+  { id: "lift-longa-marcha", icon: "🐉", one: "foguete Longa Marcha 5", name: "foguetes Longa Marcha 5", size: 870000, note: "O foguetão da China. Até o dragão ficou com dor na lombar." },
+  { id: "lift-baalbek", icon: "🗿", one: "Pedra da Grávida de Baalbek", name: "Pedras da Grávida de Baalbek", size: 1000000, note: "Monólito romano de ~1.000 t no Líbano. Os romanos largaram na pedreira. Você não." },
   { id: "lift-eiffel", icon: "🗼", one: "Torre Eiffel", name: "Torres Eiffel", size: 10100000, note: "Paris que me perdoe, mas a torre veio junto." },
   { id: "lift-titanic", icon: "🚢", one: "Titanic", name: "Titanics", size: 52000000, note: "Sem iceberg, sem drama e sem Celine Dion." },
 ];

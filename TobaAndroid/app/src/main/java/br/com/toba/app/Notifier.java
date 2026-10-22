@@ -175,8 +175,8 @@ final class Notifier {
         String value = NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(amount);
         purchaseSeq = (purchaseSeq + 1) % 100;
         show(c, CH_PURCHASE, 2000 + purchaseSeq, "💸 " + value + " · " + desc,
-                "Toque para lançar no Toba Bank (ou abra o Gastos depois).",
-                BuildConfig.START_URL + "TobaBank/TobaBank-Gastos.html");
+                "Toque pra aprovar no Gastos (ela espera nas pendentes).",
+                BuildConfig.START_URL + "TobaBank/TobaBank-Gastos.html?pending=1");
     }
 
     static void cancel(Context c, int id) {

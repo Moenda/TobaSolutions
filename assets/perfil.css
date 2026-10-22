@@ -475,3 +475,671 @@
   width: 100%;
   margin-top: 0.6rem;
 }
+
+/* =====================================================================
+ * 🏆 Hall dos Heróis (v1.47): vitrine do peso, grade 2×2 e páginas
+ * Cores por categoria: --tile (km azul, energia laranja, Saitama coral,
+ * mapa vermelho). Tudo anima ao abrir; "reduzir movimento" desliga.
+ * ===================================================================== */
+.pfh {
+  --pfh-gold: #e3b341;
+  --pfh-orange: #f0883e;
+}
+
+/* Entrada em cascata: cada bloco com style="--i:n" */
+.pfh-anim > *,
+.pfh-anim .pfh-grid > *,
+.pfh-page > * {
+  animation: pfh-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+@keyframes pfh-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Barras: começam vazias e enchem quando ganham .is-in */
+.pfh-bar {
+  position: relative;
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.pfh-bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--blue), #79c0ff);
+  transition: width 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s;
+}
+
+.pfh-bar.is-in i { width: var(--w); }
+.pfh-bar.is-gold i { background: linear-gradient(90deg, #9e6a03, var(--pfh-gold), #ffd866); }
+.pfh-bar.is-coral i { background: linear-gradient(90deg, var(--red), var(--coral)); }
+.pfh-bar.is-mini { height: 5px; margin-top: 4px; }
+
+.pfh-count { font-variant-numeric: tabular-nums; }
+
+/* Selo de marco batido há pouco */
+.pfh-new {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  color: #1a1300;
+  background: linear-gradient(110deg, #e3b341 30%, #fff3c4 50%, #e3b341 70%);
+  background-size: 250% 100%;
+  animation: pfh-shine 2.2s linear infinite, pfh-pop 0.6s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+@keyframes pfh-shine {
+  from { background-position: 150% 0; }
+  to { background-position: -100% 0; }
+}
+
+@keyframes pfh-pop {
+  from { transform: scale(0.3); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* ---- Vitrine do peso levantado ---- */
+.pfh-vitrine {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 1.1rem 1rem 0.9rem;
+  text-align: center;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid rgba(227, 179, 65, 0.45);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(227, 179, 65, 0.22), transparent 60%),
+    linear-gradient(160deg, #221d0c, var(--surface) 70%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, border-color 0.2s ease;
+}
+
+.pfh-vitrine:active { transform: scale(0.985); }
+.pfh-vitrine:hover { border-color: var(--pfh-gold); }
+.pfh-vitrine.is-new { box-shadow: 0 0 0 1px var(--pfh-gold), 0 0 28px rgba(227, 179, 65, 0.35); }
+
+.pfh-kicker {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--pfh-gold);
+}
+
+.pfh-big {
+  font-size: clamp(2.1rem, 11vw, 2.8rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+  background: linear-gradient(180deg, #fff, #ffd866);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.pfh-big.is-text { font-size: clamp(1.6rem, 8vw, 2rem); }
+
+.pfh-equal {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.pfh-track {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.pfh-track-icon { font-size: 1.35rem; }
+.pfh-track-icon.is-next { filter: grayscale(0.6); opacity: 0.8; }
+
+.pfh-sub {
+  font-size: 0.76rem;
+  color: var(--text-2);
+}
+
+.pfh-sub b { color: var(--pfh-gold); }
+
+.pfh-cta {
+  margin-top: 2px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* ---- Grade 2×2 ---- */
+.pfh-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.pfh-tile {
+  --tile: var(--blue);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 0.8rem 0.75rem;
+  text-align: left;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--tile) 40%, var(--border));
+  border-radius: var(--radius);
+  background:
+    radial-gradient(90% 70% at 100% 0%, color-mix(in srgb, var(--tile) 22%, transparent), transparent 70%),
+    var(--surface);
+  overflow: hidden;
+  transition: transform 0.15s ease;
+}
+
+.pfh-tile:active { transform: scale(0.97); }
+.pfh-tile.is-km { --tile: var(--blue); }
+.pfh-tile.is-kcal { --tile: var(--pfh-orange); }
+.pfh-tile.is-saitama { --tile: var(--coral); }
+.pfh-tile.is-heat { --tile: var(--red); }
+
+.pfh-tile-icon {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 1.6rem;
+  opacity: 0.9;
+}
+
+.pfh-tile-label {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--tile) 75%, var(--text));
+}
+
+.pfh-tile-value {
+  font-size: 1.3rem;
+  font-weight: 900;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pfh-tile .pfh-bar { height: 7px; margin: 2px 0; }
+.pfh-tile.is-km .pfh-bar i { background: linear-gradient(90deg, #1f6feb, var(--blue)); }
+
+.pfh-tile-sub {
+  font-size: 0.7rem;
+  color: var(--text-2);
+  line-height: 1.3;
+}
+
+.pfh-tile.is-heat .muscle-map {
+  width: 100%;
+  max-width: 150px;
+  margin: 0 auto;
+}
+
+/* ---- Páginas ---- */
+.pfh-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 1.2rem 1rem 1rem;
+  margin-bottom: 0.8rem;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(110% 80% at 50% 0%, rgba(227, 179, 65, 0.16), transparent 60%),
+    var(--surface);
+}
+
+.pfh-hero-icon {
+  font-size: 2.2rem;
+  animation: pfh-float 3s ease-in-out infinite;
+}
+
+@keyframes pfh-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.pfh-hero-sub {
+  font-size: 0.8rem;
+  color: var(--text-2);
+}
+
+.pfh-tagline {
+  margin: 0.4rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.pfh-split {
+  display: block;
+  width: 100%;
+  height: 10px;
+  margin-top: 0.6rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--green), #2ea043);
+  overflow: hidden;
+}
+
+.pfh-split i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--blue), #79c0ff);
+  transition: width 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s;
+}
+
+.pfh-split.is-in i { width: var(--w); }
+
+.pfh-split-legend {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+/* Próximo marco */
+.pfh-spot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.9rem;
+  margin-bottom: 1rem;
+  border: 1px dashed rgba(227, 179, 65, 0.6);
+  border-radius: var(--radius);
+  background: rgba(227, 179, 65, 0.06);
+}
+
+.pfh-spot-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  font-size: 2rem;
+  border-radius: 50%;
+  background: var(--surface-3);
+  animation: pfh-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pfh-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(227, 179, 65, 0.5); }
+  50% { box-shadow: 0 0 0 8px rgba(227, 179, 65, 0); }
+}
+
+.pfh-spot-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+  font-size: 0.74rem;
+  color: var(--text-2);
+}
+
+.pfh-spot-body strong {
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.pfh-spot-kicker {
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--pfh-gold);
+}
+
+.pfh-section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 1rem 0 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.pfh-section-title span {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* Trilha de marcos */
+.pfh-trail {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pfh-trail::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  bottom: 18px;
+  left: 21px;
+  width: 2px;
+  background: var(--border);
+}
+
+.pfh-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.pfh-step-dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  font-size: 1.4rem;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface);
+}
+
+.pfh-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.pfh-step-body strong {
+  font-size: 0.84rem;
+  color: var(--text);
+}
+
+.pfh-step-times {
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: var(--pfh-gold);
+}
+
+.pfh-step.is-done .pfh-step-dot {
+  border-color: var(--pfh-gold);
+  background: radial-gradient(circle, rgba(227, 179, 65, 0.25), var(--surface) 70%);
+}
+
+.pfh-step.is-locked .pfh-step-dot { filter: grayscale(1); opacity: 0.45; }
+.pfh-step.is-locked .pfh-step-body strong { color: var(--muted); }
+
+.pfh-step.is-next .pfh-step-dot {
+  border-color: var(--pfh-gold);
+  border-style: dashed;
+  animation: pfh-pulse 1.8s ease-in-out infinite;
+}
+
+.pfh-step-here {
+  position: absolute;
+  top: -4px;
+  left: 54px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--pfh-gold);
+}
+
+.pfh-step.is-new { padding-right: 52px; }
+.pfh-step .pfh-new { top: 50%; right: 0; transform: translateY(-50%); }
+.pfh-step.is-new .pfh-step-times { display: none; }
+
+/* Manadas & multidões */
+.pfh-crowds {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pfh-crowd {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 0.6rem;
+  text-align: left;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.pfh-crowd.is-done {
+  border-color: rgba(63, 185, 80, 0.5);
+  background: linear-gradient(160deg, rgba(63, 185, 80, 0.12), var(--surface) 70%);
+}
+
+.pfh-crowd-icon { font-size: 1.4rem; }
+.pfh-crowd:not(.is-done) .pfh-crowd-icon { opacity: 0.7; }
+
+.pfh-crowd-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+  font-size: 0.66rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.pfh-crowd-body strong {
+  font-size: 0.76rem;
+  color: var(--text);
+}
+
+/* Distância por modo */
+.pfh-modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 0.8rem;
+}
+
+.pfh-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.55rem;
+  font-size: 0.68rem;
+  color: var(--muted);
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+}
+
+.pfh-mode strong {
+  font-size: 0.86rem;
+  color: var(--text);
+}
+
+/* Energia: comidas */
+.pfh-foods {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pfh-food {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0.7rem 0.3rem;
+  text-align: center;
+  font-size: 0.66rem;
+  color: var(--muted);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.pfh-food-icon { font-size: 1.6rem; }
+
+.pfh-food strong {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--text);
+}
+
+/* Saitama */
+.pfh-intro {
+  font-size: 0.78rem;
+  color: var(--text-2);
+}
+
+.pfh-vs {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.pfh-vs-icon { font-size: 1.5rem; }
+
+.pfh-vs-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pfh-vs-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+}
+
+.pfh-vs-head span { font-weight: 800; color: var(--coral); }
+
+.pfh-vs-sub {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+/* Mapa de calor */
+.pfh-heat {
+  padding: 0.9rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.pfh-heat .muscle-map {
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.pfh-rank {
+  padding: 0.8rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.pfh-lazy {
+  margin-top: 0.7rem;
+  font-size: 0.78rem;
+  color: var(--text-2);
+}
+
+.pfh-footer {
+  margin: 0.9rem 0 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.45;
+}
+
+/* Sem animação ("reduzir movimento" do sistema) */
+.pfh-still .pfh-anim > *,
+.pfh-still.pfh-anim > *,
+.pfh-still .pfh-page > *,
+.pfh-still .pfh-grid > * {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pfh-anim > *,
+  .pfh-anim .pfh-grid > *,
+  .pfh-page > *,
+  .pfh-new,
+  .pfh-hero-icon,
+  .pfh-spot-icon,
+  .pfh-step.is-next .pfh-step-dot {
+    animation: none;
+  }
+  .pfh-bar i,
+  .pfh-split i {
+    transition: none;
+  }
+}
+
+.pfh-far {
+  margin-bottom: 4px;
+}
+
+.pfh-far summary {
+  padding: 0.55rem 0.7rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.pfh-far summary::-webkit-details-marker {
+  display: none;
+}
+
+.pfh-far[open] summary {
+  margin-bottom: 4px;
+}

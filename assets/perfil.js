@@ -1,6 +1,7 @@
 /* =====================================================================
  * Toba · página do Perfil do jogador (Toba-Perfil.html)
- * Depende de toba-common.js, health-metrics.js e toba-player.js.
+ * Depende de toba-common.js, health-metrics.js, toba-player.js,
+ * TobaHealth/js/hall-shared.js e perfil-hall.js (Hall dos Heróis, desde v1.47).
  * Só desenha o estado calculado por computePlayer(); grava apenas
  * playerDb.settings / playerDb.equipped (TOBA_PLAYER_DB) e toba_player_prefs.
  * ===================================================================== */
@@ -68,7 +69,7 @@ function renderProfileAchievements(state) {
     if (!items.length) return "";
     const done = items.filter((a) => a.unlocked).length;
     const tiles = items.map((a) => {
-      const mystery = !a.unlocked && a.tier === "lenda";
+      const mystery = isPlayerAchievementHidden(a, state);
       return `
         <button type="button" class="pf-ach${a.unlocked ? " is-unlocked" : ""}" data-click="openAchievement" data-id="${a.id}">
           <span class="tp-medal tp-tier-${a.tier}">${mystery ? "❓" : a.icon}</span>
@@ -88,14 +89,14 @@ function openAchievement(id) {
   const state = tobaPlayerState;
   const a = state?.achievements.find((item) => item.id === id);
   if (!a) return;
-  const mystery = !a.unlocked && a.tier === "lenda";
+  const mystery = isPlayerAchievementHidden(a, state);
   const goalText = a.goal >= 1000 ? formatPlayerNumber(a.goal) : Number(a.goal.toFixed(1)).toLocaleString("pt-BR");
   const valueText = a.value >= 1000 ? formatPlayerNumber(Math.min(a.value, a.goal)) : Number(Math.min(a.value, a.goal).toFixed(1)).toLocaleString("pt-BR");
   document.getElementById("achModalTitle").textContent = a.unlocked ? "🏅 Conquistada!" : "🔒 Ainda não";
   document.getElementById("achModalContent").innerHTML = `
     <div class="pf-ach-detail">
       <span class="tp-medal tp-tier-${a.tier} is-big${a.unlocked ? "" : " is-locked"}">${mystery ? "❓" : a.icon}</span>
-      <strong>${mystery ? "??? (conquista lendária)" : escapeHtml(a.name)}</strong>
+      <strong>${mystery ? `??? (conquista ${a.tier === "lenda" ? "lendária" : "secreta"})` : escapeHtml(a.name)}</strong>
       <span class="pf-tier pf-tier-${a.tier}">${PLAYER_TIERS[a.tier].name} · +${formatPlayerNumber(a.xp)} XP</span>
       <p>${a.unlocked ? escapeHtml(a.desc) : escapeHtml(a.hint)}</p>
       ${a.unlocked ? `<span class="pf-note">Desbloqueada em ${formatProfileDate(a.date)}</span>` : `
@@ -112,7 +113,7 @@ function renderProfileRewards(state) {
   const need = (item) => {
     if (!item.achievement) return `Nível ${item.level}`;
     const a = PLAYER_ACHIEVEMENTS.find((x) => x.id === item.achievement);
-    return a.tier === "lenda" && !state.unlockedIds.has(a.id) ? "Conquista ???" : `Conquista: ${a.name}`;
+    return isPlayerAchievementHidden(a, state) ? "Conquista ???" : `Conquista: ${a.name}`;
   };
   const tile = ({ id, unlocked, active, preview, name, lockText }) => `
     <button type="button" class="pf-reward${active ? " is-active" : ""}${unlocked ? "" : " is-locked"}" data-click="equipReward" data-kind="${profileTab}" data-id="${id}"${unlocked ? "" : ` data-locked="${escapeHtml(lockText)}"`}>
@@ -204,6 +205,7 @@ function renderProfile(state) {
   if (!state) return;
   document.getElementById("pfLocked").hidden = isPlayerDbLoaded;
   renderProfileHero(state);
+  renderProfileHall(state);
   renderProfileStreak(state);
   renderProfileAchievements(state);
   renderProfileRewards(state);

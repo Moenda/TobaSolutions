@@ -22,7 +22,7 @@
 <body>
   <main class="container">
     <header class="toba-header">
-      <a class="toba-back" href="index.html" aria-label="Voltar para o Toba Solutions">‹</a>
+      <a class="toba-back" href="index.html" data-label="Voltar para o Toba Solutions" aria-label="Voltar para o Toba Solutions">‹</a>
       <a class="toba-titles" href="index.html">
         <span class="toba-app">⚡ Toba</span>
         <span class="toba-page">🎮 Perfil do jogador</span>
@@ -32,12 +32,16 @@
       </div>
     </header>
 
+    <div id="pfMainView">
     <div class="hint-box" id="pfLocked" hidden>
       🛡️ Não consegui ler o perfil salvo, então nada novo é gravado nele. O XP continua certo (vem dos treinos). Restaure um backup em ⚙️ → Dados &amp; Backup, ou use "Recomeçar perfil" lá.
     </div>
 
     <section class="card pf-hero" id="pfHero"></section>
     <div class="toba-stats" id="pfStats"></div>
+
+    <div class="section-title" id="pfHallTitle">🏆 Hall dos Heróis</div>
+    <section id="pfHall" class="pfh"></section>
 
     <div class="section-title">🔥 Streak</div>
     <div class="card" id="pfStreak"></div>
@@ -65,6 +69,10 @@
       <summary>📈 Tabela de níveis <span class="pf-chevron" aria-hidden="true">›</span></summary>
       <div id="pfLevels"></div>
     </details>
+    </div>
+
+    <!-- Página de um item do Hall dos Heróis (abre no lugar do Perfil) -->
+    <div id="pfHallView" class="pfh" hidden></div>
   </main>
 
   <!-- Itens só desta página dentro da ⚙️ -->
@@ -103,6 +111,8 @@
   <script src="TobaRoutine/js/routine-metrics.js"></script>
   <script src="TobaKitchen/js/kitchen-recipes.js"></script>
   <script src="assets/toba-player.js"></script>
+  <script src="TobaHealth/js/hall-shared.js"></script>
+  <script src="assets/perfil-hall.js"></script>
   <script src="assets/perfil.js"></script>
   <script src="assets/pwa-register.js"></script>
 </body>

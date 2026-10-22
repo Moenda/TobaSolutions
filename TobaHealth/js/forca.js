@@ -268,7 +268,7 @@ function renderStrengthBuilder() {
 
   const added = new Set(state.exercises.map((exercise) => exercise.exerciseId));
   const options = state.activeGroup
-    ? STRENGTH_EXERCISES.filter((exercise) => exercise.group === state.activeGroup).map((exercise) => `
+    ? getStrengthExercisesInGroup(state.activeGroup).map((exercise) => `
         <button type="button" class="strength-option${added.has(exercise.id) ? " added" : ""}" data-action="add-exercise" data-exercise="${exercise.id}" ${added.has(exercise.id) ? "disabled" : ""}>
           <span>${exercise.name}</span><span class="strength-option-mark">${added.has(exercise.id) ? "✓" : "+"}</span>
         </button>`).join("")

@@ -100,6 +100,7 @@ function buildRoutineAlerts(data, now = Date.now()) {
   const tasks = (Array.isArray(db.tasks) ? db.tasks : []).filter((t) => t && t.id && t.time && !t.archivedAt);
   const done = routineDoneKeys(db.log);
   readNativeRoutineDone().forEach((item) => done.add(`${item.taskId}|${item.date}`));
+  routineSkippedKeys(db).forEach((key) => done.add(key)); // deixada pra lá não cobra (v1.47)
   const today = toIsoDate(new Date(now));
   const alerts = [];
   for (let i = 0; i < ROUTINE_ALERT_DAYS; i++) {
@@ -142,6 +143,19 @@ function syncRoutineAlerts(data) {
     return TOBA_NATIVE.setTaskAlerts(JSON.stringify(buildRoutineAlerts(data)));
   } catch (err) {
     console.warn("Não consegui agendar os avisos da rotina:", err);
+    return false;
+  }
+}
+
+// Tira da barra do Android a notificação já mostrada de uma ocorrência
+// (v1.47, APK 1.3). APK antigo não tem o método: as cobranças futuras já
+// saem pelo syncRoutineAlerts, só a notificação mostrada fica lá.
+function clearNativeTaskNotice(taskId, date) {
+  if (!TOBA_NATIVE || typeof TOBA_NATIVE.clearTaskNotice !== "function") return false;
+  try {
+    TOBA_NATIVE.clearTaskNotice(String(taskId), String(date));
+    return true;
+  } catch (err) {
     return false;
   }
 }

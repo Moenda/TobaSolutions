@@ -353,3 +353,53 @@
 .card-custom-body.is-routine .quick-add-btn:hover {
   background: rgba(210, 153, 34, 0.16);
 }
+
+/* Compras do cartão esperando aprovação (app Android, v1.47) */
+.portal-pending {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 0.9rem;
+  padding: 0.7rem 0.9rem;
+  color: var(--text);
+  text-decoration: none;
+  border: 1px solid rgba(227, 179, 65, 0.55);
+  border-radius: var(--radius);
+  background: linear-gradient(150deg, rgba(227, 179, 65, 0.16), var(--surface) 70%);
+}
+
+.portal-pending-icon {
+  position: relative;
+  font-size: 1.6rem;
+}
+
+.portal-pending-icon b {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  color: #fff;
+  border-radius: 999px;
+  background: var(--red);
+  border: 2px solid var(--bg);
+}
+
+.portal-pending-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.72rem;
+  color: var(--text-2);
+}
+
+.portal-pending-text strong {
+  font-size: 0.86rem;
+  color: var(--text);
+}
