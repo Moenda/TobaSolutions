@@ -982,3 +982,30 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.49 - Toba Calendar no Routine (eventos com dia marcado, dia tomado, avisos), rotina que conclui e edita pela Agenda e filtro de categoria do Gastos mais claro`
+
+---
+
+## v1.50 — ⏭ Nova série automática, careca que confere o dia todo e panqueca com avocado
+
+**Arquivos alterados:** `TobaHealth/js/sessao.js`, `TobaHealth/js/sessao-saitama.js`, `TobaHealth/css/sessao.css`, `TobaHealth/TobaHealth-Treinos.html`, `assets/toba-player.js`, `TobaKitchen/js/kitchen-recipes.js`, `CLAUDE.md`
+
+1. **⏭ Nova série automática:** caixinha nova no timer de descanso do treino ao vivo (força e Saitama), com explicação curta. Ligada, quando o timer zera o descanso fecha sozinho e já é a próxima série: sem ficar contando "perdidos no feed" e sem precisar tocar em "Bora pra próxima série". Feita pra quem já começa nos 3 segundos finais 😎. Vem desligada; a escolha fica guardada no aparelho.
+2. **👊 Conquistas do careca olham o dia:** "Dia do careca" agora vale com 100 flexões, 100 abdominais e 100 agachamentos **no mesmo dia** (pode ser em mais de um treino do Saitama). "Careca completo" pede isso + **10 km de Caminhada / Corrida no mesmo dia** (treinos de caminhada/corrida do dia somam). Km antigos que já estavam dentro de um Saitama continuam contando, então nenhuma conquista some.
+3. **Fim do treino do Saitama sem os km:** a folha de finalizar não pergunta mais "correu / caminhou?". No lugar, um aviso: a caminhada/corrida entra como **exercício próprio** (➕ Registrar treino › 🚶 Caminhada / Corrida, que tem distância, tempo e calorias) e vale pro Careca completo no mesmo dia. O formulário manual do Saitama continua com o campo de km (pra editar treinos antigos).
+4. **🥞 Panqueca do Bertoba com avocado:** passo novo no fim: meio avocado amassado no garfo com uma pitadinha de sal, por cima da panqueca pronta. Ingrediente novo "Avocado" (entra na lista de compras e no 🧺). kcal da porção foi de ~450 pra ~570.
+
+**Dados:**
+- `toba_health_live_prefs`: campo novo opcional `autoNext` (ausente = desligado). Nada muda no `TOBA_HEALTH_DB`.
+- Treino do Saitama feito ao vivo grava `distanceKm: null` (os outros campos iguais). Treinos antigos não mudam.
+- Kitchen: ingrediente novo `avocado`; o id da receita (`panqueca-banana`) e os outros ids não mudaram. O passo novo entrou no fim, então um modo cozinha aberto não se perde.
+- XP/conquistas continuam recalculados na hora (nada gravado); só a regra do careca mudou de "mesmo treino" pra "mesmo dia".
+- `sw.js` sem mudança (nenhum arquivo novo). Não precisa de APK novo.
+
+**Como testar:**
+- Treinos → ▶ Treino ao vivo → Saitama → toca num quadrado (descanso começa) → marca **⏭ Nova série automática** no timer → no −15s até zerar: o painel fecha sozinho com "⏭ Próxima leva! 👊". Desmarca e vê que volta a esperar o toque. Mesmo teste num treino de força (✓ numa série).
+- Finalizar o Saitama → aparece o aviso 🚶 no lugar do campo de km; salvar sem nenhuma rep pede pelo menos uma leva.
+- Num dia de teste: Saitama com 100/100/100 → ganha "Dia do careca". Registrar 🚶 Caminhada / Corrida de 10 km no mesmo dia → "Careca completo" 🦲 aparece no Perfil. Com 6 km + 4 km no mesmo dia também vale.
+- Kitchen → Receitas → Panqueca de banana → avocado e pitada de sal nos ingredientes e o passo final. Semana com a panqueca → avocado na lista de compras (Hortifruti).
+- Testar em 360px e 384px (o timer ficou um pouco mais alto).
+
+**Commit sugerido:** `v1.50 - Nova serie automatica no descanso, conquistas do Saitama pelo dia com caminhada/corrida de 10 km e avocado na panqueca do Bertoba`

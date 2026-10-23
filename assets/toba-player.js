@@ -226,8 +226,8 @@ function buildPlayerAchievements() {
     { id: "kcal-50k", cat: "energia", tier: "ouro", icon: "🏭", name: "Alto-forno", desc: "50.000 kcal. A siderúrgica quer te contratar.", hint: "Queime 50.000 kcal.", metric: (s) => s.kcal, goal: 50000 },
     { id: "kcal-100k", cat: "energia", tier: "lenda", icon: "☢️", name: "Reator nuclear", desc: "100.000 kcal. A Eletrobras está de olho.", hint: "Queime 100.000 kcal.", metric: (s) => s.kcal, goal: 100000, title: "☢️ Reator Humano" },
     { id: "st-fa", cat: "saitama", tier: "bronze", icon: "🥚", name: "Fã do careca", desc: "10 treinos do Saitama. Já pode comprar a capa.", hint: "Faça 10 treinos do Saitama.", metric: (s) => s.saitamaWorkouts, goal: 10 },
-    { id: "st-dia", cat: "saitama", tier: "prata", icon: "👊", name: "Dia do careca", desc: "100 flexões, 100 abdominais e 100 agachamentos num treino só.", hint: "Faça 100 de cada no mesmo treino.", metric: (s) => s.carecaDay, goal: 1 },
-    { id: "st-completo", cat: "saitama", tier: "ouro", icon: "🦲", name: "Careca completo", desc: "100/100/100 e 10 km no mesmo treino. Cadê o cabelo?", hint: "100 de cada + 10 km no mesmo treino.", metric: (s) => s.carecaFull, goal: 1, title: "🦲 Careca Honorário" },
+    { id: "st-dia", cat: "saitama", tier: "prata", icon: "👊", name: "Dia do careca", desc: "100 flexões, 100 abdominais e 100 agachamentos no mesmo dia.", hint: "Faça 100 de cada no mesmo dia (Saitama).", metric: (s) => s.carecaDay, goal: 1 },
+    { id: "st-completo", cat: "saitama", tier: "ouro", icon: "🦲", name: "Careca completo", desc: "100/100/100 e 10 km de caminhada/corrida no mesmo dia. Cadê o cabelo?", hint: "100 de cada + um treino de Caminhada / Corrida somando 10 km, no mesmo dia.", metric: (s) => s.carecaFull, goal: 1, title: "🦲 Careca Honorário" },
     { id: "st-1", cat: "saitama", tier: "bronze", icon: "🌱", name: "1% do careca", desc: "1% das repetições de 3 anos de Saitama.", hint: "Chegue a 1% da meta de 3 anos do Saitama.", metric: (s) => s.saitamaReps, goal: PLAYER_SAITAMA_GOAL * 0.01 },
     { id: "st-10", cat: "saitama", tier: "prata", icon: "🌿", name: "10% do careca", desc: "10% do treino lendário. O careca acenou.", hint: "Chegue a 10% da meta de 3 anos do Saitama.", metric: (s) => s.saitamaReps, goal: PLAYER_SAITAMA_GOAL * 0.1 },
     { id: "st-50", cat: "saitama", tier: "ouro", icon: "🌳", name: "Meio careca", desc: "Metade do treino lendário. Começou a cair o cabelo?", hint: "Chegue a 50% da meta de 3 anos do Saitama.", metric: (s) => s.saitamaReps, goal: PLAYER_SAITAMA_GOAL * 0.5 },
@@ -634,6 +634,9 @@ function computePlayer(options = {}) {
   const groups = new Set();
   const monthGroups = {};
   const weekendDays = {};
+  // Careca (v1.50): 100/100/100 somando os Saitamas do DIA + 10 km de
+  // Caminhada / Corrida no mesmo dia (km antigos gravados no Saitama contam).
+  const carecaDays = {};
   workouts.forEach((workout) => {
     const date = workout.date;
     const icon = PLAYER_WORKOUT_ICONS[workout.type] || "🏅";
@@ -673,12 +676,18 @@ function computePlayer(options = {}) {
     if (workout.type === "saitama") {
       stats.saitamaWorkouts += 1;
       stats.saitamaReps += reps;
-      const p = playerNum(workout.pushups);
-      const s = playerNum(workout.situps);
-      const q = playerNum(workout.squats);
-      if (p >= 100 && s >= 100 && q >= 100) {
+    }
+    if (workout.type === "saitama" || workout.type === "walking") {
+      const day = carecaDays[date] || (carecaDays[date] = { p: 0, s: 0, q: 0, km: 0 });
+      day.km += km;
+      if (workout.type === "saitama") {
+        day.p += playerNum(workout.pushups);
+        day.s += playerNum(workout.situps);
+        day.q += playerNum(workout.squats);
+      }
+      if (day.p >= 100 && day.s >= 100 && day.q >= 100) {
         stats.carecaDay = 1;
-        if (km >= 10) stats.carecaFull = 1;
+        if (day.km >= 10) stats.carecaFull = 1;
       }
     }
     if (workout.type) types.add(workout.type);

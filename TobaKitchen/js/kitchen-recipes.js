@@ -48,6 +48,7 @@ const KITCHEN_INGREDIENTS = {
   "whey-chocolate": { name: "Whey de chocolate", emoji: "💪", aisle: "mercearia", art: "o" }, // v1.48
   banana: { name: "Banana", emoji: "🍌", aisle: "horti", art: "a" },
   abacate: { name: "Abacate", emoji: "🥑", aisle: "horti", art: "o" },
+  avocado: { name: "Avocado", emoji: "🥑", aisle: "horti", art: "o" }, // v1.50
   tomate: { name: "Tomate", emoji: "🍅", aisle: "horti", art: "o" },
   cebola: { name: "Cebola", emoji: "🧅", aisle: "horti", art: "a" },
   alho: { name: "Alho", emoji: "🧄", aisle: "horti", art: "o" },
@@ -177,7 +178,7 @@ const KITCHEN_RECIPES = [
     ],
   },
   {
-    // v1.48: versão do Bertoba com whey (o id continua o mesmo)
+    // v1.48: versão do Bertoba com whey; v1.50: avocado por cima (o id continua o mesmo)
     id: "panqueca-banana",
     name: "Panqueca de banana com aveia e whey",
     emoji: "🥞",
@@ -185,7 +186,7 @@ const KITCHEN_RECIPES = [
     meals: ["cafe", "lanche"],
     minutes: 15,
     servings: 1,
-    kcal: 450,
+    kcal: 570,
     ingredients: [
       { id: "banana", qty: 1, unit: "un" },
       { id: "ovo", qty: 2, unit: "un" },
@@ -193,6 +194,8 @@ const KITCHEN_RECIPES = [
       { id: "whey-chocolate", qty: 1, unit: "scoop" },
       { id: "canela", qty: null, unit: "gosto" },
       { id: "oleo", qty: 1, unit: "cc" },
+      { id: "avocado", qty: 0.5, unit: "un", note: "amassado no garfo" },
+      { id: "sal", qty: 1, unit: "pitada" },
     ],
     steps: [
       { text: "Amassa a banana bem amassada numa tigela." },
@@ -201,6 +204,7 @@ const KITCHEN_RECIPES = [
       { text: "Frigideira em fogo baixo com um fio de óleo (espalha com papel toalha)." },
       { text: "Põe metade da massa. Pra não queimar embaixo: ou usa uma panela boa, ou tira do fogo e volta por alguns segundos, e repete até conseguir virar.", timer: 3 },
       { text: "Vira com coragem e doura o outro lado. Repete com o resto da massa.", timer: 2 },
+      { text: "Panqueca pronta: amassa meio avocado no garfo com uma pitadinha de sal e espalha por cima." },
     ],
     tip: "Com o whey de chocolate fica supimpa. Quanto mais madura a banana, mais doce fica (sem precisar de açúcar).",
   },

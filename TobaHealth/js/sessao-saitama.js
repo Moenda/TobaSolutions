@@ -14,6 +14,9 @@
  * Ao finalizar vira um treino "saitama" normal em healthDb.workouts (mesmo
  * formato do formulário: pushups/situps/squats/distanceKm/durationMinutes/
  * calories/notes) e a chave é apagada. Nada novo no banco.
+ * Desde v1.50 o fim não pede mais km (distanceKm sai null): a caminhada/
+ * corrida entra como treino próprio de "Caminhada / Corrida", que é o que
+ * conta pros 10 km do "Careca completo" (mesmo dia, ver computePlayer).
  *
  * Carregado DEPOIS de sessao.js e ANTES de treinos.js.
  * ===================================================================== */
@@ -294,10 +297,9 @@ function openSaitamaLiveFinish() {
     .filter((item) => data[item.field] > 0)
     .map((item) => `${formatWorkoutNumber(data[item.field], 0)} ${item.plural}`);
   document.getElementById("liveFinishSummary").textContent = parts.length
-    ? `${parts.join(" · ")} · ${minutes} min. Correu também? Põe os km aí.`
-    : `Nenhuma rep contada em ${minutes} min. Se foi só corrida, põe os km aí.`;
+    ? `${parts.join(" · ")} · ${minutes} min.`
+    : `Nenhuma rep contada em ${minutes} min.`;
   setLiveFinishMode(true);
-  document.getElementById("live-km").value = "";
   document.getElementById("live-calories").value = "";
   document.getElementById("live-notes").value = "";
   openTobaModal("liveFinishModal");
@@ -305,11 +307,9 @@ function openSaitamaLiveFinish() {
 
 function finishSaitamaLiveSession() {
   const data = liveSession.saitama;
-  const km = parseTobaDecimal(document.getElementById("live-km").value);
   const calories = Number(document.getElementById("live-calories").value);
-  const distanceKm = Number.isFinite(km) && km > 0 ? Math.round(km * 100) / 100 : null;
-  if (!getSaitamaLiveTotal(data) && !distanceKm) {
-    showPageMessage("Conte pelo menos uma leva (toque num quadrado) ou informe os km. Se quiser jogar o treino fora, use Cancelar treino.", { title: "Nada pra salvar" });
+  if (!getSaitamaLiveTotal(data)) {
+    showPageMessage("Conte pelo menos uma leva (toque num quadrado). Correu ou caminhou? Isso entra como treino de Caminhada / Corrida. Se quiser jogar este fora, use Cancelar treino.", { title: "Nada pra salvar" });
     return;
   }
   const workout = {
@@ -319,7 +319,7 @@ function finishSaitamaLiveSession() {
     date: liveSession.date,
     durationMinutes: Math.max(1, Math.round((Date.now() - liveSession.startedAt) / 60000)),
     calories: Number.isFinite(calories) && calories > 0 ? calories : null,
-    distanceKm,
+    distanceKm: null, // v1.50: km vão num treino de Caminhada / Corrida
     pushups: data.pushups || null,
     situps: data.situps || null,
     squats: data.squats || null,

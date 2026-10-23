@@ -35,7 +35,8 @@ const LIVE_REST_DEFAULT = 90;
 const LIVE_LATE_SECONDS = 30; // passou disso: "tempo perdido no feed"
 const LIVE_RING = 2 * Math.PI * 52; // circunferência do anel (r = 52)
 // Preferências de tela do treino ao vivo (não é dado de treino):
-// { keepAwake: bool, saitamaStep: n, saitamaAutoRest: bool, saitamaRest: s }
+// { keepAwake: bool, saitamaStep: n, saitamaAutoRest: bool, saitamaRest: s,
+//   autoNext: bool (v1.50: o descanso fecha sozinho quando zera) }
 const LIVE_PREFS_KEY = "toba_health_live_prefs";
 
 const LIVE_QUIPS = {
@@ -809,6 +810,21 @@ function liveEndRest() {
   renderLiveRest();
 }
 
+// "⏭ Nova série automática" (desligado por padrão): vale pra força e Saitama.
+function liveToggleAutoNext(el) {
+  storeLivePrefs({ autoNext: el.checked });
+  tobaToast(el.checked ? "⏭ Zerou, fechou: o descanso some sozinho" : "✋ O descanso espera o seu toque pra fechar");
+  if (el.checked && liveSession?.rest.startedAt && liveSession.rest.endsAt <= Date.now()) liveAutoNext();
+}
+
+// Descanso zerou com a "Nova série automática" ligada: fecha sem esperar o toque.
+function liveAutoNext() {
+  endLiveRest();
+  storeLiveSession();
+  renderLiveRest();
+  tobaToast(liveSession?.kind === "saitama" ? "⏭ Próxima leva! 👊" : "⏭ Nova série! Bora 💪");
+}
+
 function liveToggleRestMin() {
   liveRestMinimized = !liveRestMinimized;
   renderLiveRest();
@@ -867,6 +883,13 @@ function renderLiveRest() {
         <button type="button" class="live-chip" data-click="liveRestNudge" data-delta="-15">−15s</button>
         <button type="button" class="live-chip" data-click="liveRestNudge" data-delta="15">+15s</button>
       </div>
+      <label class="live-rest-auto">
+        <input type="checkbox" data-change="liveToggleAutoNext"${readLivePrefs().autoNext ? " checked" : ""} />
+        <span>
+          <strong>⏭ Nova série automática</strong>
+          <small>Zerou o timer, o descanso fecha sozinho e já é a próxima série. Pra quem começa nos 3 segundos finais 😎</small>
+        </span>
+      </label>
       <button type="button" class="btn ${state === "running" ? "btn-secondary" : "btn-primary"} live-rest-end" data-click="liveEndRest">${state === "running" ? "Pular descanso" : "Bora pra próxima série 💪"}</button>`;
   }
   updateLiveRest();
@@ -923,6 +946,10 @@ function liveTick() {
     // por muito tempo o celular pode congelar a aba e o aviso atrasar.
     if (document.hidden) tobaNotify("⏱ Descanso acabou!", "Larga o celular e bora pra próxima série 💪", { tag: "toba-live-rest" });
     storeLiveSession();
+  }
+  if (rest.endsAt <= now && readLivePrefs().autoNext) {
+    liveAutoNext();
+    return;
   }
   if (getLiveRestState(now) !== liveRestState) renderLiveRest();
   else updateLiveRest(now);
@@ -1034,11 +1061,12 @@ function buildLiveWorkoutExercises() {
     .filter((exercise) => exercise.sets.length);
 }
 
-// A folha de finalizar é a mesma: o Saitama troca nome/modelo pelos km.
+// A folha de finalizar é a mesma: o Saitama troca nome/modelo pelo aviso
+// de que a caminhada/corrida é um treino à parte (v1.50).
 function setLiveFinishMode(isSaitama) {
   document.getElementById("liveTitleGroup").hidden = isSaitama;
   document.getElementById("liveSaveRoutineRow").hidden = isSaitama;
-  document.getElementById("liveKmGroup").hidden = !isSaitama;
+  document.getElementById("liveWalkNote").hidden = !isSaitama;
 }
 
 function openLiveFinish() {
@@ -1170,6 +1198,7 @@ tobaActions({
   liveRestNudge,
   liveEndRest,
   liveToggleRestMin,
+  liveToggleAutoNext,
   liveToggleAwake,
   openLiveFinish,
   finishLiveSession,
