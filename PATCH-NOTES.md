@@ -1009,3 +1009,39 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px (o timer ficou um pouco mais alto).
 
 **Commit sugerido:** `v1.50 - Nova serie automatica no descanso, conquistas do Saitama pelo dia com caminhada/corrida de 10 km e avocado na panqueca do Bertoba`
+
+---
+
+## v1.51 — 🏁 Toba Racing (combustível e km/l), balança que pula de campo certo, Amigo da balança destravado, média no filtro do Gastos e receitas em ordem alfabética
+
+**Arquivos novos:** `TobaRacing/TobaRacing-Index.html`, `TobaRacing/TobaRacing-Combustivel.html`, `TobaRacing/css/racing-base.css`, `TobaRacing/js/racing-metrics.js`, `TobaRacing/js/racing-core.js`, `TobaRacing/js/combustivel.js`
+
+**Arquivos alterados:** `index.html`, `assets/portal.js`, `assets/toba-common.js`, `assets/toba-player.js`, `sw.js`, `TobaHealth/js/health-core.js`, `TobaHealth/js/health-metrics.js`, `TobaHealth/js/pesagem.js`, `TobaHealth/TobaHealth-Pesagem.html`, `TobaHealth/css/pesagem.css`, `TobaBank/js/gastos.js`, `TobaBank/css/gastos.css`, `TobaKitchen/js/kitchen-recipes.js`, `TobaKitchen/js/receitas.js`, `TobaKitchen/js/semana.js`, `CLAUDE.md`
+
+1. **🏁 Toba Racing (app novo, Beta):** card novo no portal (depois do Routine). Primeiro módulo: **⛽ Combustível**. Em cada parada você anota data, **odômetro**, litros, preço por litro e total (preencheu 2 dos 3, o Toba faz a conta do outro), o combustível (gasolina, etanol, diesel) e se **encheu o tanque**. O km/l sai de **tanque cheio a tanque cheio** (o jeito certo: km rodados ÷ litros colocados), com abastecimento parcial no meio entrando na conta. A tela mostra:
+   - **Último tanque** em destaque com o selo 🟢 **Pé leve** / 🟡 **Na média** / 🔴 **Pé de chumbo** (comparado com a sua média, margem de 3%);
+   - média geral, **custo por km**, gasto do mês e a **autonomia** (com o tamanho do tanque cadastrado em ⚙️ › 🚗 Meu carro);
+   - **gráfico do histórico de km/l** (verde = média ou melhor, vermelho = abaixo, linha tracejada = média);
+   - **🌽 Etanol ou ⛽ gasolina?**: até quanto o etanol compensa com o preço da última gasolina (regra dos 70% até ter um tanque cheio de cada; depois usa o rendimento do SEU carro);
+   - lista dos abastecimentos com o km/l de cada tanque.
+   Esqueceu de anotar uma parada? Marca "🙈 Teve abastecimento antes deste que eu não anotei" e aquele trecho sai da conta. O Toba recusa odômetro repetido ou que não bate com a data. Hub com "Abastecer agora" (já abre a folha). Por enquanto **não dá XP**.
+2. **⚖️ Balança: formato do visor e pulo de campo certo:** na ⚙️ › Métricas da balança, cada campo (e o **peso**) ganhou o **Visor**: escolha como o número aparece na balança (`00,00`, `0,00`, `000`...). O pulo automático pro próximo campo segue isso. E o bug do "digito 919 e já troca" era a máscara contando o **zero da frente** ("0,91" + 9 contava 4 dígitos): consertado. O pulo também não para mais no campo de data/hora, e os campos sem vírgula (pontuação, metabolismo, visceral, idade) agora pulam também. Editar uma pesagem sem mexer num campo mantém o valor exatamente como estava.
+3. **🏆 "Amigo da balança" destravado:** a pesagem grava data **e hora**, e o Perfil só aceitava data pura, então todas as pesagens contavam 0. Agora contam pelo dia (as antigas também, na hora). O mesmo bug deixava o card do Health no portal sem o peso: consertado junto.
+4. **📊 Média por compra no filtro do Gastos:** tocar numa categoria mostra dois quadradinhos: **Total no mês** ("em 3 compras") e **Média por compra** em dourado.
+5. **🍳 Receitas em ordem alfabética:** no Livro de Receitas, no "🧺 O que tem aí?" (desempate) e na escolha de receita da Semana.
+
+**Dados:**
+- Chave nova `TOBA_RACING_DB` (+ `TOBA_RACING_DB_AUTO_BACKUP`), formato no CLAUDE.md seção 3.12. Entra sozinha no backup geral do portal; ⚙️ do Racing tem backup só dele (`toba_racing_backup_*.json`).
+- `TOBA_HEALTH_DB`: campos novos opcionais `metricsOrder[].digits` e `weightFormat` (bancos e backups antigos ganham o padrão no load). `metricsOrder[].type` agora pode ser trocado pela ⚙️ (valores de sempre: int/dec1/dec2). Nenhuma pesagem é regravada.
+- XP/conquistas continuam calculados na hora: quem já tem 10 pesagens ganha o "Amigo da balança" ao abrir o Perfil.
+- `sw.js`: 6 arquivos novos no PRECACHE, VERSION `toba-v19`. Não precisa de APK novo.
+
+**Como testar:**
+- Portal → card 🏁 Toba Racing → Combustível → + Abastecer: odômetro, litros (4 dígitos pula pro preço), preço (5,899 pula pro total, que já vem calculado). Faça um tanque cheio, depois um parcial e outro cheio: aparece o km/l, o gráfico (a partir de 2 tanques) e o selo. Tentar um odômetro menor que o anterior com data posterior → aviso "Viagem no tempo?". ⚙️ › 🚗 Meu carro → tanque 50 → aparece a Autonomia.
+- Pesagem → ⚙️ Métricas da balança → Visor do peso `00,00`, Massa Óssea `0,00` → Nova pesagem: digitar 9195 só pula no 4º número; 330 na óssea pula no 3º. Editar uma pesagem antiga e salvar sem mexer → valores iguais.
+- Perfil → ⚖️ Amigo da balança mostra "N de 10" com as suas pesagens.
+- Gastos → tocar em ⛽ Combustível nas categorias → quadradinhos de total e média.
+- Kitchen → Receitas e Semana › ➕ Receita: lista de A a Z.
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.51 - Toba Racing com controle de combustivel e historico de km/l, visor da balanca com pulo de campo certo, Amigo da balanca contando pesagens, media por compra no filtro do Gastos e receitas em ordem alfabetica`

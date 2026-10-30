@@ -259,3 +259,61 @@
   opacity: 0.3;
   cursor: default;
 }
+
+/* v1.51: formato de cada campo ("Visor 00,00") */
+.order-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.order-item-left.is-static {
+  cursor: default;
+}
+
+.scale-fixed-icon {
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.scale-fixed-tag {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.order-item.is-weight {
+  border-color: rgba(63, 185, 80, 0.35);
+}
+
+.scale-format {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 28px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.scale-format-select {
+  height: 26px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-3);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+  cursor: pointer;
+}

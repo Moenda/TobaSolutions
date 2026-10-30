@@ -5,7 +5,8 @@
  *   TobaHealth/js/health-metrics.js (card do Health), de toba-player.js
  *   (card do Perfil do jogador no topo) e de TobaRoutine/js/routine-metrics.js
  *   + routine-alerts.js (card do Routine e avisos das tarefas) e de
- *   TobaKitchen/js/kitchen-recipes.js (linha do card do Kitchen).
+ *   TobaKitchen/js/kitchen-recipes.js (linha do card do Kitchen) e de
+ *   TobaRacing/js/racing-metrics.js (linha do card do Racing, desde v1.51).
  * - Preferências de UI: "toba_modules_config" (ordem/visibilidade dos
  *   cards), "toba_bank_card_config" (o que o card do Bank mostra),
  *   "toba_health_card_config" (o que o card do Health mostra),
@@ -664,6 +665,31 @@ function renderKitchenCard() {
   box.hidden = !parts.length;
 }
 
+/* ---------------------------------------------------------------------
+ * Card do Toba Racing (v1.51): km/l do último tanque e o gasto do mês
+ * (só leitura do TOBA_RACING_DB, contas do racing-metrics.js)
+ * ------------------------------------------------------------------- */
+function renderRacingCard() {
+  const box = document.getElementById("racingCardToday");
+  if (!box || typeof calcRacingSummary !== "function") return;
+  let data = null;
+  try {
+    data = JSON.parse(localStorage.getItem("TOBA_RACING_DB") || "null");
+  } catch (e) {
+    console.error("Erro ao ler os dados do Toba Racing", e);
+  }
+  const s = calcRacingSummary(data);
+  const parts = [];
+  if (s.lastKml) {
+    const badge = racingTrendBadge(s.trend);
+    parts.push(`🏁 ${formatRacingKml(s.lastKml)} km/l${badge ? ` ${badge.icon}` : ""}`);
+    if (s.avgKml) parts.push(`📊 média ${formatRacingKml(s.avgKml)}`);
+  }
+  if (s.monthSpent) parts.push(`⛽ ${formatCurrency(s.monthSpent)} no mês`);
+  box.innerHTML = parts.map((part) => `<span class="routine-chip">${part}</span>`).join("");
+  box.hidden = !parts.length;
+}
+
 // App Android (v1.47): compras lidas das notificações esperando aprovação
 // no Gastos. Só lê a fila do app e o TOBA_BANK_DB (tira o que já foi lançado).
 function renderPortalPending() {
@@ -698,6 +724,7 @@ function renderPortalPanels() {
   renderHealthCard(getHealthCardConfig());
   renderRoutineCard();
   renderKitchenCard();
+  renderRacingCard();
   tobaPlayerCheck();
   // App Android: refaz os avisos das tarefas a cada abertura (o portal é a tela mais aberta)
   syncRoutineAlerts(readRoutineDbRaw());
@@ -769,7 +796,7 @@ tobaSetupApp({
   name: "Toba Solutions",
   exportBackup: exportAllData,
   importBackup: importAllData,
-  dataHint: "Backup geral: um .json com TODOS os apps Toba (Bank, Health, Routine, Kitchen e preferências) de uma vez. Backup de um app só se restaura dentro dele.",
+  dataHint: "Backup geral: um .json com TODOS os apps Toba (Bank, Health, Routine, Kitchen, Racing e preferências) de uma vez. Backup de um app só se restaura dentro dele.",
 });
 
 tobaActions({

@@ -106,7 +106,20 @@ function createEmptyHealthDb() {
     workouts: [],
     strengthRoutines: [],
     exerciseSettings: {},
+    weightFormat: { ...DEFAULT_WEIGHT_FORMAT },
   };
+}
+
+// Formato do campo na balança (v1.51): "digits" = dígitos antes da vírgula.
+// Com as casas (type) diz quando o campo está completo e pula pro próximo.
+// metricsOrder[].digits ausente = este padrão; peso = weightFormat.
+const DEFAULT_METRIC_DIGITS = { score: 2, fat: 2, muscle: 2, water: 2, bmr: 4, visceral: 2, protein: 2, bone: 1, bodyAge: 2 };
+const DEFAULT_WEIGHT_FORMAT = { type: "dec2", digits: 2 };
+const HEALTH_METRIC_TYPES = ["int", "dec1", "dec2"];
+
+function healthDigitsOk(value, max) {
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 1 && n <= max;
 }
 
 // Garante o formato esperado (aceita bancos antigos sem workouts/metricsOrder).
@@ -126,6 +139,16 @@ function normalizeHealthDb(db) {
   }
   // O IMC deixou de ser uma métrica da balança.
   db.metricsOrder = db.metricsOrder.filter((m) => m.key !== "bmi");
+  // Formato de cada campo (v1.51). Bancos antigos ganham o padrão.
+  db.metricsOrder.forEach((m) => {
+    if (!m || typeof m !== "object") return;
+    if (!healthDigitsOk(m.digits, 4)) m.digits = DEFAULT_METRIC_DIGITS[m.key] || 2;
+  });
+  const wf = db.weightFormat && typeof db.weightFormat === "object" && !Array.isArray(db.weightFormat) ? db.weightFormat : {};
+  db.weightFormat = {
+    type: wf.type === "dec1" ? "dec1" : DEFAULT_WEIGHT_FORMAT.type,
+    digits: healthDigitsOk(wf.digits, 3) ? Number(wf.digits) : DEFAULT_WEIGHT_FORMAT.digits,
+  };
   return db;
 }
 

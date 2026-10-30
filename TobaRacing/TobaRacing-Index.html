@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="icon" href="../icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="css/racing-base.css" />
+  <title>Toba Racing 🏁</title>
+</head>
+
+<body>
+  <main class="container">
+    <header class="toba-header">
+      <a class="toba-back" href="../index.html" aria-label="Voltar para o Toba Solutions">‹</a>
+      <a class="toba-titles" href="../index.html">
+        <span class="toba-app">🏁 Toba Racing</span>
+        <span class="toba-page" id="hubCarName">Hub</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
+      </div>
+    </header>
+
+    <div class="toba-kicker">Pé leve, bolso cheio. Ou não. 🏎️💨</div>
+    <nav class="toba-hub-list" aria-label="Módulos do Toba Racing">
+      <a class="toba-hub-card" href="TobaRacing-Combustivel.html">
+        <span class="toba-hub-icon">⛽</span>
+        <span class="toba-hub-text">
+          <span class="toba-hub-title">Combustível</span>
+          <span class="toba-hub-desc" id="hubFuelDesc">Anota cada abastecimento e o Toba mostra seu km/l tanque a tanque.</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </a>
+      <a class="toba-hub-card rc-hub-quick" href="TobaRacing-Combustivel.html?add=1">
+        <span class="toba-hub-icon">➕</span>
+        <span class="toba-hub-text">
+          <span class="toba-hub-title">Abastecer agora</span>
+          <span class="toba-hub-desc">Tô no posto: odômetro, litros e bora.</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </a>
+    </nav>
+
+    <div class="section-title">🏆 Seu pit stop</div>
+    <div class="toba-stats" id="hubStats"></div>
+  </main>
+
+  <script src="../assets/toba-common.js"></script>
+  <script src="js/racing-metrics.js"></script>
+  <script src="js/racing-core.js"></script>
+  <script>
+    // O Hub só mostra um resumo; quem grava é o módulo (e a ⚙️ com backup / Meu carro).
+    function renderRacingHub() {
+      const s = calcRacingSummary(racingDb);
+      document.getElementById("hubCarName").textContent = racingDb.car.name ? `🚗 ${racingDb.car.name}` : "Hub";
+      document.getElementById("hubFuelDesc").textContent = s.lastKml
+        ? `Último tanque: ${formatRacingKml(s.lastKml)} km/l · média ${formatRacingKml(s.avgKml)}`
+        : s.count
+          ? `${s.count} ${s.count === 1 ? "abastecimento anotado" : "abastecimentos anotados"} · o km/l sai no próximo tanque cheio`
+          : "Anota cada abastecimento e o Toba mostra seu km/l tanque a tanque.";
+      const badge = racingTrendBadge(s.trend);
+      const tile = (label, value, sub) => `
+        <div class="toba-stat">
+          <span class="toba-stat-label">${label}</span>
+          <span class="toba-stat-value">${value}</span>
+          <span class="toba-stat-sub">${sub}</span>
+        </div>`;
+      document.getElementById("hubStats").innerHTML =
+        tile("🏁 Último tanque", s.lastKml ? `<span class="text-racing">${formatRacingKml(s.lastKml)}</span> <small>km/l</small>` : "--", badge ? `${badge.icon} ${badge.label}` : "precisa de 2 tanques cheios")
+        + tile("📊 Média", s.avgKml ? `${formatRacingKml(s.avgKml)} <small>km/l</small>` : "--", s.costPerKm ? `${formatCurrency(s.costPerKm)} por km` : "de tanque cheio a cheio")
+        + tile("📅 No mês", formatCurrency(s.monthSpent), s.monthKm ? `${formatRacingKm(s.monthKm)} km rodados` : "em combustível")
+        + tile("📍 Odômetro", s.lastOdometer ? `${formatRacingKm(s.lastOdometer)} <small>km</small>` : "--", s.lastFillDaysAgo === null ? "nenhuma parada ainda" : s.lastFillDaysAgo === 0 ? "abasteceu hoje" : `última parada há ${s.lastFillDaysAgo} ${s.lastFillDaysAgo === 1 ? "dia" : "dias"}`);
+    }
+    function onRacingDataReplaced() {
+      renderRacingHub();
+    }
+    window.addEventListener("pageshow", (event) => {
+      if (event.persisted) renderRacingHub();
+    });
+    renderRacingHub();
+  </script>
+  <script src="../assets/pwa-register.js"></script>
+</body>
+
+</html>

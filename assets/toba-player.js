@@ -718,9 +718,12 @@ function computePlayer(options = {}) {
   });
 
   /* ---------- Pesagens ---------- */
+  // A pesagem grava data E hora ("AAAA-MM-DDTHH:MM", campo datetime-local):
+  // conta pelo dia (até a v1.50 só "AAAA-MM-DD" passava e tudo dava 0).
   const weighDates = (Array.isArray(health.weighIns) ? health.weighIns : [])
-    .filter((w) => w && playerIsIso(w.date) && playerNum(w.weight) > 0 && w.date <= today)
-    .map((w) => w.date)
+    .map((w) => ({ w, day: String((w && w.date) || "").slice(0, 10) }))
+    .filter(({ w, day }) => w && playerIsIso(day) && playerNum(w.weight) > 0 && day <= today)
+    .map(({ day }) => day)
     .sort();
   weighDates.forEach((date) => {
     stats.weighIns += 1;

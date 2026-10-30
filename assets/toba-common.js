@@ -119,36 +119,53 @@ function formatDec2(num) {
   return num === null || num === undefined ? "--" : num.toFixed(2).replace(".", ",");
 }
 
-// Máscara dos campos ".toba-mask-dec1/.toba-mask-dec2": os dígitos viram
-// décimos/centésimos e a vírgula entra sozinha (não depende do teclado).
-// Ao completar o número, pula para o próximo campo do formulário.
+// Máscara dos campos ".toba-mask-dec1/.toba-mask-dec2" (e ".toba-mask-int" e
+// ".toba-mask-dec3", preço da bomba, desde v1.51): os dígitos viram décimos/centésimos e a vírgula entra
+// sozinha (não depende do teclado). Ao completar o número, pula para o
+// próximo campo de digitar do formulário (data/hora e caixinhas ficam de fora).
+// Completar = data-digits (dígitos antes da vírgula, desde v1.51) + casas
+// decimais; sem data-digits vale 2 antes da vírgula (3 no dec1, 4 no dec2) e
+// o int não pula.
+function tobaMaskDecimals(input) {
+  if (input.classList.contains("toba-mask-dec1")) return 1;
+  if (input.classList.contains("toba-mask-dec2")) return 2;
+  if (input.classList.contains("toba-mask-dec3")) return 3;
+  return 0;
+}
+
 function initTobaDecimalMasks() {
-  document.querySelectorAll(".toba-mask-dec1, .toba-mask-dec2").forEach((input) => {
+  document.querySelectorAll(".toba-mask-dec1, .toba-mask-dec2, .toba-mask-dec3, .toba-mask-int").forEach((input) => {
     if (input.dataset.maskReady) return;
     input.dataset.maskReady = "1";
-    input.setAttribute("inputmode", "decimal");
+    input.setAttribute("inputmode", tobaMaskDecimals(input) ? "decimal" : "numeric");
 
     input.addEventListener("input", (e) => {
-      const digits = e.target.value.replace(/\D/g, "");
-      if (!digits) {
-        e.target.value = "";
+      const el = e.target;
+      // A classe é lida a cada tecla: a Pesagem troca as casas do peso na ⚙️.
+      const decimals = tobaMaskDecimals(el);
+      // Sem os zeros da frente: "0,91" + 9 são 3 dígitos (919), não 4. Contar o
+      // zero fazia o peso pular de campo no 3º número (bug até a v1.50).
+      const raw = el.value.replace(/\D/g, "");
+      if (!raw) {
+        el.value = "";
         return;
       }
+      const digits = String(parseInt(raw, 10));
 
-      const isDec1 = e.target.classList.contains("toba-mask-dec1");
-      e.target.value = (parseInt(digits, 10) / (isDec1 ? 10 : 100))
-        .toFixed(isDec1 ? 1 : 2)
-        .replace(".", ",");
+      el.value = decimals
+        ? (parseInt(digits, 10) / 10 ** decimals).toFixed(decimals).replace(".", ",")
+        : digits;
 
-      if (e.inputType === "insertText" && e.data && !isNaN(e.data)) {
-        if (digits.length >= (isDec1 ? 3 : 4)) {
-          const form = e.target.closest("form");
-          if (!form) return;
-          const formInputs = Array.from(form.querySelectorAll('input:not([type="hidden"])'));
-          const next = formInputs[formInputs.indexOf(e.target) + 1];
-          if (next) next.focus();
-        }
-      }
+      if (!(e.inputType === "insertText" && e.data && !isNaN(e.data))) return;
+      const intDigits = Number(el.dataset.digits) || (decimals ? 2 : 0);
+      if (!intDigits || digits.length < intDigits + decimals) return;
+      const form = el.closest("form");
+      if (!form) return;
+      const formInputs = Array.from(form.querySelectorAll(
+        'input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="date"]):not([type="datetime-local"]):not([type="time"])',
+      ));
+      const next = formInputs[formInputs.indexOf(el) + 1];
+      if (next) next.focus();
     });
   });
 }

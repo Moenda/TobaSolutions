@@ -298,7 +298,7 @@ function formatMetricValue(val, type) {
   if (val === null || val === undefined) return "--";
   if (type === "dec2") return formatDec2(val);
   if (type === "dec1") return formatDec1(val);
-  return String(val);
+  return String(val).replace(".", ",");
 }
 
 function getBmi(weight) {
@@ -477,23 +477,81 @@ function renderSvgChart(points, type, unit) {
   return svg;
 }
 
-/* MÉTRICAS DA BALANÇA (quais aparecem e em que ordem) */
+/* MÉTRICAS DA BALANÇA (quais aparecem, em que ordem e com quantas casas) */
 function openScaleConfig() {
   renderScaleConfigList();
   openTobaModal("scaleConfigModal");
 }
 
+// Formato do campo (v1.51): casas decimais (type) + dígitos antes da vírgula.
+// É o que a máscara usa pra saber que o número acabou e pular de campo.
+const METRIC_TYPE_DECIMALS = { int: 0, dec1: 1, dec2: 2 };
+
+function getMetricDigits(m) {
+  return healthDigitsOk(m.digits, 4) ? Number(m.digits) : DEFAULT_METRIC_DIGITS[m.key] || 2;
+}
+
+function getWeightFormat() {
+  const wf = healthDb.weightFormat || {};
+  return {
+    type: wf.type === "dec1" ? "dec1" : "dec2",
+    digits: healthDigitsOk(wf.digits, 3) ? Number(wf.digits) : DEFAULT_WEIGHT_FORMAT.digits,
+  };
+}
+
+// "00,00" = 2 dígitos e 2 casas, do jeito que aparece no visor da balança
+function formatPattern(type, digits) {
+  const decimals = METRIC_TYPE_DECIMALS[type] || 0;
+  return "0".repeat(digits) + (decimals ? `,${"0".repeat(decimals)}` : "");
+}
+
+function maskClassFor(type) {
+  return type === "dec1" ? "toba-mask-dec1" : type === "dec2" ? "toba-mask-dec2" : "toba-mask-int";
+}
+
+// Exemplo do campo vazio: o do padrão, se ainda bater com o formato escolhido
+function placeholderFor(original, type, digits) {
+  const decimals = METRIC_TYPE_DECIMALS[type] || 0;
+  const match = String(original || "").match(/(\d+)(?:,(\d+))?\s*$/);
+  if (match && match[1].length === digits && (match[2] || "").length === decimals) return original;
+  return `Ex: ${formatPattern(type, digits)}`;
+}
+
+function formatSelectHtml(current, types, maxDigits, attrs) {
+  const groups = { int: "Sem vírgula", dec1: "1 casa decimal", dec2: "2 casas decimais" };
+  return `<select class="scale-format-select" ${attrs}>${types
+    .map((type) => `<optgroup label="${groups[type]}">${Array.from({ length: maxDigits }, (_, i) => i + 1)
+      .map((digits) => {
+        const value = `${type}|${digits}`;
+        return `<option value="${value}"${value === current ? " selected" : ""}>${formatPattern(type, digits)}</option>`;
+      })
+      .join("")}</optgroup>`)
+    .join("")}</select>`;
+}
+
 function renderScaleConfigList() {
   const last = healthDb.metricsOrder.length - 1;
-  document.getElementById("scaleMetricsOrderList").innerHTML =
+  const wf = getWeightFormat();
+  const weightRow = `
+            <div class="order-item is-weight">
+                <div class="order-item-main">
+                    <span class="order-item-left is-static"><span class="scale-fixed-icon">⚖️</span><span>Peso (kg)</span></span>
+                    <label class="scale-format">Visor ${formatSelectHtml(`${wf.type}|${wf.digits}`, ["dec1", "dec2"], 3, 'data-change="setWeightFormat" aria-label="Formato do peso"')}</label>
+                </div>
+                <span class="scale-fixed-tag">sempre</span>
+            </div>`;
+  document.getElementById("scaleMetricsOrderList").innerHTML = weightRow +
     healthDb.metricsOrder
       .map(
         (m, idx) => `
             <div class="order-item">
-                <label class="order-item-left" for="chk_${m.key}">
-                    <input type="checkbox" id="chk_${m.key}" ${m.active ? "checked" : ""} data-change="toggleMetricActive" data-index="${idx}">
-                    <span>${escapeHtml(m.label)}</span>
-                </label>
+                <div class="order-item-main">
+                    <label class="order-item-left" for="chk_${m.key}">
+                        <input type="checkbox" id="chk_${m.key}" ${m.active ? "checked" : ""} data-change="toggleMetricActive" data-index="${idx}">
+                        <span>${escapeHtml(m.label)}</span>
+                    </label>
+                    <label class="scale-format">Visor ${formatSelectHtml(`${m.type}|${getMetricDigits(m)}`, ["int", "dec1", "dec2"], 4, `data-change="setMetricFormat" data-index="${idx}" aria-label="Formato: ${escapeHtml(m.label)}"`)}</label>
+                </div>
                 <div class="order-btns">
                     <button type="button" class="action-icon-btn" data-click="moveMetric" data-index="${idx}" data-dir="-1" ${idx === 0 ? "disabled" : ""} aria-label="Subir">⬆️</button>
                     <button type="button" class="action-icon-btn" data-click="moveMetric" data-index="${idx}" data-dir="1" ${idx === last ? "disabled" : ""} aria-label="Descer">⬇️</button>
@@ -502,6 +560,22 @@ function renderScaleConfigList() {
         `,
       )
       .join("");
+}
+
+function setMetricFormat(index, value) {
+  const [type, digits] = String(value).split("|");
+  const metric = healthDb.metricsOrder[index];
+  if (!metric || !HEALTH_METRIC_TYPES.includes(type) || !healthDigitsOk(digits, 4)) return;
+  metric.type = type;
+  metric.digits = Number(digits);
+  saveHealthDb();
+}
+
+function setWeightFormat(value) {
+  const [type, digits] = String(value).split("|");
+  if (!["dec1", "dec2"].includes(type) || !healthDigitsOk(digits, 3)) return;
+  healthDb.weightFormat = { type, digits: Number(digits) };
+  saveHealthDb();
 }
 
 function toggleMetricActive(index, isActive) {
@@ -616,7 +690,7 @@ function openAddWeighModal() {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   document.getElementById("wDate").value = now.toISOString().slice(0, 16);
-  document.getElementById("wWeight").value = "";
+  setupWeightField(null);
   renderDynamicFields({});
   openTobaModal("weighModal");
 }
@@ -629,9 +703,27 @@ function openEditWeighModal(weighId) {
   document.getElementById("btnSaveWeigh").textContent = "Salvar 💾";
   document.getElementById("btnDeleteWeigh").hidden = false;
   document.getElementById("wDate").value = entry.date;
-  document.getElementById("wWeight").value = formatDec2(entry.weight);
+  setupWeightField(entry.weight);
   renderDynamicFields(entry);
   openTobaModal("weighModal");
+}
+
+// Campo do peso no formato da ⚙️ (casas e dígitos). data-orig guarda o texto
+// preenchido: se você não mexer, o valor gravado fica exatamente igual.
+function setupWeightField(weight) {
+  const wf = getWeightFormat();
+  const el = document.getElementById("wWeight");
+  el.classList.remove("toba-mask-dec1", "toba-mask-dec2");
+  el.classList.add(maskClassFor(wf.type));
+  el.dataset.digits = wf.digits;
+  el.placeholder = placeholderFor("Ex: 82,50", wf.type, wf.digits);
+  el.value = weight ? formatMetricValue(weight, wf.type) : "";
+  el.dataset.orig = el.value;
+}
+
+// Texto do campo igual ao que foi preenchido = não mexeu (mantém o gravado)
+function fieldUntouched(el) {
+  return el.dataset.orig !== undefined && el.dataset.orig !== "" && el.value === el.dataset.orig;
 }
 
 function renderDynamicFields(entryData) {
@@ -643,18 +735,12 @@ function renderDynamicFields(entryData) {
         if (entryData[m.key] !== undefined && entryData[m.key] !== null) {
           val = formatMetricValue(entryData[m.key], m.type);
         }
-        const maskClass =
-          m.type === "dec1"
-            ? "toba-mask-dec1"
-            : m.type === "dec2"
-              ? "toba-mask-dec2"
-              : "";
-        const inputType = m.type === "int" ? "number" : "text";
+        const digits = getMetricDigits(m);
         const inputMode = m.type === "int" ? "numeric" : "decimal";
         return `
                 <div class="form-group">
                     <label for="w_${m.key}">${escapeHtml(m.label)}</label>
-                    <input type="${inputType}" inputmode="${inputMode}" id="w_${m.key}" class="form-control ${maskClass}" placeholder="${escapeHtml(m.placeholder || "")}" value="${escapeHtml(String(val))}">
+                    <input type="text" inputmode="${inputMode}" id="w_${m.key}" class="form-control ${maskClassFor(m.type)}" data-digits="${digits}" data-orig="${escapeHtml(String(val))}" placeholder="${escapeHtml(placeholderFor(m.placeholder, m.type, digits))}" value="${escapeHtml(String(val))}">
                 </div>
             `;
       })
@@ -664,9 +750,8 @@ function renderDynamicFields(entryData) {
 
 function saveWeighIn() {
   const editingId = document.getElementById("editingWeighId").value;
-  const weightVal = parseTobaDecimal(
-    document.getElementById("wWeight").value,
-  );
+  const weightEl = document.getElementById("wWeight");
+  const weightVal = parseTobaDecimal(weightEl.value);
   if (!weightVal) {
     showPageMessage("Preencha pelo menos o peso, meu consagrado!", { title: "Faltou o peso", icon: "⚖️" });
     return;
@@ -681,14 +766,17 @@ function saveWeighIn() {
   const entry = {
     id: existingEntry ? existingEntry.id : Date.now(),
     date: document.getElementById("wDate").value,
-    weight: weightVal,
+    // Não mexeu no campo = peso gravado intacto (a ⚙️ pode mostrar menos casas)
+    weight: existingEntry && fieldUntouched(weightEl) && Number(existingEntry.weight) > 0 ? existingEntry.weight : weightVal,
   };
 
   healthDb.metricsOrder.forEach((m) => {
     const el = document.getElementById(`w_${m.key}`);
     if (el) {
-      // O campo tá na tela (métrica ativa)
-      if (el.value.trim() !== "") {
+      // O campo tá na tela (métrica ativa). Não mexeu = valor gravado intacto.
+      if (existingEntry && fieldUntouched(el) && existingEntry[m.key] !== undefined && existingEntry[m.key] !== null) {
+        entry[m.key] = existingEntry[m.key];
+      } else if (el.value.trim() !== "") {
         entry[m.key] = (m.type === "dec1" || m.type === "dec2") ? parseTobaDecimal(el.value) : parseInt(el.value, 10) || null;
       } else {
         entry[m.key] = null;
@@ -766,6 +854,8 @@ tobaActions({
   saveProfile,
   openScaleConfig,
   toggleMetricActive: (el) => toggleMetricActive(Number(el.dataset.index), el.checked),
+  setMetricFormat: (el) => setMetricFormat(Number(el.dataset.index), el.value),
+  setWeightFormat: (el) => setWeightFormat(el.value),
   moveMetric: (el) => moveMetric(Number(el.dataset.index), Number(el.dataset.dir)),
 });
 

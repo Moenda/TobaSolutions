@@ -53,6 +53,7 @@ Ao terminar um patch, informe a lista de arquivos alterados e o que testar — n
   - **Toba Health** — Pesagem (balança) e Treinos (inclui Treino de Força).
   - **Toba Routine** — Rotina (tarefas com XP e cobranças, desde v1.41), Task (tarefas não rotineiras com sugestão de dia, desde v1.42), Agenda (24 h, desde v1.46) e Calendar (eventos com dia marcado, desde v1.49).
   - **Toba Kitchen** — Livro de Receitas (receitas no código, busca pelo que tem em casa, modo cozinha) e Programação da Semana (lista de compras), desde v1.43.
+  - **Toba Racing** — Combustível (abastecimentos e histórico de km/l de tanque cheio a tanque cheio), desde v1.51. Ainda não dá XP.
 - Única dependência externa: Chart.js **fixado** em `chart.js@4.4.7` (jsdelivr). Nunca usar versão flutuante.
 - Commits seguem o padrão `vX.YY - descrição` (ex.: `v1.16 - Novo modulo de treino de força...`).
 
@@ -62,6 +63,7 @@ Ao terminar um patch, informe a lista de arquivos alterados e o que testar — n
 index.html                 Portal (card do jogador, cards, Configurador de cards, backup GERAL)
                              -> TobaBank/js/bank-metrics.js + TobaHealth/js/health-metrics.js + TobaRoutine/js/routine-metrics.js
                                 + assets/toba-player.js + TobaRoutine/js/routine-alerts.js + TobaKitchen/js/kitchen-recipes.js
+                                + TobaRacing/js/racing-metrics.js (desde v1.51)
                                 + assets/portal.js + portal.css
 Toba-Perfil.html           Perfil do jogador (XP, nível, streak, conquistas, recompensas, 🏆 Hall dos Heróis desde v1.47)
                              -> TobaHealth/js/health-metrics.js + TobaRoutine/js/routine-metrics.js + TobaKitchen/js/kitchen-recipes.js
@@ -127,6 +129,13 @@ TobaKitchen/                 (desde v1.43; ver 3.11)
   js/kitchen-recipes.js    CATÁLOGO das receitas e ingredientes (no código, não no banco) + regras puras
                            (falta o quê, lista de compras, resumo). Também no portal
   css/kitchen-base.css
+TobaRacing/                  (desde v1.51; ver 3.12)
+  TobaRacing-Index.html    Hub do Racing (resumo + "Abastecer agora" = Combustivel?add=1) -> js/racing-metrics.js + js/racing-core.js
+  TobaRacing-Combustivel.html  Abastecimentos + km/l (último tanque, média, gráfico, etanol x gasolina)
+                             -> js/racing-metrics.js + js/racing-core.js + js/combustivel.js
+  js/racing-metrics.js     Regras puras do km/l (trechos de tanque cheio a cheio, resumo). Também no portal
+  js/racing-core.js        Dono do TOBA_RACING_DB + ⚙️ "🚗 Meu carro" (apelido e litros do tanque)
+  css/racing-base.css
 TobaAndroid/               App Android (APK): WebView que abre o site publicado + ponte window.TobaNative
                            (gastos lidos das notificações, alarmes, salvar arquivo). Java puro, Android Studio.
                            Fora do PRECACHE. Passo a passo em TobaAndroid/README.md (ver seção 4.1)
@@ -176,6 +185,8 @@ CLAUDE.md                  Este guia
 | `TOBA_KITCHEN_DB_AUTO_BACKUP` | `TobaKitchen/js/kitchen-core.js` | Cópia do valor **anterior** do Kitchen, atualizada a cada `saveKitchenDb()` |
 | `toba_kitchen_live` | `TobaKitchen/js/receitas.js` | Modo cozinha em andamento (desde v1.43): `{ v: 1, recipeId, servings, planId, step, done: [índices], startedAt, timer: { step, endsAt (ms) \| null, left (ms), alerted } \| null }`. Temporário: apagado ao terminar (vira entrada em `cooked`) ou largar. Ilegível = ignorado |
 | `toba_kitchen_prefs` | `TobaKitchen/js/receitas.js` | `{ keepAwake }` do modo cozinha (desde v1.43). Ausente = tela acesa ligada |
+| `TOBA_RACING_DB` | `TobaRacing/js/racing-core.js` | Banco do Toba Racing (desde v1.51), ver 3.12 |
+| `TOBA_RACING_DB_AUTO_BACKUP` | `TobaRacing/js/racing-core.js` | Cópia do valor **anterior** do Racing, atualizada a cada `saveRacingDb()` |
 | `toba_modules_config` | `assets/portal.js` | `[{ id, visible }]` — ordem/visibilidade dos cards do portal |
 | `toba_bank_card_config` | `assets/portal.js` | `{ type: "personalizado"\|"simples", orcamento, cofre, gastos, sobra, addGasto, privacy }` (mesclado com defaults) |
 | `toba_health_card_config` | `assets/portal.js` | Desde v1.37: `{ type: "personalizado"\|"simples", metrics: { peso, pesoMes, treinos, km, semana, kcal, minutos, saitama, gordura }, links, privacy }`. `metrics` é mesclado com os defaults de `HEALTH_CARD_METRICS` (número novo = item novo na lista, nunca renomear a `key`) |
@@ -260,9 +271,10 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 ```js
 {
   age: number|null, height: number|null /* cm */, gender: "Masculino"|"Feminino"|null,
-  metricsOrder: [ { key, label, type: "int"|"dec1"|"dec2", active, color?, placeholder, unit } ],
+  metricsOrder: [ { key, label, type: "int"|"dec1"|"dec2", active, color?, placeholder, unit, digits? } ],
+  weightFormat: { type: "dec1"|"dec2", digits: 1..3 },   // desde v1.51; ausente = { "dec2", 2 }
   weighIns: [ {
-    id: number, date: "AAAA-MM-DD", weight: number,
+    id: number, date: "AAAA-MM-DDTHH:MM" /* data E hora (datetime-local) */, weight: number,
     // + uma propriedade por métrica de metricsOrder (score, fat, muscle, water, bmr,
     //   visceral, protein, bone, bodyAge), valor number|null
   } ],
@@ -290,6 +302,8 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 - `clearHealthData()` remove só `TOBA_HEALTH_DB`.
 
 **Armadilhas específicas do Health**
+- **`weighIns[].date` tem hora** (`"AAAA-MM-DDTHH:MM"`, campo `datetime-local` da Pesagem; backups antigos podem ter só `"AAAA-MM-DD"`). Quem compara por dia usa `String(date).slice(0, 10)` (`computePlayer`, `calcHealthSummary`, `getBodyWeightOn`). Até a v1.50 o Perfil e o card do Health testavam o texto inteiro contra `AAAA-MM-DD` e ignoravam todas as pesagens com hora (conquista "Amigo da balança" travada em 0).
+- **Formato do campo na balança** (desde v1.51, ⚙️ "Métricas da balança" → "Visor"): `metricsOrder[].type` (casas decimais: `int`/`dec1`/`dec2`, agora escolhível) + `metricsOrder[].digits` (dígitos antes da vírgula, 1–4; ausente = `DEFAULT_METRIC_DIGITS`) e `weightFormat` pro peso (só muda o campo de digitar; a tela continua mostrando o peso com 2 casas). A máscara (`toba-mask-*` + `data-digits`, toba-common) pula pro próximo campo quando completa dígitos + casas. Editar uma pesagem sem mexer num campo mantém o valor gravado exato (`data-orig`), mesmo que o formato novo mostre menos casas.
 - **`metricsOrder` é salvo no banco do usuário.** Adicionar uma métrica em `DEFAULT_METRICS_ORDER` **não** faz ela aparecer para quem já tem dados. Para isso, acrescente em `normalizeHealthDb()` um merge: para cada métrica padrão cuja `key` não existe em `db.metricsOrder`, dar `push` (preservando ordem/`active` do usuário). Para remover uma métrica, filtre por `key` (como já é feito com `bmi`), mas **não apague** o valor dos `weighIns` antigos.
 - Ao salvar uma pesagem, métricas inativas (fora da tela) **mantêm o valor antigo** do registro — preserve esse comportamento.
 - **Catálogo de força** (`STRENGTH_GROUPS` / `STRENGTH_EXERCISES` em [health-metrics.js](TobaHealth/js/health-metrics.js) desde v1.40, antes em forca.js): os `id` são referência gravada.
@@ -417,6 +431,8 @@ Arquivo: [TobaRoutine/js/routine-core.js](TobaRoutine/js/routine-core.js). Vari�
 
 ### 3.11 Toba Kitchen — `TOBA_KITCHEN_DB` (desde v1.43)
 
+- Livro e escolha da Semana listam as receitas em ordem alfabética (`kitchenRecipesByName`, desde v1.51), sem mexer na ordem do `KITCHEN_RECIPES`.
+
 Arquivos: [TobaKitchen/js/kitchen-core.js](TobaKitchen/js/kitchen-core.js) (dono do banco; variável `kitchenDb`, trava `isKitchenDbLoaded`) e [TobaKitchen/js/kitchen-recipes.js](TobaKitchen/js/kitchen-recipes.js) (catálogo + regras puras).
 
 ```js
@@ -439,12 +455,37 @@ Arquivos: [TobaKitchen/js/kitchen-core.js](TobaKitchen/js/kitchen-core.js) (dono
 - **Modo cozinha**: guarda em `toba_kitchen_live`; timer por passo é horário (`endsAt`), nunca contagem. Tela acesa igual ao treino ao vivo (Wake Lock / `TOBA_NATIVE.keepScreenOn`), obedecendo `toba_kitchen_prefs.keepAwake`.
 - Backup do app: `toba_kitchen_backup_*.json` (objeto puro, precisa de `cooked` e `plan`). Importar passa pelo `normalizeKitchenDb()`.
 
+### 3.12 Toba Racing — `TOBA_RACING_DB` (desde v1.51)
+
+Arquivos: [TobaRacing/js/racing-core.js](TobaRacing/js/racing-core.js) (dono do banco; variável `racingDb`, trava `isRacingDbLoaded`) e [TobaRacing/js/racing-metrics.js](TobaRacing/js/racing-metrics.js) (regras puras, também no portal).
+
+```js
+{
+  version: 1,
+  car: { name: "", tank: number|null },   // apelido e litros do tanque (⚙️ "🚗 Meu carro"); tank dá a autonomia
+  fuelings: [ {
+    id: "f-<ts>-<rand4>", date: "AAAA-MM-DD", odometer: number /* km do painel */,
+    liters: number, price: number|null /* R$/l, até 3 casas */, total: number|null /* R$ */,
+    fuel: "gasolina"|"etanol"|"diesel" /* key de RACING_FUELS */, full: bool /* encheu o tanque */,
+    missed: bool /* teve abastecimento antes deste que não foi anotado */, note: string, createdAt: ms
+  } ]
+}
+```
+
+- **km/l de tanque cheio a tanque cheio** (`calcRacingSegments`): abastecimentos em ordem de **odômetro**; entre dois `full`, km = diferença do odômetro e litros = soma dos litros de todos depois do primeiro cheio (parciais inclusos, o primeiro não). Um `missed` no meio (ou no cheio que fecha) invalida aquele trecho. Antes do 1º cheio nada é medido. Regra nova de consumo entra **só** em `racing-metrics.js` (tela, hub e portal leem dali).
+- **Média** = soma dos km ÷ soma dos litros dos trechos (não média das médias). "Pé leve"/"Pé de chumbo" = último trecho contra a média dos anteriores, margem `RACING_TREND_MARGIN` (3%).
+- **Etanol x gasolina**: rendimento do etanol ÷ gasolina medido nos trechos de um combustível só; sem os dois, 70% (`RACING_ETHANOL_DEFAULT_RATIO`).
+- Salvar recusa odômetro repetido e odômetro que não bate com a data (menor que um abastecimento mais antigo ou maior que um mais novo). Litros/preço/total: preencheu 2, o terceiro é calculado.
+- `fuel` é key gravada: nunca renomeie; combustível novo = item novo em `RACING_FUELS`.
+- Portal: linha do card (`renderRacingCard`, só leitura, ilegível = card sem números). **Não dá XP** ainda; se for dar, siga a regra da 3.9 (`racing-metrics.js` em todas as páginas do player + bloco em `computePlayer()`).
+- Backup do app: `toba_racing_backup_*.json` (objeto puro, precisa de `fuelings`). Importar passa pelo `normalizeRacingDb()`.
+
 ---
 
 ## 4. Service worker / PWA
 
 - [sw.js](sw.js): páginas/JS/CSS **network-first** (timeout 4 s, cai no cache); jsdelivr **cache-first**. Sem cópia no cache, só **navegação** (`request.mode === "navigate"`) cai no `index.html`; JS/CSS faltando devolvem erro (desde v1.37 — antes o HTML ia no lugar do script e a tela quebrava offline sem aviso). O network-first usa `fetch(..., { cache: "no-cache" })` de propósito: o GitHub Pages manda `max-age=600`, e sem isso o celular misturava HTML novo com JS antigo logo depois de publicar. Não tire.
-- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v18"` → `"toba-v19"`…). Sem isso, o app offline fica sem o arquivo.
+- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v19"` → `"toba-v20"`…). Sem isso, o app offline fica sem o arquivo.
 - Atualizar a versão do Chart.js exige trocar a URL nos HTML **e** no `PRECACHE`.
 - Toda página nova deve incluir `<script src="../assets/pwa-register.js"></script>` (ou `assets/...` na raiz), as metas de `color-scheme: dark` e o link do manifest, como as existentes.
 

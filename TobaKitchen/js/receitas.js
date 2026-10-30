@@ -79,7 +79,7 @@ function renderBook() {
     ? `${pantry} ${pantry === 1 ? "ingrediente marcado" : "ingredientes marcados"} · ${countCanMake()} receitas dá pra fazer já`
     : "Marca os ingredientes e o Toba diz o que dá pra fazer.";
   const q = kitchenNormalize(bookQuery.trim());
-  const list = KITCHEN_RECIPES.filter((r) => bookMeal === "all" || r.meals.includes(bookMeal)).filter((r) => {
+  const list = kitchenRecipesByName().filter((r) => bookMeal === "all" || r.meals.includes(bookMeal)).filter((r) => {
     if (!q) return true;
     const words = [r.name, kitchenAuthor(r).name, ...r.ingredients.map((i) => kitchenIngredient(i.id).name)].map(kitchenNormalize).join(" ");
     return words.includes(q);
@@ -177,7 +177,7 @@ function renderPantryResults() {
     box.innerHTML = tobaEmpty("🧺", "Marca o que você tem primeiro", "Na aba 🧺 Tenho, toca nos ingredientes que estão aí na cozinha.");
     return;
   }
-  const rows = KITCHEN_RECIPES.map((r) => ({ recipe: r, match: kitchenMatchRecipe(r, have) }))
+  const rows = kitchenRecipesByName().map((r) => ({ recipe: r, match: kitchenMatchRecipe(r, have) }))
     .filter((row) => row.match.have > 0 || !row.match.missing.length)
     .sort((a, b) => a.match.missing.length - b.match.missing.length || b.match.have - a.match.have);
   const all = rows.filter((row) => !row.match.missing.length);

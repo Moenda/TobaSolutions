@@ -450,9 +450,13 @@ function calcHealthSummary(healthData, referenceDate = new Date()) {
   /* ---------- Pesagens ---------- */
   // Mais recente primeiro (mesma ordem da tela de Pesagem). Data igual: o
   // id maior (Date.now()) é o registro mais novo.
+  // A Pesagem grava "AAAA-MM-DDTHH:MM" (data e hora): as contas usam o dia
+  // (v1.51; antes só pesagem com "AAAA-MM-DD" puro entrava no card).
   const weighIns = (Array.isArray(data.weighIns) ? data.weighIns : [])
-    .filter((w) => w && isIso(w.date) && num(w.weight) > 0 && w.date <= today)
-    .sort((a, b) => String(b.date).localeCompare(String(a.date)) || num(b.id) - num(a.id));
+    .filter((w) => w && isIso(String(w.date || "").slice(0, 10)) && num(w.weight) > 0)
+    .map((w) => ({ ...w, date: String(w.date).slice(0, 10), at: String(w.date) }))
+    .filter((w) => w.date <= today)
+    .sort((a, b) => b.at.localeCompare(a.at) || num(b.id) - num(a.id));
   const latest = weighIns[0] || null;
   const previous = weighIns[1] || null;
   // Base do mês: última pesagem antes do mês; sem ela, a primeira do mês.

@@ -289,12 +289,23 @@ function renderExpenseFilterBar(filtered) {
   bar.hidden = expenseCategoryFilter === null;
   if (expenseCategoryFilter === null) return;
   const total = filtered.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+  const count = filtered.length;
+  // v1.51: total e média por compra em 2 quadradinhos
+  const tile = (label, value, note, extra = "") => `
+      <span class="expense-filter-stat${extra}">
+        <span class="expense-filter-stat-label">${label}</span>
+        <span class="expense-filter-stat-value">${value}</span>
+        <span class="expense-filter-stat-note">${note}</span>
+      </span>`;
   bar.innerHTML = `
     <span class="expense-filter-text">
       <b>${escapeHtml(expenseCategoryFilter)}</b>
-      <span>${formatCurrency(total)} em ${filtered.length} ${filtered.length === 1 ? "compra" : "compras"}</span>
     </span>
-    <button type="button" class="chip-btn" data-click="clearExpenseFilter">✕ Limpar filtro</button>`;
+    <button type="button" class="chip-btn" data-click="clearExpenseFilter">✕ Limpar filtro</button>
+    <span class="expense-filter-stats">
+      ${tile("💸 Total no mês", formatCurrency(total), `em ${count} ${count === 1 ? "compra" : "compras"}`)}
+      ${tile("📊 Média", count ? formatCurrency(total / count) : "--", "por compra", " is-avg")}
+    </span>`;
 }
 
 function filterExpenseCategory(el) {

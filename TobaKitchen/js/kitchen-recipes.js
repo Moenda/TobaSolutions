@@ -393,6 +393,12 @@ function kitchenRecipe(id) {
   return KITCHEN_RECIPES.find((r) => r.id === String(id)) || null;
 }
 
+// Livro e escolha da Semana em ordem alfabética (v1.51). Devolve uma cópia:
+// o catálogo continua na ordem de sempre (receita nova entra no fim dele).
+function kitchenRecipesByName(list = KITCHEN_RECIPES) {
+  return [...list].sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }));
+}
+
 function kitchenAuthor(recipe) {
   return KITCHEN_AUTHORS[recipe && recipe.author] || KITCHEN_AUTHORS.cloba;
 }

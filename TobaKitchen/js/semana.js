@@ -144,7 +144,7 @@ function renderPicker() {
   document.getElementById("pickerMeals").innerHTML = chips.map((m) => `
     <button type="button" class="chip-btn kt-chip${pickerMeal === m.key ? " is-on" : ""}" data-click="pickPickerMeal" data-meal="${m.key || ""}">${m.icon} ${m.short}</button>`).join("");
   const q = String(pickerQuery || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
-  const list = KITCHEN_RECIPES
+  const list = kitchenRecipesByName()
     .filter((r) => !pickerMeal || r.meals.includes(pickerMeal))
     .filter((r) => !q || r.name.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().includes(q));
   const dayPlan = kitchenDb.plan.filter((p) => p.date === pickerDate);
