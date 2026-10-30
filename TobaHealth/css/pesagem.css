@@ -303,17 +303,112 @@
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
-
-.scale-format-select {
-  height: 26px;
-  padding: 0 6px;
+/* v1.52: botão do Visor (cara de display de balança) e a folha de quadradinhos */
+.scale-format-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 4px 0 8px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface-3);
   color: var(--text);
-  font-size: 0.82rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 1px;
+  font: inherit;
   cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.12s ease;
+}
+
+.scale-format-btn:active {
+  transform: scale(0.95);
+}
+
+.scale-format-btn:hover,
+.scale-format-btn:focus-visible {
+  border-color: var(--green);
+  outline: none;
+}
+
+.scale-format-lcd,
+.format-tile-lcd {
+  font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
+  font-weight: 800;
+  color: #7ee787;
+  text-shadow: 0 0 8px rgba(63, 185, 80, 0.45);
+  letter-spacing: 1px;
+  text-transform: none;
+}
+
+.scale-format-lcd {
+  font-size: 0.86rem;
+}
+
+.scale-format-arrow {
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.format-picker {
+  padding-bottom: 0.4rem;
+}
+
+.format-group-label {
+  margin: 0.9rem 0 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.format-group-label:first-child {
+  margin-top: 0.2rem;
+}
+
+.format-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.format-grid.is-4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.format-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 66px;
+  padding: 0.55rem 0.3rem;
+  background: var(--surface-3);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  color: var(--text-2);
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.format-tile:active {
+  transform: scale(0.95);
+}
+
+.format-tile.is-selected {
+  background: rgba(63, 185, 80, 0.14);
+  border-color: var(--green);
+  color: var(--text);
+}
+
+.format-tile-lcd {
+  font-size: 1.15rem;
+}
+
+.format-tile-example {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
 }

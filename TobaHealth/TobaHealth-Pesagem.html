@@ -156,11 +156,22 @@
         <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
       </div>
       <p class="toba-sheet-text">Marque o que a sua balança mede e ordene com ⬆️ ⬇️ igual à tela dela. Desmarcar só esconde: o valor já gravado fica guardado.</p>
-      <p class="toba-sheet-text">No <b>Visor</b>, escolha como o número aparece na balança (<b>00,00</b> = 2 dígitos e 2 casas). Completou os dígitos, o Toba pula sozinho pro próximo campo.</p>
+      <p class="toba-sheet-text">Toque no <b>Visor</b> pra escolher como o número aparece na balança (<b>00,00</b> = 2 dígitos e 2 casas).</p>
       <div id="scaleMetricsOrderList" class="order-list"></div>
       <div class="toba-sheet-footer">
         <button type="button" class="btn btn-primary" data-close>Concluído 👍</button>
       </div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="formatPickerModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="formatPickerTitle">📟 Visor</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <p class="toba-sheet-text">Como o número aparece na balança? Completou os dígitos, o Toba pula pro próximo campo.</p>
+      <div class="format-picker" id="formatPickerBody"></div>
     </div>
   </div>
 

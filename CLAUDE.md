@@ -130,7 +130,7 @@ TobaKitchen/                 (desde v1.43; ver 3.11)
                            (falta o quê, lista de compras, resumo). Também no portal
   css/kitchen-base.css
 TobaRacing/                  (desde v1.51; ver 3.12)
-  TobaRacing-Index.html    Hub do Racing (resumo + "Abastecer agora" = Combustivel?add=1) -> js/racing-metrics.js + js/racing-core.js
+  TobaRacing-Index.html    Hub do Racing (um card por módulo + resumo; Combustivel?add=1 abre a folha) -> js/racing-metrics.js + js/racing-core.js
   TobaRacing-Combustivel.html  Abastecimentos + km/l (último tanque, média, gráfico, etanol x gasolina)
                              -> js/racing-metrics.js + js/racing-core.js + js/combustivel.js
   js/racing-metrics.js     Regras puras do km/l (trechos de tanque cheio a cheio, resumo). Também no portal
@@ -303,7 +303,7 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 
 **Armadilhas específicas do Health**
 - **`weighIns[].date` tem hora** (`"AAAA-MM-DDTHH:MM"`, campo `datetime-local` da Pesagem; backups antigos podem ter só `"AAAA-MM-DD"`). Quem compara por dia usa `String(date).slice(0, 10)` (`computePlayer`, `calcHealthSummary`, `getBodyWeightOn`). Até a v1.50 o Perfil e o card do Health testavam o texto inteiro contra `AAAA-MM-DD` e ignoravam todas as pesagens com hora (conquista "Amigo da balança" travada em 0).
-- **Formato do campo na balança** (desde v1.51, ⚙️ "Métricas da balança" → "Visor"): `metricsOrder[].type` (casas decimais: `int`/`dec1`/`dec2`, agora escolhível) + `metricsOrder[].digits` (dígitos antes da vírgula, 1–4; ausente = `DEFAULT_METRIC_DIGITS`) e `weightFormat` pro peso (só muda o campo de digitar; a tela continua mostrando o peso com 2 casas). A máscara (`toba-mask-*` + `data-digits`, toba-common) pula pro próximo campo quando completa dígitos + casas. Editar uma pesagem sem mexer num campo mantém o valor gravado exato (`data-orig`), mesmo que o formato novo mostre menos casas.
+- **Formato do campo na balança** (desde v1.51, ⚙️ "Métricas da balança" → "Visor"): `metricsOrder[].type` (casas decimais: `int`/`dec1`/`dec2`, agora escolhível) + `metricsOrder[].digits` (dígitos antes da vírgula, 1–4; ausente = `DEFAULT_METRIC_DIGITS`; escolhido na folha de quadradinhos `#formatPickerModal`, desde v1.52) e `weightFormat` pro peso (só muda o campo de digitar; a tela continua mostrando o peso com 2 casas). A máscara (`toba-mask-*` + `data-digits`, toba-common) pula pro próximo campo quando completa dígitos + casas. Editar uma pesagem sem mexer num campo mantém o valor gravado exato (`data-orig`), mesmo que o formato novo mostre menos casas.
 - **`metricsOrder` é salvo no banco do usuário.** Adicionar uma métrica em `DEFAULT_METRICS_ORDER` **não** faz ela aparecer para quem já tem dados. Para isso, acrescente em `normalizeHealthDb()` um merge: para cada métrica padrão cuja `key` não existe em `db.metricsOrder`, dar `push` (preservando ordem/`active` do usuário). Para remover uma métrica, filtre por `key` (como já é feito com `bmi`), mas **não apague** o valor dos `weighIns` antigos.
 - Ao salvar uma pesagem, métricas inativas (fora da tela) **mantêm o valor antigo** do registro — preserve esse comportamento.
 - **Catálogo de força** (`STRENGTH_GROUPS` / `STRENGTH_EXERCISES` em [health-metrics.js](TobaHealth/js/health-metrics.js) desde v1.40, antes em forca.js): os `id` são referência gravada.

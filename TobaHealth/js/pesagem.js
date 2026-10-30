@@ -517,16 +517,54 @@ function placeholderFor(original, type, digits) {
   return `Ex: ${formatPattern(type, digits)}`;
 }
 
-function formatSelectHtml(current, types, maxDigits, attrs) {
-  const groups = { int: "Sem vírgula", dec1: "1 casa decimal", dec2: "2 casas decimais" };
-  return `<select class="scale-format-select" ${attrs}>${types
-    .map((type) => `<optgroup label="${groups[type]}">${Array.from({ length: maxDigits }, (_, i) => i + 1)
-      .map((digits) => {
-        const value = `${type}|${digits}`;
-        return `<option value="${value}"${value === current ? " selected" : ""}>${formatPattern(type, digits)}</option>`;
-      })
-      .join("")}</optgroup>`)
-    .join("")}</select>`;
+// Botão do Visor (v1.52): abre a folha de quadradinhos, no estilo da gaveta
+// de categorias do Gastos (no lugar do <select> nativo do Android).
+function formatButtonHtml(type, digits, target, label) {
+  return `<button type="button" class="scale-format-btn" data-click="openFormatPicker" data-target="${target}" aria-label="Visor: ${escapeHtml(label)}">
+    <span class="scale-format-lcd">${formatPattern(type, digits)}</span><span class="scale-format-arrow">›</span>
+  </button>`;
+}
+
+// Número de exemplo no formato (00,00 -> 82,50), pra ver como fica
+function formatExample(type, digits) {
+  const decimals = METRIC_TYPE_DECIMALS[type] || 0;
+  return "1823".slice(-digits) + (decimals ? `,${"50".slice(0, decimals)}` : "");
+}
+
+let formatPickerTarget = null;
+
+function openFormatPicker(target) {
+  const isWeight = target === "weight";
+  const metric = isWeight ? null : healthDb.metricsOrder[Number(target)];
+  if (!isWeight && !metric) return;
+  formatPickerTarget = target;
+  const current = isWeight ? getWeightFormat() : { type: metric.type, digits: getMetricDigits(metric) };
+  const groups = [
+    { type: "int", label: "🔢 Sem vírgula" },
+    { type: "dec1", label: "☝️ 1 casa decimal" },
+    { type: "dec2", label: "✌️ 2 casas decimais" },
+  ].filter((g) => !isWeight || g.type !== "int");
+  const maxDigits = isWeight ? 3 : 4;
+  document.getElementById("formatPickerTitle").textContent = isWeight ? "⚖️ Peso (kg)" : `📟 ${metric.label}`;
+  document.getElementById("formatPickerBody").innerHTML = groups.map((g) => `
+    <div class="format-group-label">${g.label}</div>
+    <div class="format-grid is-${maxDigits}">
+      ${Array.from({ length: maxDigits }, (_, i) => i + 1).map((digits) => {
+        const on = g.type === current.type && digits === current.digits;
+        return `<button type="button" class="format-tile${on ? " is-selected" : ""}" data-click="pickScaleFormat" data-value="${g.type}|${digits}" aria-pressed="${on}">
+          <span class="format-tile-lcd">${formatPattern(g.type, digits)}</span>
+          <span class="format-tile-example">ex: ${formatExample(g.type, digits)}</span>
+        </button>`;
+      }).join("")}
+    </div>`).join("");
+  openTobaModal("formatPickerModal");
+}
+
+function pickScaleFormat(value) {
+  if (formatPickerTarget === "weight") setWeightFormat(value);
+  else setMetricFormat(Number(formatPickerTarget), value);
+  closeTobaModal("formatPickerModal");
+  renderScaleConfigList();
 }
 
 function renderScaleConfigList() {
@@ -536,7 +574,7 @@ function renderScaleConfigList() {
             <div class="order-item is-weight">
                 <div class="order-item-main">
                     <span class="order-item-left is-static"><span class="scale-fixed-icon">⚖️</span><span>Peso (kg)</span></span>
-                    <label class="scale-format">Visor ${formatSelectHtml(`${wf.type}|${wf.digits}`, ["dec1", "dec2"], 3, 'data-change="setWeightFormat" aria-label="Formato do peso"')}</label>
+                    <span class="scale-format">Visor ${formatButtonHtml(wf.type, wf.digits, "weight", "Peso (kg)")}</span>
                 </div>
                 <span class="scale-fixed-tag">sempre</span>
             </div>`;
@@ -550,7 +588,7 @@ function renderScaleConfigList() {
                         <input type="checkbox" id="chk_${m.key}" ${m.active ? "checked" : ""} data-change="toggleMetricActive" data-index="${idx}">
                         <span>${escapeHtml(m.label)}</span>
                     </label>
-                    <label class="scale-format">Visor ${formatSelectHtml(`${m.type}|${getMetricDigits(m)}`, ["int", "dec1", "dec2"], 4, `data-change="setMetricFormat" data-index="${idx}" aria-label="Formato: ${escapeHtml(m.label)}"`)}</label>
+                    <span class="scale-format">Visor ${formatButtonHtml(m.type, getMetricDigits(m), idx, m.label)}</span>
                 </div>
                 <div class="order-btns">
                     <button type="button" class="action-icon-btn" data-click="moveMetric" data-index="${idx}" data-dir="-1" ${idx === 0 ? "disabled" : ""} aria-label="Subir">⬆️</button>
@@ -854,8 +892,8 @@ tobaActions({
   saveProfile,
   openScaleConfig,
   toggleMetricActive: (el) => toggleMetricActive(Number(el.dataset.index), el.checked),
-  setMetricFormat: (el) => setMetricFormat(Number(el.dataset.index), el.value),
-  setWeightFormat: (el) => setWeightFormat(el.value),
+  openFormatPicker: (el) => openFormatPicker(el.dataset.target),
+  pickScaleFormat: (el) => pickScaleFormat(el.dataset.value),
   moveMetric: (el) => moveMetric(Number(el.dataset.index), Number(el.dataset.dir)),
 });
 

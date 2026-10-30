@@ -1045,3 +1045,21 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.51 - Toba Racing com controle de combustivel e historico de km/l, visor da balanca com pulo de campo certo, Amigo da balanca contando pesagens, media por compra no filtro do Gastos e receitas em ordem alfabetica`
+
+---
+
+## v1.52 — 📟 Visor da balança bonitão e hub do Racing só com módulos
+
+**Arquivos alterados:** `TobaHealth/js/pesagem.js`, `TobaHealth/TobaHealth-Pesagem.html`, `TobaHealth/css/pesagem.css`, `TobaRacing/TobaRacing-Index.html`, `TobaRacing/css/racing-base.css`, `CLAUDE.md`
+
+1. **📟 Visor da balança sem cara de robô:** na ⚙️ › Métricas da balança, o "Visor" de cada campo virou um botãozinho com o número em verde de display. Tocar abre uma folha de quadradinhos no estilo da gaveta de categorias do Gastos ("Onde foi parar o dinheiro?"), separada em 🔢 Sem vírgula / ☝️ 1 casa / ✌️ 2 casas, cada um com um exemplo (`00,00` → ex: 23,50). Sai o seletor nativo do Android.
+2. **🏁 Hub do Racing só com módulos:** saiu o card "Abastecer agora" (era a mesma coisa do "+ Abastecer" do Combustível). O hub fica igual aos outros apps, um card por módulo, pronto pros próximos (Drive, Mario Kart...).
+
+**Dados:** Nenhuma mudança no banco. `sw.js` sem mudança (nenhum arquivo novo).
+
+**Como testar:**
+- Pesagem → ⚙️ Métricas da balança → tocar no Visor do peso e de uma métrica → folha de quadradinhos, o atual marcado em verde → escolher outro → o botão muda e a Nova pesagem pula de campo no formato novo.
+- Racing → Hub mostra só o card ⛽ Combustível + o placar.
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.52 - Visor da balanca com folha de quadradinhos e hub do Racing so com os modulos`

@@ -20,10 +20,6 @@
   font-weight: 600;
 }
 
-.rc-hub-quick .toba-hub-icon {
-  background: rgba(240, 136, 62, 0.14);
-}
-
 /* Último tanque (hero) com bandeirada quadriculada no topo */
 .rc-hero {
   position: relative;
