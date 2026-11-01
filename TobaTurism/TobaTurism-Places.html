@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="icon" href="../icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="css/turism-base.css" />
+  <title>Toba Turism | Toba Places</title>
+</head>
+
+<body>
+  <div class="container">
+    <header class="toba-header">
+      <a class="toba-back" href="TobaTurism-Index.html" data-label="Voltar para o Toba Turism" aria-label="Voltar para o Toba Turism">‹</a>
+      <a class="toba-titles" href="TobaTurism-Index.html">
+        <span class="toba-app">🌎 Toba Turism</span>
+        <span class="toba-page">📍 Toba Places</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-add-btn" id="headerAddBtn" data-click="headerAdd">+ Lista</button>
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Todas as listas -->
+    <section id="viewLists">
+      <div class="tr-chips" id="cityChips"></div>
+      <div class="tr-list-grid" id="listsGrid"></div>
+      <button type="button" class="btn btn-secondary tr-import-btn" data-click="openImport">📥 Colar lista que te mandaram</button>
+    </section>
+
+    <!-- Uma lista -->
+    <section id="viewList" hidden>
+      <div class="tr-list-hero" id="listHero"></div>
+      <div class="tr-actions">
+        <button type="button" class="chip-btn tr-action" data-click="openRoute">🧭 Roteiro</button>
+        <button type="button" class="chip-btn tr-action" data-click="drawPlace">🎲 Sorteia</button>
+        <button type="button" class="chip-btn tr-action" data-click="shareList">📤 Mandar</button>
+        <button type="button" class="chip-btn tr-action" data-click="editCurrentList">✏️ Lista</button>
+      </div>
+      <div class="tab-nav">
+        <button type="button" class="tab-btn" data-click="setPlaceFilter" data-filter="want" id="filterWant">📌 Quero ir</button>
+        <button type="button" class="tab-btn" data-click="setPlaceFilter" data-filter="been" id="filterBeen">✅ Já fui</button>
+        <button type="button" class="tab-btn" data-click="setPlaceFilter" data-filter="all" id="filterAll">Todos</button>
+      </div>
+      <div class="tr-chips" id="tagFilterChips"></div>
+      <div class="toba-list" id="placesList"></div>
+    </section>
+  </div>
+
+  <!-- Lista nova / editar lista -->
+  <div class="toba-modal" id="listSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="listSheetTitle">🗂️ Lista nova</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form data-submit="saveList" autocomplete="off">
+        <input type="hidden" id="listId" />
+        <div class="tr-label">Ideias rápidas</div>
+        <div class="tr-chips is-wrap" id="listIdeaChips"></div>
+        <div class="tr-name-row">
+          <button type="button" class="tr-emoji-big" id="listEmojiBtn" data-click="cycleListEmoji" aria-label="Trocar emoji">📍</button>
+          <input type="text" id="listName" class="form-control" maxlength="40" placeholder="Ex: Cafés por SP" />
+        </div>
+        <div class="tr-label">Emoji</div>
+        <div class="tr-chips is-wrap" id="listEmojiChips"></div>
+        <div class="tr-label">Cidade</div>
+        <div class="tr-chips is-wrap" id="listCityChips"></div>
+        <input type="text" id="listCity" class="form-control" maxlength="40" placeholder="Outra cidade? Digita aqui" />
+        <div class="toba-sheet-footer">
+          <div class="btn-row">
+            <button type="button" class="btn btn-danger btn-grow-1" id="deleteListBtn" data-click="deleteList" hidden>🗑️ Apagar</button>
+            <button type="submit" class="btn btn-primary btn-grow-2">Salvar 📍</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Lugar novo / editar lugar -->
+  <div class="toba-modal" id="placeSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="placeSheetTitle">📍 Lugar novo</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form data-submit="savePlace" autocomplete="off">
+        <input type="hidden" id="placeId" />
+        <div class="tr-paste-box" id="pasteBox">
+          <button type="button" class="btn tr-btn-paste" id="pasteBtn" data-click="pasteFromMaps">📋 Colar do Maps</button>
+          <textarea id="placePaste" class="form-control tr-paste" rows="2" data-input="parsePasteField" placeholder="No Google Maps: Compartilhar › Copiar e cola aqui. O Toba pega o nome e o link 🪄"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="placeName">Nome do lugar *</label>
+          <input type="text" id="placeName" class="form-control" maxlength="80" placeholder="Ex: Café do Japa" />
+        </div>
+        <div class="form-group">
+          <label for="placeUrl">Link do Maps</label>
+          <input type="url" id="placeUrl" class="form-control" maxlength="500" placeholder="https://maps.app.goo.gl/..." />
+        </div>
+        <div class="tr-label">Por que entrou na lista?</div>
+        <div class="tr-chips is-wrap" id="placeTagChips"></div>
+        <div class="form-group">
+          <label for="placeNote">Anotação</label>
+          <textarea id="placeNote" class="form-control" rows="2" maxlength="300" placeholder="Ex: pedir o pão de queijo recheado, a Milena viu no insta"></textarea>
+        </div>
+        <div class="tr-label">Status</div>
+        <div class="tr-chips" id="placeStatusChips"></div>
+        <div id="placeRatingBox" hidden>
+          <div class="tr-label">E aí, como foi?</div>
+          <div class="tr-chips is-wrap" id="placeRatingChips"></div>
+        </div>
+        <div id="placeListBox">
+          <div class="tr-label">Em qual lista?</div>
+          <div class="tr-chips is-wrap" id="placeListChips"></div>
+        </div>
+        <div class="form-group" id="placeAddressBox" hidden>
+          <label for="placeAddress">Endereço</label>
+          <input type="text" id="placeAddress" class="form-control" maxlength="160" />
+        </div>
+        <div class="toba-sheet-footer">
+          <div class="btn-row">
+            <button type="button" class="btn btn-danger btn-grow-1" id="deletePlaceBtn" data-click="deletePlace" hidden>🗑️ Apagar</button>
+            <button type="submit" class="btn btn-primary btn-grow-2">Salvar 📍</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Fui! (nota num toque) -->
+  <div class="toba-modal" id="rateSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="rateSheetTitle">✅ Fui!</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <p class="toba-sheet-text">E aí, valeu o rolê? Toca na nota e pronto.</p>
+      <div class="tr-rate-grid" id="rateGrid"></div>
+    </div>
+  </div>
+
+  <!-- Roteiro no Maps -->
+  <div class="toba-modal" id="routeSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🧭 Roteiro no Maps</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <p class="toba-sheet-text">Escolhe até 10 lugares e o Google Maps monta o caminho saindo de onde você está.</p>
+      <div class="tr-route-list" id="routeList"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-primary" id="routeGoBtn" data-click="goRoute">🗺️ Abrir no Maps</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Colar lista que mandaram -->
+  <div class="toba-modal" id="importSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>📥 Colar lista</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form data-submit="importList" autocomplete="off">
+        <p class="toba-sheet-text">Alguém te mandou uma lista pelo 📤 Mandar do Toba Places? Cola o texto inteiro aqui que ela entra no seu celular.</p>
+        <textarea id="importText" class="form-control" rows="7" placeholder="☕ Cafés por SP · São Paulo&#10;..."></textarea>
+        <div class="toba-sheet-footer">
+          <button type="submit" class="btn btn-primary">📥 Trazer a lista</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="tobaSettingsExtra" hidden></div>
+
+  <script src="../assets/toba-common.js"></script>
+  <script src="js/turism-metrics.js"></script>
+  <script src="js/turism-core.js"></script>
+  <script src="js/places.js"></script>
+  <script src="../assets/pwa-register.js"></script>
+</body>
+
+</html>

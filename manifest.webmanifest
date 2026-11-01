@@ -19,5 +19,10 @@
     { "name": "Pesagem", "url": "TobaHealth/TobaHealth-Pesagem.html", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Treinos", "url": "TobaHealth/TobaHealth-Treinos.html", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Rotina de hoje", "url": "TobaRoutine/TobaRoutine-Rotina.html", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
-  ]
+  ],
+  "share_target": {
+    "action": "TobaTurism/TobaTurism-Places.html",
+    "method": "GET",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  }
 }

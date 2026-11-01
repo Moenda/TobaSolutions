@@ -1,0 +1,453 @@
+/* Toba Turism · só o que é do app. A base vem de ../assets/toba-common.css. */
+
+:root {
+  --turism: #2dd4bf; /* verde-água de praia */
+  --accent: var(--turism);
+}
+
+.text-turism {
+  color: var(--turism);
+}
+
+/* Hub: módulo que ainda não abriu (Toba Travel) */
+.toba-hub-card.is-soon {
+  opacity: 0.45;
+  filter: grayscale(100%);
+  cursor: pointer;
+}
+
+.toba-hub-card.is-soon:hover {
+  transform: none;
+  border-color: var(--border-soft);
+}
+
+.tr-soon {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  vertical-align: middle;
+}
+
+/* Chips (linha que rola ou quebra) */
+.tr-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 0.7rem;
+  scrollbar-width: none;
+}
+
+.tr-chips:empty {
+  display: none;
+}
+
+.tr-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.tr-chips.is-wrap {
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+.tr-chip {
+  flex: 0 0 auto;
+  height: 34px;
+}
+
+.tr-chip.is-on {
+  color: var(--text);
+  border-color: var(--turism);
+  background: rgba(45, 212, 191, 0.16);
+}
+
+.tr-emoji-chip {
+  font-size: 1.05rem;
+  padding: 0 8px;
+}
+
+.tr-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-2);
+  margin: 0.2rem 0 0.4rem;
+}
+
+.tr-hint {
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+/* Tela das listas */
+.tr-list-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tr-list-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.85rem 0.9rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.tr-list-card:hover {
+  border-color: var(--turism);
+  transform: translateY(-2px);
+}
+
+.tr-list-emoji,
+.tr-hero-emoji {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  background: rgba(45, 212, 191, 0.1);
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  border-radius: var(--radius);
+}
+
+.tr-list-text,
+.tr-hero-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tr-list-name,
+.tr-hero-name {
+  font-weight: 800;
+  font-size: 0.98rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tr-list-meta,
+.tr-hero-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.tr-list-meta b {
+  color: var(--turism);
+}
+
+.tr-track {
+  display: block;
+  height: 5px;
+  margin-top: 4px;
+}
+
+.tr-fill {
+  display: block;
+  background: var(--turism);
+}
+
+.tr-import-btn {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.tr-empty-ideas {
+  justify-content: center;
+  margin-top: -0.4rem;
+}
+
+/* Uma lista */
+.tr-list-hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.9rem;
+  margin-bottom: 10px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  background: linear-gradient(160deg, rgba(45, 212, 191, 0.14), var(--surface) 60%);
+}
+
+.tr-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.tr-action {
+  justify-content: center;
+  height: 36px;
+  padding: 0 4px;
+  color: var(--text-2);
+}
+
+.tr-place {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  padding: 0.7rem 0.6rem 0.7rem 0.85rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-left: 3px solid var(--turism);
+  border-radius: var(--radius);
+}
+
+.tr-place.is-been {
+  border-left-color: var(--border);
+}
+
+.tr-place-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.tr-place-name {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.tr-place-address,
+.tr-place-note {
+  font-size: 0.76rem;
+  color: var(--muted);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.tr-place-note {
+  color: var(--text-2);
+}
+
+.tr-place-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tr-mini-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.tr-place-rating {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--gold-2);
+}
+
+.tr-place-side {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.tr-side-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.15s ease;
+}
+
+.tr-side-btn:hover {
+  border-color: var(--turism);
+}
+
+.tr-side-btn:active {
+  transform: scale(0.94);
+}
+
+.tr-side-btn.is-go {
+  background: rgba(63, 185, 80, 0.12);
+  border-color: rgba(63, 185, 80, 0.45);
+}
+
+.tr-btn-go,
+.tr-btn-paste {
+  background: var(--turism);
+  border: 1px solid var(--turism);
+  color: #062a26;
+  font-weight: 800;
+}
+
+.tr-empty-add {
+  display: block;
+  margin: 0 auto;
+}
+
+/* Folha do lugar: colar do Maps */
+.tr-paste-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0.7rem;
+  margin-bottom: 0.9rem;
+  border: 1px dashed rgba(45, 212, 191, 0.5);
+  border-radius: var(--radius);
+  background: rgba(45, 212, 191, 0.06);
+}
+
+.tr-paste-box[hidden] {
+  display: none;
+}
+
+.tr-paste {
+  resize: none;
+  font-size: 0.82rem;
+}
+
+.tr-name-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 0.8rem;
+}
+
+.tr-emoji-big {
+  flex: 0 0 46px;
+  height: 46px;
+  font-size: 1.4rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--turism);
+  background: rgba(45, 212, 191, 0.1);
+  cursor: pointer;
+}
+
+#listCity {
+  margin-bottom: 0.4rem;
+}
+
+/* Fui! */
+.tr-rate-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.tr-rate-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0.9rem 0.4rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.15s ease;
+}
+
+.tr-rate-btn:active {
+  transform: scale(0.96);
+}
+
+.tr-rate-btn.is-top:hover {
+  border-color: var(--coral);
+}
+
+.tr-rate-btn.is-bom:hover {
+  border-color: var(--green);
+}
+
+.tr-rate-btn.is-ok:hover {
+  border-color: var(--gold);
+}
+
+.tr-rate-btn.is-nem:hover {
+  border-color: var(--muted);
+}
+
+.tr-rate-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+/* Roteiro */
+.tr-route-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+.tr-route-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-soft);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 0.86rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tr-route-item.is-on {
+  border-color: var(--turism);
+  color: var(--text);
+}
+
+.tr-route-num {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.tr-route-item.is-on .tr-route-num {
+  background: var(--turism);
+  border-color: var(--turism);
+  color: #062a26;
+}
+
+.tr-route-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

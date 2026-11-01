@@ -690,6 +690,28 @@ function renderRacingCard() {
   box.hidden = !parts.length;
 }
 
+/* ---------------------------------------------------------------------
+ * Card do Toba Turism (v1.55): lugares pra ir / já visitados do Toba Places
+ * (só leitura do TOBA_TURISM_DB, contas do turism-metrics.js)
+ * ------------------------------------------------------------------- */
+function renderTurismCard() {
+  const box = document.getElementById("turismCardToday");
+  if (!box || typeof calcTurismSummary !== "function") return;
+  let data = null;
+  try {
+    data = JSON.parse(localStorage.getItem("TOBA_TURISM_DB") || "null");
+  } catch (e) {
+    console.error("Erro ao ler os dados do Toba Turism", e);
+  }
+  const s = calcTurismSummary(data);
+  const parts = [];
+  if (s.want) parts.push(`📌 ${s.want} ${s.want === 1 ? "lugar pra ir" : "lugares pra ir"}`);
+  if (s.been) parts.push(`✅ ${s.been} já ${s.been === 1 ? "visitado" : "visitados"}`);
+  if (!parts.length && s.lists) parts.push(`🗂️ ${s.lists} ${s.lists === 1 ? "lista" : "listas"}`);
+  box.innerHTML = parts.map((part) => `<span class="routine-chip">${part}</span>`).join("");
+  box.hidden = !parts.length;
+}
+
 // App Android (v1.47): compras lidas das notificações esperando aprovação
 // no Gastos. Só lê a fila do app e o TOBA_BANK_DB (tira o que já foi lançado).
 function renderPortalPending() {
@@ -725,6 +747,7 @@ function renderPortalPanels() {
   renderRoutineCard();
   renderKitchenCard();
   renderRacingCard();
+  renderTurismCard();
   tobaPlayerCheck();
   // App Android: refaz os avisos das tarefas a cada abertura (o portal é a tela mais aberta)
   syncRoutineAlerts(readRoutineDbRaw());

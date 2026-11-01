@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="icon" href="../icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="css/turism-base.css" />
+  <title>Toba Turism 🌎</title>
+</head>
+
+<body>
+  <main class="container">
+    <header class="toba-header">
+      <a class="toba-back" href="../index.html" aria-label="Voltar para o Toba Solutions">‹</a>
+      <a class="toba-titles" href="../index.html">
+        <span class="toba-app">🌎 Toba Turism</span>
+        <span class="toba-page">Hub</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
+      </div>
+    </header>
+
+    <div class="toba-kicker">O mundo é grande e o rolê é logo ali 🧭</div>
+    <nav class="toba-hub-list" aria-label="Módulos do Toba Turism">
+      <a class="toba-hub-card" href="TobaTurism-Places.html">
+        <span class="toba-hub-icon">📍</span>
+        <span class="toba-hub-text">
+          <span class="toba-hub-title">Toba Places</span>
+          <span class="toba-hub-desc" id="hubPlacesDesc">Listas de lugares pra visitar: cafés, bares, mirantes... com link do Maps e anotação.</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </a>
+      <div class="toba-hub-card is-soon" role="button" tabindex="0" data-click="soonTravel">
+        <span class="toba-hub-icon">✈️</span>
+        <span class="toba-hub-text">
+          <span class="toba-hub-title">Toba Travel <span class="tr-soon">SOON</span></span>
+          <span class="toba-hub-desc">Viagens com roteiro, mala e gastos. Tá no forno 🔥</span>
+        </span>
+        <span class="toba-hub-chevron">🔒</span>
+      </div>
+    </nav>
+
+    <div class="section-title">🗺️ Seu passaporte</div>
+    <div class="toba-stats" id="hubStats"></div>
+  </main>
+
+  <script src="../assets/toba-common.js"></script>
+  <script src="js/turism-metrics.js"></script>
+  <script src="js/turism-core.js"></script>
+  <script>
+    // O Hub só mostra um resumo; quem grava é o Toba Places (e a ⚙️ com backup).
+    function renderTurismHub() {
+      const s = calcTurismSummary(turismDb);
+      document.getElementById("hubPlacesDesc").textContent = s.places
+        ? `${s.want} ${s.want === 1 ? "lugar" : "lugares"} pra ir · ${s.been} já ${s.been === 1 ? "visitado" : "visitados"} em ${s.lists} ${s.lists === 1 ? "lista" : "listas"}`
+        : s.lists
+          ? `${s.lists} ${s.lists === 1 ? "lista criada" : "listas criadas"}, bora encher de lugar!`
+          : "Listas de lugares pra visitar: cafés, bares, mirantes... com link do Maps e anotação.";
+      const tile = (label, value, sub) => `
+        <div class="toba-stat">
+          <span class="toba-stat-label">${label}</span>
+          <span class="toba-stat-value">${value}</span>
+          <span class="toba-stat-sub">${sub}</span>
+        </div>`;
+      const cities = s.cities.length;
+      document.getElementById("hubStats").innerHTML =
+        tile("📌 Quero ir", `<span class="text-turism">${s.want}</span>`, s.want ? "esperando o rolê" : "nenhum na fila")
+        + tile("✅ Já fui", String(s.been), s.top ? `🔥 ${s.top} ${s.top === 1 ? "foi top" : "foram top"}` : s.beenThisMonth ? `${s.beenThisMonth} no mês` : "bora riscar da lista")
+        + tile("🗂️ Listas", String(s.lists), s.lists ? `${s.places} ${s.places === 1 ? "lugar" : "lugares"} no total` : "crie no Toba Places")
+        + tile("🏙️ Cidades", String(cities), cities ? escapeHtml(s.cities.slice(0, 2).join(", ")) + (cities > 2 ? "..." : "") : "o mundo te espera");
+    }
+    function onTurismDataReplaced() {
+      renderTurismHub();
+    }
+    tobaActions({
+      soonTravel: () => showPageMessage("✈️ Toba Travel vai ter roteiro de viagem, checklist da mala e os gastos da trip. Em breve!", { title: "Em breve", icon: "🚧" }),
+    });
+    window.addEventListener("pageshow", (event) => {
+      if (event.persisted) renderTurismHub();
+    });
+    renderTurismHub();
+  </script>
+  <script src="../assets/pwa-register.js"></script>
+</body>
+
+</html>

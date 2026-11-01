@@ -54,6 +54,7 @@ Ao terminar um patch, informe a lista de arquivos alterados e o que testar — n
   - **Toba Routine** — Rotina (tarefas com XP e cobranças, desde v1.41), Task (tarefas não rotineiras com sugestão de dia, desde v1.42), Agenda (24 h, desde v1.46) e Calendar (eventos com dia marcado, desde v1.49).
   - **Toba Kitchen** — Livro de Receitas (receitas no código, busca pelo que tem em casa, modo cozinha) e Programação da Semana, desde v1.43, e Lista de compras com catálogo do mercado pra tocar (página própria desde v1.53).
   - **Toba Racing** — Combustível (abastecimentos e histórico de km/l de tanque cheio a tanque cheio), desde v1.51. Ainda não dá XP.
+  - **Toba Turism** — Toba Places (listas de lugares pra visitar com link do Google Maps, anotação, "por que entrou" e nota de quem já foi), desde v1.55; Toba Travel aparece no hub como "SOON" (desabilitado). Não dá XP.
 - Única dependência externa: Chart.js **fixado** em `chart.js@4.4.7` (jsdelivr). Nunca usar versão flutuante.
 - Commits seguem o padrão `vX.YY - descrição` (ex.: `v1.16 - Novo modulo de treino de força...`).
 
@@ -63,12 +64,13 @@ Ao terminar um patch, informe a lista de arquivos alterados e o que testar — n
 index.html                 Portal (card do jogador, cards, Configurador de cards, backup GERAL)
                              -> TobaBank/js/bank-metrics.js + TobaHealth/js/health-metrics.js + TobaRoutine/js/routine-metrics.js
                                 + assets/toba-player.js + TobaRoutine/js/routine-alerts.js + TobaKitchen/js/kitchen-recipes.js
-                                + TobaRacing/js/racing-metrics.js (desde v1.51)
+                                + TobaRacing/js/racing-metrics.js (desde v1.51) + TobaTurism/js/turism-metrics.js (desde v1.55)
                                 + assets/portal.js + portal.css
 Toba-Perfil.html           Perfil do jogador (XP, nível, streak, conquistas, recompensas, 🏆 Hall dos Heróis desde v1.47)
                              -> TobaHealth/js/health-metrics.js + TobaRoutine/js/routine-metrics.js + TobaKitchen/js/kitchen-recipes.js
                                 + assets/toba-player.js + TobaHealth/js/hall-shared.js + assets/perfil-hall.js + assets/perfil.js + perfil.css
-manifest.webmanifest       PWA (atalhos: add_expense, Pesagem, Treinos, Rotina de hoje -> TobaRoutine-Rotina.html)
+manifest.webmanifest       PWA (atalhos: add_expense, Pesagem, Treinos, Rotina de hoje -> TobaRoutine-Rotina.html;
+                           share_target desde v1.55: "Compartilhar" do Google Maps -> TobaTurism-Places.html?title=&text=&url=)
 sw.js                      Service worker (lista PRECACHE + VERSION)
 assets/toba-common.js      Base de TODOS os apps: datas, dinheiro, decimais, escapeHtml, ações
                            (data-click...), folhas/modais, avisos, "Salvo ✓", estado vazio, ⚙️, backup
@@ -138,6 +140,13 @@ TobaRacing/                  (desde v1.51; ver 3.12)
   js/racing-metrics.js     Regras puras do km/l (trechos de tanque cheio a cheio, resumo). Também no portal
   js/racing-core.js        Dono do TOBA_RACING_DB + ⚙️ "🚗 Meu carro" (apelido e litros do tanque)
   css/racing-base.css
+TobaTurism/                  (desde v1.55; ver 3.13)
+  TobaTurism-Index.html    Hub do Turism (card do Toba Places + Toba Travel "SOON" desabilitado + resumo) -> js/turism-metrics.js + js/turism-core.js
+  TobaTurism-Places.html   Toba Places: listas (?lista=<id> abre uma) e lugares; ?title=&text=&url= = veio do Compartilhar (abre "Lugar novo" já preenchido)
+                             -> js/turism-metrics.js + js/turism-core.js + js/places.js
+  js/turism-metrics.js     Regras puras (resumo, link do Maps / busca, roteiro) + catálogos TURISM_TAGS e TURISM_RATINGS. Também no portal
+  js/turism-core.js        Dono do TOBA_TURISM_DB + turismOpenExternal (abre o Maps; no APK vai pelo próprio WebView)
+  css/turism-base.css
 TobaAndroid/               App Android (APK): WebView que abre o site publicado + ponte window.TobaNative
                            (gastos lidos das notificações, alarmes, salvar arquivo). Java puro, Android Studio.
                            Fora do PRECACHE. Passo a passo em TobaAndroid/README.md (ver seção 4.1)
@@ -189,6 +198,8 @@ CLAUDE.md                  Este guia
 | `toba_kitchen_prefs` | `TobaKitchen/js/receitas.js` | `{ keepAwake }` do modo cozinha (desde v1.43). Ausente = tela acesa ligada |
 | `TOBA_RACING_DB` | `TobaRacing/js/racing-core.js` | Banco do Toba Racing (desde v1.51), ver 3.12 |
 | `TOBA_RACING_DB_AUTO_BACKUP` | `TobaRacing/js/racing-core.js` | Cópia do valor **anterior** do Racing, atualizada a cada `saveRacingDb()` |
+| `TOBA_TURISM_DB` | `TobaTurism/js/turism-core.js` | Banco do Toba Turism (desde v1.55), ver 3.13 |
+| `TOBA_TURISM_DB_AUTO_BACKUP` | `TobaTurism/js/turism-core.js` | Cópia do valor **anterior** do Turism, atualizada a cada `saveTurismDb()` |
 | `toba_modules_config` | `assets/portal.js` | `[{ id, visible }]` — ordem/visibilidade dos cards do portal |
 | `toba_bank_card_config` | `assets/portal.js` | `{ type: "personalizado"\|"simples", orcamento, cofre, gastos, sobra, addGasto, privacy }` (mesclado com defaults) |
 | `toba_health_card_config` | `assets/portal.js` | Desde v1.37: `{ type: "personalizado"\|"simples", metrics: { peso, pesoMes, treinos, km, semana, kcal, minutos, saitama, gordura }, links, privacy }`. `metrics` é mesclado com os defaults de `HEALTH_CARD_METRICS` (número novo = item novo na lista, nunca renomear a `key`) |
@@ -328,6 +339,7 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 - **Portal `assets/portal.js` → `obterMetricasReaisTobaBank()`** lê `TOBA_BANK_DB` direto, mas o cálculo é o **mesmo** da tela de Gastos: os dois chamam `calcBankMonthSummary()` de [TobaBank/js/bank-metrics.js](TobaBank/js/bank-metrics.js) (desde v1.21). Regra nova do painel do Gastos entra **só** em `bank-metrics.js`. Esse arquivo não pode depender de `bank-core.js` (o portal carrega ele sozinho) e só lê o banco, nunca grava.
 - **Portal → card do Health** (desde v1.37) lê `TOBA_HEALTH_DB` direto por `calcHealthSummary()` de [TobaHealth/js/health-metrics.js](TobaHealth/js/health-metrics.js) (só leitura, não depende de `health-core.js`). Treinos do mês seguem a **mesma regra** de `getWorkoutMonthStats` (treinos.js): mudou lá, mude aqui. Peso levantado fica de fora do card. Campo novo em pesagem/treino que o card mostre precisa de leitura defensiva ali.
 - **Portal → card do Routine** (desde v1.43) lê `TOBA_ROUTINE_DB` por `readRoutineDbRaw()` + `calcRoutineSummary()` de [routine-metrics.js](TobaRoutine/js/routine-metrics.js), que só junta as regras das telas (`calcRoutineToday`, `calcRoutineDayLoad` = mesmo livre do hub, `routineOneoffStatus`, `calcRoutineTaskStreak`, `calcRoutinePlayer` pro XP do mês). Regra nova da rotina entra nessas funções, não no portal. **Exceção que grava (desde v1.48):** a lista "📋 Tarefas de hoje" do card (`calcRoutineTodayList` + `toggleRoutineFromCard` em portal.js) marca/desmarca a tarefa de **hoje** mexendo só em `log` (entrada no mesmo formato do `routineToggleOccurrence`, routine-task-sheet.js, usado pela Rotina e pela Agenda), relendo o texto cru na hora, copiando o valor anterior em `TOBA_ROUTINE_DB_AUTO_BACKUP` e devolvendo o resto do banco como estava. Banco ilegível = não grava. Mudou o formato do `log` ou a regra de marcar na Rotina? Mude aqui junto.
+- **Portal → card do Turism** (desde v1.55) lê `TOBA_TURISM_DB` direto por `calcTurismSummary()` de [turism-metrics.js](TobaTurism/js/turism-metrics.js) (só leitura; lugar de lista apagada não conta; ilegível = card sem números).
 - **Portal → card do Kitchen** (desde v1.43) lê `TOBA_KITCHEN_DB` direto por `calcKitchenSummary()` de [kitchen-recipes.js](TobaKitchen/js/kitchen-recipes.js) (só leitura; ilegível = card sem números).
 - **Backup geral do portal** (`exportAllData`/`importAllData`): formato `{ "<chave localStorage>": "<valor como STRING>" }`. Na importação, cada chave do arquivo é gravada como está (chaves ausentes no arquivo não são apagadas). A importação recusa arquivo sem nenhuma chave `TOBA_`/`toba_` ou com valor que não seja texto (backup de módulo). Não mude para guardar objetos já parseados — quebraria backups existentes.
 - **Backups por módulo** (`toba_bank_backup_*.json`, `toba_health_backup_*.json`): são o objeto do banco puro. Não misturar com o formato do backup geral.
@@ -485,12 +497,37 @@ Arquivos: [TobaRacing/js/racing-core.js](TobaRacing/js/racing-core.js) (dono do 
 - Portal: linha do card (`renderRacingCard`, só leitura, ilegível = card sem números). **Não dá XP** ainda; se for dar, siga a regra da 3.9 (`racing-metrics.js` em todas as páginas do player + bloco em `computePlayer()`).
 - Backup do app: `toba_racing_backup_*.json` (objeto puro, precisa de `fuelings`). Importar passa pelo `normalizeRacingDb()`.
 
+### 3.13 Toba Turism — `TOBA_TURISM_DB` (desde v1.55)
+
+Arquivos: [TobaTurism/js/turism-core.js](TobaTurism/js/turism-core.js) (dono do banco; variável `turismDb`, trava `isTurismDbLoaded`) e [TobaTurism/js/turism-metrics.js](TobaTurism/js/turism-metrics.js) (regras puras, também no portal).
+
+```js
+{
+  version: 1,
+  lists: [ { id: "l-<ts>-<rand4>", name, emoji, city /* "" = sem cidade */, createdAt: ms } ],
+  places: [ {
+    id: "p-<ts>-<rand4>", listId /* id da lista, String */, name, url /* link do Maps colado, "" = sem */,
+    address /* "" = sem; vem do texto do Compartilhar */, note, tags: [ "key de TURISM_TAGS" ],
+    status: "want"|"been", rating: "top"|"bom"|"ok"|"nem"|null /* key de TURISM_RATINGS */,
+    visitedAt: "AAAA-MM-DD"|null /* dia do ✅ Fui */, addedAt: ms
+  } ]
+}
+```
+
+- **Keys de `TURISM_TAGS` ("por que entrou": insta, tiktok, indicacao, passei, nota, date, tropa, barato, especial, trampo, pet, noite) e de `TURISM_RATINGS` (top, bom, ok, nem) ficam gravadas: nunca renomeie**; item novo = linha nova. Key desconhecida é ignorada na tela (sem regravar).
+- Um lugar mora numa lista só (`listId`); trocar a lista na folha do lugar só muda esse campo. Apagar a lista apaga os lugares dela (com confirmação).
+- **Abrir no Maps** (`turismMapsUrl`): o `url` colado; sem ele, busca `google.com/maps/search/?api=1&query=nome, endereço ou cidade`. **Roteiro** (`turismRouteUrl`): `maps/dir/?api=1` com até 10 lugares (9 `waypoints` + `destination`, origem = onde a pessoa está), por texto. Link externo abre por `turismOpenExternal` (no APK, `location.href` cai no `shouldOverrideUrlLoading` e abre o app do Maps).
+- **Colar do Maps** (`turismParseShared` em places.js): do texto do Compartilhar pega 1ª linha = nome, 2ª = endereço, link do Maps (ou o 1º link); só o link comprido `/maps/place/<nome>/` também dá o nome. O link curto `maps.app.goo.gl` não é aberto (sem rede/CORS), só guardado.
+- **📤 Mandar / 📥 Colar lista**: texto pra WhatsApp (`turismListText`) que o `turismParseListText` lê de volta: cabeçalho `emoji nome · cidade`, cada lugar começa com `📌`/`✅` e tem linhas `📍` endereço, `🗺️` link, `📝` anotação, `🏷️` tags pelo rótulo. Importar junta numa lista de mesmo nome+cidade (pula nome repetido) ou cria uma nova; tudo entra como `want` (o "já fui" é de quem mandou). Mudou o formato do Mandar? Mude o leitor junto, e continue lendo o antigo.
+- Não dá XP. Se for dar, siga a regra da 3.9 (`turism-metrics.js` em todas as páginas do player + bloco em `computePlayer()`).
+- Backup do app: `toba_turism_backup_*.json` (objeto puro, precisa de `lists` e `places`). Importar passa pelo `normalizeTurismDb()`.
+
 ---
 
 ## 4. Service worker / PWA
 
 - [sw.js](sw.js): páginas/JS/CSS **network-first** (timeout 4 s, cai no cache); jsdelivr **cache-first**. Sem cópia no cache, só **navegação** (`request.mode === "navigate"`) cai no `index.html`; JS/CSS faltando devolvem erro (desde v1.37 — antes o HTML ia no lugar do script e a tela quebrava offline sem aviso). O network-first usa `fetch(..., { cache: "no-cache" })` de propósito: o GitHub Pages manda `max-age=600`, e sem isso o celular misturava HTML novo com JS antigo logo depois de publicar. Não tire.
-- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v20"` → `"toba-v21"`…). Sem isso, o app offline fica sem o arquivo.
+- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v21"` → `"toba-v22"`…). Sem isso, o app offline fica sem o arquivo.
 - Atualizar a versão do Chart.js exige trocar a URL nos HTML **e** no `PRECACHE`.
 - Toda página nova deve incluir `<script src="../assets/pwa-register.js"></script>` (ou `assets/...` na raiz), as metas de `color-scheme: dark` e o link do manifest, como as existentes.
 

@@ -1110,3 +1110,33 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.54 - Lista de compras com catalogo de itens pra tocar por categoria e Outros digitado`
+
+---
+
+## v1.55 — 🌎 Toba Turism chegou com o 📍 Toba Places (listas de lugares pra visitar)
+
+**Arquivos novos/alterados:** `TobaTurism/TobaTurism-Index.html` (NOVO), `TobaTurism/TobaTurism-Places.html` (NOVO), `TobaTurism/js/turism-metrics.js` (NOVO), `TobaTurism/js/turism-core.js` (NOVO), `TobaTurism/js/places.js` (NOVO), `TobaTurism/css/turism-base.css` (NOVO), `index.html`, `assets/portal.js`, `manifest.webmanifest`, `sw.js`, `CLAUDE.md`
+
+1. **🌎 Toba Turism no portal:** app novo com card próprio (mostra quantos lugares faltam e quantos já foram visitados). O hub tem dois módulos: **📍 Toba Places** e **✈️ Toba Travel (SOON)**, cinza e trancado por enquanto.
+2. **📍 Toba Places, as listas:** monta listas tipo "☕ Cafés por SP", "🍺 Bares", "🌄 Mirantes". Ideias rápidas, emoji e cidade são tudo chip de tocar (digitar só se quiser mudar o nome). Com listas em mais de uma cidade aparece o filtro por cidade.
+3. **Lugar novo sem digitar:** no Google Maps, abre o lugar › Compartilhar › Copiar e no Toba toca **📋 Colar do Maps**: ele pega o nome, o endereço e o link sozinho 🪄. Depois é tocar no **por que entrou** (📸 Vi no insta, 🗣️ Indicação, 💑 Date, 💸 Barato...) e, se quiser, escrever uma anotação ("pedir o pão de queijo").
+4. **Compartilhar direto do Maps pro Toba:** com o Toba instalado pelo Chrome (Adicionar à tela inicial), o Toba aparece na lista do "Compartilhar" do Google Maps e já abre o "Lugar novo" preenchido, escolhendo a lista com um toque. (No app Android TobaAndroid ainda não, usa o Colar do Maps.)
+5. **🗺️ e ✅ em cada lugar:** 🗺️ abre o lugar no Google Maps (sem link, ele busca pelo nome + cidade). ✅ = "Fui!": toca na nota (🔥 Top demais, 👍 Bom, 😐 Ok, 💩 Nem vale) e o lugar vai pro "Já fui" com a data.
+6. **Ver a lista no Maps:** **🧭 Roteiro** escolhe até 10 lugares e abre o caminho no Google Maps saindo de onde você está. **🎲 Sorteia** escolhe o rolê de hoje entre os "Quero ir".
+7. **📤 Mandar / 📥 Colar lista:** manda a lista inteira pelo WhatsApp (com os links). Quem recebe toca em **📥 Colar lista que te mandaram** e ela entra no celular dele. É assim que a lista da Milena chega no celular do Rafa (e vice-versa), já que cada celular tem seus dados.
+8. **⚙️** com backup, restaurar e apagar tudo do Turism, igual aos outros apps.
+
+**Dados:** chave nova `TOBA_TURISM_DB` (+ `TOBA_TURISM_DB_AUTO_BACKUP`), formato na seção 3.13 do `CLAUDE.md`. Nenhum banco existente foi mexido; o backup geral do portal já leva a chave nova. `sw.js` foi pra `toba-v21` (arquivos novos no cache offline). O `manifest.webmanifest` ganhou `share_target` (o Compartilhar do Maps); pode precisar reinstalar o atalho da tela inicial pra aparecer. APK sem mudança.
+
+**Como testar:**
+- Portal → card 🌎 Toba Turism → hub: Toba Travel cinza com 🔒 mostra "Em breve" ao tocar.
+- Toba Places vazio → tocar em "☕ Cafés" → nome "Cafés por SP" → Salvar: abre a lista.
+- No Google Maps copiar um lugar (Compartilhar › Copiar) → + Lugar → 📋 Colar do Maps → nome, endereço e link preenchidos → tocar 📸 Vi no insta → Salvar.
+- 🗺️ abre o Maps; ✅ → 🔥 Top demais → vai pro "✅ Já fui" com a data de hoje.
+- 🧭 Roteiro com 2+ lugares → abre o caminho no Maps. 🎲 Sorteia → "Abrir no Maps".
+- 📤 Mandar → colar o texto em 📥 Colar lista (na tela das listas) num navegador anônimo → a lista aparece igualzinha, tudo em "Quero ir".
+- ⚙️ → baixar backup → apagar tudo → importar: volta tudo. Backup geral do portal também.
+- Card do portal: "📌 N lugares pra ir · ✅ N já visitados".
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.55 - Toba Turism com o Toba Places: listas de lugares com link do Maps, anotacoes, nota de quem ja foi, roteiro e lista pra mandar`

@@ -4,7 +4,7 @@
  * - Chart.js (CDN): cache primeiro, para os gráficos funcionarem offline.
  * - NUNCA mexe no localStorage: seus dados não passam por aqui.
  * Mudou a lista de arquivos? Aumente a versão abaixo. */
-const VERSION = "toba-v20";
+const VERSION = "toba-v21";
 const NETWORK_TIMEOUT_MS = 4000;
 
 const PRECACHE = [
@@ -89,6 +89,12 @@ const PRECACHE = [
   "./TobaRacing/js/racing-metrics.js",
   "./TobaRacing/js/racing-core.js",
   "./TobaRacing/js/combustivel.js",
+  "./TobaTurism/TobaTurism-Index.html",
+  "./TobaTurism/TobaTurism-Places.html",
+  "./TobaTurism/css/turism-base.css",
+  "./TobaTurism/js/turism-metrics.js",
+  "./TobaTurism/js/turism-core.js",
+  "./TobaTurism/js/places.js",
   "https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js",
 ];
 
