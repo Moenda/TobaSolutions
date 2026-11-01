@@ -186,3 +186,46 @@ function racingTrendBadge(trend) {
   if (trend.status === "pesado") return { icon: "🔴", label: "Pé de chumbo", text: `${pct} pior que a sua média. Achou que era Interlagos?`, cls: "is-heavy" };
   return { icon: "🟡", label: "Na média", text: "Igualzinho ao de sempre. Constância de piloto.", cls: "is-normal" };
 }
+
+/* ---------------------------------------------------------------------
+ * Conquistas do Perfil (desde v1.56): números em ordem de data pro
+ * computePlayer() (toba-player.js) conferir as conquistas "rc-*".
+ * Cada abastecimento entra no dia dele; o trecho medido (km/l) entra no dia
+ * do tanque cheio que fecha. "Pé leve" = trecho 3% melhor que a média dos
+ * anteriores (mesma régua do selo da tela).
+ * ------------------------------------------------------------------- */
+function calcRacingPlayer(data, today) {
+  const db = data && typeof data === "object" && !Array.isArray(data) ? data : {};
+  const fuelings = racingSortedFuelings(db).filter((f) => f.date <= today);
+  const segments = calcRacingSegments(db).filter((s) => s.date <= today);
+  const steps = [
+    ...fuelings.map((f) => ({ date: f.date, order: 0, f })),
+    ...segments.map((s, i) => ({ date: s.date, order: 1, s, i })),
+  ].sort((a, b) => a.date.localeCompare(b.date) || a.order - b.order);
+  const stats = { racingFuelings: 0, racingKm: 0, racingSegments: 0, racingEco: 0, racingEthanol: 0, racingBigFill: 0, racingFuelTypes: 0, racingRoad: 0 };
+  const types = new Set();
+  let firstOdo = null;
+  let maxOdo = 0;
+  const timeline = steps.map((step) => {
+    if (step.f) {
+      const f = step.f;
+      stats.racingFuelings += 1;
+      const odo = racingNum(f.odometer);
+      if (firstOdo === null) firstOdo = odo;
+      maxOdo = Math.max(maxOdo, odo);
+      stats.racingKm = Math.max(0, maxOdo - firstOdo);
+      if (f.fuel === "etanol") stats.racingEthanol += 1;
+      types.add(f.fuel || RACING_FUELS[0].key);
+      stats.racingFuelTypes = types.size;
+      stats.racingBigFill = Math.max(stats.racingBigFill, racingNum(f.total));
+    } else {
+      const seg = step.s;
+      stats.racingSegments += 1;
+      stats.racingRoad = Math.max(stats.racingRoad, seg.km);
+      const before = calcRacingAverage(segments.slice(0, step.i));
+      if (before.kml && seg.kml >= before.kml * (1 + RACING_TREND_MARGIN)) stats.racingEco += 1;
+    }
+    return { date: step.date, stats: { ...stats } };
+  });
+  return { stats, timeline };
+}

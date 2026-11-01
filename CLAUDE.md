@@ -53,9 +53,9 @@ Ao terminar um patch, informe a lista de arquivos alterados e o que testar — n
   - **Toba Health** — Pesagem (balança) e Treinos (inclui Treino de Força).
   - **Toba Routine** — Rotina (tarefas com XP e cobranças, desde v1.41), Task (tarefas não rotineiras com sugestão de dia, desde v1.42), Agenda (24 h, desde v1.46) e Calendar (eventos com dia marcado, desde v1.49).
   - **Toba Kitchen** — Livro de Receitas (receitas no código, busca pelo que tem em casa, modo cozinha) e Programação da Semana, desde v1.43, e Lista de compras com catálogo do mercado pra tocar (página própria desde v1.53).
-  - **Toba Racing** — Combustível (abastecimentos e histórico de km/l de tanque cheio a tanque cheio), desde v1.51. Ainda não dá XP.
-  - **Toba Turism** — Toba Places (listas de lugares pra visitar com link do Google Maps, anotação, "por que entrou" e nota de quem já foi), desde v1.55; Toba Travel aparece no hub como "SOON" (desabilitado). Não dá XP.
-- Única dependência externa: Chart.js **fixado** em `chart.js@4.4.7` (jsdelivr). Nunca usar versão flutuante.
+  - **Toba Racing** — Combustível (abastecimentos e histórico de km/l de tanque cheio a tanque cheio), desde v1.51. Dá só conquistas no Perfil (categoria 🏁 Pista, desde v1.56).
+  - **Toba Turism** (na tela **"Toba Tourism"** desde v1.56; pasta, arquivos e banco continuam `TobaTurism`/`TOBA_TURISM_DB`) — Toba Places (listas de lugares pra visitar com link do Google Maps, tipo, anotação, "por que entrou", nota/custo-benefício/"iria de novo" de quem já foi e 🗺️ Mapa com os pinos desde v1.56), desde v1.55; Toba Travel aparece no hub como "SOON" (desabilitado). Não dá XP.
+- Dependências externas, sempre **fixadas** (nunca versão flutuante), pelo jsdelivr: Chart.js `chart.js@4.4.7` e, desde v1.56, Leaflet `leaflet@1.9.4` (só o 🗺️ Mapa do Toba Places, carregado na hora que abre; os dois no `PRECACHE`). O mapa usa os quadradinhos do OpenStreetMap no estilo escuro da CARTO (`basemaps.cartocdn.com/dark_all`, sem chave, não vão pro cache) e a busca de endereço do Nominatim (`nominatim.openstreetmap.org`, sem chave, no máximo 1 busca por segundo).
 - Commits seguem o padrão `vX.YY - descrição` (ex.: `v1.16 - Novo modulo de treino de força...`).
 
 ## 2. Estrutura
@@ -136,14 +136,19 @@ TobaKitchen/                 (desde v1.43; ver 3.11)
 TobaRacing/                  (desde v1.51; ver 3.12)
   TobaRacing-Index.html    Hub do Racing (um card por módulo + resumo; Combustivel?add=1 abre a folha) -> js/racing-metrics.js + js/racing-core.js
   TobaRacing-Combustivel.html  Abastecimentos + km/l (último tanque, média, gráfico, etanol x gasolina)
-                             -> js/racing-metrics.js + js/racing-core.js + js/combustivel.js
+                             -> js/racing-metrics.js + ../TobaHealth/js/health-metrics.js + ../TobaRoutine/js/routine-metrics.js
+                                + ../TobaKitchen/js/kitchen-recipes.js + ../TobaTurism/js/turism-metrics.js + ../assets/toba-player.js (desde v1.56)
+                                + js/racing-core.js + js/combustivel.js
   js/racing-metrics.js     Regras puras do km/l (trechos de tanque cheio a cheio, resumo). Também no portal
   js/racing-core.js        Dono do TOBA_RACING_DB + ⚙️ "🚗 Meu carro" (apelido e litros do tanque)
   css/racing-base.css
 TobaTurism/                  (desde v1.55; ver 3.13)
   TobaTurism-Index.html    Hub do Turism (card do Toba Places + Toba Travel "SOON" desabilitado + resumo) -> js/turism-metrics.js + js/turism-core.js
   TobaTurism-Places.html   Toba Places: listas (?lista=<id> abre uma) e lugares; ?title=&text=&url= = veio do Compartilhar (abre "Lugar novo" já preenchido)
-                             -> js/turism-metrics.js + js/turism-core.js + js/places.js
+                             -> js/turism-metrics.js + ../TobaHealth/js/health-metrics.js + ../TobaRoutine/js/routine-metrics.js
+                                + ../TobaKitchen/js/kitchen-recipes.js + ../TobaRacing/js/racing-metrics.js + ../assets/toba-player.js (desde v1.56)
+                                + js/turism-core.js + js/places-map.js + js/places.js
+  js/places-map.js         🗺️ Mapa (Leaflet carregado na hora, pinos, busca no Nominatim, pôr pino tocando, "perto de mim") (desde v1.56)
   js/turism-metrics.js     Regras puras (resumo, link do Maps / busca, roteiro) + catálogos TURISM_TAGS e TURISM_RATINGS. Também no portal
   js/turism-core.js        Dono do TOBA_TURISM_DB + turismOpenExternal (abre o Maps; no APK vai pelo próprio WebView)
   css/turism-base.css
@@ -382,7 +387,8 @@ Arquivo: [assets/toba-player.js](assets/toba-player.js). Variável global `playe
 - **Manadas & multidões** (`gr-*`, desde v1.47, `buildPlayerCrowdAchievements`): coleções sobre o mesmo kg levantado, com o peso de cada item tirado da escala (boi 500 kg e torcedor 75 kg ficam ali). XP = metade do nível (`PLAYER_CROWD_XP`).
 - **Recompensas** (`PLAYER_AVATARS`, `PLAYER_FRAMES`, `PLAYER_COLORS`, títulos de `PLAYER_LEVEL_TITLES` e `title` das conquistas): só visual; `equipped` guarda o `id` ("" = automático). Item bloqueado/sumido cai no automático.
 - **Comemorações**: `tobaPlayerCheck({ reason, silent })` (com espera de 200 ms) compara o calculado com `seen`: +XP, medalha nova, level up, e na 1ª vez (sem `TOBA_PLAYER_DB`) a tela de boas-vindas "você já é nível X". Depois grava o novo `seen`. Se algum banco não pôde ser lido (`state.ok === false`) ou o perfil está travado, só mostra, não comemora nem grava. Chame depois de gravar algo que vale XP (Treinos já chama em `renderWorkoutScreen`, `saveWorkout`, `registerStrengthWorkout`, fim do treino ao vivo e do Saitama). A tela escuta o evento `toba:player` para redesenhar.
-- **Toda página que carrega `toba-player.js` precisa carregar também `health-metrics.js`, `routine-metrics.js` e `TobaKitchen/js/kitchen-recipes.js` (desde v1.44) antes.** Sem eles o XP sairia diferente entre as telas; por isso, sem `routine-metrics.js` ou `kitchen-recipes.js`, `state.ok` fica `false` (não comemora nem grava `seen`). Hoje carregam o player: portal, Toba-Perfil, Treinos, Rotina, Task, Kitchen Receitas e Kitchen Semana. App novo que dê XP: regra pura num `*-metrics.js` próprio, carregado em todas essas páginas, e um bloco em `computePlayer()`.
+- **Toda página que carrega `toba-player.js` precisa carregar também `health-metrics.js`, `routine-metrics.js`, `TobaKitchen/js/kitchen-recipes.js` (desde v1.44), `TobaRacing/js/racing-metrics.js` e `TobaTurism/js/turism-metrics.js` (desde v1.56) antes.** Sem eles o XP sairia diferente entre as telas; por isso, sem algum deles, `state.ok` fica `false` (não comemora nem grava `seen`). Hoje carregam o player: portal, Toba-Perfil, Treinos, Rotina, Task, Agenda, Kitchen Receitas, Kitchen Semana, Racing Combustível e Toba Places (os dois últimos desde v1.56).
+- **Pista e Rolês** (desde v1.56, categorias `pista` e `roles`): `calcRacingPlayer` (racing-metrics.js, conquistas `rc-*`) e `calcTurismPlayer` (turism-metrics.js, conquistas `tu-*`) devolvem a `timeline` de números em ordem de data, igual à cozinha. Só conquistas, sem XP por abastecimento/visita. Visita conta no `visitedAt` (lugar de lista apagada não conta); lugar com visita antes do `addedAt` "entra" no dia da visita. App novo que dê XP: regra pura num `*-metrics.js` próprio, carregado em todas essas páginas, e um bloco em `computePlayer()`.
 - **Backup**: o geral do portal já leva `TOBA_PLAYER_DB`; a ⚙️ do Toba-Perfil.html tem backup só do perfil (`toba_perfil_backup_*.json`, objeto puro) e "Recomeçar perfil" (apaga só `TOBA_PLAYER_DB`; XP e conquistas voltam do cálculo).
 
 ### 3.10 Toba Routine — `TOBA_ROUTINE_DB` (desde v1.41)
@@ -494,7 +500,7 @@ Arquivos: [TobaRacing/js/racing-core.js](TobaRacing/js/racing-core.js) (dono do 
 - **Etanol x gasolina**: rendimento do etanol ÷ gasolina medido nos trechos de um combustível só; sem os dois, 70% (`RACING_ETHANOL_DEFAULT_RATIO`).
 - Salvar recusa odômetro repetido e odômetro que não bate com a data (menor que um abastecimento mais antigo ou maior que um mais novo). Litros/preço/total: preencheu 2, o terceiro é calculado.
 - `fuel` é key gravada: nunca renomeie; combustível novo = item novo em `RACING_FUELS`.
-- Portal: linha do card (`renderRacingCard`, só leitura, ilegível = card sem números). **Não dá XP** ainda; se for dar, siga a regra da 3.9 (`racing-metrics.js` em todas as páginas do player + bloco em `computePlayer()`).
+- Conquistas `rc-*` no Perfil desde v1.56 (ver 3.9). Portal: linha do card (`renderRacingCard`, só leitura, ilegível = card sem números). Se for dar XP por abastecimento, siga a regra da 3.9 (`racing-metrics.js` em todas as páginas do player + bloco em `computePlayer()`).
 - Backup do app: `toba_racing_backup_*.json` (objeto puro, precisa de `fuelings`). Importar passa pelo `normalizeRacingDb()`.
 
 ### 3.13 Toba Turism — `TOBA_TURISM_DB` (desde v1.55)
@@ -509,17 +515,25 @@ Arquivos: [TobaTurism/js/turism-core.js](TobaTurism/js/turism-core.js) (dono do 
     id: "p-<ts>-<rand4>", listId /* id da lista, String */, name, url /* link do Maps colado, "" = sem */,
     address /* "" = sem; vem do texto do Compartilhar */, note, tags: [ "key de TURISM_TAGS" ],
     status: "want"|"been", rating: "top"|"bom"|"ok"|"nem"|null /* key de TURISM_RATINGS */,
-    visitedAt: "AAAA-MM-DD"|null /* dia do ✅ Fui */, addedAt: ms
+    visitedAt: "AAAA-MM-DD"|null /* dia do ✅ Fui */, addedAt: ms,
+    // v1.56 (opcionais, default no normalizeTurismDb):
+    kind: "key de TURISM_KINDS"|null /* tipo: pizza, japonesa, parque... */,
+    value: "vale"|"justo"|"caro"|null /* custo-benefício, TURISM_VALUES */, again: "sim"|"nao"|null /* iria de novo, TURISM_AGAIN */,
+    lat: number|null, lng: number|null /* pino do 🗺️ Mapa */, geoMiss: bool /* a busca automática não achou */
   } ]
 }
 ```
 
+- **Keys de `TURISM_KINDS` (38 tipos em 2 grupos, `TURISM_KIND_GROUPS`), `TURISM_VALUES` e `TURISM_AGAIN` também são gravadas**: mesma regra. Lista com emoji conhecido sugere o tipo do lugar novo (`TURISM_EMOJI_KIND` em places.js).
+- **Pino do mapa**: link comprido do Maps já dá a coordenada (`turismCoordsFromUrl`, também aplicada em memória no `normalizeTurismDb`); senão, depois de salvar, busca no Nominatim (fila, 1,1 s entre buscas: endereço, depois nome + cidade); senão a pessoa toca no mapa. Mudou link ou endereço = pino zerado e procurado de novo.
+- **Roteiro** desde v1.56 usa o formato de caminho `https://www.google.com/maps/dir//A/B/C` (origem vazia = onde a pessoa está): o app do Maps no celular ignorava o `waypoints` do formato `api=1` e abria só o destino.
+- **Colar do Maps**: o "Copiar link" do Maps manda só o link curto `maps.app.goo.gl`, sem nome; o site não consegue abrir esse link pra ler o nome (precisaria de servidor), então a tela leva pro campo do nome. O Compartilhar › Toba (share_target, app instalado pelo Chrome) traz nome + endereço + link.
 - **Keys de `TURISM_TAGS` ("por que entrou": insta, tiktok, indicacao, passei, nota, date, tropa, barato, especial, trampo, pet, noite) e de `TURISM_RATINGS` (top, bom, ok, nem) ficam gravadas: nunca renomeie**; item novo = linha nova. Key desconhecida é ignorada na tela (sem regravar).
 - Um lugar mora numa lista só (`listId`); trocar a lista na folha do lugar só muda esse campo. Apagar a lista apaga os lugares dela (com confirmação).
 - **Abrir no Maps** (`turismMapsUrl`): o `url` colado; sem ele, busca `google.com/maps/search/?api=1&query=nome, endereço ou cidade`. **Roteiro** (`turismRouteUrl`): `maps/dir/?api=1` com até 10 lugares (9 `waypoints` + `destination`, origem = onde a pessoa está), por texto. Link externo abre por `turismOpenExternal` (no APK, `location.href` cai no `shouldOverrideUrlLoading` e abre o app do Maps).
 - **Colar do Maps** (`turismParseShared` em places.js): do texto do Compartilhar pega 1ª linha = nome, 2ª = endereço, link do Maps (ou o 1º link); só o link comprido `/maps/place/<nome>/` também dá o nome. O link curto `maps.app.goo.gl` não é aberto (sem rede/CORS), só guardado.
 - **📤 Mandar / 📥 Colar lista**: texto pra WhatsApp (`turismListText`) que o `turismParseListText` lê de volta: cabeçalho `emoji nome · cidade`, cada lugar começa com `📌`/`✅` e tem linhas `📍` endereço, `🗺️` link, `📝` anotação, `🏷️` tags pelo rótulo. Importar junta numa lista de mesmo nome+cidade (pula nome repetido) ou cria uma nova; tudo entra como `want` (o "já fui" é de quem mandou). Mudou o formato do Mandar? Mude o leitor junto, e continue lendo o antigo.
-- Não dá XP. Se for dar, siga a regra da 3.9 (`turism-metrics.js` em todas as páginas do player + bloco em `computePlayer()`).
+- Conquistas `tu-*` no Perfil desde v1.56 (ver 3.9); visitar não dá XP sozinho. 📤 Mandar leva o tipo na linha `🏷️` (antes das tags) e custo-benefício/"iria de novo" numa linha `💬` (o 📥 Colar ignora a `💬`).
 - Backup do app: `toba_turism_backup_*.json` (objeto puro, precisa de `lists` e `places`). Importar passa pelo `normalizeTurismDb()`.
 
 ---
@@ -527,7 +541,7 @@ Arquivos: [TobaTurism/js/turism-core.js](TobaTurism/js/turism-core.js) (dono do 
 ## 4. Service worker / PWA
 
 - [sw.js](sw.js): páginas/JS/CSS **network-first** (timeout 4 s, cai no cache); jsdelivr **cache-first**. Sem cópia no cache, só **navegação** (`request.mode === "navigate"`) cai no `index.html`; JS/CSS faltando devolvem erro (desde v1.37 — antes o HTML ia no lugar do script e a tela quebrava offline sem aviso). O network-first usa `fetch(..., { cache: "no-cache" })` de propósito: o GitHub Pages manda `max-age=600`, e sem isso o celular misturava HTML novo com JS antigo logo depois de publicar. Não tire.
-- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v21"` → `"toba-v22"`…). Sem isso, o app offline fica sem o arquivo.
+- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v22"` → `"toba-v23"`…). Sem isso, o app offline fica sem o arquivo.
 - Atualizar a versão do Chart.js exige trocar a URL nos HTML **e** no `PRECACHE`.
 - Toda página nova deve incluir `<script src="../assets/pwa-register.js"></script>` (ou `assets/...` na raiz), as metas de `color-scheme: dark` e o link do manifest, como as existentes.
 

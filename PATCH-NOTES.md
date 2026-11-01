@@ -1140,3 +1140,34 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.55 - Toba Turism com o Toba Places: listas de lugares com link do Maps, anotacoes, nota de quem ja foi, roteiro e lista pra mandar`
+
+---
+
+## v1.56 — 🗺️ Toba Places turbinado: mapa no app, roteiro arrumado, tipo do lugar, custo-benefício e conquistas do Places e do Racing
+
+**Arquivos novos/alterados:** `TobaTurism/js/places-map.js` (NOVO), `TobaTurism/TobaTurism-Places.html`, `TobaTurism/TobaTurism-Index.html`, `TobaTurism/js/places.js`, `TobaTurism/js/turism-metrics.js`, `TobaTurism/js/turism-core.js`, `TobaTurism/css/turism-base.css`, `TobaRacing/TobaRacing-Combustivel.html`, `TobaRacing/js/racing-metrics.js`, `TobaRacing/js/combustivel.js`, `assets/toba-player.js`, `Toba-Perfil.html`, `TobaHealth/TobaHealth-Treinos.html`, `TobaRoutine/TobaRoutine-Rotina.html`, `TobaRoutine/TobaRoutine-Task.html`, `TobaRoutine/TobaRoutine-Agenda.html`, `TobaKitchen/TobaKitchen-Receitas.html`, `TobaKitchen/TobaKitchen-Semana.html`, `index.html`, `sw.js`, `CLAUDE.md`
+
+1. **🧭 Roteiro consertado:** antes o app do Google Maps abria só o último lugar. Agora o link vai no formato que o app entende e todas as paradas entram, na ordem que você tocou (até 10).
+2. **🗺️ Mapa dentro do Toba:** botão **🗺️ Mapa** na lista mostra todos os lugares como pinos (mapa escuro do OpenStreetMap, grátis, sem chave). Toca no pino: nome, tipo, nota e botões 🗺️ Maps / ✅ Fui / ✏️. **📍 Perto de mim** mostra onde você está.
+3. **Pino sozinho:** link comprido do Maps já traz a posição. Senão, ao salvar o Toba procura o endereço (ou nome + cidade) no OpenStreetMap. Não achou? Toca no nome em "Sem pino" e depois no mapa onde fica. Na folha do lugar tem **📍 Ajustar no mapa**.
+4. **Colar só o link:** o "Copiar link" do Google Maps manda só o link curto, sem o nome (e o Google não deixa site nenhum ler o nome desse link). Agora o Toba avisa "Veio só o link!" e já leva pro campo do nome. O jeito que traz nome + endereço: no Maps, **Compartilhar › Toba** (Toba instalado pelo Chrome).
+5. **Tipo do lugar:** 38 tipos em chips, em **🍽️ Comer & beber** (brasileira, italiana, pizza, japonesa, árabe, churrasco, café, boteco, drinks...) e **🎡 Passeios** (parque, museu, mirante, show, teatro, praia, trilha...). Lista ☕ já sugere Café, lista 🍕 sugere Pizza etc. Na lista aparece filtro por tipo, e o 🎲 Sorteia respeita o filtro.
+6. **✅ Fui! completo:** além da nota, **💰 Custo-benefício** (🤑 Valeu cada real / 👌 Preço justo / 💸 Caro pelo que é) e **🔁 E voltaria?** (Iria de novo / Não volto). 🔥 já sugere "iria de novo" e 💩 sugere "não volto". No "Já fui" tem filtro **🔁 Iria de novo**.
+7. **🏆 Conquistas do Places e do Racing no Perfil:** 15 de 🌎 Rolês (Caderninho aberto, Saiu de casa!, Rolezeiro, Cilada Bino!, Maratona de rolê, Zerou a lista, Paladar sem fronteiras, Atlas humano...) e 13 de 🏁 Pista (Pit stop inaugural, Pé na estrada, Cientista do km/l, Pé de pluma, Movido a milho, Doeu no bolso, Caminhoneiro honorário...). Comemoram na hora no Places e no Combustível. Quem já tinha lugar/abastecimento anotado ganha as que já merecia.
+8. **Nome na tela:** virou **Toba Tourism** (inglês certo). Pastas, arquivos e o banco continuam `TobaTurism`, então nada some.
+9. **📤 Mandar** leva o tipo e o custo-benefício/iria de novo; o 📥 Colar lista traz o tipo junto.
+
+**Dados:** no `TOBA_TURISM_DB`, cada lugar ganhou campos opcionais `kind`, `value`, `again`, `lat`, `lng` e `geoMiss` (ver 3.13 do `CLAUDE.md`). Lugares e backups da v1.55 abrem normal (sem tipo e sem pino; link comprido já vira pino). Conquistas novas não gravam nada além do "já comemorei" do Perfil. `sw.js` foi pra `toba-v22` (places-map.js e Leaflet no cache offline). Leaflet fixado em `leaflet@1.9.4`. APK sem mudança.
+
+**Como testar:**
+- Places → uma lista com 3 lugares → 🧭 Roteiro → tocar nos 3 → Abrir no Maps: o app mostra as 3 paradas.
+- 🗺️ Mapa: pinos aparecem (os sem pino: 🔎 Achar pinos, ou toca no nome em "Sem pino" e depois no mapa). Toca num pino → ✅ Fui.
+- No Maps, "Copiar link" de um lugar → + Lugar → 📋 Colar do Maps → avisa "Veio só o link" e o cursor vai pro nome.
+- + Lugar numa lista ☕ → tipo Café já vem marcado. Trocar pra 🎡 Passeios → Parque.
+- ✅ Fui → 🔥 + 🤑 → já marca 🔁 Iria de novo → Riscar: aparece a comemoração da conquista "Saiu de casa!".
+- Perfil → conquistas → seções 🏁 Pista e 🌎 Rolês.
+- Combustível → salvar um abastecimento → conquista "Pit stop inaugural" (se ainda não tinha).
+- ⚙️ → backup → apagar tudo → importar: tudo volta. Backup antigo da v1.55 importa normal.
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.56 - Toba Places com mapa no app, roteiro com todas as paradas, tipo do lugar, custo-beneficio e iria de novo, conquistas do Places e do Racing e nome Toba Tourism`

@@ -3,9 +3,13 @@
  * Um perfil só para o Toba inteiro. Carregue depois do toba-common.js, do
  * TobaHealth/js/health-metrics.js (catálogo, escalas do Hall e kg levantado)
  * do TobaRoutine/js/routine-metrics.js (XP das tarefas, desde v1.41) e do
- * TobaKitchen/js/kitchen-recipes.js (conquistas da cozinha, desde v1.44):
- *   toba-common.js -> health-metrics.js -> routine-metrics.js -> kitchen-recipes.js -> toba-player.js
- * Sem routine-metrics.js ou kitchen-recipes.js o cálculo fica "incompleto" (state.ok = false) e
+ * TobaKitchen/js/kitchen-recipes.js (conquistas da cozinha, desde v1.44), do
+ * TobaRacing/js/racing-metrics.js e do TobaTurism/js/turism-metrics.js (conquistas
+ * da pista e dos rolês, desde v1.56):
+ *   toba-common.js -> health-metrics.js -> routine-metrics.js -> kitchen-recipes.js
+ *     -> racing-metrics.js -> turism-metrics.js -> toba-player.js
+ * Sem routine-metrics.js, kitchen-recipes.js, racing-metrics.js ou turism-metrics.js o
+ * cálculo fica "incompleto" (state.ok = false) e
  * nada é comemorado nem gravado, para o XP não oscilar entre as telas.
  *
  * PRINCÍPIO: o XP é CALCULADO, nunca somado.
@@ -124,6 +128,8 @@ const PLAYER_ACHIEVEMENT_CATS = [
   { id: "pesagem", name: "⚖️ Pesagem" },
   { id: "rotina", name: "✅ Rotina" },
   { id: "cozinha", name: "🍳 Cozinha" },
+  { id: "pista", name: "🏁 Pista" },
+  { id: "roles", name: "🌎 Rolês" },
 ];
 
 // Tamanho do livro de receitas pra conquista "Zerou o livro" (sem kitchen-recipes.js = inalcançável)
@@ -272,6 +278,36 @@ function buildPlayerAchievements() {
     { id: "kt-formiga", cat: "cozinha", tier: "bronze", icon: "🐜", name: "Formiga", desc: "5 sobremesas feitas. O dentista mandou um abraço.", hint: "Faça 5 sobremesas.", metric: (s) => s.kitchenSweet, goal: 5 },
     { id: "kt-larica", cat: "cozinha", tier: "bronze", icon: "🌙", name: "Larica da madrugada", desc: "Cozinhou entre meia-noite e 5 da manhã. A geladeira tem câmera.", hint: "Termine uma receita entre 0h e 5h.", metric: (s) => s.kitchenNight, goal: 1 },
     { id: "kt-semana", cat: "cozinha", tier: "prata", icon: "📅", name: "Semana no controle", desc: "7 receitas da programação feitas na mesma semana. Planejou e cumpriu!", hint: "Marque 7 receitas da Programação da Semana como feitas na mesma semana.", metric: (s) => s.kitchenWeekPlan, goal: 7 },
+    // Toba Racing (desde v1.56; números de calcRacingPlayer em racing-metrics.js)
+    { id: "rc-1", cat: "pista", tier: "bronze", icon: "🏁", name: "Pit stop inaugural", desc: "Primeiro abastecimento anotado. A largada foi dada.", hint: "Anote um abastecimento no Toba Racing.", metric: (s) => s.racingFuelings, goal: 1 },
+    { id: "rc-10", cat: "pista", tier: "prata", icon: "⛽", name: "O frentista sabe seu nome", desc: "10 abastecimentos anotados. Já ganha bala no caixa.", hint: "Anote 10 abastecimentos.", metric: (s) => s.racingFuelings, goal: 10 },
+    { id: "rc-50", cat: "pista", tier: "ouro", icon: "🛢️", name: "Sócio do posto", desc: "50 abastecimentos. Seu nome tá na parede do posto.", hint: "Anote 50 abastecimentos.", metric: (s) => s.racingFuelings, goal: 50 },
+    { id: "rc-km1000", cat: "pista", tier: "bronze", icon: "🛣️", name: "Pé na estrada", desc: "1.000 km rodados desde o primeiro abastecimento anotado.", hint: "Rode 1.000 km (pelo odômetro anotado).", metric: (s) => s.racingKm, goal: 1000 },
+    { id: "rc-km10000", cat: "pista", tier: "prata", icon: "🚗", name: "Estradeiro", desc: "10.000 km no odômetro do Toba. O banco já tem o formato de você.", hint: "Rode 10.000 km.", metric: (s) => s.racingKm, goal: 10000 },
+    { id: "rc-km50000", cat: "pista", tier: "lenda", icon: "🚚", name: "Caminhoneiro honorário", desc: "50.000 km. Já dá pra ter adesivo de Jesus no vidro.", hint: "Rode 50.000 km.", metric: (s) => s.racingKm, goal: 50000, title: "🚚 Rei da Estrada" },
+    { id: "rc-medido", cat: "pista", tier: "bronze", icon: "🧮", name: "Cientista do km/l", desc: "Primeiro km/l medido de tanque cheio a tanque cheio.", hint: "Anote dois abastecimentos de tanque cheio.", metric: (s) => s.racingSegments, goal: 1 },
+    { id: "rc-medido10", cat: "pista", tier: "prata", icon: "📊", name: "Planilha ambulante", desc: "10 tanques medidos. A Petrobras te consulta.", hint: "Meça 10 tanques (cheio a cheio).", metric: (s) => s.racingSegments, goal: 10 },
+    { id: "rc-eco", cat: "pista", tier: "bronze", icon: "🍃", name: "Pé de pluma", desc: "Um tanque 3% melhor que a sua média. O planeta mandou um beijo.", hint: "Faça um tanque com km/l 3% acima da sua média.", metric: (s) => s.racingEco, goal: 1 },
+    { id: "rc-eco5", cat: "pista", tier: "ouro", icon: "🧘", name: "Monge do acelerador", desc: "5 tanques de pé leve. Zen até no trânsito da Marginal.", hint: "Faça 5 tanques de pé leve.", metric: (s) => s.racingEco, goal: 5, title: "🧘 Monge do Acelerador" },
+    { id: "rc-etanol", cat: "pista", tier: "bronze", icon: "🌽", name: "Movido a milho", desc: "Abasteceu com etanol. O carro virou pamonha.", hint: "Anote um abastecimento de etanol.", metric: (s) => s.racingEthanol, goal: 1 },
+    { id: "rc-viagem", cat: "pista", tier: "prata", icon: "🏖️", name: "Bate e volta", desc: "Um tanque só com 500 km ou mais. Pegou estrada, hein!", hint: "Rode 500 km num trecho de tanque cheio a cheio.", metric: (s) => s.racingRoad, goal: 500 },
+    { id: "rc-dor", cat: "pista", tier: "bronze", icon: "😭", name: "Doeu no bolso", desc: "Um abastecimento de R$ 300 ou mais. Choro na bomba.", hint: "Anote um abastecimento de R$ 300+.", metric: (s) => s.racingBigFill, goal: 300 },
+    // Toba Turism · Places (desde v1.56; números de calcTurismPlayer em turism-metrics.js)
+    { id: "tu-1", cat: "roles", tier: "bronze", icon: "📍", name: "Caderninho aberto", desc: "Primeiro lugar na lista. O rolê começa no papel.", hint: "Ponha um lugar numa lista do Toba Places.", metric: (s) => s.turismAdded, goal: 1 },
+    { id: "tu-listas", cat: "roles", tier: "bronze", icon: "🗂️", name: "Organizado do rolê", desc: "5 listas criadas. Café, bar, parque... tem lista pra tudo.", hint: "Crie 5 listas no Toba Places.", metric: (s) => s.turismLists, goal: 5 },
+    { id: "tu-50", cat: "roles", tier: "prata", icon: "📚", name: "Guia Michelin de bolso", desc: "50 lugares anotados. Nunca mais \"não sei o que fazer no fds\".", hint: "Anote 50 lugares.", metric: (s) => s.turismAdded, goal: 50 },
+    { id: "tu-fui", cat: "roles", tier: "bronze", icon: "✅", name: "Saiu de casa!", desc: "Foi no primeiro lugar da lista. O sofá ficou com ciúmes.", hint: "Marque um lugar como ✅ Fui.", metric: (s) => s.turismVisits, goal: 1 },
+    { id: "tu-fui10", cat: "roles", tier: "prata", icon: "🧭", name: "Rolezeiro", desc: "10 lugares visitados. Já é figurinha carimbada.", hint: "Visite 10 lugares das listas.", metric: (s) => s.turismVisits, goal: 10 },
+    { id: "tu-fui50", cat: "roles", tier: "ouro", icon: "🌎", name: "Embaixador do rolê", desc: "50 lugares visitados. Os garçons já te cumprimentam.", hint: "Visite 50 lugares.", metric: (s) => s.turismVisits, goal: 50, title: "🌎 Rei do Rolê" },
+    { id: "tu-fui100", cat: "roles", tier: "lenda", icon: "🗺️", name: "Atlas humano", desc: "100 lugares visitados. O Google Maps pede dica pra você.", hint: "Visite 100 lugares.", metric: (s) => s.turismVisits, goal: 100, title: "🗺️ Atlas Humano" },
+    { id: "tu-top", cat: "roles", tier: "prata", icon: "🔥", name: "Caçador de joias", desc: "5 lugares nota 🔥 Top demais. Faro de ouro.", hint: "Dê 🔥 Top demais pra 5 lugares.", metric: (s) => s.turismTop, goal: 5 },
+    { id: "tu-cilada", cat: "roles", tier: "bronze", icon: "💩", name: "Cilada, Bino!", desc: "Foi num lugar que nem valia. Faz parte da jornada.", hint: "Dê 💩 Nem vale pra um lugar.", metric: (s) => s.turismNem, goal: 1 },
+    { id: "tu-maratona", cat: "roles", tier: "prata", icon: "🏃", name: "Maratona de rolê", desc: "3 lugares da lista no mesmo dia. Que disposição!", hint: "Visite 3 lugares no mesmo dia.", metric: (s) => s.turismSameDay, goal: 3 },
+    { id: "tu-cidades", cat: "roles", tier: "ouro", icon: "✈️", name: "Turista de verdade", desc: "Visitou lugares de listas de 3 cidades diferentes.", hint: "Visite lugares em 3 cidades (pela cidade da lista).", metric: (s) => s.turismCities, goal: 3 },
+    { id: "tu-zerou", cat: "roles", tier: "ouro", icon: "🏆", name: "Zerou a lista", desc: "Visitou todos os lugares de uma lista com 5 ou mais. Platina!", hint: "Visite todos os lugares de uma lista (com 5+ lugares).", metric: (s) => s.turismZerou, goal: 1 },
+    { id: "tu-tipos", cat: "roles", tier: "ouro", icon: "🍱", name: "Paladar sem fronteiras", desc: "Visitou 10 tipos diferentes de lugar (italiana, japa, parque...).", hint: "Visite lugares de 10 tipos diferentes (escolha o tipo no lugar).", metric: (s) => s.turismKinds, goal: 10 },
+    { id: "tu-fregues", cat: "roles", tier: "prata", icon: "🔁", name: "Freguês", desc: "10 lugares que você iria de novo. Já tem os seus cantinhos.", hint: "Marque 🔁 Iria de novo em 10 lugares.", metric: (s) => s.turismAgain, goal: 10 },
+    { id: "tu-garimpo", cat: "roles", tier: "bronze", icon: "🤑", name: "Garimpeiro", desc: "5 lugares que valeram cada real. Bom e barato existe!", hint: "Marque 🤑 Valeu cada real em 5 lugares.", metric: (s) => s.turismValue, goal: 5 },
   );
   return list;
 }
@@ -612,6 +648,9 @@ function computePlayer(options = {}) {
     routineOneoffs: 0, routineBigOneoff: 0,
     kitchenCooked: 0, kitchenDistinct: 0, kitchenMeals: 0, kitchenFullDay: 0, kitchenImprovised: 0,
     kitchenRepeat: 0, kitchenLong: 0, kitchenSweet: 0, kitchenNight: 0, kitchenWeekPlan: 0,
+    racingFuelings: 0, racingKm: 0, racingSegments: 0, racingEco: 0, racingEthanol: 0, racingBigFill: 0, racingFuelTypes: 0, racingRoad: 0,
+    turismLists: 0, turismAdded: 0, turismVisits: 0, turismTop: 0, turismNem: 0, turismCities: 0,
+    turismKinds: 0, turismSameDay: 0, turismAgain: 0, turismValue: 0, turismZerou: 0,
   };
   const checkAchievements = (date) => {
     PLAYER_ACHIEVEMENTS.forEach((a) => {
@@ -769,6 +808,28 @@ function computePlayer(options = {}) {
   } else {
     console.warn("toba-player: kitchen-recipes.js não carregado; conquistas da cozinha fora da conta.");
   }
+
+  /* ---------- Pista (TOBA_RACING_DB) e Rolês (TOBA_TURISM_DB), desde v1.56: só conquistas ---------- */
+  const racingSource = readPlayerSource("TOBA_RACING_DB");
+  const hasRacingRules = typeof calcRacingPlayer === "function";
+  if (hasRacingRules) {
+    calcRacingPlayer(racingSource.data, today).timeline.forEach((step) => {
+      Object.assign(stats, step.stats);
+      checkAchievements(step.date);
+    });
+  } else {
+    console.warn("toba-player: racing-metrics.js não carregado; conquistas da pista fora da conta.");
+  }
+  const turismSource = readPlayerSource("TOBA_TURISM_DB");
+  const hasTurismRules = typeof calcTurismPlayer === "function";
+  if (hasTurismRules) {
+    calcTurismPlayer(turismSource.data, today).timeline.forEach((step) => {
+      Object.assign(stats, step.stats);
+      checkAchievements(step.date);
+    });
+  } else {
+    console.warn("toba-player: turism-metrics.js não carregado; conquistas dos rolês fora da conta.");
+  }
   checkAchievements(today);
 
   /* ---------- Conquistas ---------- */
@@ -786,7 +847,8 @@ function computePlayer(options = {}) {
   const info = playerLevelInfo(xp);
   const unlockedIds = new Set(achievements.filter((a) => a.unlocked).map((a) => a.id));
   return {
-    ok: healthSource.ok && routineSource.ok && hasRoutineRules && kitchenSource.ok && hasKitchenRules,
+    ok: healthSource.ok && routineSource.ok && hasRoutineRules && kitchenSource.ok && hasKitchenRules
+      && racingSource.ok && hasRacingRules && turismSource.ok && hasTurismRules,
     today,
     xp,
     ...info,

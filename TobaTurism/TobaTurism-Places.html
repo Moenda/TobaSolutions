@@ -14,16 +14,17 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Toba" />
   <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="../assets/toba-player.css" />
   <link rel="stylesheet" href="css/turism-base.css" />
-  <title>Toba Turism | Toba Places</title>
+  <title>Toba Tourism | Toba Places</title>
 </head>
 
 <body>
   <div class="container">
     <header class="toba-header">
-      <a class="toba-back" href="TobaTurism-Index.html" data-label="Voltar para o Toba Turism" aria-label="Voltar para o Toba Turism">‹</a>
+      <a class="toba-back" href="TobaTurism-Index.html" data-label="Voltar para o Toba Tourism" aria-label="Voltar para o Toba Tourism">‹</a>
       <a class="toba-titles" href="TobaTurism-Index.html">
-        <span class="toba-app">🌎 Toba Turism</span>
+        <span class="toba-app">🌎 Toba Tourism</span>
         <span class="toba-page">📍 Toba Places</span>
       </a>
       <div class="toba-header-actions">
@@ -43,18 +44,28 @@
     <section id="viewList" hidden>
       <div class="tr-list-hero" id="listHero"></div>
       <div class="tr-actions">
+        <button type="button" class="chip-btn tr-action is-map" id="modeBtn" data-click="toggleMode">🗺️ Mapa</button>
         <button type="button" class="chip-btn tr-action" data-click="openRoute">🧭 Roteiro</button>
         <button type="button" class="chip-btn tr-action" data-click="drawPlace">🎲 Sorteia</button>
         <button type="button" class="chip-btn tr-action" data-click="shareList">📤 Mandar</button>
-        <button type="button" class="chip-btn tr-action" data-click="editCurrentList">✏️ Lista</button>
       </div>
-      <div class="tab-nav">
-        <button type="button" class="tab-btn" data-click="setPlaceFilter" data-filter="want" id="filterWant">📌 Quero ir</button>
-        <button type="button" class="tab-btn" data-click="setPlaceFilter" data-filter="been" id="filterBeen">✅ Já fui</button>
-        <button type="button" class="tab-btn" data-click="setPlaceFilter" data-filter="all" id="filterAll">Todos</button>
+      <div id="listPane">
+        <div class="tab-nav">
+          <button type="button" class="tab-btn" data-click="setPlaceFilter" data-filter="want" id="filterWant">📌 Quero ir</button>
+          <button type="button" class="tab-btn" data-click="setPlaceFilter" data-filter="been" id="filterBeen">✅ Já fui</button>
+          <button type="button" class="tab-btn" data-click="setPlaceFilter" data-filter="all" id="filterAll">Todos</button>
+        </div>
+        <div class="tr-chips" id="kindFilterChips"></div>
+        <div class="tr-chips" id="tagFilterChips"></div>
+        <div class="toba-list" id="placesList"></div>
       </div>
-      <div class="tr-chips" id="tagFilterChips"></div>
-      <div class="toba-list" id="placesList"></div>
+      <!-- 🗺️ Mapa (OpenStreetMap via Leaflet, carregado só quando abre) -->
+      <div id="mapPane" hidden>
+        <div class="tr-map-bar" id="mapBar"></div>
+        <div class="tr-map" id="placesMap"></div>
+        <div class="tr-map-legend"><span><i class="tr-dot is-want"></i>quero ir</span><span><i class="tr-dot is-been"></i>já fui</span><span><i class="tr-dot is-me"></i>você</span></div>
+        <div id="mapMissing"></div>
+      </div>
     </section>
   </div>
 
@@ -99,7 +110,7 @@
         <input type="hidden" id="placeId" />
         <div class="tr-paste-box" id="pasteBox">
           <button type="button" class="btn tr-btn-paste" id="pasteBtn" data-click="pasteFromMaps">📋 Colar do Maps</button>
-          <textarea id="placePaste" class="form-control tr-paste" rows="2" data-input="parsePasteField" placeholder="No Google Maps: Compartilhar › Copiar e cola aqui. O Toba pega o nome e o link 🪄"></textarea>
+          <textarea id="placePaste" class="form-control tr-paste" rows="2" data-input="parsePasteField" placeholder="Cola aqui o que o Google Maps mandou. Com Compartilhar › Toba vem nome, endereço e link 🪄"></textarea>
         </div>
         <div class="form-group">
           <label for="placeName">Nome do lugar *</label>
@@ -109,6 +120,9 @@
           <label for="placeUrl">Link do Maps</label>
           <input type="url" id="placeUrl" class="form-control" maxlength="500" placeholder="https://maps.app.goo.gl/..." />
         </div>
+        <div class="tr-label">Tipo do lugar</div>
+        <div class="tab-nav tr-kind-tabs" id="placeKindGroups"></div>
+        <div class="tr-chips is-wrap" id="placeKindChips"></div>
         <div class="tr-label">Por que entrou na lista?</div>
         <div class="tr-chips is-wrap" id="placeTagChips"></div>
         <div class="form-group">
@@ -120,10 +134,18 @@
         <div id="placeRatingBox" hidden>
           <div class="tr-label">E aí, como foi?</div>
           <div class="tr-chips is-wrap" id="placeRatingChips"></div>
+          <div class="tr-label">💰 Custo-benefício</div>
+          <div class="tr-chips is-wrap" id="placeValueChips"></div>
+          <div class="tr-label">🔁 E voltaria?</div>
+          <div class="tr-chips is-wrap" id="placeAgainChips"></div>
         </div>
         <div id="placeListBox">
           <div class="tr-label">Em qual lista?</div>
           <div class="tr-chips is-wrap" id="placeListChips"></div>
+        </div>
+        <div class="tr-pin-row" id="placePinBox" hidden>
+          <span id="placePinText"></span>
+          <button type="button" class="chip-btn" data-click="pinFromSheet">📍 Ajustar no mapa</button>
         </div>
         <div class="form-group" id="placeAddressBox" hidden>
           <label for="placeAddress">Endereço</label>
@@ -146,8 +168,16 @@
         <h3 id="rateSheetTitle">✅ Fui!</h3>
         <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
       </div>
-      <p class="toba-sheet-text">E aí, valeu o rolê? Toca na nota e pronto.</p>
-      <div class="tr-rate-grid" id="rateGrid"></div>
+      <div class="tr-rate-body">
+        <div class="tr-rate-grid" id="rateGrid"></div>
+        <div class="tr-label">💰 Custo-benefício</div>
+        <div class="tr-chips is-wrap" id="rateValueChips"></div>
+        <div class="tr-label">🔁 E voltaria?</div>
+        <div class="tr-chips is-wrap" id="rateAgainChips"></div>
+      </div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-primary" data-click="saveRate">✅ Fui! Riscar da lista</button>
+      </div>
     </div>
   </div>
 
@@ -158,7 +188,7 @@
         <h3>🧭 Roteiro no Maps</h3>
         <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
       </div>
-      <p class="toba-sheet-text">Escolhe até 10 lugares e o Google Maps monta o caminho saindo de onde você está.</p>
+      <p class="toba-sheet-text">Toca na ordem que quer ir (até 10). O Google Maps monta o caminho saindo de onde você está.</p>
       <div class="tr-route-list" id="routeList"></div>
       <div class="toba-sheet-footer">
         <button type="button" class="btn btn-primary" id="routeGoBtn" data-click="goRoute">🗺️ Abrir no Maps</button>
@@ -187,7 +217,13 @@
 
   <script src="../assets/toba-common.js"></script>
   <script src="js/turism-metrics.js"></script>
+  <script src="../TobaHealth/js/health-metrics.js"></script>
+  <script src="../TobaRoutine/js/routine-metrics.js"></script>
+  <script src="../TobaKitchen/js/kitchen-recipes.js"></script>
+  <script src="../TobaRacing/js/racing-metrics.js"></script>
+  <script src="../assets/toba-player.js"></script>
   <script src="js/turism-core.js"></script>
+  <script src="js/places-map.js"></script>
   <script src="js/places.js"></script>
   <script src="../assets/pwa-register.js"></script>
 </body>

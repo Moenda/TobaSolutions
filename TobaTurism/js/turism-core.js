@@ -17,7 +17,9 @@ function createEmptyTurismDb() {
     version: 1,
     lists: [], // [{ id: "l-<ts>-<rand4>", name, emoji, city, createdAt: ms }]
     places: [], // [{ id: "p-<ts>-<rand4>", listId, name, url, address, note, tags: [keys de TURISM_TAGS],
-    //             status: "want"|"been", rating: key de TURISM_RATINGS|null, visitedAt: "AAAA-MM-DD"|null, addedAt: ms }]
+    //             status: "want"|"been", rating: key de TURISM_RATINGS|null, visitedAt: "AAAA-MM-DD"|null, addedAt: ms,
+    //             v1.56: kind: key de TURISM_KINDS|null, value: key de TURISM_VALUES|null, again: "sim"|"nao"|null,
+    //                    lat/lng: number|null (pino do 🗺️ Mapa), geoMiss: bool (busca automática não achou) }]
   };
 }
 
@@ -46,6 +48,23 @@ function normalizeTurismDb(db) {
     if (p.rating === undefined) p.rating = null;
     if (p.visitedAt === undefined) p.visitedAt = null;
     if (p.addedAt === undefined) p.addedAt = 0;
+    // v1.56
+    if (p.kind === undefined) p.kind = null;
+    if (p.value === undefined) p.value = null;
+    if (p.again === undefined) p.again = null;
+    if (p.lat === undefined || p.lng === undefined || !Number.isFinite(Number(p.lat)) || !Number.isFinite(Number(p.lng)) || p.lat === null || p.lng === null) {
+      p.lat = null;
+      p.lng = null;
+    } else {
+      p.lat = Number(p.lat);
+      p.lng = Number(p.lng);
+    }
+    if (p.geoMiss === undefined) p.geoMiss = false;
+    // Sem pino mas o link comprido do Maps tem a coordenada: usa ela (só em memória até a próxima gravação)
+    if (p.lat === null) {
+      const coords = turismCoordsFromUrl(p.url);
+      if (coords) Object.assign(p, coords);
+    }
   });
   return out;
 }
@@ -70,7 +89,7 @@ let turismDb = loadTurismDb();
 
 function saveTurismDb(options = {}) {
   if (!isTurismDbLoaded) {
-    showPageMessage("Os dados salvos do Turism estão ilegíveis, então nada foi gravado por cima. Restaure um backup em ⚙️.", { title: "Dados protegidos", icon: "🛡️" });
+    showPageMessage("Os dados salvos do Tourism estão ilegíveis, então nada foi gravado por cima. Restaure um backup em ⚙️.", { title: "Dados protegidos", icon: "🛡️" });
     return false;
   }
   try {
@@ -113,7 +132,7 @@ async function importTurismBackup(text) {
     data = JSON.parse(text);
     if (!data || typeof data !== "object" || !Array.isArray(data.lists) || !Array.isArray(data.places)) throw new Error("Não é backup do Turism");
   } catch (err) {
-    showPageMessage("Esse arquivo não é um backup do Toba Turism.", { title: "Arquivo inválido", icon: "🤨" });
+    showPageMessage("Esse arquivo não é um backup do Toba Tourism.", { title: "Arquivo inválido", icon: "🤨" });
     return;
   }
   turismDb = normalizeTurismDb(data);
@@ -125,7 +144,7 @@ async function importTurismBackup(text) {
 }
 
 async function resetTurismData() {
-  const ok = await showPageMessage("Apaga TUDO do Toba Turism (todas as listas e lugares). Não dá para desfazer!", { title: "Apagar tudo?", icon: "🚨", confirm: true, confirmLabel: "Apagar tudo" });
+  const ok = await showPageMessage("Apaga TUDO do Toba Tourism (todas as listas e lugares). Não dá para desfazer!", { title: "Apagar tudo?", icon: "🚨", confirm: true, confirmLabel: "Apagar tudo" });
   if (!ok) return;
   localStorage.removeItem(TURISM_KEY); // só a chave deste app
   turismDb = createEmptyTurismDb();
@@ -135,7 +154,7 @@ async function resetTurismData() {
 }
 
 tobaSetupApp({
-  name: "Toba Turism",
+  name: "Toba Tourism",
   exportBackup: exportTurismBackup,
   importBackup: importTurismBackup,
   resetData: resetTurismData,

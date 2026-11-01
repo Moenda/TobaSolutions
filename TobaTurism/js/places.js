@@ -1,20 +1,23 @@
 /* =====================================================================
  * Toba Turism · 📍 Toba Places (desde v1.55)
  * Listas de lugares pra visitar ("☕ Cafés por SP"): cada lugar com link do
- * Google Maps, anotação, "por que entrou" (chips) e nota de quem já foi.
- * Regras puras em turism-metrics.js; banco em turism-core.js.
+ * Google Maps, tipo (🍕 Pizza, 🌳 Parque...), anotação, "por que entrou"
+ * (chips) e, de quem já foi, nota + custo-benefício + "iria de novo".
+ * Regras puras em turism-metrics.js; banco em turism-core.js; o 🗺️ Mapa
+ * dentro do app mora em places-map.js (carregado antes deste arquivo).
  * Fast UI: quase tudo é tocar em chip; digitar só o nome (ou colar do Maps).
  * ===================================================================== */
 const TURISM_DEFAULT_CITY = "São Paulo";
 
 // Ideias de lista (tocar preenche emoji + nome)
 const TURISM_LIST_IDEAS = [
+  { emoji: "🍽️", name: "Restaurantes" },
   { emoji: "☕", name: "Cafés" },
   { emoji: "🍔", name: "Hambúrguer" },
   { emoji: "🍕", name: "Pizzarias" },
   { emoji: "🍣", name: "Japa" },
   { emoji: "🍺", name: "Bares" },
-  { emoji: "🍦", name: "Docerias" },
+  { emoji: "🍰", name: "Docerias" },
   { emoji: "🥐", name: "Padarias" },
   { emoji: "🌮", name: "Comida de rua" },
   { emoji: "🌳", name: "Parques" },
@@ -23,20 +26,30 @@ const TURISM_LIST_IDEAS = [
   { emoji: "🛍️", name: "Comprinhas" },
   { emoji: "🎶", name: "Rolê à noite" },
   { emoji: "💑", name: "Dates" },
+  { emoji: "🎉", name: "Fim de semana" },
 ];
 
-const TURISM_EMOJIS = ["📍", "☕", "🍔", "🍕", "🍣", "🍜", "🍺", "🍷", "🍦", "🥐", "🌮", "🥩", "🌳", "🏛️", "🎨", "🌄", "🏖️", "🛍️", "🎶", "🎢", "📚", "💑", "🐱", "⭐"];
+const TURISM_EMOJIS = ["📍", "🍽️", "☕", "🍔", "🍕", "🍣", "🍜", "🍺", "🍷", "🍰", "🍦", "🥐", "🌮", "🥩", "🌳", "🏛️", "🎨", "🌄", "🏖️", "🛍️", "🎶", "🎢", "📚", "💑", "🎉", "🐱", "⭐"];
+
+// Lista com esse emoji já sugere o tipo do lugar novo (um toque a menos)
+const TURISM_EMOJI_KIND = {
+  "☕": "cafe", "🍔": "hamburguer", "🍕": "pizza", "🍣": "japonesa", "🍜": "coreana", "🍺": "boteco", "🍷": "drinks",
+  "🍰": "doceria", "🍦": "sorvete", "🥐": "padaria", "🌮": "rua", "🥩": "churrasco", "🌳": "parque", "🏛️": "museu",
+  "🎨": "exposicao", "🌄": "mirante", "🏖️": "praia", "🛍️": "loja", "🎶": "show", "📚": "livraria",
+};
 
 const TURISM_MAPS_URL_RE = /(google\.[a-z.]+\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps)/i;
 
 const placesState = {
   listId: null, // lista aberta (null = tela das listas)
+  mode: "list", // list | map (dentro de uma lista)
   filter: "want", // want | been | all
-  tag: null, // filtro por "por que entrou"
+  tag: null, // filtro por "por que entrou" (ou "again" = 🔁 Iria de novo)
+  kind: null, // filtro por tipo
   city: null, // filtro de cidade na tela das listas
   listForm: { emoji: "📍", city: TURISM_DEFAULT_CITY, ideaName: "" },
-  placeForm: { tags: [], status: "want", rating: null, listId: null, autoName: "" },
-  rateId: null,
+  placeForm: { tags: [], status: "want", rating: null, value: null, again: null, kind: null, kindGroup: "comer", listId: null, autoName: "" },
+  rate: { id: null, rating: null, value: null, again: null },
   route: [],
 };
 
@@ -78,9 +91,15 @@ function chipHtml({ label, on = false, action, data = {}, extra = "" }) {
   return `<button type="button" class="chip-btn tr-chip${on ? " is-on" : ""}${extra}" data-click="${action}"${attrs}>${label}</button>`;
 }
 
+function turismHasPin(p) {
+  return p && p.lat !== null && p.lng !== null && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
+}
+
 /* Lê o que o Google Maps manda no "Compartilhar":
  *   "Café do Japa\nRua X, 123 - Pinheiros, São Paulo - SP\nhttps://maps.app.goo.gl/abc"
- * ou só o link (com /maps/place/<nome>/ quando é o link comprido). */
+ * ou só o link (com /maps/place/<nome>/ quando é o link comprido). O link curto
+ * (maps.app.goo.gl) do "Copiar link" NÃO traz o nome: abrir ele pra ler o nome
+ * precisaria de um servidor (o Google não deixa o site ler), então a tela pede o nome. */
 function turismParseShared(text) {
   const raw = String(text || "");
   const urls = raw.match(/https?:\/\/[^\s<>"']+/gi) || [];
@@ -136,7 +155,7 @@ function renderListsView() {
   const grid = document.getElementById("listsGrid");
   if (!turismDb.lists.length) {
     grid.innerHTML = `${tobaEmpty("🗺️", "Nenhuma lista ainda", "Monta sua primeira lista de lugares, tipo ☕ Cafés por SP. Começa tocando numa ideia:")}
-      <div class="tr-chips is-wrap tr-empty-ideas">${TURISM_LIST_IDEAS.slice(0, 8).map((idea, i) => chipHtml({ label: `${idea.emoji} ${idea.name}`, action: "quickList", data: { index: i } })).join("")}</div>`;
+      <div class="tr-chips is-wrap tr-empty-ideas">${TURISM_LIST_IDEAS.slice(0, 9).map((idea, i) => chipHtml({ label: `${idea.emoji} ${idea.name}`, action: "quickList", data: { index: i } })).join("")}</div>`;
     return;
   }
   const lists = turismDb.lists
@@ -168,6 +187,8 @@ function filterCity(el) {
 function openList(el) {
   placesState.listId = String(el.dataset.id);
   placesState.tag = null;
+  placesState.kind = null;
+  placesState.mode = "list";
   placesState.filter = "want";
   const s = turismListStats(turismDb, placesState.listId);
   if (!s.want && s.been) placesState.filter = "all";
@@ -178,6 +199,7 @@ function openList(el) {
 
 function backToLists() {
   placesState.listId = null;
+  placesState.mode = "list";
   setListUrl(null);
   renderAll();
 }
@@ -203,13 +225,25 @@ function headerAdd() {
  * ------------------------------------------------------------------- */
 function renderListView(list) {
   const s = turismListStats(turismDb, list.id);
-  const top = placesOfList(list.id).filter((p) => p.status === "been" && p.rating === "top").length;
+  const mine = placesOfList(list.id);
+  const top = mine.filter((p) => p.status === "been" && p.rating === "top").length;
   document.getElementById("listHero").innerHTML = `
     <span class="tr-hero-emoji">${escapeHtml(list.emoji)}</span>
     <span class="tr-hero-text">
       <span class="tr-hero-name">${escapeHtml(list.name)}</span>
-      <span class="tr-hero-meta">${list.city ? `🏙️ ${escapeHtml(list.city)} · ` : ""}📌 ${s.want} pra ir · ✅ ${s.been} já foi${top ? ` · 🔥 ${top}` : ""}</span>
-    </span>`;
+      ${list.city ? `<span class="tr-hero-meta">🏙️ ${escapeHtml(list.city)}</span>` : ""}
+      <span class="tr-hero-meta">📌 ${s.want} pra ir · ✅ ${s.been} já foi${top ? ` · 🔥 ${top}` : ""}</span>
+    </span>
+    <button type="button" class="tr-hero-edit" data-click="editCurrentList" aria-label="Editar lista">✏️</button>`;
+
+  const inMap = placesState.mode === "map";
+  document.getElementById("modeBtn").textContent = inMap ? "📋 Lista" : "🗺️ Mapa";
+  document.getElementById("listPane").hidden = inMap;
+  document.getElementById("mapPane").hidden = !inMap;
+  if (inMap) {
+    renderPlacesMap(list);
+    return;
+  }
 
   ["want", "been", "all"].forEach((f) => {
     const id = { want: "filterWant", been: "filterBeen", all: "filterAll" }[f];
@@ -219,32 +253,38 @@ function renderListView(list) {
     btn.textContent = `${{ want: "📌 Quero ir", been: "✅ Já fui", all: "Todos" }[f]} ${n}`;
   });
 
-  // Filtro por "por que entrou": só as tags que aparecem nesta lista
+  // Filtros: tipo (só os que aparecem) e "por que entrou" + 🔁 Iria de novo
+  const inFilter = mine.filter((p) => placesState.filter === "all" || p.status === placesState.filter);
+  const usedKinds = new Set(inFilter.map((p) => p.kind).filter((k) => turismKind(k)));
+  if (placesState.kind && !usedKinds.has(placesState.kind)) placesState.kind = null;
+  const kinds = TURISM_KINDS.filter((k) => usedKinds.has(k.key));
+  document.getElementById("kindFilterChips").innerHTML = kinds.length > 1
+    ? kinds.map((k) => chipHtml({ label: `${k.icon} ${k.label}`, on: placesState.kind === k.key, action: "filterKind", data: { key: k.key }, extra: " is-kind" })).join("")
+    : "";
   const used = new Set();
-  placesOfList(list.id).forEach((p) => p.tags.forEach((t) => used.add(t)));
-  if (placesState.tag && !used.has(placesState.tag)) placesState.tag = null;
+  inFilter.forEach((p) => p.tags.forEach((t) => used.add(t)));
+  const hasAgain = inFilter.some((p) => p.status === "been" && p.again === "sim");
+  if (placesState.tag && !(used.has(placesState.tag) || (placesState.tag === "again" && hasAgain))) placesState.tag = null;
   const tags = TURISM_TAGS.filter((t) => used.has(t.key));
-  document.getElementById("tagFilterChips").innerHTML = tags.length > 1
+  const tagChips = tags.length > 1 || (tags.length && hasAgain)
     ? tags.map((t) => chipHtml({ label: `${t.icon} ${t.label}`, on: placesState.tag === t.key, action: "filterTag", data: { key: t.key } })).join("")
     : "";
+  document.getElementById("tagFilterChips").innerHTML = (hasAgain ? chipHtml({ label: "🔁 Iria de novo", on: placesState.tag === "again", action: "filterTag", data: { key: "again" } }) : "") + tagChips;
 
-  let places = placesOfList(list.id);
-  if (placesState.filter !== "all") places = places.filter((p) => p.status === placesState.filter);
-  if (placesState.tag) places = places.filter((p) => p.tags.includes(placesState.tag));
-  places.sort((a, b) => {
-    if (a.status !== b.status) return a.status === "want" ? -1 : 1;
-    if (a.status === "been") return String(b.visitedAt || "").localeCompare(String(a.visitedAt || "")) || (b.addedAt || 0) - (a.addedAt || 0);
-    return (b.addedAt || 0) - (a.addedAt || 0);
-  });
+  let places = inFilter;
+  if (placesState.kind) places = places.filter((p) => p.kind === placesState.kind);
+  if (placesState.tag === "again") places = places.filter((p) => p.status === "been" && p.again === "sim");
+  else if (placesState.tag) places = places.filter((p) => p.tags.includes(placesState.tag));
+  places = sortPlaces(places);
 
   const box = document.getElementById("placesList");
   if (!places.length) {
     box.innerHTML = !s.total
-      ? `${tobaEmpty("📍", "Lista vazia", "Toca em + Lugar. Dica: no Google Maps, abre o lugar › Compartilhar › Copiar e cola no Toba.")}
+      ? `${tobaEmpty("📍", "Lista vazia", "Toca em + Lugar. Dica: no Google Maps, abre o lugar › Compartilhar e escolhe o Toba (ou copia e cola aqui).")}
          <button type="button" class="btn tr-btn-go tr-empty-add" data-click="headerAdd">+ Primeiro lugar</button>`
-      : placesState.filter === "want"
+      : placesState.filter === "want" && !placesState.kind && !placesState.tag
         ? tobaEmpty("🏆", "Zerou a lista!", "Já foi em todos. Hora de caçar lugar novo 😎")
-        : placesState.filter === "been"
+        : placesState.filter === "been" && !placesState.kind && !placesState.tag
           ? tobaEmpty("🧭", "Nenhum visitado ainda", "Foi num lugar? Toca no ✅ dele na aba Quero ir.")
           : tobaEmpty("🔎", "Nada com esse filtro", "Tira o filtro de cima pra ver tudo.");
     return;
@@ -252,17 +292,31 @@ function renderListView(list) {
   box.innerHTML = places.map((p) => placeCardHtml(p)).join("");
 }
 
+function sortPlaces(places) {
+  return places.slice().sort((a, b) => {
+    if (a.status !== b.status) return a.status === "want" ? -1 : 1;
+    if (a.status === "been") return String(b.visitedAt || "").localeCompare(String(a.visitedAt || "")) || (b.addedAt || 0) - (a.addedAt || 0);
+    return (b.addedAt || 0) - (a.addedAt || 0);
+  });
+}
+
+// "🔥 Top demais · 🤑 Valeu cada real · 🔁 Iria de novo"
+function placeVerdict(p) {
+  return [turismRating(p.rating), turismValue(p.value), turismAgain(p.again)].filter(Boolean).map((x) => `${x.icon} ${x.label}`);
+}
+
 function placeCardHtml(p) {
   const been = p.status === "been";
-  const rating = turismRating(p.rating);
+  const kind = turismKind(p.kind);
   const tags = p.tags.map((k) => turismTag(k)).filter(Boolean);
+  const verdict = placeVerdict(p);
   return `<div class="tr-place${been ? " is-been" : ""}">
     <div class="tr-place-main" role="button" tabindex="0" data-click="editPlace" data-id="${escapeHtml(p.id)}">
       <span class="tr-place-name">${been ? "✅" : "📌"} ${escapeHtml(p.name)}</span>
       ${p.address ? `<span class="tr-place-address">📍 ${escapeHtml(p.address)}</span>` : ""}
       ${p.note ? `<span class="tr-place-note">📝 ${escapeHtml(p.note)}</span>` : ""}
-      ${tags.length ? `<span class="tr-place-tags">${tags.map((t) => `<span class="tr-mini-tag">${t.icon} ${t.label}</span>`).join("")}</span>` : ""}
-      ${been ? `<span class="tr-place-rating">${rating ? `${rating.icon} ${rating.label}` : "Já foi"}${p.visitedAt ? ` · ${isoToBrDate(p.visitedAt)}` : ""}</span>` : ""}
+      ${kind || tags.length ? `<span class="tr-place-tags">${kind ? `<span class="tr-mini-tag is-kind">${kind.icon} ${kind.label}</span>` : ""}${tags.map((t) => `<span class="tr-mini-tag">${t.icon} ${t.label}</span>`).join("")}</span>` : ""}
+      ${been ? `<span class="tr-place-rating">${verdict.length ? verdict.join(" · ") : "Já foi"}${p.visitedAt ? ` · ${isoToBrDate(p.visitedAt).slice(0, 5)}` : ""}</span>` : ""}
     </div>
     <div class="tr-place-side">
       <button type="button" class="tr-side-btn" data-click="openPlaceMaps" data-id="${escapeHtml(p.id)}" aria-label="Abrir no Google Maps">🗺️</button>
@@ -278,6 +332,16 @@ function setPlaceFilter(el) {
 
 function filterTag(el) {
   placesState.tag = placesState.tag === el.dataset.key ? null : el.dataset.key;
+  renderAll();
+}
+
+function filterKind(el) {
+  placesState.kind = placesState.kind === el.dataset.key ? null : el.dataset.key;
+  renderAll();
+}
+
+function toggleMode() {
+  placesState.mode = placesState.mode === "map" ? "list" : "map";
   renderAll();
 }
 
@@ -374,13 +438,16 @@ function saveList() {
     const list = { id: turismNewId("l"), name, emoji: placesState.listForm.emoji, city, createdAt: Date.now() };
     turismDb.lists.push(list);
     placesState.listId = list.id;
+    placesState.mode = "list";
     placesState.filter = "want";
     placesState.tag = null;
+    placesState.kind = null;
     setListUrl(list.id);
   }
   if (!saveTurismDb()) return;
   closeTobaModal("listSheet");
   renderAll();
+  turismPlayerCheck();
 }
 
 async function deleteList() {
@@ -412,20 +479,34 @@ function openPlaceSheet(place, prefill = null) {
   document.getElementById("placeNote").value = place ? place.note : "";
   document.getElementById("deletePlaceBtn").hidden = !place;
   const fallbackList = placesState.listId || (turismDb.lists[0] ? [...turismDb.lists].sort((a, b) => listActivity(b) - listActivity(a))[0].id : null);
+  const list = turismFindList(place ? place.listId : fallbackList);
+  const kind = place ? place.kind : TURISM_EMOJI_KIND[list?.emoji] || null;
   placesState.placeForm = {
     tags: place ? [...place.tags] : [],
     status: place ? place.status : "want",
     rating: place ? place.rating : null,
+    value: place ? place.value : null,
+    again: place ? place.again : null,
+    kind,
+    kindGroup: turismKind(kind)?.group || "comer",
     listId: place ? place.listId : fallbackList,
     autoName: place ? "" : prefill?.name || "",
     fromShare: Boolean(prefill),
   };
   renderPlaceForm();
   openTobaModal("placeSheet");
+  if (prefill && prefill.url && !prefill.name) setTimeout(() => document.getElementById("placeName").focus(), 300);
 }
 
 function renderPlaceForm() {
   const f = placesState.placeForm;
+  document.getElementById("placeKindGroups").innerHTML = TURISM_KIND_GROUPS
+    .map((g) => `<button type="button" class="tab-btn${f.kindGroup === g.key ? " active" : ""}" data-click="pickKindGroup" data-key="${g.key}">${g.label}</button>`)
+    .join("");
+  document.getElementById("placeKindChips").innerHTML = TURISM_KINDS
+    .filter((k) => k.group === f.kindGroup)
+    .map((k) => chipHtml({ label: `${k.icon} ${k.label}`, on: f.kind === k.key, action: "pickPlaceKind", data: { key: k.key }, extra: " is-kind" }))
+    .join("");
   document.getElementById("placeTagChips").innerHTML = TURISM_TAGS
     .map((t) => chipHtml({ label: `${t.icon} ${t.label}`, on: f.tags.includes(t.key), action: "togglePlaceTag", data: { key: t.key } }))
     .join("");
@@ -434,7 +515,13 @@ function renderPlaceForm() {
     + chipHtml({ label: "✅ Já fui", on: f.status === "been", action: "pickPlaceStatus", data: { status: "been" } });
   document.getElementById("placeRatingBox").hidden = f.status !== "been";
   document.getElementById("placeRatingChips").innerHTML = TURISM_RATINGS
-    .map((r) => chipHtml({ label: `${r.icon} ${r.label}`, on: f.rating === r.key, action: "pickPlaceRating", data: { key: r.key } }))
+    .map((r) => chipHtml({ label: `${r.icon} ${r.label}`, on: f.rating === r.key, action: "pickPlaceVerdict", data: { field: "rating", key: r.key } }))
+    .join("");
+  document.getElementById("placeValueChips").innerHTML = TURISM_VALUES
+    .map((v) => chipHtml({ label: `${v.icon} ${v.label}`, on: f.value === v.key, action: "pickPlaceVerdict", data: { field: "value", key: v.key } }))
+    .join("");
+  document.getElementById("placeAgainChips").innerHTML = TURISM_AGAIN
+    .map((v) => chipHtml({ label: `${v.icon} ${v.label}`, on: f.again === v.key, action: "pickPlaceVerdict", data: { field: "again", key: v.key } }))
     .join("");
   // Escolher a lista: quando há mais de uma, ou quando veio do Compartilhar do Maps
   const lists = [...turismDb.lists].sort((a, b) => listActivity(b) - listActivity(a));
@@ -443,6 +530,25 @@ function renderPlaceForm() {
     ? lists.map((l) => chipHtml({ label: `${escapeHtml(l.emoji)} ${escapeHtml(l.name)}`, on: f.listId === l.id, action: "pickPlaceList", data: { id: l.id } })).join("")
     : `<span class="tr-hint">Vai entrar numa lista nova: 📍 Quero conhecer</span>`;
   document.getElementById("placeAddressBox").hidden = !document.getElementById("placeAddress").value.trim();
+  // Pino do mapa (só editando)
+  const id = document.getElementById("placeId").value;
+  const place = id ? turismFindPlace(id) : null;
+  const pinBox = document.getElementById("placePinBox");
+  pinBox.hidden = !place;
+  if (place) {
+    document.getElementById("placePinText").textContent = turismHasPin(place) ? "📍 Já tem pino no 🗺️ Mapa" : "❔ Ainda sem pino no 🗺️ Mapa";
+  }
+}
+
+function pickKindGroup(el) {
+  placesState.placeForm.kindGroup = el.dataset.key;
+  renderPlaceForm();
+}
+
+function pickPlaceKind(el) {
+  const f = placesState.placeForm;
+  f.kind = f.kind === el.dataset.key ? null : el.dataset.key;
+  renderPlaceForm();
 }
 
 function togglePlaceTag(el) {
@@ -453,19 +559,34 @@ function togglePlaceTag(el) {
 }
 
 function pickPlaceStatus(el) {
-  placesState.placeForm.status = el.dataset.status;
-  if (el.dataset.status === "want") placesState.placeForm.rating = null;
+  const f = placesState.placeForm;
+  f.status = el.dataset.status;
+  if (f.status === "want") {
+    f.rating = null;
+    f.value = null;
+    f.again = null;
+  }
   renderPlaceForm();
 }
 
-function pickPlaceRating(el) {
+function pickPlaceVerdict(el) {
   const f = placesState.placeForm;
-  f.rating = f.rating === el.dataset.key ? null : el.dataset.key;
+  const field = el.dataset.field;
+  f[field] = f[field] === el.dataset.key ? null : el.dataset.key;
   renderPlaceForm();
 }
 
 function pickPlaceList(el) {
-  placesState.placeForm.listId = el.dataset.id;
+  const f = placesState.placeForm;
+  f.listId = el.dataset.id;
+  // Lugar novo ainda sem tipo: a lista escolhida sugere
+  if (!document.getElementById("placeId").value && !f.kind) {
+    const kind = TURISM_EMOJI_KIND[turismFindList(f.listId)?.emoji];
+    if (kind) {
+      f.kind = kind;
+      f.kindGroup = turismKind(kind).group;
+    }
+  }
   renderPlaceForm();
 }
 
@@ -485,6 +606,7 @@ function applyParsed(parsed) {
   if (parsed.url) document.getElementById("placeUrl").value = parsed.url;
   if (parsed.address) document.getElementById("placeAddress").value = parsed.address;
   renderPlaceForm();
+  return parsed;
 }
 
 async function pasteFromMaps() {
@@ -494,8 +616,17 @@ async function pasteFromMaps() {
     const text = await navigator.clipboard.readText();
     if (!text.trim()) throw new Error("vazio");
     area.value = text;
-    parsePasteField();
-    tobaToast(document.getElementById("placeName").value ? "🪄 Peguei do Maps!" : "Colei! Confere o nome 👀");
+    const parsed = applyParsed(turismParseShared(text));
+    const nameEl = document.getElementById("placeName");
+    if (nameEl.value.trim()) {
+      tobaToast("🪄 Peguei do Maps!");
+    } else if (parsed.url) {
+      // "Copiar link" do Maps manda só o link curto: o nome não vem junto
+      nameEl.focus();
+      tobaToast("🔗 Veio só o link! Digita o nome 👆");
+    } else {
+      tobaToast("Colei! Confere o nome 👀");
+    }
   } catch (err) {
     area.focus();
     tobaToast("Segura o dedo no campo › Colar 👆");
@@ -504,9 +635,14 @@ async function pasteFromMaps() {
 
 async function savePlace() {
   const f = placesState.placeForm;
-  const name = document.getElementById("placeName").value.trim();
+  const nameEl = document.getElementById("placeName");
+  const name = nameEl.value.trim();
   if (!name) {
-    showPageMessage("Coloca o nome do lugar (ou cola o que o Maps mandou no campo de cima).", { title: "Faltou o nome", icon: "✍️" });
+    const onlyLink = Boolean(document.getElementById("placeUrl").value.trim());
+    await showPageMessage(onlyLink
+      ? "O \"Copiar link\" do Maps manda só o link, sem o nome. Digita o nome do lugar (ou, da próxima vez, usa Compartilhar › Toba, que vem com nome e endereço)."
+      : "Coloca o nome do lugar (ou cola o que o Maps mandou no campo de cima).", { title: "Faltou o nome", icon: "✍️" });
+    nameEl.focus();
     return;
   }
   let url = document.getElementById("placeUrl").value.trim();
@@ -526,6 +662,7 @@ async function savePlace() {
     if (!ok) return;
   }
 
+  const been = f.status === "been";
   const fields = {
     listId,
     name,
@@ -533,32 +670,53 @@ async function savePlace() {
     address: document.getElementById("placeAddress").value.trim(),
     note: document.getElementById("placeNote").value.trim(),
     tags: [...TURISM_TAGS.map((t) => t.key).filter((k) => f.tags.includes(k)), ...f.tags.filter((k) => !turismTag(k))], // key desconhecida fica
-    status: f.status === "been" ? "been" : "want",
-    rating: f.status === "been" ? f.rating : null,
+    kind: f.kind || null,
+    status: been ? "been" : "want",
+    rating: been ? f.rating : null,
+    value: been ? f.value : null,
+    again: been ? f.again : null,
   };
+  let place;
   if (id) {
-    const place = turismFindPlace(id);
+    place = turismFindPlace(id);
     if (!place) return;
     const wasBeen = place.status === "been";
+    const oldUrl = place.url;
+    const oldAddress = place.address;
     Object.assign(place, fields);
-    place.visitedAt = fields.status === "been" ? (wasBeen && place.visitedAt ? place.visitedAt : toIsoDate()) : null;
+    place.visitedAt = been ? (wasBeen && place.visitedAt ? place.visitedAt : toIsoDate()) : null;
+    // Link ou endereço mudou: o pino antigo pode estar errado, procura de novo
+    if (oldUrl !== place.url || oldAddress !== place.address) {
+      place.lat = null;
+      place.lng = null;
+      place.geoMiss = false;
+    }
   } else {
-    turismDb.places.push({
+    place = {
       id: turismNewId("p"),
       ...fields,
-      visitedAt: fields.status === "been" ? toIsoDate() : null,
+      visitedAt: been ? toIsoDate() : null,
+      lat: null,
+      lng: null,
+      geoMiss: false,
       addedAt: Date.now(),
-    });
+    };
+    turismDb.places.push(place);
   }
+  const coords = !turismHasPin(place) ? turismCoordsFromUrl(place.url) : null;
+  if (coords) Object.assign(place, coords);
   if (!saveTurismDb()) return;
   closeTobaModal("placeSheet");
   if (placesState.listId !== listId) {
     placesState.listId = listId;
     placesState.tag = null;
+    placesState.kind = null;
     setListUrl(listId);
   }
   if (!id) placesState.filter = fields.status === "been" ? "been" : "want";
   renderAll();
+  turismPlayerCheck();
+  if (!turismHasPin(place)) turismGeocodeOne(place); // procura o pino em segundo plano (places-map.js)
 }
 
 function editPlace(el) {
@@ -577,31 +735,66 @@ async function deletePlace() {
   renderAll();
 }
 
+// "📍 Ajustar no mapa" da folha do lugar
+function pinFromSheet() {
+  const p = turismFindPlace(document.getElementById("placeId").value);
+  if (!p) return;
+  closeTobaModal("placeSheet");
+  placesState.mode = "map";
+  renderAll();
+  startPinPlacing(p.id);
+}
+
 /* ---------------------------------------------------------------------
- * ✅ Fui! (nota num toque)
+ * ✅ Fui! (nota, custo-benefício e "iria de novo")
  * ------------------------------------------------------------------- */
 function openRate(el) {
   const p = turismFindPlace(el.dataset.id);
   if (!p) return;
-  placesState.rateId = p.id;
+  placesState.rate = { id: p.id, rating: null, value: null, again: null };
   document.getElementById("rateSheetTitle").textContent = `✅ Fui no ${p.name}`.slice(0, 60);
-  document.getElementById("rateGrid").innerHTML = TURISM_RATINGS
-    .map((r) => `<button type="button" class="tr-rate-btn is-${r.key}" data-click="ratePlace" data-key="${r.key}"><span class="tr-rate-icon">${r.icon}</span><span>${r.label}</span></button>`)
-    .join("");
+  renderRate();
   openTobaModal("rateSheet");
 }
 
-function ratePlace(el) {
-  const p = turismFindPlace(placesState.rateId);
+function renderRate() {
+  const r = placesState.rate;
+  document.getElementById("rateGrid").innerHTML = TURISM_RATINGS
+    .map((x) => `<button type="button" class="tr-rate-btn is-${x.key}${r.rating === x.key ? " is-on" : ""}" data-click="pickRate" data-field="rating" data-key="${x.key}"><span class="tr-rate-icon">${x.icon}</span><span>${x.label}</span></button>`)
+    .join("");
+  document.getElementById("rateValueChips").innerHTML = TURISM_VALUES
+    .map((x) => chipHtml({ label: `${x.icon} ${x.label}`, on: r.value === x.key, action: "pickRate", data: { field: "value", key: x.key } }))
+    .join("");
+  document.getElementById("rateAgainChips").innerHTML = TURISM_AGAIN
+    .map((x) => chipHtml({ label: `${x.icon} ${x.label}`, on: r.again === x.key, action: "pickRate", data: { field: "again", key: x.key } }))
+    .join("");
+}
+
+function pickRate(el) {
+  const r = placesState.rate;
+  const field = el.dataset.field;
+  r[field] = r[field] === el.dataset.key ? null : el.dataset.key;
+  // Nota "nem vale" já sugere "não volto" (dá pra trocar)
+  if (field === "rating" && r.rating === "nem" && !r.again) r.again = "nao";
+  if (field === "rating" && r.rating === "top" && !r.again) r.again = "sim";
+  renderRate();
+}
+
+function saveRate() {
+  const r = placesState.rate;
+  const p = turismFindPlace(r.id);
   if (!p) return;
   p.status = "been";
-  p.rating = el.dataset.key;
+  p.rating = r.rating;
+  p.value = r.value;
+  p.again = r.again;
   p.visitedAt = toIsoDate();
   if (!saveTurismDb({ silent: true })) return;
   closeTobaModal("rateSheet");
-  const r = turismRating(p.rating);
-  tobaToast(p.rating === "nem" ? "💩 Anotado, nunca mais!" : `${r ? r.icon : "✅"} Riscado da lista!`);
+  const rating = turismRating(p.rating);
+  tobaToast(p.rating === "nem" ? "💩 Anotado, nunca mais!" : `${rating ? rating.icon : "✅"} Riscado da lista!`);
   renderAll();
+  turismPlayerCheck();
 }
 
 /* ---------------------------------------------------------------------
@@ -619,7 +812,7 @@ function openRoute() {
     showPageMessage("Coloca uns lugares na lista primeiro 😅", { title: "Lista vazia", icon: "🧭" });
     return;
   }
-  placesState.route = places.slice(0, TURISM_ROUTE_MAX).map((p) => p.id);
+  placesState.route = places.slice(0, Math.min(3, TURISM_ROUTE_MAX)).map((p) => p.id);
   renderRoute();
   openTobaModal("routeSheet");
 }
@@ -665,23 +858,22 @@ const TURISM_DRAW_LINES = [
 ];
 
 async function drawPlace() {
-  const want = placesOfList(placesState.listId).filter((p) => p.status === "want");
+  let want = placesOfList(placesState.listId).filter((p) => p.status === "want");
+  if (placesState.kind) want = want.filter((p) => p.kind === placesState.kind);
   if (!want.length) {
     showPageMessage("Não tem nenhum lugar no 📌 Quero ir pra sortear.", { title: "Nada pra sortear", icon: "🎲" });
     return;
   }
   const p = want[Math.floor(Math.random() * want.length)];
+  const kind = turismKind(p.kind);
   const line = TURISM_DRAW_LINES[Math.floor(Math.random() * TURISM_DRAW_LINES.length)];
-  const ok = await showPageMessage(`${line}\n\n📌 ${p.name}${p.note ? `\n📝 ${p.note}` : ""}`, { title: "🎲 Sorteio", icon: "🎲", confirm: true, confirmLabel: "🗺️ Abrir no Maps", cancelLabel: "Valeu", danger: false });
+  const ok = await showPageMessage(`${line}\n\n📌 ${p.name}${kind ? `\n${kind.icon} ${kind.label}` : ""}${p.note ? `\n📝 ${p.note}` : ""}`, { title: "🎲 Sorteio", icon: "🎲", confirm: true, confirmLabel: "🗺️ Abrir no Maps", cancelLabel: "Valeu", danger: false });
   if (ok) turismOpenExternal(turismMapsUrl(p, turismFindList(p.listId)));
 }
 
 /* Texto da lista pra mandar no WhatsApp. O "📥 Colar lista" lê de volta. */
 function turismListText(list) {
-  const places = placesOfList(list.id).sort((a, b) => {
-    if (a.status !== b.status) return a.status === "want" ? -1 : 1;
-    return (b.addedAt || 0) - (a.addedAt || 0);
-  });
+  const places = sortPlaces(placesOfList(list.id));
   const lines = [`${list.emoji} ${list.name}${list.city ? ` · ${list.city}` : ""}`, "(lista do Toba Places 📍)"];
   places.forEach((p) => {
     const r = turismRating(p.rating);
@@ -690,8 +882,13 @@ function turismListText(list) {
     if (p.address) lines.push(`📍 ${p.address}`);
     lines.push(`🗺️ ${turismMapsUrl(p, list)}`);
     if (p.note) lines.push(`📝 ${p.note.replace(/\s*\n\s*/g, " ")}`);
-    const tags = p.tags.map((k) => turismTag(k)).filter(Boolean);
+    const kind = turismKind(p.kind);
+    const tags = [...(kind ? [kind] : []), ...p.tags.map((k) => turismTag(k)).filter(Boolean)];
     if (tags.length) lines.push(`🏷️ ${tags.map((t) => `${t.icon} ${t.label}`).join(", ")}`);
+    if (p.status === "been") {
+      const extra = [turismValue(p.value), turismAgain(p.again)].filter(Boolean);
+      if (extra.length) lines.push(`💬 ${extra.map((x) => `${x.icon} ${x.label}`).join(", ")}`);
+    }
   });
   return lines.join("\n");
 }
@@ -724,6 +921,10 @@ function openImport() {
   openTobaModal("importSheet");
 }
 
+function turismNoVs(text) {
+  return String(text || "").replace(/️/g, "").trim();
+}
+
 function turismParseListText(text) {
   const lines = String(text || "").split(/\r?\n/).map((l) => l.trim());
   const headerLine = lines.find((l) => l && !/^(📌|✅)/u.test(l)) || "";
@@ -745,13 +946,13 @@ function turismParseListText(text) {
           body = body.slice(0, m.index);
         }
       }
-      cur = { name: body.trim().slice(0, 80), status: been ? "been" : "want", rating, url: "", address: "", note: "", tags: [] };
+      cur = { name: body.trim().slice(0, 80), status: been ? "been" : "want", rating, url: "", address: "", note: "", tags: [], kind: null };
       if (cur.name) out.places.push(cur);
       return;
     }
     if (!cur) return;
-    // Alguns apps tiram o "\uFE0F" do emoji: compara só o desenho base
-    const rest = (base) => (line.startsWith(base) ? line.slice(base.length).replace(/^\uFE0F/, "").trim() : null);
+    // Alguns apps tiram o "️" do emoji: compara só o desenho base
+    const rest = (base) => (line.startsWith(base) ? line.slice(base.length).replace(/^️/, "").trim() : null);
     const url = rest("\u{1F5FA}"); // 🗺️
     const address = rest("📍");
     const note = rest("📝");
@@ -761,7 +962,14 @@ function turismParseListText(text) {
       cur.url = /google\.com\/maps\/search\/\?api=1/.test(url) ? "" : url.slice(0, 500);
     } else if (address !== null) cur.address = address.slice(0, 160);
     else if (note !== null) cur.note = note.slice(0, 300);
-    else if (tags !== null) cur.tags = TURISM_TAGS.filter((t) => tags.includes(t.label)).map((t) => t.key);
+    else if (tags !== null) {
+      tags.split(",").map((t) => turismNoVs(t)).forEach((item) => {
+        const kind = TURISM_KINDS.find((k) => turismNoVs(`${k.icon} ${k.label}`) === item);
+        if (kind) cur.kind = kind.key;
+        const tag = TURISM_TAGS.find((t) => turismNoVs(`${t.icon} ${t.label}`) === item || item.endsWith(t.label));
+        if (tag && !cur.tags.includes(tag.key)) cur.tags.push(tag.key);
+      });
+    }
   });
   return out;
 }
@@ -785,6 +993,7 @@ function importList() {
   parsed.places.forEach((p, i) => {
     if (have.has(turismNorm(p.name))) return;
     have.add(turismNorm(p.name));
+    const coords = turismCoordsFromUrl(p.url);
     turismDb.places.push({
       id: turismNewId("p"),
       listId: list.id,
@@ -793,9 +1002,15 @@ function importList() {
       address: p.address,
       note: p.note,
       tags: p.tags,
+      kind: p.kind,
       status: "want", // o "já fui" é de quem mandou; aqui começa tudo pra ir
       rating: null,
+      value: null,
+      again: null,
       visitedAt: null,
+      lat: coords ? coords.lat : null,
+      lng: coords ? coords.lng : null,
+      geoMiss: false,
       addedAt: now - i, // mantém a ordem de quem mandou
     });
     added += 1;
@@ -803,16 +1018,24 @@ function importList() {
   if (!saveTurismDb({ silent: true })) return;
   closeTobaModal("importSheet");
   placesState.listId = list.id;
+  placesState.mode = "list";
   placesState.filter = "want";
   placesState.tag = null;
+  placesState.kind = null;
   setListUrl(list.id);
   renderAll();
+  turismPlayerCheck();
   tobaToast(isNew ? `📥 Lista nova com ${added} ${added === 1 ? "lugar" : "lugares"}!` : added ? `📥 +${added} na ${list.name}` : "Já tinha tudo 😎");
 }
 
 /* ---------------------------------------------------------------------
  * Ações e abertura da página
  * ------------------------------------------------------------------- */
+// Conquistas do Perfil na hora (toba-player.js carregado nesta página desde v1.56)
+function turismPlayerCheck() {
+  if (typeof tobaPlayerCheck === "function") tobaPlayerCheck({ reason: "turism" });
+}
+
 function onTurismDataReplaced() {
   renderAll();
 }
@@ -825,6 +1048,8 @@ tobaActions({
   quickList,
   setPlaceFilter,
   filterTag,
+  filterKind,
+  toggleMode,
   openPlaceMaps,
   editCurrentList,
   pickListIdea,
@@ -833,17 +1058,21 @@ tobaActions({
   pickListCity,
   saveList,
   deleteList,
+  pickKindGroup,
+  pickPlaceKind,
   togglePlaceTag,
   pickPlaceStatus,
-  pickPlaceRating,
+  pickPlaceVerdict,
   pickPlaceList,
   parsePasteField,
   pasteFromMaps,
   savePlace,
   editPlace,
   deletePlace,
+  pinFromSheet,
   openRate,
-  ratePlace,
+  pickRate,
+  saveRate,
   openRoute,
   toggleRoute,
   goRoute,

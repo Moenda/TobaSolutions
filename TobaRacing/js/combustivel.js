@@ -296,6 +296,8 @@ function saveFueling() {
   if (!saveRacingDb({ silent: true })) return;
   closeTobaModal("fuelSheet");
   renderFuelScreen();
+  // Conquistas da pista no Perfil na hora (toba-player.js nesta página desde v1.56)
+  if (typeof tobaPlayerCheck === "function") tobaPlayerCheck({ reason: "racing" });
   const after = calcRacingSummary(racingDb);
   if (!existing && after.segments.length > before && after.lastSegment) {
     const badge = racingTrendBadge(after.trend);
