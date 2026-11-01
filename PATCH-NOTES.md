@@ -1171,3 +1171,32 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.56 - Toba Places com mapa no app, roteiro com todas as paradas, tipo do lugar, custo-beneficio e iria de novo, conquistas do Places e do Racing e nome Toba Tourism`
+
+---
+
+## v1.57 — 🏘️ Toba Places: mapa com a chave da CARTO e bairro/região dos lugares
+
+**Arquivos alterados:** `TobaTurism/js/places-map.js`, `TobaTurism/js/places.js`, `TobaTurism/js/turism-metrics.js`, `TobaTurism/js/turism-core.js`, `TobaTurism/TobaTurism-Places.html`, `TobaTurism/css/turism-base.css`, `CLAUDE.md`
+
+1. **🗺️ Mapa voltou:** a CARTO passou a pedir chave e o mapa aparecia cinza com "API KEY REQUIRED". Agora usa a chave grátis do Rafa (5 milhões de quadradinhos por mês, sobra muito). Continua o estilo escuro (Dark Matter).
+2. **🏘️ Bairro / região:** campo novo na folha do lugar, logo depois do link. Digita ("Pinheiros", "Zona Sul") ou toca num chip dos bairros que você já usou (os da mesma cidade primeiro).
+3. **Bairro sozinho:** com Compartilhar › Toba o bairro sai do endereço do Maps. Quando o Toba acha o pino no OpenStreetMap, ou quando você põe o pino tocando no mapa, ele preenche o bairro se estiver vazio (nunca troca um que você escreveu).
+4. **Onde aparece:** no card do lugar (🏘️ em verde), no balão do pino no mapa, na lista do 🧭 Roteiro (ajuda a montar rolê no mesmo bairro) e no 🎲 Sorteia.
+5. **Filtro por bairro:** na lista, chips 🏘️ com quantos lugares cada bairro tem. O 🎲 Sorteia respeita o filtro.
+6. **Busca melhor:** lugar sem endereço agora procura "nome, bairro, cidade" no Google Maps e na busca do pino.
+7. **📤 Mandar / 📥 Colar lista** levam o bairro numa linha 🏘️.
+
+**Dados:** no `TOBA_TURISM_DB`, cada lugar ganhou o campo opcional `region` (texto, "" = sem; ver 3.13 do `CLAUDE.md`). Lugares e backups antigos abrem normal, sem bairro. `sw.js` sem mudança (nenhum arquivo novo). APK sem mudança.
+
+**Importante sobre a chave:** ela fica visível no código do site (todo mapa de site funciona assim). Pra ninguém usar a sua cota, no painel da CARTO (link "Go to your dashboard" do e-mail) limita a chave ao domínio `moenda.github.io`. Depois de limitar, abre o 🗺️ Mapa no app instalado: se sumir no APK, tira o limite.
+
+**Como testar:**
+- Places → lista → 🗺️ Mapa: o mapa escuro aparece sem "API KEY REQUIRED" (se ainda aparecer, puxa pra atualizar: a CARTO segura um pouco no cache).
+- + Lugar → digita "Pinheiros" no 🏘️ → Salvar. + Lugar de novo: o chip 🏘️ Pinheiros aparece pra tocar.
+- Compartilhar › Toba de um lugar do Maps: o bairro já vem preenchido.
+- 🗺️ Mapa → toca no nome em "Sem pino" → toca no mapa: aparece "🏘️ Nome: Bairro" e o card ganha o bairro.
+- Com 2 bairros na lista: chips 🏘️ de filtro aparecem; 🎲 Sorteia só sorteia do bairro escolhido.
+- 📤 Mandar → copia → 📥 Colar lista em outro celular: o bairro vem junto.
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.57 - Toba Places com mapa usando a chave da CARTO e bairro/regiao dos lugares com chips, filtro e preenchimento automatico`

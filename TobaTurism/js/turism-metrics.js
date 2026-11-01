@@ -158,8 +158,26 @@ function turismCoordsFromUrl(url) {
 // pelo nome (+ endereço ou cidade) no Google Maps.
 function turismSearchText(place, list) {
   const name = String(place?.name || "").trim();
-  const where = String(place?.address || "").trim() || String(list?.city || "").trim();
-  return where ? `${name}, ${where}` : name;
+  const address = String(place?.address || "").trim();
+  if (address) return `${name}, ${address}`;
+  // Sem endereço: bairro/região (v1.57) + cidade deixam a busca do Maps certeira
+  const where = [place?.region, list?.city].map((x) => String(x || "").trim()).filter(Boolean);
+  return [name, ...where].join(", ");
+}
+
+// Bairro tirado do endereço do Google Maps (formato brasileiro):
+// "R. Augusta, 1492 - Consolação, São Paulo - SP, 01414-100" → "Consolação".
+// Pula o "Cidade - UF". Sem " - " no endereço = "" (a pessoa escolhe nos chips).
+function turismRegionFromAddress(address) {
+  const parts = String(address || "").split(",");
+  for (const part of parts) {
+    const m = part.match(/\s[-–]\s(.+)$/);
+    if (!m) continue;
+    const region = m[1].trim();
+    if (/^[A-Z]{2}$/.test(region) || /\d{5}-?\d{3}/.test(region)) continue;
+    return region.slice(0, 40);
+  }
+  return "";
 }
 
 function turismMapsUrl(place, list) {

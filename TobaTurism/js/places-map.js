@@ -1,20 +1,27 @@
 /* =====================================================================
  * Toba Turism · 🗺️ Mapa do Toba Places (desde v1.56)
  * - Mapa de verdade dentro do app: Leaflet (fixado em 1.9.4, jsdelivr) com
- *   o mapa do OpenStreetMap no estilo escuro da CARTO. Grátis e sem chave.
+ *   o mapa do OpenStreetMap no estilo escuro da CARTO (Dark Matter).
+ *   Desde v1.57 a CARTO exige chave: TURISM_CARTO_KEY é a chave grátis do Rafa
+ *   (5 mi de tiles/mês). Ela fica pública no site (é chave de navegador); pra
+ *   trocar/limitar ao domínio, painel da CARTO (Basemaps). Nunca pôr em memória.
  *   Só carrega quando a pessoa abre o 🗺️ Mapa (offline = aviso, o resto segue).
  * - Pino de cada lugar = place.lat / place.lng. De onde vem:
  *   1. link comprido do Maps (tem a coordenada dentro; turismCoordsFromUrl em places.js);
  *   2. busca automática no Nominatim (OpenStreetMap) pelo endereço ou nome + cidade,
  *      uma por vez com 1,1 s de intervalo (regra de uso do Nominatim);
  *   3. a pessoa toca no mapa onde fica ("📍 Pôr pino").
+ * - Bairro/região (v1.57): se o lugar não tem, vem junto da busca automática
+ *   (addressdetails) ou de uma busca reversa quando a pessoa põe o pino na mão.
  * - Usa funções de places.js só dentro de funções (places.js carrega depois).
  * ===================================================================== */
 const TURISM_LEAFLET_CSS = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css";
 const TURISM_LEAFLET_JS = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";
-const TURISM_TILES = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const TURISM_CARTO_KEY = "cb1_4zv2_1_2e88aba5239e1a6ac05ddc60";
+const TURISM_TILES = `https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=${TURISM_CARTO_KEY}`;
 const TURISM_TILES_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>';
-const TURISM_GEOCODE_URL = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=pt-BR&q=";
+const TURISM_GEOCODE_URL = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=1&accept-language=pt-BR&q=";
+const TURISM_REVERSE_URL = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=16&addressdetails=1&accept-language=pt-BR";
 const TURISM_GEOCODE_GAP_MS = 1100;
 const TURISM_MAP_DEFAULT = { lat: -23.5505, lng: -46.6333, zoom: 12 }; // Praça da Sé
 
@@ -81,7 +88,7 @@ function drawPlacesMap(list) {
   if (!placesMap.map) {
     box.innerHTML = "";
     placesMap.map = L.map(box, { zoomControl: true, attributionControl: true }).setView([TURISM_MAP_DEFAULT.lat, TURISM_MAP_DEFAULT.lng], TURISM_MAP_DEFAULT.zoom);
-    L.tileLayer(TURISM_TILES, { maxZoom: 19, subdomains: "abcd", attribution: TURISM_TILES_ATTR }).addTo(placesMap.map);
+    L.tileLayer(TURISM_TILES, { maxZoom: 19, attribution: TURISM_TILES_ATTR }).addTo(placesMap.map);
     placesMap.layer = L.layerGroup().addTo(placesMap.map);
     placesMap.map.on("click", onPlacesMapClick);
     // Botões dentro do balão do pino (o Leaflet segura o clique; liga na mão)
@@ -114,6 +121,7 @@ function drawPlacesMap(list) {
     const html = `<div class="tr-pop">
       <b>${escapeHtml(p.name)}</b>
       ${kind ? `<span>${kind.icon} ${kind.label}</span>` : ""}
+      ${p.region ? `<span>🏘️ ${escapeHtml(p.region)}</span>` : ""}
       ${p.note ? `<span>📝 ${escapeHtml(p.note)}</span>` : ""}
       ${verdict.length ? `<span>${verdict.join(" · ")}</span>` : ""}
       <div class="tr-pop-btns">
@@ -145,6 +153,33 @@ function onPlacesMapClick(ev) {
   tobaToast(`📍 Pino do ${p.name} no lugar!`.slice(0, 60));
   placesMap.fitFor = ""; // reenquadra
   renderAll();
+  if (!p.region) turismRegionFromPin(p.id);
+}
+
+// Pino posto na mão e lugar sem bairro: pergunta pro OpenStreetMap qual é
+async function turismRegionFromPin(id) {
+  const p = turismFindPlace(id);
+  if (!p || !turismHasPin(p) || navigator.onLine === false) return;
+  try {
+    const res = await fetch(`${TURISM_REVERSE_URL}&lat=${p.lat}&lon=${p.lng}`, { headers: { Accept: "application/json" } });
+    if (!res.ok) return;
+    const region = turismRegionFromOsm((await res.json())?.address);
+    const fresh = turismFindPlace(id);
+    if (!region || !fresh || fresh.region) return;
+    fresh.region = region;
+    if (saveTurismDb({ silent: true })) {
+      tobaToast(`🏘️ ${fresh.name}: ${region}`.slice(0, 60));
+      renderAll();
+    }
+  } catch (err) {
+    /* sem internet: fica sem bairro, a pessoa põe na mão */
+  }
+}
+
+// Endereço do Nominatim → bairro (no Brasil o bairro vem em "suburb")
+function turismRegionFromOsm(addr) {
+  if (!addr || typeof addr !== "object") return "";
+  return String(addr.suburb || addr.neighbourhood || addr.quarter || addr.city_district || addr.borough || "").trim().slice(0, 40);
 }
 
 function startPinPlacing(id) {
@@ -187,6 +222,7 @@ function turismGeocodeQueries(p) {
   const city = String(list?.city || "").trim();
   const out = [];
   if (p.address) out.push(p.address);
+  if (p.region) out.push([p.name, p.region, city].filter(Boolean).join(", "));
   out.push(city ? `${p.name}, ${city}` : p.name);
   if (p.address) out.push(`${p.name}, ${p.address}`);
   return [...new Set(out.filter(Boolean))];
@@ -199,7 +235,7 @@ async function turismGeocodeQuery(q) {
   const hit = Array.isArray(data) ? data[0] : null;
   const lat = Number(hit?.lat);
   const lng = Number(hit?.lon);
-  return Number.isFinite(lat) && Number.isFinite(lng) && hit ? { lat, lng } : null;
+  return Number.isFinite(lat) && Number.isFinite(lng) && hit ? { lat, lng, region: turismRegionFromOsm(hit.address) } : null;
 }
 
 const turismSleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -235,12 +271,13 @@ async function runTurismGeocodeQueue() {
       fresh.lat = coords.lat;
       fresh.lng = coords.lng;
       fresh.geoMiss = false;
+      if (!fresh.region && coords.region) fresh.region = coords.region;
       placesMap.found += 1;
     } else {
       fresh.geoMiss = true;
     }
     saveTurismDb({ silent: true });
-    if (placesState.mode === "map" && placesState.listId === fresh.listId) renderAll();
+    if (placesState.listId === fresh.listId) renderAll();
   }
   placesMap.busy = false;
   if (placesMap.tried > 1) {

@@ -242,6 +242,23 @@
   color: var(--text-2);
 }
 
+/* v1.57: bairro/região */
+.tr-place-region {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--turism);
+  overflow-wrap: anywhere;
+}
+
+.tr-region-group {
+  margin-bottom: 0.4rem;
+}
+
+.tr-route-name small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
 .tr-place-tags {
   display: flex;
   flex-wrap: wrap;

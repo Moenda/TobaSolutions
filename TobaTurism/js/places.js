@@ -46,6 +46,7 @@ const placesState = {
   filter: "want", // want | been | all
   tag: null, // filtro por "por que entrou" (ou "again" = 🔁 Iria de novo)
   kind: null, // filtro por tipo
+  region: null, // filtro por bairro/região (texto normalizado, v1.57)
   city: null, // filtro de cidade na tela das listas
   listForm: { emoji: "📍", city: TURISM_DEFAULT_CITY, ideaName: "" },
   placeForm: { tags: [], status: "want", rating: null, value: null, again: null, kind: null, kindGroup: "comer", listId: null, autoName: "" },
@@ -188,6 +189,7 @@ function openList(el) {
   placesState.listId = String(el.dataset.id);
   placesState.tag = null;
   placesState.kind = null;
+  placesState.region = null;
   placesState.mode = "list";
   placesState.filter = "want";
   const s = turismListStats(turismDb, placesState.listId);
@@ -261,6 +263,12 @@ function renderListView(list) {
   document.getElementById("kindFilterChips").innerHTML = kinds.length > 1
     ? kinds.map((k) => chipHtml({ label: `${k.icon} ${k.label}`, on: placesState.kind === k.key, action: "filterKind", data: { key: k.key }, extra: " is-kind" })).join("")
     : "";
+  // Bairro/região (v1.57): chips dos que aparecem, mais usados primeiro
+  const regions = turismRegionCounts(inFilter);
+  if (placesState.region && !regions.some((r) => r.norm === placesState.region)) placesState.region = null;
+  document.getElementById("regionFilterChips").innerHTML = regions.length > 1
+    ? regions.map((r) => chipHtml({ label: `🏘️ ${escapeHtml(r.label)} ${r.count}`, on: placesState.region === r.norm, action: "filterRegion", data: { key: r.norm } })).join("")
+    : "";
   const used = new Set();
   inFilter.forEach((p) => p.tags.forEach((t) => used.add(t)));
   const hasAgain = inFilter.some((p) => p.status === "been" && p.again === "sim");
@@ -273,6 +281,7 @@ function renderListView(list) {
 
   let places = inFilter;
   if (placesState.kind) places = places.filter((p) => p.kind === placesState.kind);
+  if (placesState.region) places = places.filter((p) => turismNorm(p.region) === placesState.region);
   if (placesState.tag === "again") places = places.filter((p) => p.status === "been" && p.again === "sim");
   else if (placesState.tag) places = places.filter((p) => p.tags.includes(placesState.tag));
   places = sortPlaces(places);
@@ -282,9 +291,9 @@ function renderListView(list) {
     box.innerHTML = !s.total
       ? `${tobaEmpty("📍", "Lista vazia", "Toca em + Lugar. Dica: no Google Maps, abre o lugar › Compartilhar e escolhe o Toba (ou copia e cola aqui).")}
          <button type="button" class="btn tr-btn-go tr-empty-add" data-click="headerAdd">+ Primeiro lugar</button>`
-      : placesState.filter === "want" && !placesState.kind && !placesState.tag
+      : placesState.filter === "want" && !placesState.kind && !placesState.tag && !placesState.region
         ? tobaEmpty("🏆", "Zerou a lista!", "Já foi em todos. Hora de caçar lugar novo 😎")
-        : placesState.filter === "been" && !placesState.kind && !placesState.tag
+        : placesState.filter === "been" && !placesState.kind && !placesState.tag && !placesState.region
           ? tobaEmpty("🧭", "Nenhum visitado ainda", "Foi num lugar? Toca no ✅ dele na aba Quero ir.")
           : tobaEmpty("🔎", "Nada com esse filtro", "Tira o filtro de cima pra ver tudo.");
     return;
@@ -313,6 +322,7 @@ function placeCardHtml(p) {
   return `<div class="tr-place${been ? " is-been" : ""}">
     <div class="tr-place-main" role="button" tabindex="0" data-click="editPlace" data-id="${escapeHtml(p.id)}">
       <span class="tr-place-name">${been ? "✅" : "📌"} ${escapeHtml(p.name)}</span>
+      ${p.region ? `<span class="tr-place-region">🏘️ ${escapeHtml(p.region)}</span>` : ""}
       ${p.address ? `<span class="tr-place-address">📍 ${escapeHtml(p.address)}</span>` : ""}
       ${p.note ? `<span class="tr-place-note">📝 ${escapeHtml(p.note)}</span>` : ""}
       ${kind || tags.length ? `<span class="tr-place-tags">${kind ? `<span class="tr-mini-tag is-kind">${kind.icon} ${kind.label}</span>` : ""}${tags.map((t) => `<span class="tr-mini-tag">${t.icon} ${t.label}</span>`).join("")}</span>` : ""}
@@ -332,6 +342,11 @@ function setPlaceFilter(el) {
 
 function filterTag(el) {
   placesState.tag = placesState.tag === el.dataset.key ? null : el.dataset.key;
+  renderAll();
+}
+
+function filterRegion(el) {
+  placesState.region = placesState.region === el.dataset.key ? null : el.dataset.key;
   renderAll();
 }
 
@@ -476,6 +491,7 @@ function openPlaceSheet(place, prefill = null) {
   document.getElementById("placeName").value = place ? place.name : prefill?.name || "";
   document.getElementById("placeUrl").value = place ? place.url : prefill?.url || "";
   document.getElementById("placeAddress").value = place ? place.address : prefill?.address || "";
+  document.getElementById("placeRegion").value = place ? place.region : turismRegionFromAddress(prefill?.address);
   document.getElementById("placeNote").value = place ? place.note : "";
   document.getElementById("deletePlaceBtn").hidden = !place;
   const fallbackList = placesState.listId || (turismDb.lists[0] ? [...turismDb.lists].sort((a, b) => listActivity(b) - listActivity(a))[0].id : null);
@@ -530,6 +546,7 @@ function renderPlaceForm() {
     ? lists.map((l) => chipHtml({ label: `${escapeHtml(l.emoji)} ${escapeHtml(l.name)}`, on: f.listId === l.id, action: "pickPlaceList", data: { id: l.id } })).join("")
     : `<span class="tr-hint">Vai entrar numa lista nova: 📍 Quero conhecer</span>`;
   document.getElementById("placeAddressBox").hidden = !document.getElementById("placeAddress").value.trim();
+  renderRegionChips();
   // Pino do mapa (só editando)
   const id = document.getElementById("placeId").value;
   const place = id ? turismFindPlace(id) : null;
@@ -538,6 +555,42 @@ function renderPlaceForm() {
   if (place) {
     document.getElementById("placePinText").textContent = turismHasPin(place) ? "📍 Já tem pino no 🗺️ Mapa" : "❔ Ainda sem pino no 🗺️ Mapa";
   }
+}
+
+// Chips do bairro: os já usados (mesma cidade da lista primeiro), um toque preenche
+function renderRegionChips() {
+  const f = placesState.placeForm;
+  const typed = turismNorm(document.getElementById("placeRegion").value);
+  const city = turismNorm(turismFindList(f.listId)?.city);
+  const sameCity = turismDb.places.filter((p) => turismNorm(turismFindList(p.listId)?.city) === city);
+  const seen = new Set();
+  const regions = [...turismRegionCounts(sameCity), ...turismRegionCounts(turismDb.places)]
+    .filter((r) => (seen.has(r.norm) ? false : seen.add(r.norm)));
+  // Digitando: mostra só os parecidos. Já escolheu um dos chips: mostra todos (pra trocar fácil)
+  const shown = typed && !seen.has(typed) ? regions.filter((r) => r.norm.includes(typed)) : regions;
+  document.getElementById("placeRegionChips").innerHTML = shown.slice(0, 12)
+    .map((r) => chipHtml({ label: `🏘️ ${escapeHtml(r.label)}`, on: r.norm === typed, action: "pickPlaceRegion", data: { label: r.label } }))
+    .join("");
+}
+
+function pickPlaceRegion(el) {
+  const input = document.getElementById("placeRegion");
+  input.value = turismNorm(input.value) === turismNorm(el.dataset.label) ? "" : el.dataset.label;
+  renderRegionChips();
+}
+
+// [{ norm, label, count }] dos bairros usados nesses lugares, mais usados primeiro
+function turismRegionCounts(places) {
+  const map = new Map();
+  places.forEach((p) => {
+    const label = String(p.region || "").trim();
+    if (!label) return;
+    const norm = turismNorm(label);
+    const cur = map.get(norm) || { norm, label, count: 0 };
+    cur.count += 1;
+    map.set(norm, cur);
+  });
+  return [...map.values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "pt-BR"));
 }
 
 function pickKindGroup(el) {
@@ -604,7 +657,11 @@ function applyParsed(parsed) {
     f.autoName = parsed.name;
   }
   if (parsed.url) document.getElementById("placeUrl").value = parsed.url;
-  if (parsed.address) document.getElementById("placeAddress").value = parsed.address;
+  if (parsed.address) {
+    document.getElementById("placeAddress").value = parsed.address;
+    const regionEl = document.getElementById("placeRegion");
+    if (!regionEl.value.trim()) regionEl.value = turismRegionFromAddress(parsed.address);
+  }
   renderPlaceForm();
   return parsed;
 }
@@ -663,11 +720,13 @@ async function savePlace() {
   }
 
   const been = f.status === "been";
+  const address = document.getElementById("placeAddress").value.trim();
   const fields = {
     listId,
     name,
     url,
-    address: document.getElementById("placeAddress").value.trim(),
+    address,
+    region: (document.getElementById("placeRegion").value.trim() || turismRegionFromAddress(address)).slice(0, 40),
     note: document.getElementById("placeNote").value.trim(),
     tags: [...TURISM_TAGS.map((t) => t.key).filter((k) => f.tags.includes(k)), ...f.tags.filter((k) => !turismTag(k))], // key desconhecida fica
     kind: f.kind || null,
@@ -683,10 +742,12 @@ async function savePlace() {
     const wasBeen = place.status === "been";
     const oldUrl = place.url;
     const oldAddress = place.address;
+    const oldRegion = place.region;
     Object.assign(place, fields);
     place.visitedAt = been ? (wasBeen && place.visitedAt ? place.visitedAt : toIsoDate()) : null;
     // Link ou endereço mudou: o pino antigo pode estar errado, procura de novo
-    if (oldUrl !== place.url || oldAddress !== place.address) {
+    // (bairro só conta se não tem link comprido nem endereço, que já são mais certeiros)
+    if (oldUrl !== place.url || oldAddress !== place.address || (oldRegion !== place.region && !place.address && !turismCoordsFromUrl(place.url) && place.geoMiss)) {
       place.lat = null;
       place.lng = null;
       place.geoMiss = false;
@@ -711,6 +772,7 @@ async function savePlace() {
     placesState.listId = listId;
     placesState.tag = null;
     placesState.kind = null;
+    placesState.region = null;
     setListUrl(listId);
   }
   if (!id) placesState.filter = fields.status === "been" ? "been" : "want";
@@ -823,7 +885,7 @@ function renderRoute() {
     const i = sel.indexOf(p.id);
     return `<button type="button" class="tr-route-item${i >= 0 ? " is-on" : ""}" data-click="toggleRoute" data-id="${escapeHtml(p.id)}">
       <span class="tr-route-num">${i >= 0 ? i + 1 : ""}</span>
-      <span class="tr-route-name">${escapeHtml(p.name)}</span>
+      <span class="tr-route-name">${escapeHtml(p.name)}${p.region ? ` <small>🏘️ ${escapeHtml(p.region)}</small>` : ""}</span>
     </button>`;
   }).join("");
   const btn = document.getElementById("routeGoBtn");
@@ -860,6 +922,7 @@ const TURISM_DRAW_LINES = [
 async function drawPlace() {
   let want = placesOfList(placesState.listId).filter((p) => p.status === "want");
   if (placesState.kind) want = want.filter((p) => p.kind === placesState.kind);
+  if (placesState.region) want = want.filter((p) => turismNorm(p.region) === placesState.region);
   if (!want.length) {
     showPageMessage("Não tem nenhum lugar no 📌 Quero ir pra sortear.", { title: "Nada pra sortear", icon: "🎲" });
     return;
@@ -867,7 +930,7 @@ async function drawPlace() {
   const p = want[Math.floor(Math.random() * want.length)];
   const kind = turismKind(p.kind);
   const line = TURISM_DRAW_LINES[Math.floor(Math.random() * TURISM_DRAW_LINES.length)];
-  const ok = await showPageMessage(`${line}\n\n📌 ${p.name}${kind ? `\n${kind.icon} ${kind.label}` : ""}${p.note ? `\n📝 ${p.note}` : ""}`, { title: "🎲 Sorteio", icon: "🎲", confirm: true, confirmLabel: "🗺️ Abrir no Maps", cancelLabel: "Valeu", danger: false });
+  const ok = await showPageMessage(`${line}\n\n📌 ${p.name}${p.region ? `\n🏘️ ${p.region}` : ""}${kind ? `\n${kind.icon} ${kind.label}` : ""}${p.note ? `\n📝 ${p.note}` : ""}`, { title: "🎲 Sorteio", icon: "🎲", confirm: true, confirmLabel: "🗺️ Abrir no Maps", cancelLabel: "Valeu", danger: false });
   if (ok) turismOpenExternal(turismMapsUrl(p, turismFindList(p.listId)));
 }
 
@@ -879,6 +942,7 @@ function turismListText(list) {
     const r = turismRating(p.rating);
     lines.push("");
     lines.push(`${p.status === "been" ? "✅" : "📌"} ${p.name}${p.status === "been" && r ? ` (${r.icon} ${r.label})` : ""}`);
+    if (p.region) lines.push(`🏘️ ${p.region}`);
     if (p.address) lines.push(`📍 ${p.address}`);
     lines.push(`🗺️ ${turismMapsUrl(p, list)}`);
     if (p.note) lines.push(`📝 ${p.note.replace(/\s*\n\s*/g, " ")}`);
@@ -946,7 +1010,7 @@ function turismParseListText(text) {
           body = body.slice(0, m.index);
         }
       }
-      cur = { name: body.trim().slice(0, 80), status: been ? "been" : "want", rating, url: "", address: "", note: "", tags: [], kind: null };
+      cur = { name: body.trim().slice(0, 80), status: been ? "been" : "want", rating, url: "", address: "", region: "", note: "", tags: [], kind: null };
       if (cur.name) out.places.push(cur);
       return;
     }
@@ -955,12 +1019,14 @@ function turismParseListText(text) {
     const rest = (base) => (line.startsWith(base) ? line.slice(base.length).replace(/^️/, "").trim() : null);
     const url = rest("\u{1F5FA}"); // 🗺️
     const address = rest("📍");
+    const region = rest("\u{1F3D8}"); // 🏘️
     const note = rest("📝");
     const tags = rest("\u{1F3F7}"); // 🏷️
     if (url !== null) {
       // Link de busca gerado pelo Toba não precisa ser guardado: o nome já basta
       cur.url = /google\.com\/maps\/search\/\?api=1/.test(url) ? "" : url.slice(0, 500);
     } else if (address !== null) cur.address = address.slice(0, 160);
+    else if (region !== null) cur.region = region.slice(0, 40);
     else if (note !== null) cur.note = note.slice(0, 300);
     else if (tags !== null) {
       tags.split(",").map((t) => turismNoVs(t)).forEach((item) => {
@@ -1000,6 +1066,7 @@ function importList() {
       name: p.name,
       url: p.url,
       address: p.address,
+      region: p.region || turismRegionFromAddress(p.address),
       note: p.note,
       tags: p.tags,
       kind: p.kind,
@@ -1022,6 +1089,7 @@ function importList() {
   placesState.filter = "want";
   placesState.tag = null;
   placesState.kind = null;
+  placesState.region = null;
   setListUrl(list.id);
   renderAll();
   turismPlayerCheck();
@@ -1049,6 +1117,7 @@ tobaActions({
   setPlaceFilter,
   filterTag,
   filterKind,
+  filterRegion,
   toggleMode,
   openPlaceMaps,
   editCurrentList,
@@ -1060,6 +1129,8 @@ tobaActions({
   deleteList,
   pickKindGroup,
   pickPlaceKind,
+  pickPlaceRegion,
+  renderRegionChips,
   togglePlaceTag,
   pickPlaceStatus,
   pickPlaceVerdict,

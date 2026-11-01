@@ -56,6 +56,7 @@
           <button type="button" class="tab-btn" data-click="setPlaceFilter" data-filter="all" id="filterAll">Todos</button>
         </div>
         <div class="tr-chips" id="kindFilterChips"></div>
+        <div class="tr-chips" id="regionFilterChips"></div>
         <div class="tr-chips" id="tagFilterChips"></div>
         <div class="toba-list" id="placesList"></div>
       </div>
@@ -120,6 +121,11 @@
           <label for="placeUrl">Link do Maps</label>
           <input type="url" id="placeUrl" class="form-control" maxlength="500" placeholder="https://maps.app.goo.gl/..." />
         </div>
+        <div class="form-group tr-region-group">
+          <label for="placeRegion">🏘️ Bairro / região</label>
+          <input type="text" id="placeRegion" class="form-control" maxlength="40" data-input="renderRegionChips" placeholder="Ex: Pinheiros, Centro, Zona Sul" />
+        </div>
+        <div class="tr-chips is-wrap" id="placeRegionChips"></div>
         <div class="tr-label">Tipo do lugar</div>
         <div class="tab-nav tr-kind-tabs" id="placeKindGroups"></div>
         <div class="tr-chips is-wrap" id="placeKindChips"></div>
