@@ -10,7 +10,7 @@
 const KITCHEN_KEY = "TOBA_KITCHEN_DB";
 const KITCHEN_BACKUP_KEY = "TOBA_KITCHEN_DB_AUTO_BACKUP";
 
-const KITCHEN_RECENT_MAX = 24; // avulsos lembrados em "Já comprou antes"
+const KITCHEN_RECENT_MAX = 24; // digitados no Outros lembrados como chip
 
 // Trava: fica false se o banco salvo estiver ilegível, para não sobrescrever.
 let isKitchenDbLoaded = false;
@@ -23,8 +23,8 @@ function createEmptyKitchenDb() {
     pantry: [], // [ids de ingrediente] marcados em "O que tem aí?"
     plan: [], // [{ id: "p-<ts>-<rand4>", date: "AAAA-MM-DD", recipeId, meal, servings }]
     shopping: {}, // { "<segunda AAAA-MM-DD>": { checked: [ids de ingrediente] } }
-    extras: [], // v1.53: itens avulsos da lista [{ id: "x-<ts>-<rand4>", name, aisle, qty, checked, addedAt }]
-    extrasRecent: [], // v1.53: avulsos que já saíram da lista [{ name, aisle }] (mais novo primeiro, até 24)
+    extras: [], // v1.53: itens escolhidos da lista [{ id: "x-<ts>-<rand4>", itemId?, name, aisle, qty, checked, addedAt }] (sem itemId = digitado no Outros)
+    extrasRecent: [], // v1.53: digitados no Outros que saíram da lista [{ name, aisle }] (seguem como chip; até 24)
   };
 }
 

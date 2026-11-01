@@ -1087,3 +1087,26 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.53 - Lista de compras virou modulo do Kitchen com itens avulsos por categoria em ordem alfabetica`
+
+---
+
+## v1.54 — 🧺 Lista de compras de tocar e escolher (sem digitar item por item)
+
+**Arquivos alterados:** `TobaKitchen/TobaKitchen-Compras.html`, `TobaKitchen/js/compras.js`, `TobaKitchen/js/kitchen-recipes.js`, `TobaKitchen/js/kitchen-core.js`, `TobaKitchen/css/kitchen-base.css`, `CLAUDE.md`
+
+1. **🧺 Escolher, no estilo do "O que tem aí?":** sai a folha "+ Item" de digitar item por item. A lista ganhou a aba **🧺 Escolher**: o básico do mercado já vem pronto em chips por categoria, em ordem alfabética (uns 90 itens + todos os ingredientes das receitas): é só ir tocando. Tocou = entra na lista, tocou de novo = sai. Tem busca no topo. O que já vem das receitas da semana aparece com 🍳 (não duplica).
+2. **✍️ Outros:** não achou? Digita no Outros e ele vira chip. Depois de comprado e tirado da lista, o chip continua lá pra marcar de novo com um toque (se o nome tiver cara de categoria, tipo "ração" ou "detergente", ele vai pra categoria certa).
+3. **🛒 Aba Lista:** a lista de antes (por categoria, A–Z, marcando no mercado). Lista vazia abre direto no 🧺 Escolher. Avulso que você já tinha posto na v1.53 continua lá (e acende o chip dele se tiver no catálogo).
+
+**Dados:** item escolhido pelo chip grava `itemId` (opcional) no `extras` que já existia desde a v1.53; `extrasRecent` agora guarda só os digitados no Outros. Nada é apagado nem regravado; avulsos da v1.53 continuam funcionando. `sw.js` sem mudança (nenhum arquivo novo).
+
+**Como testar:**
+- Kitchen → 🛒 Lista de compras: com a lista vazia abre direto no 🧺 Escolher.
+- Tocar em Café, Ração de gato, Detergente, Papel higiênico → ficam acesos; tocar de novo → apaga. Ingrediente de receita da semana aparece com 🍳 e não entra duas vezes.
+- ✍️ Outros → "Filtro da V60" → ➕ → chip novo aceso.
+- 🛒 Lista → tudo por categoria em A–Z. Marcar o filtro → "🧹 Tirar comprados da lista" → volta no 🧺 Escolher: o chip do filtro continua lá, apagado.
+- Setas da semana na Lista: os escolhidos continuam, os ingredientes mudam conforme a programação.
+- ⚙️ → baixar backup → importar de volta: nada some.
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.54 - Lista de compras com catalogo de itens pra tocar por categoria e Outros digitado`

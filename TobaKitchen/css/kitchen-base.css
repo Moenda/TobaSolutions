@@ -751,34 +751,42 @@
 }
 
 /* ---------------------------------------------------------------------
- * v1.53: Lista de compras (página própria) e itens avulsos
+ * v1.53: Lista de compras (página própria): 🧺 Escolher + 🛒 Lista
  * ------------------------------------------------------------------- */
-.kt-add-extra {
+#viewPick .kt-chip {
+  height: 38px; /* dedo no mercado: chip um tiquinho maior */
+}
+
+.kt-chip.is-recipe {
+  color: var(--muted);
+  border-style: dashed;
+}
+
+.kt-chip.is-got {
+  color: var(--muted);
+  border-color: var(--green);
+  text-decoration: line-through;
+}
+
+.kt-pick-legend {
+  font-size: 0.72rem;
+  margin: -0.2rem 0 0.4rem;
+}
+
+.kt-other-form {
   display: flex;
-  align-items: center;
   gap: 8px;
-  width: 100%;
-  min-height: 46px;
-  margin: 0.9rem 0 0.2rem;
-  padding: 0.5rem 0.9rem;
-  background: transparent;
-  border: 1px dashed var(--coral);
-  border-radius: var(--radius);
-  color: var(--text);
-  font: inherit;
-  font-weight: 800;
-  cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
+  margin-bottom: 0.6rem;
 }
 
-.kt-add-extra .kt-small {
-  overflow: hidden;
-  text-overflow: ellipsis;
+.kt-other-form .form-control {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-.kt-add-extra:active {
-  transform: scale(0.98);
+.kt-other-form .btn {
+  flex: 0 0 52px;
+  padding: 0;
 }
 
 .kt-shop-item.is-extra .kt-shop-for {
@@ -806,60 +814,4 @@
 .kt-clear-extras {
   width: 100%;
   margin-bottom: 0.6rem;
-}
-
-.kt-field-label {
-  margin: 0.2rem 0 0.45rem;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--text-2);
-}
-
-/* Quadradinhos de categoria do avulso (mesmo jeito da gaveta do Gastos) */
-.kt-aisle-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 0.9rem;
-}
-
-.kt-aisle-tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  min-height: 64px;
-  padding: 0.45rem 0.3rem;
-  background: var(--surface-3);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius);
-  color: var(--text-2);
-  font: inherit;
-  cursor: pointer;
-  transition: transform 0.12s ease, border-color 0.15s ease, background 0.15s ease;
-}
-
-.kt-aisle-tile:active {
-  transform: scale(0.95);
-}
-
-.kt-aisle-tile.is-selected {
-  background: rgba(255, 123, 114, 0.16);
-  border-color: var(--coral);
-  color: var(--text);
-}
-
-.kt-aisle-emoji {
-  font-size: 1.4rem;
-  line-height: 1;
-}
-
-.kt-aisle-name {
-  max-width: 100%;
-  font-size: 0.74rem;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }

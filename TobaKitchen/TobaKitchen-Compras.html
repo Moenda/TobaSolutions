@@ -27,55 +27,47 @@
         <span class="toba-page">🛒 Lista de compras</span>
       </a>
       <div class="toba-header-actions">
-        <button type="button" class="toba-add-btn" data-click="openExtraSheet">+ Item</button>
         <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
       </div>
     </header>
 
-    <!-- Semana de onde vêm os ingredientes das receitas -->
-    <div class="kt-week-nav">
-      <button type="button" class="round-btn" data-click="moveShopWeek" data-dir="-1" aria-label="Semana anterior">‹</button>
-      <span class="kt-week-label" id="shopWeekLabel"></span>
-      <button type="button" class="round-btn" data-click="moveShopWeek" data-dir="1" aria-label="Próxima semana">›</button>
+    <div class="tab-nav">
+      <button type="button" class="tab-btn" id="tabPick" data-click="shopTab" data-tab="pick">🧺 Escolher</button>
+      <button type="button" class="tab-btn" id="tabList" data-click="shopTab" data-tab="list">🛒 Lista</button>
     </div>
-    <div class="kt-shop-progress"><span id="shopSummary"></span><span id="shopProgress"></span></div>
-    <div class="progress-track"><div class="progress-fill kt-fill" id="shopFill"></div></div>
-    <button type="button" class="kt-add-extra" data-click="openExtraSheet">➕ Item avulso <span class="text-muted kt-small">papel higiênico, ração, café...</span></button>
-    <div id="shopList"></div>
-    <button type="button" class="btn btn-secondary kt-clear-extras" id="clearExtrasBtn" data-click="clearBoughtExtras" hidden>🧹 Tirar avulsos comprados</button>
-    <div class="btn-row">
-      <button type="button" class="btn btn-secondary" data-click="uncheckAll">↺ Desmarcar tudo</button>
-      <button type="button" class="btn kt-btn-fire" data-click="copyShopping">📤 Mandar lista</button>
-    </div>
+
+    <!-- Escolher: toca nos itens (igual ao "O que tem aí?") -->
+    <section id="viewPick" hidden>
+      <input type="search" class="form-control kt-search" id="pickSearch" placeholder="🔎 Buscar item" data-input="filterPick" autocomplete="off" />
+      <div id="pickGroups"></div>
+      <div class="kt-aisle" id="otherTitle">✍️ Outros</div>
+      <form class="kt-other-form" data-submit="addOther" autocomplete="off">
+        <input type="text" class="form-control" id="otherName" maxlength="40" placeholder="Não achou? Digita aqui" enterkeyhint="done" />
+        <button type="submit" class="btn kt-btn-fire">➕</button>
+      </form>
+      <div class="kt-chips is-wrap" id="otherChips"></div>
+      <button type="button" class="btn kt-btn-fire kt-pantry-go" id="pickGo" data-click="shopTab" data-tab="list">🛒 Ver a lista</button>
+    </section>
+
+    <!-- Lista: o que levar, com a semana das receitas -->
+    <section id="viewList" hidden>
+      <div class="kt-week-nav">
+        <button type="button" class="round-btn" data-click="moveShopWeek" data-dir="-1" aria-label="Semana anterior">‹</button>
+        <span class="kt-week-label" id="shopWeekLabel"></span>
+        <button type="button" class="round-btn" data-click="moveShopWeek" data-dir="1" aria-label="Próxima semana">›</button>
+      </div>
+      <div class="kt-shop-progress"><span id="shopSummary"></span><span id="shopProgress"></span></div>
+      <div class="progress-track"><div class="progress-fill kt-fill" id="shopFill"></div></div>
+      <div id="shopList"></div>
+      <button type="button" class="btn btn-secondary kt-clear-extras" id="clearExtrasBtn" data-click="clearBoughtExtras" hidden>🧹 Tirar comprados da lista</button>
+      <div class="btn-row">
+        <button type="button" class="btn btn-secondary" data-click="uncheckAll">↺ Desmarcar tudo</button>
+        <button type="button" class="btn kt-btn-fire" data-click="copyShopping">📤 Mandar lista</button>
+      </div>
+    </section>
   </div>
 
   <div id="tobaSettingsExtra" hidden></div>
-
-  <!-- Item avulso (fica aberta pra pôr vários seguidos; fecha no ✕) -->
-  <div class="toba-modal" id="extraSheet">
-    <div class="toba-sheet">
-      <div class="toba-sheet-header">
-        <h3>➕ Item avulso</h3>
-        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
-      </div>
-      <form id="extraForm" data-submit="saveExtra" autocomplete="off">
-        <div class="form-group">
-          <label for="extraName">O que comprar?</label>
-          <input type="text" class="form-control" id="extraName" maxlength="40" placeholder="Ex.: Café pra V60" data-input="guessExtraAisle" enterkeyhint="done" />
-        </div>
-        <div class="form-group">
-          <label for="extraQty">Quanto? <span class="text-muted kt-small">opcional</span></label>
-          <input type="text" class="form-control" id="extraQty" maxlength="20" placeholder="Ex.: 2 pacotes" enterkeyhint="done" />
-        </div>
-        <div class="kt-field-label">Categoria</div>
-        <div class="kt-aisle-grid" id="extraAisles"></div>
-        <div id="extraRecent"></div>
-        <div class="toba-sheet-footer">
-          <button type="submit" class="btn kt-btn-fire">➕ Pôr na lista</button>
-        </div>
-      </form>
-    </div>
-  </div>
 
   <script src="../assets/toba-common.js"></script>
   <script src="js/kitchen-recipes.js"></script>

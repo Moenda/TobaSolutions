@@ -493,6 +493,121 @@ function kitchenPlanOfWeek(db, monday) {
  * "2 colheres de sopa + 1 colher de chá"). key = id do ingrediente.
  * Devolve { buy: [por seção], home: [...], staples: [...], count }.
  * home = está na despensa marcada na busca; staples = básicos (confere se tem). */
+// Catálogo de compras (v1.53): o básico do mercado pra marcar com um toque na
+// lista de compras. O `id` nunca muda (o item avulso grava ele em `itemId`);
+// nome/emoji/seção podem mudar. Os ingredientes das receitas entram sozinhos
+// (kitchenShopCatalog), então aqui só o que não está em KITCHEN_INGREDIENTS.
+const KITCHEN_SHOP_ITEMS = [
+  // Hortifruti
+  { id: "alface", name: "Alface", emoji: "🥬", aisle: "horti" },
+  { id: "batata", name: "Batata", emoji: "🥔", aisle: "horti" },
+  { id: "cenoura", name: "Cenoura", emoji: "🥕", aisle: "horti" },
+  { id: "maca", name: "Maçã", emoji: "🍎", aisle: "horti" },
+  { id: "mamao", name: "Mamão", emoji: "🍈", aisle: "horti" },
+  { id: "brocolis", name: "Brócolis", emoji: "🥦", aisle: "horti" },
+  { id: "pepino", name: "Pepino", emoji: "🥒", aisle: "horti" },
+  { id: "uva", name: "Uva", emoji: "🍇", aisle: "horti" },
+  { id: "morango", name: "Morango", emoji: "🍓", aisle: "horti" },
+  { id: "melancia", name: "Melancia", emoji: "🍉", aisle: "horti" },
+  { id: "abacaxi", name: "Abacaxi", emoji: "🍍", aisle: "horti" },
+  { id: "pimentao", name: "Pimentão", emoji: "🫑", aisle: "horti" },
+  // Açougue
+  { id: "carne-moida", name: "Carne moída", emoji: "🥩", aisle: "acougue" },
+  { id: "bife", name: "Bife", emoji: "🥩", aisle: "acougue" },
+  { id: "coxa-frango", name: "Coxa de frango", emoji: "🍗", aisle: "acougue" },
+  { id: "peixe", name: "Peixe", emoji: "🐟", aisle: "acougue" },
+  { id: "salsicha", name: "Salsicha", emoji: "🌭", aisle: "acougue" },
+  // Frios e laticínios
+  { id: "leite", name: "Leite", emoji: "🥛", aisle: "frios" },
+  { id: "iogurte", name: "Iogurte", emoji: "🥣", aisle: "frios" },
+  { id: "presunto", name: "Presunto", emoji: "🍖", aisle: "frios" },
+  { id: "requeijao", name: "Requeijão", emoji: "🫙", aisle: "frios" },
+  { id: "peito-peru", name: "Peito de peru", emoji: "🦃", aisle: "frios" },
+  { id: "margarina", name: "Margarina", emoji: "🧈", aisle: "frios" },
+  // Padaria
+  { id: "pao-frances", name: "Pão francês", emoji: "🥖", aisle: "padaria" },
+  { id: "pao-forma", name: "Pão de forma", emoji: "🍞", aisle: "padaria" },
+  { id: "bisnaguinha", name: "Bisnaguinha", emoji: "🥯", aisle: "padaria" },
+  { id: "torrada", name: "Torrada", emoji: "🍞", aisle: "padaria" },
+  { id: "bolo", name: "Bolo", emoji: "🍰", aisle: "padaria" },
+  // Mercearia
+  { id: "arroz", name: "Arroz", emoji: "🍚", aisle: "mercearia" },
+  { id: "feijao", name: "Feijão carioca", emoji: "🫘", aisle: "mercearia" },
+  { id: "macarrao", name: "Macarrão", emoji: "🍝", aisle: "mercearia" },
+  { id: "cafe", name: "Café", emoji: "☕", aisle: "mercearia" },
+  { id: "farinha-trigo", name: "Farinha de trigo", emoji: "🌾", aisle: "mercearia" },
+  { id: "molho-tomate", name: "Molho de tomate", emoji: "🥫", aisle: "mercearia" },
+  { id: "biscoito", name: "Biscoito", emoji: "🍪", aisle: "mercearia" },
+  { id: "achocolatado", name: "Achocolatado", emoji: "🍫", aisle: "mercearia" },
+  { id: "granola", name: "Granola", emoji: "🥣", aisle: "mercearia" },
+  { id: "milho-lata", name: "Milho em lata", emoji: "🌽", aisle: "mercearia" },
+  { id: "pipoca", name: "Pipoca", emoji: "🍿", aisle: "mercearia" },
+  { id: "miojo", name: "Miojo", emoji: "🍜", aisle: "mercearia" },
+  // Bebidas
+  { id: "agua", name: "Água", emoji: "💧", aisle: "bebidas" },
+  { id: "agua-gas", name: "Água com gás", emoji: "🫧", aisle: "bebidas" },
+  { id: "refri", name: "Refrigerante", emoji: "🥤", aisle: "bebidas" },
+  { id: "suco", name: "Suco", emoji: "🧃", aisle: "bebidas" },
+  { id: "cerveja", name: "Cerveja", emoji: "🍺", aisle: "bebidas" },
+  { id: "energetico", name: "Energético", emoji: "⚡", aisle: "bebidas" },
+  // Temperos e molhos
+  { id: "pimenta-reino", name: "Pimenta-do-reino", emoji: "🌶️", aisle: "temperos" },
+  { id: "caldo", name: "Caldo de galinha", emoji: "🧊", aisle: "temperos" },
+  { id: "ketchup", name: "Ketchup", emoji: "🍅", aisle: "temperos" },
+  { id: "mostarda", name: "Mostarda", emoji: "🟨", aisle: "temperos" },
+  { id: "shoyu", name: "Shoyu", emoji: "🍶", aisle: "temperos" },
+  // Limpeza
+  { id: "detergente", name: "Detergente", emoji: "🧴", aisle: "limpeza" },
+  { id: "sabao-po", name: "Sabão em pó", emoji: "🧺", aisle: "limpeza" },
+  { id: "amaciante", name: "Amaciante", emoji: "🌸", aisle: "limpeza" },
+  { id: "agua-sanitaria", name: "Água sanitária", emoji: "🧪", aisle: "limpeza" },
+  { id: "desinfetante", name: "Desinfetante", emoji: "🫧", aisle: "limpeza" },
+  { id: "esponja", name: "Esponja", emoji: "🧽", aisle: "limpeza" },
+  { id: "saco-lixo", name: "Saco de lixo", emoji: "🗑️", aisle: "limpeza" },
+  { id: "papel-toalha", name: "Papel toalha", emoji: "🧻", aisle: "limpeza" },
+  { id: "multiuso", name: "Multiuso", emoji: "✨", aisle: "limpeza" },
+  { id: "alcool", name: "Álcool", emoji: "🧴", aisle: "limpeza" },
+  // Higiene
+  { id: "papel-higienico", name: "Papel higiênico", emoji: "🧻", aisle: "higiene" },
+  { id: "sabonete", name: "Sabonete", emoji: "🧼", aisle: "higiene" },
+  { id: "shampoo", name: "Shampoo", emoji: "🧴", aisle: "higiene" },
+  { id: "condicionador", name: "Condicionador", emoji: "🧴", aisle: "higiene" },
+  { id: "pasta-dente", name: "Pasta de dente", emoji: "🪥", aisle: "higiene" },
+  { id: "escova-dente", name: "Escova de dente", emoji: "🪥", aisle: "higiene" },
+  { id: "desodorante", name: "Desodorante", emoji: "💨", aisle: "higiene" },
+  { id: "fio-dental", name: "Fio dental", emoji: "🦷", aisle: "higiene" },
+  { id: "cotonete", name: "Cotonete", emoji: "☁️", aisle: "higiene" },
+  // Pets (Killua e Gon 🐱)
+  { id: "racao-gato", name: "Ração de gato", emoji: "🐱", aisle: "pet" },
+  { id: "sache-gato", name: "Sachê de gato", emoji: "🐟", aisle: "pet" },
+  { id: "areia-gato", name: "Areia de gato", emoji: "🏖️", aisle: "pet" },
+  { id: "petisco", name: "Petisco", emoji: "🦴", aisle: "pet" },
+];
+
+// Tudo que dá pra marcar na lista: o catálogo de compras + todo ingrediente das
+// receitas (id "i-<ingrediente>"), sem repetir nome. Ordem: A–Z.
+function kitchenShopCatalog() {
+  const seen = new Set();
+  const out = [];
+  const push = (item) => {
+    const norm = kitchenNormalizeText(item.name);
+    if (seen.has(norm)) return;
+    seen.add(norm);
+    out.push(item);
+  };
+  Object.keys(KITCHEN_INGREDIENTS).forEach((id) => {
+    const info = KITCHEN_INGREDIENTS[id];
+    push({ id: `i-${id}`, name: info.name, emoji: info.emoji, aisle: info.aisle || "mercearia" });
+  });
+  KITCHEN_SHOP_ITEMS.forEach(push);
+  return out.sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }));
+}
+
+function kitchenShopItem(itemId) {
+  if (!itemId) return null;
+  return kitchenShopCatalog().find((i) => i.id === String(itemId)) || null;
+}
+
 function kitchenAisle(key) {
   return KITCHEN_AISLES.find((a) => a.key === key) || null;
 }
@@ -541,7 +656,7 @@ function kitchenShoppingList(db, monday) {
   const toBuy = list.filter((i) => !i.info.staple && !pantry.has(i.id));
   const extras = kitchenExtrasOf(db).map((x) => {
     const aisle = kitchenAisle(x.aisle) ? x.aisle : "outros";
-    const known = kitchenFindIngredientByName(x.name);
+    const known = kitchenShopItem(x.itemId) || kitchenFindIngredientByName(x.name);
     return {
       key: String(x.id),
       id: String(x.id),

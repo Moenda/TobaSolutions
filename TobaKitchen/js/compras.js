@@ -1,17 +1,19 @@
 /* =====================================================================
  * Toba Kitchen · Lista de compras (js/compras.js, desde v1.53)
- * Junta os ingredientes das receitas da semana com os itens avulsos
- * (papel higiênico, ração, café...), separados por seção do mercado e em
- * ordem alfabética dentro de cada seção (kitchenShoppingList).
+ * Duas abas:
+ * - 🧺 Escolher: o catálogo do mercado em quadradinhos por seção (A–Z), igual
+ *   ao "O que tem aí?". Tocou = entra na lista; tocou de novo = sai. O que não
+ *   tem no catálogo vai em "✍️ Outros" (digita uma vez, depois vira chip).
+ * - 🛒 Lista: ingredientes das receitas da semana + os escolhidos, por seção e
+ *   em ordem alfabética dentro de cada seção (kitchenShoppingList).
  * - Ingrediente de receita: marcado fica em db.shopping[segunda].checked
  *   (vale só pra aquela semana, como sempre foi).
- * - Avulso: mora em db.extras com o próprio "checked" e vale pra qualquer
- *   semana até sair da lista (✕ ou "🧹 Tirar avulsos comprados").
+ * - Escolhido: mora em db.extras (itemId = id do catálogo; digitado não tem)
+ *   com o próprio "checked" e vale pra qualquer semana até sair da lista.
  * Depende de ../assets/toba-common.js, kitchen-recipes.js e kitchen-core.js.
  * ===================================================================== */
 let shopMonday = initialShopWeek();
-let extraAisle = "mercearia";
-let extraAisleTouched = false; // escolheu na mão: o palpite pelo nome não mexe mais
+let pickQuery = "";
 
 function initialShopWeek() {
   const param = new URLSearchParams(window.location.search).get("semana");
@@ -40,7 +42,7 @@ function isItemChecked(item, checked) {
  * ------------------------------------------------------------------- */
 function shopRow(item, checked, countable) {
   const isChecked = isItemChecked(item, checked);
-  const sub = item.extra ? "➕ avulso" : item.recipes.join(", ");
+  const sub = item.extra ? "🧺 escolhido" : item.recipes.join(", ");
   return `
     <label class="kt-shop-item${isChecked ? " is-checked" : ""}${item.extra ? " is-extra" : ""}">
       <input type="checkbox" data-change="toggleShopItem" data-key="${escapeHtml(item.key)}"${item.extra ? ' data-extra="1"' : ""}${isChecked ? " checked" : ""}${countable ? "" : ' data-home="1"'} />
@@ -62,14 +64,14 @@ function renderShopping() {
   const fromRecipes = buyItems.length - shop.extras;
   document.getElementById("shopWeekLabel").textContent = `${shopWeekLabel(shopMonday)}${shopMonday === thisWeek ? " · esta semana" : ""}`;
   document.getElementById("shopSummary").textContent = buyItems.length
-    ? `🍳 ${fromRecipes} das receitas · ➕ ${shop.extras} ${shop.extras === 1 ? "avulso" : "avulsos"}`
+    ? `🍳 ${fromRecipes} das receitas · 🧺 ${shop.extras} ${shop.extras === 1 ? "escolhido" : "escolhidos"}`
     : "";
   document.getElementById("shopProgress").textContent = buyItems.length ? `🛒 ${got}/${buyItems.length}` : "";
   document.getElementById("shopFill").style.width = buyItems.length ? `${Math.round((got / buyItems.length) * 100)}%` : "0%";
 
   let html = "";
   if (!buyItems.length && !shop.home.length && !shop.staples.length) {
-    html = tobaEmpty("🛒", "Lista vazia", "Programa umas receitas na Semana ou toca no + Item pra pôr qualquer coisa.");
+    html = tobaEmpty("🛒", "Lista vazia", "Toca em 🧺 Escolher e vai marcando, ou programa umas receitas na Semana.");
   }
   if (!buyItems.length && (shop.home.length || shop.staples.length)) {
     html += '<div class="hint-box kt-hint">🎉 Pelo que você marcou no 🧺, não precisa comprar nada das receitas!</div>';
@@ -90,7 +92,9 @@ function renderShopping() {
   const bought = kitchenDb.extras.filter((x) => x.checked === true && String(x.name || "").trim()).length;
   const clearBtn = document.getElementById("clearExtrasBtn");
   clearBtn.hidden = !bought;
-  clearBtn.textContent = `🧹 Tirar avulsos comprados (${bought})`;
+  clearBtn.textContent = `🧹 Tirar comprados da lista (${bought})`;
+  const pending = kitchenShoppingPending(kitchenDb, shopMonday);
+  document.getElementById("tabList").textContent = `🛒 Lista${pending ? ` (${pending})` : ""}`;
 }
 
 function toggleShopItem(el) {
@@ -117,7 +121,7 @@ function toggleShopItem(el) {
 async function uncheckAll() {
   const extrasOn = kitchenDb.extras.filter((x) => x.checked === true);
   if (!shoppingChecked().size && !extrasOn.length) return;
-  const ok = await showPageMessage("Desmarcar todos os itens da lista? Os avulsos continuam nela, só desmarcados.", { title: "Desmarcar tudo", confirm: true, confirmLabel: "Desmarcar" });
+  const ok = await showPageMessage("Desmarcar todos os itens da lista? Os escolhidos continuam nela, só desmarcados.", { title: "Desmarcar tudo", confirm: true, confirmLabel: "Desmarcar" });
   if (!ok) return;
   const beforeWeek = kitchenDb.shopping[shopMonday];
   delete kitchenDb.shopping[shopMonday];
@@ -130,7 +134,7 @@ async function uncheckAll() {
 }
 
 /* ---------------------------------------------------------------------
- * Itens avulsos
+ * Itens escolhidos (avulsos: db.extras)
  * ------------------------------------------------------------------- */
 // Guarda em "Já comprou antes" (mais novo primeiro, sem repetir nome)
 function rememberExtra(name, aisle) {
@@ -140,32 +144,28 @@ function rememberExtra(name, aisle) {
     .slice(0, KITCHEN_RECENT_MAX);
 }
 
-function openExtraSheet() {
-  document.getElementById("extraName").value = "";
-  document.getElementById("extraQty").value = "";
-  extraAisle = "mercearia";
-  extraAisleTouched = false;
-  renderExtraSheet();
-  openTobaModal("extraSheet");
-  setTimeout(() => document.getElementById("extraName").focus(), 60);
+/* ---------------------------------------------------------------------
+ * 🧺 Escolher
+ * ------------------------------------------------------------------- */
+function setShopTab(tab) {
+  const isPick = tab === "pick";
+  document.getElementById("tabPick").classList.toggle("active", isPick);
+  document.getElementById("tabList").classList.toggle("active", !isPick);
+  document.getElementById("viewPick").hidden = !isPick;
+  document.getElementById("viewList").hidden = isPick;
+  window.scrollTo(0, 0);
+  renderAll();
 }
 
-function renderExtraSheet() {
-  document.getElementById("extraAisles").innerHTML = KITCHEN_AISLES.map((a) => `
-    <button type="button" class="kt-aisle-tile${a.key === extraAisle ? " is-selected" : ""}" data-click="pickExtraAisle" data-aisle="${a.key}">
-      <span class="kt-aisle-emoji">${a.icon}</span>
-      <span class="kt-aisle-name">${escapeHtml(a.short || a.name)}</span>
-    </button>`).join("");
-  const inList = new Set(kitchenExtrasOf(kitchenDb).map((x) => kitchenNormalizeText(x.name)));
-  const recent = kitchenDb.extrasRecent.filter((r) => !inList.has(kitchenNormalizeText(r.name)));
-  document.getElementById("extraRecent").innerHTML = recent.length
-    ? `<div class="kt-field-label">↺ Já comprou antes <span class="text-muted kt-small">toca e volta pra lista</span></div>
-       <div class="kt-chips is-wrap">${recent.map((r) => {
-         const aisle = kitchenAisle(r.aisle) || kitchenAisle("outros");
-         const known = kitchenFindIngredientByName(r.name);
-         return `<button type="button" class="chip-btn kt-chip" data-click="readdExtra" data-name="${escapeHtml(r.name)}" data-aisle="${escapeHtml(aisle.key)}">${known ? known.emoji : aisle.icon} ${escapeHtml(r.name)}</button>`;
-       }).join("")}</div>`
-    : "";
+function renderAll() {
+  if (!document.getElementById("viewPick").hidden) renderPick();
+  renderShopping();
+}
+
+// Avulso que corresponde ao chip (pelo id do catálogo ou pelo mesmo nome)
+function extraForItem(item) {
+  const norm = kitchenNormalizeText(item.name);
+  return kitchenDb.extras.find((x) => (item.id && x.itemId === item.id) || kitchenNormalizeText(x.name) === norm) || null;
 }
 
 // Palpite de seção pelo nome (só sugere; o quadradinho tocado sempre vale)
@@ -190,23 +190,105 @@ function kitchenGuessAisle(name) {
   return hit ? hit[0] : null;
 }
 
-// Digitou "ração", "detergente", "pão"...? Já sugere a seção.
-function guessExtraAisle(el) {
-  if (extraAisleTouched) return;
-  const guess = kitchenGuessAisle(el.value);
-  if (guess && guess !== extraAisle) {
-    extraAisle = guess;
-    renderExtraSheet();
+function pickChip(item, state) {
+  const cls = state === "on" ? " is-on" : state === "recipe" ? " is-recipe" : state === "got" ? " is-got" : "";
+  const tag = state === "recipe" ? " 🍳" : state === "got" ? " ✅" : "";
+  const data = item.id ? `data-item="${escapeHtml(item.id)}"` : `data-name="${escapeHtml(item.name)}" data-aisle="${escapeHtml(item.aisle)}"`;
+  return `<button type="button" class="chip-btn kt-chip${cls}" data-click="togglePick" ${data} aria-pressed="${state === "on" || state === "got"}">${item.emoji} ${escapeHtml(item.name)}${tag}</button>`;
+}
+
+function renderPick() {
+  const shop = kitchenShoppingList(kitchenDb, shopMonday);
+  const fromRecipes = new Set(shop.buy.flatMap((g) => g.items).filter((i) => !i.extra).map((i) => kitchenNormalizeText(i.info.name)));
+  const q = kitchenNormalizeText(pickQuery);
+  // Catálogo + o que você já digitou (na lista ou em "já comprou antes")
+  const catalog = kitchenShopCatalog();
+  const known = new Set(catalog.map((i) => kitchenNormalizeText(i.name)));
+  const typed = [];
+  kitchenExtrasOf(kitchenDb).filter((x) => !x.itemId).concat(kitchenDb.extrasRecent).forEach((x) => {
+    const norm = kitchenNormalizeText(x.name);
+    if (known.has(norm)) return;
+    known.add(norm);
+    const aisle = kitchenAisle(x.aisle) ? x.aisle : "outros";
+    typed.push({ id: null, name: String(x.name).trim(), emoji: kitchenAisle(aisle).icon, aisle, typed: true });
+  });
+  const all = catalog.concat(typed.filter((t) => t.aisle !== "outros"))
+    .filter((i) => !q || kitchenNormalizeText(i.name).includes(q))
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }));
+  const stateOf = (item) => {
+    if (fromRecipes.has(kitchenNormalizeText(item.name))) return "recipe";
+    const extra = extraForItem(item);
+    if (!extra) return "off";
+    return extra.checked ? "got" : "on";
+  };
+  const groups = KITCHEN_AISLES.filter((a) => a.key !== "outros").map((aisle) => ({ ...aisle, items: all.filter((i) => i.aisle === aisle.key) }))
+    .filter((g) => g.items.length);
+  document.getElementById("pickGroups").innerHTML = groups.length
+    ? '<div class="kt-pick-legend text-muted">Toca pra pôr na lista, de novo tira. 🍳 = já vem das receitas da semana.</div>'
+      + groups.map((g) => `
+      <div class="kt-aisle">${g.icon} ${g.name}</div>
+      <div class="kt-chips is-wrap">${g.items.map((i) => pickChip(i, stateOf(i))).join("")}</div>`).join("")
+    : tobaEmpty("🔎", "Não achei esse item", "Põe ele no ✍️ Outros aqui embaixo.", { compact: true });
+  const others = typed.filter((t) => t.aisle === "outros" && (!q || kitchenNormalizeText(t.name).includes(q)))
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }));
+  document.getElementById("otherChips").innerHTML = others.map((i) => pickChip(i, stateOf(i))).join("");
+  if (q && !document.getElementById("otherName").value) document.getElementById("otherName").placeholder = `Ex.: ${pickQuery.trim()}`;
+  else document.getElementById("otherName").placeholder = "Não achou? Digita aqui";
+  const pending = kitchenShoppingPending(kitchenDb, shopMonday);
+  document.getElementById("pickGo").textContent = `🛒 Ver a lista (${pending} pra pegar)`;
+}
+
+async function togglePick(el) {
+  const item = el.dataset.item
+    ? kitchenShopItem(el.dataset.item)
+    : { id: null, name: el.dataset.name, aisle: el.dataset.aisle };
+  if (!item) return;
+  const shop = kitchenShoppingList(kitchenDb, shopMonday);
+  const norm = kitchenNormalizeText(item.name);
+  if (shop.buy.flatMap((g) => g.items).some((i) => !i.extra && kitchenNormalizeText(i.info.name) === norm)) {
+    tobaToast(`🍳 ${item.name} já tá na lista pelas receitas`);
+    return;
   }
+  const extra = extraForItem(item);
+  if (extra) {
+    // Sai da lista (digitado vai pra "já comprou antes" e continua como chip)
+    const index = kitchenDb.extras.indexOf(extra);
+    const beforeRecent = kitchenDb.extrasRecent;
+    kitchenDb.extras.splice(index, 1);
+    if (!extra.itemId) rememberExtra(extra.name, extra.aisle);
+    if (!saveKitchenDb({ silent: true })) {
+      kitchenDb.extras.splice(index, 0, extra);
+      kitchenDb.extrasRecent = beforeRecent;
+    }
+  } else {
+    addExtra(item.name, item.aisle, "", item.id, { quiet: true });
+  }
+  renderAll();
+}
+
+function addOther() {
+  const input = document.getElementById("otherName");
+  const name = input.value.trim();
+  if (!name) {
+    input.focus();
+    return;
+  }
+  const item = kitchenShopCatalog().find((i) => kitchenNormalizeText(i.name) === kitchenNormalizeText(name));
+  if (item) addExtra(item.name, item.aisle, "", item.id); // digitou algo que já tem chip
+  else addExtra(name, kitchenGuessAisle(name) || "outros");
+  input.value = "";
+  pickQuery = "";
+  document.getElementById("pickSearch").value = "";
+  renderAll();
 }
 
 // Põe na lista. Já tem com esse nome? Desmarca (se tava marcado) em vez de duplicar.
-function addExtra(name, aisle, qty = "") {
+function addExtra(name, aisle, qty = "", itemId = null, options = {}) {
   const typed = String(name || "").trim().replace(/\s+/g, " ").slice(0, 40);
   if (!typed) return false;
   const clean = typed.charAt(0).toUpperCase() + typed.slice(1); // "banana" -> "Banana"
   const norm = kitchenNormalizeText(clean);
-  const same = kitchenDb.extras.find((x) => kitchenNormalizeText(x.name) === norm);
+  const same = kitchenDb.extras.find((x) => (itemId && x.itemId === itemId) || kitchenNormalizeText(x.name) === norm);
   if (same) {
     if (same.checked) {
       same.checked = false;
@@ -218,30 +300,14 @@ function addExtra(name, aisle, qty = "") {
     return true;
   }
   const extra = { id: kitchenNewId("x"), name: clean, aisle: kitchenAisle(aisle) ? aisle : "outros", qty: String(qty || "").trim().slice(0, 20), checked: false, addedAt: Date.now() };
+  if (itemId) extra.itemId = String(itemId);
   kitchenDb.extras.push(extra);
   if (!saveKitchenDb({ silent: true })) {
     kitchenDb.extras = kitchenDb.extras.filter((x) => x !== extra);
     return false;
   }
-  tobaToast(`🛒 ${clean} na lista!`);
+  if (!options.quiet) tobaToast(`🛒 ${clean} na lista!`);
   return true;
-}
-
-function saveExtra() {
-  const nameEl = document.getElementById("extraName");
-  if (!nameEl.value.trim()) {
-    nameEl.focus();
-    tobaToast("✍️ Escreve o que comprar");
-    return;
-  }
-  if (!addExtra(nameEl.value, extraAisle, document.getElementById("extraQty").value)) return;
-  // Folha continua aberta pra pôr o próximo
-  nameEl.value = "";
-  document.getElementById("extraQty").value = "";
-  extraAisleTouched = false;
-  renderExtraSheet();
-  renderShopping();
-  nameEl.focus();
 }
 
 function removeExtra(el, event) {
@@ -251,7 +317,7 @@ function removeExtra(el, event) {
   const index = kitchenDb.extras.indexOf(extra);
   const beforeRecent = kitchenDb.extrasRecent;
   kitchenDb.extras.splice(index, 1);
-  rememberExtra(extra.name, extra.aisle);
+  if (!extra.itemId) rememberExtra(extra.name, extra.aisle);
   if (!saveKitchenDb({ silent: true })) {
     kitchenDb.extras.splice(index, 0, extra);
     kitchenDb.extrasRecent = beforeRecent;
@@ -264,12 +330,12 @@ function removeExtra(el, event) {
 async function clearBoughtExtras() {
   const bought = kitchenDb.extras.filter((x) => x.checked === true && String(x.name || "").trim());
   if (!bought.length) return;
-  const ok = await showPageMessage(`Tira ${bought.length} ${bought.length === 1 ? "avulso comprado" : "avulsos comprados"} da lista. Eles ficam em "↺ Já comprou antes" no + Item, pra voltar com um toque.`, { title: "Tirar comprados", icon: "🧹", confirm: true, danger: false, confirmLabel: "Tirar" });
+  const ok = await showPageMessage(`Tira ${bought.length} ${bought.length === 1 ? "item comprado" : "itens comprados"} da lista. Eles continuam no 🧺 Escolher pra marcar de novo com um toque.`, { title: "Tirar comprados", icon: "🧹", confirm: true, danger: false, confirmLabel: "Tirar" });
   if (!ok) return;
   const beforeExtras = kitchenDb.extras.slice();
   const beforeRecent = kitchenDb.extrasRecent;
   kitchenDb.extras = kitchenDb.extras.filter((x) => !bought.includes(x));
-  bought.slice().reverse().forEach((x) => rememberExtra(x.name, x.aisle));
+  bought.slice().reverse().filter((x) => !x.itemId).forEach((x) => rememberExtra(x.name, x.aisle));
   if (!saveKitchenDb()) {
     kitchenDb.extras = beforeExtras;
     kitchenDb.extrasRecent = beforeRecent;
@@ -317,31 +383,24 @@ async function copyShopping() {
  * Ações e abertura da página
  * ------------------------------------------------------------------- */
 function onKitchenDataReplaced() {
-  renderShopping();
+  renderAll();
 }
 
 tobaActions({
   moveShopWeek: (el) => {
     shopMonday = kitchenAddDays(shopMonday, 7 * Number(el.dataset.dir));
-    renderShopping();
+    renderAll();
   },
   toggleShopItem,
   uncheckAll,
   copyShopping,
-  openExtraSheet,
-  pickExtraAisle: (el) => {
-    extraAisle = el.dataset.aisle;
-    extraAisleTouched = true;
-    renderExtraSheet();
+  shopTab: (el) => setShopTab(el.dataset.tab),
+  filterPick: (el) => {
+    pickQuery = el.value;
+    renderPick();
   },
-  guessExtraAisle,
-  saveExtra,
-  readdExtra: (el) => {
-    if (addExtra(el.dataset.name, el.dataset.aisle)) {
-      renderExtraSheet();
-      renderShopping();
-    }
-  },
+  togglePick,
+  addOther,
   removeExtra,
   clearBoughtExtras,
 });
@@ -350,8 +409,10 @@ tobaActions({
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) {
     kitchenDb = loadKitchenDb();
-    renderShopping();
+    renderAll();
   }
 });
 
-renderShopping();
+// Lista vazia abre no Escolher; com coisa, abre na Lista (?aba=escolher força)
+const startTab = new URLSearchParams(window.location.search).get("aba");
+setShopTab(startTab === "escolher" || !kitchenShoppingList(kitchenDb, shopMonday).count ? "pick" : "list");
