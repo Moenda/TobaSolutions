@@ -49,6 +49,14 @@
         </span>
         <span class="toba-hub-chevron">›</span>
       </a>
+      <a class="toba-hub-card" href="TobaKitchen-Compras.html">
+        <span class="toba-hub-icon">🛒</span>
+        <span class="toba-hub-text">
+          <span class="toba-hub-title">Lista de compras</span>
+          <span class="toba-hub-desc" id="hubShopDesc">Ingredientes das receitas + o que mais precisar, por seção do mercado.</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </a>
     </nav>
 
     <div class="section-title">👨‍🍳 Seu placar</div>
@@ -68,6 +76,10 @@
         : k.weekPlanned
           ? `${k.weekPlanned} ${k.weekPlanned === 1 ? "receita programada" : "receitas programadas"} nesta semana`
           : "Escolhe o que comer cada dia e o Toba monta a lista do mercado.";
+      const pending = kitchenShoppingPending(kitchenDb, kitchenWeekMonday());
+      document.getElementById("hubShopDesc").textContent = pending
+        ? `${pending} ${pending === 1 ? "item" : "itens"} pra pegar no mercado`
+        : "Ingredientes das receitas + o que mais precisar, por seção do mercado.";
       const tile = (label, value, sub) => `
         <div class="toba-stat">
           <span class="toba-stat-label">${label}</span>
@@ -84,7 +96,10 @@
       renderKitchenHub();
     }
     window.addEventListener("pageshow", (event) => {
-      if (event.persisted) renderKitchenHub();
+      if (event.persisted) {
+        kitchenDb = loadKitchenDb();
+        renderKitchenHub();
+      }
     });
     renderKitchenHub();
   </script>

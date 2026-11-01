@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="icon" href="../icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="css/kitchen-base.css" />
+  <title>Toba Kitchen | Lista de compras</title>
+</head>
+
+<body>
+  <div class="container">
+    <header class="toba-header">
+      <a class="toba-back" href="TobaKitchen-Index.html" data-label="Voltar para o Toba Kitchen" aria-label="Voltar para o Toba Kitchen">‹</a>
+      <a class="toba-titles" href="TobaKitchen-Index.html">
+        <span class="toba-app">🍳 Toba Kitchen</span>
+        <span class="toba-page">🛒 Lista de compras</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-add-btn" data-click="openExtraSheet">+ Item</button>
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Semana de onde vêm os ingredientes das receitas -->
+    <div class="kt-week-nav">
+      <button type="button" class="round-btn" data-click="moveShopWeek" data-dir="-1" aria-label="Semana anterior">‹</button>
+      <span class="kt-week-label" id="shopWeekLabel"></span>
+      <button type="button" class="round-btn" data-click="moveShopWeek" data-dir="1" aria-label="Próxima semana">›</button>
+    </div>
+    <div class="kt-shop-progress"><span id="shopSummary"></span><span id="shopProgress"></span></div>
+    <div class="progress-track"><div class="progress-fill kt-fill" id="shopFill"></div></div>
+    <button type="button" class="kt-add-extra" data-click="openExtraSheet">➕ Item avulso <span class="text-muted kt-small">papel higiênico, ração, café...</span></button>
+    <div id="shopList"></div>
+    <button type="button" class="btn btn-secondary kt-clear-extras" id="clearExtrasBtn" data-click="clearBoughtExtras" hidden>🧹 Tirar avulsos comprados</button>
+    <div class="btn-row">
+      <button type="button" class="btn btn-secondary" data-click="uncheckAll">↺ Desmarcar tudo</button>
+      <button type="button" class="btn kt-btn-fire" data-click="copyShopping">📤 Mandar lista</button>
+    </div>
+  </div>
+
+  <div id="tobaSettingsExtra" hidden></div>
+
+  <!-- Item avulso (fica aberta pra pôr vários seguidos; fecha no ✕) -->
+  <div class="toba-modal" id="extraSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>➕ Item avulso</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form id="extraForm" data-submit="saveExtra" autocomplete="off">
+        <div class="form-group">
+          <label for="extraName">O que comprar?</label>
+          <input type="text" class="form-control" id="extraName" maxlength="40" placeholder="Ex.: Café pra V60" data-input="guessExtraAisle" enterkeyhint="done" />
+        </div>
+        <div class="form-group">
+          <label for="extraQty">Quanto? <span class="text-muted kt-small">opcional</span></label>
+          <input type="text" class="form-control" id="extraQty" maxlength="20" placeholder="Ex.: 2 pacotes" enterkeyhint="done" />
+        </div>
+        <div class="kt-field-label">Categoria</div>
+        <div class="kt-aisle-grid" id="extraAisles"></div>
+        <div id="extraRecent"></div>
+        <div class="toba-sheet-footer">
+          <button type="submit" class="btn kt-btn-fire">➕ Pôr na lista</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../assets/toba-common.js"></script>
+  <script src="js/kitchen-recipes.js"></script>
+  <script src="js/kitchen-core.js"></script>
+  <script src="js/compras.js"></script>
+  <script src="../assets/pwa-register.js"></script>
+</body>
+
+</html>

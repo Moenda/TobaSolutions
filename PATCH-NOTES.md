@@ -1063,3 +1063,27 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.52 - Visor da balanca com folha de quadradinhos e hub do Racing so com os modulos`
+
+---
+
+## v1.53 — 🛒 Modo lista de compras com itens avulsos
+
+**Arquivos novos/alterados:** `TobaKitchen/TobaKitchen-Compras.html` (NOVO), `TobaKitchen/js/compras.js` (NOVO), `TobaKitchen/TobaKitchen-Index.html`, `TobaKitchen/TobaKitchen-Semana.html`, `TobaKitchen/js/semana.js`, `TobaKitchen/js/kitchen-recipes.js`, `TobaKitchen/js/kitchen-core.js`, `TobaKitchen/css/kitchen-base.css`, `sw.js`, `CLAUDE.md`
+
+1. **🛒 Lista de compras virou módulo:** card novo no hub do Kitchen ("N itens pra pegar no mercado"). A lista saiu de dentro da Semana e ganhou página própria; o botão 🛒 da Semana continua lá e abre a lista daquela semana (dá pra trocar de semana pelas setinhas).
+2. **➕ Itens avulsos:** botão **+ Item** pra pôr qualquer coisa além das receitas (papel higiênico, ração do Killua e do Gon, café pra V60...), com quantidade opcional e categoria em quadradinhos. A folha fica aberta pra pôr vários seguidos e já chuta a categoria pelo nome ("ração" → 🐾 Pets, "detergente" → 🧽 Limpeza). Nome repetido não duplica.
+3. **🔤 Categorias em ordem alfabética:** avulsos e ingredientes das receitas aparecem juntos na mesma categoria, em ordem alfabética dentro de cada uma, com "N pra pegar" no título. Categorias novas: 🥖 Padaria, 🥤 Bebidas, 🧽 Limpeza, 🧴 Higiene, 🐾 Pets e 📦 Outros.
+4. **🧹 Comprou, tirou:** avulso marcado continua na lista (vale pra qualquer semana) até tocar no ✕ ou em "🧹 Tirar avulsos comprados". O que sai fica em "↺ Já comprou antes" no + Item: um toque e volta pra lista. "📤 Mandar lista" já leva os avulsos com a quantidade.
+
+**Dados:** campos novos opcionais no `TOBA_KITCHEN_DB`: `extras` (itens avulsos) e `extrasRecent` (já comprou antes). Bancos e backups antigos ganham listas vazias ao abrir/importar; nada do que já existia muda (os marcados das receitas continuam em `shopping` por semana). `sw.js`: 2 arquivos novos no PRECACHE, VERSION `toba-v20`. Não precisa de APK novo.
+
+**Como testar:**
+- Kitchen → Hub: card 🛒 Lista de compras com a contagem.
+- Lista → + Item → "Papel higiênico" (cai em Higiene sozinho), "12 rolos" → Pôr na lista → "Ração" → Pôr na lista → ✕. Os dois aparecem nas categorias certas, misturados em A–Z com os ingredientes das receitas.
+- Marcar um avulso → aparece "🧹 Tirar avulsos comprados (1)" → tirar → + Item mostra ele em "↺ Já comprou antes" → tocar volta pra lista.
+- Trocar de semana pelas setas: avulsos continuam; os ingredientes mudam conforme a programação.
+- Semana → 🛒 Lista de compras (N pra pegar) abre a lista daquela semana.
+- ⚙️ → baixar backup → importar de volta (e um backup antigo da v1.52): nada some.
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.53 - Lista de compras virou modulo do Kitchen com itens avulsos por categoria em ordem alfabetica`

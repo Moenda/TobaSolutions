@@ -19,12 +19,21 @@ const KITCHEN_MEALS = [
 ];
 
 // Seções do mercado (ordem da lista de compras)
+// Seções do mercado. A `key` nunca muda (item avulso da lista grava ela);
+// a ordem aqui é só a ordem na tela. v1.53: padaria, bebidas e as de fora
+// da cozinha (limpeza, higiene, pets, outros) pros itens avulsos.
 const KITCHEN_AISLES = [
   { key: "horti", icon: "🥬", name: "Hortifruti" },
   { key: "acougue", icon: "🥩", name: "Açougue" },
-  { key: "frios", icon: "🧀", name: "Frios e laticínios" },
+  { key: "frios", icon: "🧀", name: "Frios e laticínios", short: "Frios" },
+  { key: "padaria", icon: "🥖", name: "Padaria" },
   { key: "mercearia", icon: "🥫", name: "Mercearia" },
+  { key: "bebidas", icon: "🥤", name: "Bebidas" },
   { key: "temperos", icon: "🧂", name: "Temperos" },
+  { key: "limpeza", icon: "🧽", name: "Limpeza" },
+  { key: "higiene", icon: "🧴", name: "Higiene" },
+  { key: "pet", icon: "🐾", name: "Pets" },
+  { key: "outros", icon: "📦", name: "Outros" },
 ];
 
 // staple: básico de casa (sal, óleo...). Não conta como "falta" na busca e
@@ -484,6 +493,28 @@ function kitchenPlanOfWeek(db, monday) {
  * "2 colheres de sopa + 1 colher de chá"). key = id do ingrediente.
  * Devolve { buy: [por seção], home: [...], staples: [...], count }.
  * home = está na despensa marcada na busca; staples = básicos (confere se tem). */
+function kitchenAisle(key) {
+  return KITCHEN_AISLES.find((a) => a.key === key) || null;
+}
+
+// Nome igual ao de um ingrediente do catálogo (sem ligar pra maiúscula/acento)
+function kitchenFindIngredientByName(name) {
+  const norm = kitchenNormalizeText(name);
+  if (!norm) return null;
+  const id = Object.keys(KITCHEN_INGREDIENTS).find((key) => kitchenNormalizeText(KITCHEN_INGREDIENTS[key].name) === norm);
+  return id ? { id, ...KITCHEN_INGREDIENTS[id] } : null;
+}
+
+function kitchenNormalizeText(text) {
+  return String(text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+}
+
+// Itens avulsos da lista (v1.53): moram em db.extras e valem pra toda semana
+// até sair da lista. Seção desconhecida aparece em "Outros" (o valor gravado fica).
+function kitchenExtrasOf(db) {
+  return (db && Array.isArray(db.extras) ? db.extras : []).filter((x) => x && typeof x === "object" && String(x.name || "").trim());
+}
+
 function kitchenShoppingList(db, monday) {
   const pantry = new Set(db && Array.isArray(db.pantry) ? db.pantry : []);
   const items = {};
@@ -498,7 +529,8 @@ function kitchenShoppingList(db, monday) {
       if (!ing.optional) item.optional = false;
     });
   });
-  const list = Object.values(items).sort((a, b) => a.info.name.localeCompare(b.info.name, "pt-BR"));
+  const byName = (a, b) => a.info.name.localeCompare(b.info.name, "pt-BR", { sensitivity: "base" });
+  const list = Object.values(items).sort(byName);
   list.forEach((item) => {
     const units = Object.keys(item.amounts);
     const counted = units.filter((u) => u !== "gosto");
@@ -507,9 +539,32 @@ function kitchenShoppingList(db, monday) {
   const staples = list.filter((i) => i.info.staple);
   const home = list.filter((i) => !i.info.staple && pantry.has(i.id));
   const toBuy = list.filter((i) => !i.info.staple && !pantry.has(i.id));
-  const buy = KITCHEN_AISLES.map((aisle) => ({ ...aisle, items: toBuy.filter((i) => (i.info.aisle || "mercearia") === aisle.key) }))
+  const extras = kitchenExtrasOf(db).map((x) => {
+    const aisle = kitchenAisle(x.aisle) ? x.aisle : "outros";
+    const known = kitchenFindIngredientByName(x.name);
+    return {
+      key: String(x.id),
+      id: String(x.id),
+      extra: true,
+      checked: x.checked === true,
+      info: { name: String(x.name).trim(), emoji: known ? known.emoji : kitchenAisle(aisle).icon, aisle },
+      recipes: [],
+      optional: false,
+      amountText: String(x.qty || "").trim(),
+    };
+  });
+  const buyAll = [...toBuy, ...extras].sort(byName);
+  const buy = KITCHEN_AISLES.map((aisle) => ({ ...aisle, items: buyAll.filter((i) => (i.info.aisle || "mercearia") === aisle.key) }))
     .filter((group) => group.items.length);
-  return { buy, home, staples, count: toBuy.length };
+  return { buy, home, staples, count: buyAll.length, extras: extras.length };
+}
+
+// Quantos itens da lista ainda faltam pegar (semana + avulsos), pro hub e pro botão da Semana
+function kitchenShoppingPending(db, monday) {
+  const shop = kitchenShoppingList(db, monday);
+  const week = db && db.shopping && db.shopping[monday];
+  const checked = new Set(week && Array.isArray(week.checked) ? week.checked : []);
+  return shop.buy.flatMap((g) => g.items).filter((i) => (i.extra ? !i.checked : !checked.has(i.key))).length;
 }
 
 function kitchenCookedOf(db) {

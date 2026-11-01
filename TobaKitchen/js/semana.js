@@ -1,6 +1,7 @@
 /* =====================================================================
  * Toba Kitchen · Programação da Semana (js/semana.js)
- * Receitas por dia (seg a dom) e a lista de compras que sai delas.
+ * Receitas por dia (seg a dom). A lista de compras que sai delas mora na
+ * página própria desde a v1.53 (TobaKitchen-Compras.html, js/compras.js).
  * Depende de ../assets/toba-common.js, kitchen-recipes.js e kitchen-core.js.
  * ===================================================================== */
 const KITCHEN_WEEK_NAMES = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
@@ -43,7 +44,7 @@ function renderWeek() {
   const thisWeek = kitchenWeekMonday(today);
   document.getElementById("weekLabel").textContent = `${weekRangeLabel(weekMonday)}${weekMonday === thisWeek ? " · esta semana" : ""}`;
   const plan = kitchenPlanOfWeek(kitchenDb, weekMonday);
-  const shop = kitchenShoppingList(kitchenDb, weekMonday);
+  const pending = kitchenShoppingPending(kitchenDb, weekMonday);
   const daysWithFood = new Set(plan.map((p) => p.date));
   const kcal = [...daysWithFood].reduce((sum, day) => sum + kitchenDayKcal(kitchenDb, day), 0);
   const done = plan.filter(planEntryDone).length;
@@ -57,8 +58,8 @@ function renderWeek() {
     tile("🍽️ Receitas", `<span class="text-coral">${plan.length}</span>`, plan.length ? `${done} já feitas` : "nada programado")
     + tile("🔥 Por dia", daysWithFood.size ? `${Math.round(kcal / daysWithFood.size)} kcal` : "--", "1 porção de cada");
   const shopBtn = document.getElementById("shopBtn");
-  shopBtn.hidden = !plan.length;
-  shopBtn.textContent = `🛒 Lista de compras (${shop.count} ${shop.count === 1 ? "item" : "itens"})`;
+  shopBtn.hidden = !plan.length && !kitchenExtrasOf(kitchenDb).length;
+  shopBtn.textContent = `🛒 Lista de compras (${pending} pra pegar)`;
   const toCopy = weekCopyCandidates().length;
   const copyBtn = document.getElementById("copyWeekBtn");
   copyBtn.hidden = !toCopy;
@@ -300,110 +301,9 @@ function goToRecipePage(params) {
   window.location.href = `TobaKitchen-Receitas.html?${new URLSearchParams(params).toString()}`;
 }
 
-/* ---------------------------------------------------------------------
- * Lista de compras (marcados ficam guardados por semana, pelo id do ingrediente)
- * ------------------------------------------------------------------- */
-function shoppingChecked() {
-  const week = kitchenDb.shopping[weekMonday];
-  return new Set(week && Array.isArray(week.checked) ? week.checked : []);
-}
-
+// Lista de compras (v1.53: página própria, abre na semana que está na tela)
 function openShopping() {
-  showWeekView("viewShopping");
-  tobaSetHeader({ page: "🛒 Lista de compras", back: "backToWeek" });
-  renderShopping();
-}
-
-function shopRow(item, checked, countable) {
-  const isChecked = checked.has(item.key);
-  return `
-    <label class="kt-shop-item${isChecked ? " is-checked" : ""}">
-      <input type="checkbox" data-change="toggleShopItem" data-key="${escapeHtml(item.key)}"${isChecked ? " checked" : ""}${countable ? "" : ' data-extra="1"'} />
-      <span class="kt-shop-text">
-        <span class="kt-shop-name">${item.info.emoji} ${escapeHtml(item.info.name)}${item.optional ? ' <span class="text-muted">(opcional)</span>' : ""}</span>
-        <span class="kt-shop-for">${escapeHtml(item.recipes.join(", "))}</span>
-      </span>
-      <span class="kt-shop-qty">${item.amountText}</span>
-    </label>`;
-}
-
-function renderShopping() {
-  const shop = kitchenShoppingList(kitchenDb, weekMonday);
-  const checked = shoppingChecked();
-  const buyItems = shop.buy.flatMap((g) => g.items);
-  const got = buyItems.filter((i) => checked.has(i.key)).length;
-  document.getElementById("shopWeekLabel").textContent = `Semana ${weekRangeLabel(weekMonday)}`;
-  document.getElementById("shopProgress").textContent = buyItems.length ? `🛒 ${got}/${buyItems.length} no carrinho` : "";
-  document.getElementById("shopFill").style.width = buyItems.length ? `${Math.round((got / buyItems.length) * 100)}%` : "0%";
-  let html = "";
-  if (!buyItems.length && !shop.home.length && !shop.staples.length) {
-    html = tobaEmpty("🛒", "Lista vazia", "Programa umas receitas na semana que a lista aparece aqui.");
-  }
-  if (!buyItems.length && (shop.home.length || shop.staples.length)) {
-    html += '<div class="hint-box kt-hint">🎉 Pelo que você marcou no 🧺, não precisa comprar nada!</div>';
-  }
-  shop.buy.forEach((group) => {
-    html += `<div class="section-title">${group.icon} ${group.name}</div><div class="card kt-shop-group">${group.items.map((i) => shopRow(i, checked, true)).join("")}</div>`;
-  });
-  if (shop.home.length) {
-    html += `<div class="section-title">🏠 Já tem em casa <span class="text-muted kt-small">marcado no 🧺</span></div><div class="card kt-shop-group">${shop.home.map((i) => shopRow(i, checked, false)).join("")}</div>`;
-  }
-  if (shop.staples.length) {
-    html += `<div class="section-title">🧂 Básicos <span class="text-muted kt-small">confere se tem</span></div><div class="card kt-shop-group">${shop.staples.map((i) => shopRow(i, checked, false)).join("")}</div>`;
-  }
-  document.getElementById("shopList").innerHTML = html;
-}
-
-function toggleShopItem(el) {
-  const checked = shoppingChecked();
-  if (el.checked) checked.add(el.dataset.key);
-  else checked.delete(el.dataset.key);
-  kitchenDb.shopping[weekMonday] = { checked: [...checked] };
-  saveKitchenDb({ silent: true });
-  renderShopping();
-}
-
-async function uncheckAll() {
-  if (!shoppingChecked().size) return;
-  const ok = await showPageMessage("Desmarcar todos os itens da lista?", { title: "Desmarcar tudo", confirm: true, confirmLabel: "Desmarcar" });
-  if (!ok) return;
-  delete kitchenDb.shopping[weekMonday];
-  saveKitchenDb();
-  renderShopping();
-}
-
-// Texto da lista: só o que falta pegar + os básicos pra conferir
-function shoppingText() {
-  const shop = kitchenShoppingList(kitchenDb, weekMonday);
-  const checked = shoppingChecked();
-  const lines = [`🛒 Lista do Toba · ${weekRangeLabel(weekMonday)}`];
-  shop.buy.forEach((group) => {
-    const items = group.items.filter((i) => !checked.has(i.key));
-    if (!items.length) return;
-    lines.push("", `${group.icon} ${group.name}`);
-    items.forEach((i) => lines.push(`• ${i.info.name}: ${i.amountText}`));
-  });
-  const staples = shop.staples.filter((i) => !checked.has(i.key));
-  if (staples.length) lines.push("", `🧂 Confere se tem: ${staples.map((i) => i.info.name.toLowerCase()).join(", ")}`);
-  return lines.join("\n");
-}
-
-async function copyShopping() {
-  const text = shoppingText();
-  if (navigator.share) {
-    try {
-      await navigator.share({ title: "Lista de compras", text });
-      return;
-    } catch (err) {
-      if (err && err.name === "AbortError") return; // desistiu de mandar
-    }
-  }
-  try {
-    await navigator.clipboard.writeText(text);
-    tobaToast("📋 Lista copiada! Cola no WhatsApp.");
-  } catch (err) {
-    showPageMessage(text, { title: "Copia daqui", icon: "📋" });
-  }
+  window.location.href = `TobaKitchen-Compras.html?semana=${weekMonday}`;
 }
 
 /* ---------------------------------------------------------------------
@@ -444,10 +344,6 @@ tobaActions({
   },
   copyLastWeek,
   openShopping,
-  backToWeek: openWeek,
-  toggleShopItem,
-  uncheckAll,
-  copyShopping,
 });
 
 // Voltou do modo cozinha pelo "‹": redesenha (pode ter virado ✅)

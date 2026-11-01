@@ -52,7 +52,7 @@ Ao terminar um patch, informe a lista de arquivos alterados e o que testar — n
   - **Toba Bank** — Gastos, Investimentos, Raxador (divisão de contas).
   - **Toba Health** — Pesagem (balança) e Treinos (inclui Treino de Força).
   - **Toba Routine** — Rotina (tarefas com XP e cobranças, desde v1.41), Task (tarefas não rotineiras com sugestão de dia, desde v1.42), Agenda (24 h, desde v1.46) e Calendar (eventos com dia marcado, desde v1.49).
-  - **Toba Kitchen** — Livro de Receitas (receitas no código, busca pelo que tem em casa, modo cozinha) e Programação da Semana (lista de compras), desde v1.43.
+  - **Toba Kitchen** — Livro de Receitas (receitas no código, busca pelo que tem em casa, modo cozinha) e Programação da Semana, desde v1.43, e Lista de compras com itens avulsos (página própria desde v1.53).
   - **Toba Racing** — Combustível (abastecimentos e histórico de km/l de tanque cheio a tanque cheio), desde v1.51. Ainda não dá XP.
 - Única dependência externa: Chart.js **fixado** em `chart.js@4.4.7` (jsdelivr). Nunca usar versão flutuante.
 - Commits seguem o padrão `vX.YY - descrição` (ex.: `v1.16 - Novo modulo de treino de força...`).
@@ -125,7 +125,9 @@ TobaKitchen/                 (desde v1.43; ver 3.11)
   TobaKitchen-Receitas.html  Livro de Receitas + "O que tem aí?" + detalhe + Modo cozinha
                              -> js/kitchen-recipes.js + ../TobaHealth/js/health-metrics.js + ../TobaRoutine/js/routine-metrics.js
                                 + ../assets/toba-player.js + js/kitchen-core.js + js/receitas.js
-  TobaKitchen-Semana.html    Programação da Semana + lista de compras -> mesma ordem, com js/semana.js no fim
+  TobaKitchen-Semana.html    Programação da Semana -> mesma ordem, com js/semana.js no fim
+  TobaKitchen-Compras.html   Lista de compras (receitas da semana + itens avulsos), desde v1.53; ?semana=AAAA-MM-DD abre aquela semana
+                             -> js/kitchen-recipes.js + js/kitchen-core.js + js/compras.js (não carrega o player: não dá XP)
   js/kitchen-recipes.js    CATÁLOGO das receitas e ingredientes (no código, não no banco) + regras puras
                            (falta o quê, lista de compras, resumo). Também no portal
   css/kitchen-base.css
@@ -441,7 +443,9 @@ Arquivos: [TobaKitchen/js/kitchen-core.js](TobaKitchen/js/kitchen-core.js) (dono
   cooked: [ { id: "c-<ts>-<rand4>", recipeId, date: "AAAA-MM-DD", doneAt: ms, servings, planId? } ], // contador "receitas feitas"
   pantry: [ "id de ingrediente" ],    // marcados em "O que tem aí?" (vale pra busca e pro "Já tem em casa" da lista)
   plan: [ { id: "p-<ts>-<rand4>", date: "AAAA-MM-DD", recipeId, meal: "cafe"|"almoco"|"lanche"|"janta"|"sobremesa", servings } ],
-  shopping: { "<segunda AAAA-MM-DD>": { checked: [ "id de ingrediente" ] } } // itens marcados na lista de cada semana
+  shopping: { "<segunda AAAA-MM-DD>": { checked: [ "id de ingrediente" ] } }, // itens marcados na lista de cada semana
+  extras: [ { id: "x-<ts>-<rand4>", name, aisle /* key de KITCHEN_AISLES */, qty /* texto livre, "" = sem */, checked: bool, addedAt: ms } ], // v1.53, opcional
+  extrasRecent: [ { name, aisle } ] // v1.53, opcional: avulsos que saíram da lista ("↺ Já comprou antes"), mais novo primeiro, até 24
 }
 ```
 
@@ -450,6 +454,7 @@ Arquivos: [TobaKitchen/js/kitchen-core.js](TobaKitchen/js/kitchen-core.js) (dono
 - **Programação (Semana, desde v1.48):** a folha "➕ Receita" fica aberta (fecha no ✕); receita já no dia fica contornada de amarelo e tocar de novo tira a última entrada **não feita** dela. "📋 Copiar da semana anterior" cria entradas novas (id novo) no mesmo dia da semana/refeição/porções e pula o que já está igual (`data|recipeId|meal`), então tocar duas vezes não duplica.
 - **Falta o quê** (`kitchenMatchRecipe`): só ingrediente não `optional` e não `staple` (sal, açúcar, óleo, azeite, temperos) conta como falta.
 - **Lista de compras** (`kitchenShoppingList`): soma as receitas da semana (seg–dom, `kitchenWeekMonday`) já na quantidade de porções de cada entrada, por ingrediente (unidades diferentes ficam "2 colheres de sopa + 1 colher de chá"). Seções: comprar (por `KITCHEN_AISLES`), "🏠 Já tem em casa" (está no `pantry`) e "🧂 Básicos" (`staple`). Só cálculo; o que fica gravado são os marcados em `shopping`.
+- **Itens avulsos** (desde v1.53, página `TobaKitchen-Compras.html` / `compras.js`): `extras` entram no mesmo `kitchenShoppingList` (`extra: true`, `key` = id do avulso), misturados com os ingredientes na seção (`aisle`) e **em ordem alfabética dentro de cada seção** (`localeCompare` pt-BR, sem ligar pra maiúscula). Avulso não é por semana: vale em qualquer semana até sair (✕ ou "🧹 Tirar avulsos comprados"), e o marcado dele é o próprio `checked` (o dos ingredientes continua em `shopping[segunda]`). Saiu da lista = vai pra `extrasRecent`. `aisle` desconhecido aparece em "📦 Outros" sem regravar. Nome igual (sem acento/maiúscula) não duplica. `kitchenShoppingPending` = quantos faltam pegar (hub e botão da Semana). Seções novas do `KITCHEN_AISLES` (padaria, bebidas, limpeza, higiene, pet, outros): a `key` nunca muda, a ordem do array é só a da tela.
 - **Fiz / comi**: `kitchenMarkCooked` (modo cozinha no fim, "✅ Já fiz" na receita ou "✅ Fiz / comi" na semana, este com `planId`). Desfazer = apagar a entrada. Antes de contar, `kitchenAskImprovised` pergunta "fez sem o X?" quando pelo `pantry` faltava exatamente 1 ingrediente (despensa vazia = não pergunta); sim = `cooked[].improvised: [id]` (campo opcional).
 - **Conquistas no Perfil** (desde v1.44): `calcKitchenPlayer()` (kitchen-recipes.js) devolve a `timeline` de números (`kitchenCooked`, `kitchenDistinct`, `kitchenMeals`, `kitchenFullDay`, `kitchenImprovised`, `kitchenRepeat`, `kitchenLong`, `kitchenSweet`, `kitchenNight`, `kitchenWeekPlan`) e o `computePlayer()` confere as conquistas `kt-*` (categoria "🍳 Cozinha"). Receita feita **não** dá XP sozinha, só as conquistas. "Zerou o livro" usa o tamanho atual de `KITCHEN_RECIPES`: receita nova tranca de novo até ser feita. Refeição de uma vez feita = a da programação (`planId`); fora dela vale toda `meals` da receita.
 - **Modo cozinha**: guarda em `toba_kitchen_live`; timer por passo é horário (`endsAt`), nunca contagem. Tela acesa igual ao treino ao vivo (Wake Lock / `TOBA_NATIVE.keepScreenOn`), obedecendo `toba_kitchen_prefs.keepAwake`.
@@ -485,7 +490,7 @@ Arquivos: [TobaRacing/js/racing-core.js](TobaRacing/js/racing-core.js) (dono do 
 ## 4. Service worker / PWA
 
 - [sw.js](sw.js): páginas/JS/CSS **network-first** (timeout 4 s, cai no cache); jsdelivr **cache-first**. Sem cópia no cache, só **navegação** (`request.mode === "navigate"`) cai no `index.html`; JS/CSS faltando devolvem erro (desde v1.37 — antes o HTML ia no lugar do script e a tela quebrava offline sem aviso). O network-first usa `fetch(..., { cache: "no-cache" })` de propósito: o GitHub Pages manda `max-age=600`, e sem isso o celular misturava HTML novo com JS antigo logo depois de publicar. Não tire.
-- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v19"` → `"toba-v20"`…). Sem isso, o app offline fica sem o arquivo.
+- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v20"` → `"toba-v21"`…). Sem isso, o app offline fica sem o arquivo.
 - Atualizar a versão do Chart.js exige trocar a URL nos HTML **e** no `PRECACHE`.
 - Toda página nova deve incluir `<script src="../assets/pwa-register.js"></script>` (ou `assets/...` na raiz), as metas de `color-scheme: dark` e o link do manifest, como as existentes.
 
