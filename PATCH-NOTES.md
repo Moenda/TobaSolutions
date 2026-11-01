@@ -1200,3 +1200,28 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.57 - Toba Places com mapa usando a chave da CARTO e bairro/regiao dos lugares com chips, filtro e preenchimento automatico`
+
+---
+
+## v1.58 — 🌍 Toba Places: pino não vai mais parar em Portugal
+
+**Arquivos alterados:** `TobaTurism/js/places-map.js`, `CLAUDE.md`
+
+1. **Bug:** lugar salvo só com o link curto do Maps (sem endereço) era procurado como "Nome, São Paulo", e o OpenStreetMap achava a freguesia **São Paulo de Lisboa** 🇵🇹. O pino ia pra Portugal e o mapa abria mostrando o oceano.
+2. **Busca presa na cidade:** agora o Toba acha o centro da cidade da lista e só procura numa área de ~65 km em volta dele. Resultado a mais de 80 km da cidade é jogado fora (aí o lugar fica "sem pino" e você toca no mapa).
+3. **Pino perdido aparece:** no 🗺️ Mapa, pino a mais de 80 km da cidade da lista aparece embaixo como **🌍 longe**. Toca em **🔎 Achar** que ele procura de novo (já preso na cidade), ou toca no nome e depois no mapa.
+4. **Mapa enquadra direito:** o pino perdido não entra mais no "enquadrar", então o mapa abre na cidade, não no Atlântico.
+5. Lista de viagem (ex.: cidade "Lisboa") funciona igual: a busca fica presa em Lisboa.
+6. **❔ no mapa:** botão novo na barra do 🗺️ Mapa explicando de onde vem cada pino (link comprido, link curto, Compartilhar › Toba, bairro) e o que fazer com "❔ sem pino", "🌍 longe" e pino no lugar errado.
+
+**Sobre pegar o endereço do link:** o link curto (`maps.app.goo.gl`) não dá pra abrir de dentro do site pra ler o endereço, porque o Google bloqueia (só com um servidor nosso). O link comprido (o do PC, com `@-23.5,-46.6` no meio) já traz o ponto exato, e **Compartilhar › Toba** traz o endereço.
+
+**Dados:** nada novo gravado (o centro da cidade fica só na memória). `sw.js` sem mudança. APK sem mudança.
+
+**Como testar:**
+- Lista de SP com um lugar que caiu em Portugal → 🗺️ Mapa: o mapa abre em SP e embaixo aparece "📌 Nome 🌍 longe" → 🔎 Achar 1 pino → pino volta pra SP (ou fica "sem pino" pra você tocar no mapa).
+- + Lugar só com o link curto e o nome → Salvar → 🗺️ Mapa: o pino cai em SP.
+- 🗺️ Mapa → ❔: abre a explicação com o nome da cidade da lista.
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.58 - Toba Places busca o pino so perto da cidade da lista e mostra pino perdido longe pra achar de novo, com ajuda no botao do mapa`
