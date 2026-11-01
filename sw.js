@@ -4,7 +4,7 @@
  * - Chart.js (CDN): cache primeiro, para os gráficos funcionarem offline.
  * - NUNCA mexe no localStorage: seus dados não passam por aqui.
  * Mudou a lista de arquivos? Aumente a versão abaixo. */
-const VERSION = "toba-v22";
+const VERSION = "toba-v23";
 const NETWORK_TIMEOUT_MS = 4000;
 
 const PRECACHE = [
@@ -19,6 +19,7 @@ const PRECACHE = [
   "./assets/pwa-register.js",
   "./assets/toba-common.css",
   "./assets/toba-common.js",
+  "./assets/toba-cloud.js",
   "./assets/portal.css",
   "./assets/portal.js",
   "./assets/toba-player.css",

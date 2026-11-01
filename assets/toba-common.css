@@ -1706,3 +1706,142 @@ body:has(> .toba-fullpage.active) > .container {
   white-space: nowrap;
 }
 
+
+/* ☁️ Conta Toba (toba-cloud.js, desde v1.59) */
+.tc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 0.9rem;
+}
+
+.tc-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 38px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tc-chip small {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.tc-chip.is-on {
+  border-color: var(--blue);
+  background: rgba(88, 166, 255, 0.14);
+  color: var(--text);
+}
+
+.tc-mode .tc-chip {
+  flex: 1;
+}
+
+.tc-error {
+  margin: 0 0 0.8rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(248, 81, 73, 0.4);
+  background: rgba(248, 81, 73, 0.1);
+  color: var(--coral);
+  font-size: 0.85rem;
+}
+
+.tc-hint {
+  margin: -0.4rem 0 0.9rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.tc-forgot {
+  margin-bottom: 0.6rem;
+}
+
+.tc-or {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin: 0.4rem 0 0.6rem;
+}
+
+.tc-google {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.tc-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0.7rem;
+}
+
+.tc-avatar {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface-3);
+  border: 2px solid var(--blue);
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.tc-user-name {
+  font-weight: 800;
+}
+
+.tc-user-mail {
+  color: var(--muted);
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+
+.tc-status {
+  margin-bottom: 1rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.tc-conflict {
+  margin-bottom: 0.8rem;
+}
+
+.tc-conflict-name {
+  font-weight: 800;
+  margin-bottom: 0.4rem;
+}
+
+.tc-conflict .tc-chip {
+  flex: 1;
+  border-radius: var(--radius);
+}
+
+#tobaCloudModal .back-nav-btn {
+  margin-bottom: 0.8rem;
+}
+
+.toba-icon-btn.tc-portal-btn.is-on {
+  border-color: var(--blue);
+}
+
+#tobaCloudSettingsItem {
+  margin-bottom: 1.2rem;
+}

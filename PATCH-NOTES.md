@@ -1225,3 +1225,49 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.58 - Toba Places busca o pino so perto da cidade da lista e mostra pino perdido longe pra achar de novo, com ajuda no botao do mapa`
+
+---
+
+## v1.59 — ☁️ Conta Toba: login e o teu Toba inteiro na nuvem
+
+**Arquivos novos/alterados:** `assets/toba-cloud.js` (NOVO), `assets/toba-common.css`, `index.html`, `sw.js`, `CLAUDE.md`, e todas as páginas (`Toba-Perfil.html`, `TobaBank/*.html`, `TobaHealth/*.html`, `TobaKitchen/*.html`, `TobaRacing/*.html`, `TobaRoutine/*.html`, `TobaTurism/*.html`) ganharam a linha do `toba-cloud.js`.
+
+1. **Botão ☁️ no portal (ao lado da ⚙️) e "☁️ Conta Toba" na ⚙️ de todos os apps:** cria conta com e-mail e senha ou entra com Google (no navegador). Esqueci a senha manda o e-mail zoeiro.
+2. **Teu Toba inteiro vai pra nuvem:** Bank, Health, Routine, Kitchen, Racing, Tourism, Perfil e as preferências dos cards. Entrou num celular novo, no PC ou no app Android = tudo aparece. Cada pessoa tem o banco dela.
+3. **Local primeiro:** o celular continua sendo a casa dos dados. Sem internet tudo funciona e sobe quando a rede volta. Sem conta, o Toba fica igualzinho era.
+4. **Sobe sozinho:** gravou qualquer coisa, uns 2 segundos depois já tá na nuvem. Mudou em outro aparelho? Ao abrir, o Toba puxa e recarrega a tela ("☁️ Atualizado com a nuvem").
+5. **Nada se perde:** no primeiro login baixa um backup geral e guarda na nuvem uma cópia "antes da nuvem". Se este aparelho e a nuvem tiverem dados diferentes, o Toba pergunta com qual ficar (📱 ou ☁️, com tamanho e data). Mudou nos dois lugares sem internet? O mais novo ganha e o outro vira cópia guardada. Ainda tem 1 cópia por dia de cada app (7 dias) em ☁️ › 🕰️ Versões guardadas, pra baixar e restaurar pelo portal.
+6. **Chips "Vai pra nuvem":** desliga um app e ele fica só neste aparelho (ex.: Bank).
+7. **App Android:** funciona sem APK novo. Lá dentro entra com e-mail e senha (o Google não deixa login dentro de app). Entrou com Google no Chrome? ☁️ › "🔑 Criar senha pro app".
+
+**Dados:** Nenhuma mudança no formato dos bancos. Chave nova `toba_cloud_state` (estado da conta deste aparelho, ver CLAUDE.md 3.2 e 4.2). Ao descer dados da nuvem, o valor anterior do aparelho vai pro `<CHAVE>_AUTO_BACKUP` de sempre. Backups antigos continuam importáveis; importar backup com a conta ligada sobe o importado pra nuvem.
+
+**Como testar:**
+- Antes de tudo: portal ⚙️ › Dados & Backup › Baixar backup (seguro morreu de velho).
+- No Firebase, em Authentication › Configurações › Domínios autorizados, adiciona também `127.0.0.1` (o Live Server) pra testar local.
+- Portal › ☁️ › Criar conta. Tem que baixar o `toba_backup_antes_da_nuvem_...json` e aparecer "✅ Tudo na nuvem". No console do Firebase › Firestore aparece `users/<teu id>/apps/TOBA_BANK_DB` etc.
+- Muda um gasto, espera 3 s: o `at` do app no Firestore muda.
+- Abre em outro navegador/aba anônima, entra com a mesma conta: tudo aparece (se pedir "Com qual eu fico?", escolhe ☁️).
+- ☁️ › 🕰️ Versões guardadas: tem "Antes da nuvem" e "Cópia do dia".
+- Sem conta (aba anônima): o Toba abre igual era e o Firebase não é baixado.
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.59 - Conta Toba com login (e-mail/senha e Google) e todos os apps salvos na nuvem do Firebase, local primeiro, com copias de seguranca e escolha em conflito`
+
+---
+
+## v1.60 — 🗺️ Toba Places: mapa colorido e botão claro/escuro
+
+**Arquivos alterados:** `TobaTurism/js/places-map.js`, `TobaTurism/css/turism-base.css`, `CLAUDE.md`
+
+1. **Mapa colorido:** o estilo escuro da CARTO ficava todo preto e não dava pra ler rua nem nome. Agora o padrão é o **Voyager** (colorido, com ruas, parques e nomes bem visíveis), com a mesma chave da CARTO.
+2. **🌙 / ☀️ na barra do mapa:** troca na hora entre o colorido e o escuro. O Toba lembra a escolha nesse celular.
+
+**Dados:** nada novo no banco. A escolha do estilo fica só no navegador (`toba_turism_map_style`), não vai pra nuvem. `sw.js` sem mudança. APK sem mudança.
+
+**Como testar:**
+- Places → lista → 🗺️ Mapa: mapa colorido, dá pra ler as ruas. (Se aparecer o antigo, puxa pra atualizar.)
+- Toca em 🌙: fica escuro e o botão vira ☀️. Fecha e abre de novo: continua escuro. Toca em ☀️: volta o colorido.
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.60 - Toba Places com mapa colorido da CARTO por padrao e botao pra trocar claro/escuro`

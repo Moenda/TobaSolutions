@@ -562,8 +562,12 @@
 
 .tr-map .leaflet-container,
 .tr-map.leaflet-container {
-  background: #0b0f14;
+  background: #f2efe9; /* cor de fundo do Voyager enquanto carrega (v1.60) */
   font: inherit;
+}
+
+.tr-map.is-dark.leaflet-container {
+  background: #0b0f14;
 }
 
 .tr-map-legend {

@@ -1,7 +1,9 @@
 /* =====================================================================
  * Toba Turism · 🗺️ Mapa do Toba Places (desde v1.56)
  * - Mapa de verdade dentro do app: Leaflet (fixado em 1.9.4, jsdelivr) com
- *   o mapa do OpenStreetMap no estilo escuro da CARTO (Dark Matter).
+ *   o mapa do OpenStreetMap nos estilos da CARTO: colorido (Voyager, padrão
+ *   desde v1.60: o escuro ficava preto demais) ou escuro (Dark Matter), trocando
+ *   no 🌙/☀️ da barra (preferência só deste celular, TURISM_MAP_STYLE_KEY).
  *   Desde v1.57 a CARTO exige chave: TURISM_CARTO_KEY é a chave grátis do Rafa
  *   (5 mi de tiles/mês). Ela fica pública no site (é chave de navegador); pra
  *   trocar/limitar ao domínio, painel da CARTO (Basemaps). Nunca pôr em memória.
@@ -20,7 +22,20 @@
 const TURISM_LEAFLET_CSS = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css";
 const TURISM_LEAFLET_JS = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";
 const TURISM_CARTO_KEY = "cb1_4zv2_1_2e88aba5239e1a6ac05ddc60";
-const TURISM_TILES = `https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=${TURISM_CARTO_KEY}`;
+const TURISM_TILE_STYLES = { light: "voyager", dark: "dark_all" };
+const TURISM_MAP_STYLE_KEY = "toba_turism_map_style"; // "light" | "dark" (conveniência, não é dado)
+
+function turismTilesUrl(style) {
+  return `https://basemaps.cartocdn.com/rastertiles/${TURISM_TILE_STYLES[style] || TURISM_TILE_STYLES.light}/{z}/{x}/{y}.png?key=${TURISM_CARTO_KEY}`;
+}
+
+function turismMapStyle() {
+  try {
+    return localStorage.getItem(TURISM_MAP_STYLE_KEY) === "dark" ? "dark" : "light";
+  } catch (err) {
+    return "light";
+  }
+}
 const TURISM_TILES_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>';
 const TURISM_GEOCODE_URL = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=1&accept-language=pt-BR&q=";
 const TURISM_REVERSE_URL = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=16&addressdetails=1&accept-language=pt-BR";
@@ -81,6 +96,7 @@ function renderPlacesMap(list) {
     ? `<div class="tr-map-placing"><span>👆 Toca no mapa onde fica <b>${escapeHtml(placing.name)}</b></span><button type="button" class="chip-btn" data-click="cancelPinPlacing">Cancelar</button></div>`
     : `<button type="button" class="chip-btn tr-chip" data-click="mapLocate">📍 Perto de mim</button>
        ${missing.length ? `<button type="button" class="chip-btn tr-chip" data-click="mapFindAll">🔎 Achar ${missing.length} ${missing.length === 1 ? "pino" : "pinos"}</button>` : ""}
+       <button type="button" class="chip-btn tr-chip tr-map-help" data-click="mapToggleStyle" aria-label="Trocar mapa claro/escuro">${turismMapStyle() === "dark" ? "☀️" : "🌙"}</button>
        <button type="button" class="chip-btn tr-chip tr-map-help" data-click="mapHelp" aria-label="Como o mapa acha os lugares">❔</button>`;
 
   document.getElementById("mapMissing").innerHTML = missing.length && !placing
@@ -101,7 +117,7 @@ function drawPlacesMap(list) {
   if (!placesMap.map) {
     box.innerHTML = "";
     placesMap.map = L.map(box, { zoomControl: true, attributionControl: true }).setView([TURISM_MAP_DEFAULT.lat, TURISM_MAP_DEFAULT.lng], TURISM_MAP_DEFAULT.zoom);
-    L.tileLayer(TURISM_TILES, { maxZoom: 19, attribution: TURISM_TILES_ATTR }).addTo(placesMap.map);
+    placesMap.tiles = L.tileLayer(turismTilesUrl(turismMapStyle()), { maxZoom: 19, attribution: TURISM_TILES_ATTR }).addTo(placesMap.map);
     placesMap.layer = L.layerGroup().addTo(placesMap.map);
     placesMap.map.on("click", onPlacesMapClick);
     // Botões dentro do balão do pino (o Leaflet segura o clique; liga na mão)
@@ -117,6 +133,7 @@ function drawPlacesMap(list) {
   }
   setTimeout(() => placesMap.map && placesMap.map.invalidateSize(), 60);
   box.classList.toggle("is-placing", Boolean(placesMap.placingId));
+  box.classList.toggle("is-dark", turismMapStyle() === "dark");
 
   placesMap.layer.clearLayers();
   const pins = placesOfList(list.id).filter((p) => turismHasPin(p));
@@ -393,6 +410,19 @@ function mapFindAll() {
 }
 
 // ❔ da barra do mapa (v1.58): de onde vem cada pino e o que fazer quando erra
+// 🌙/☀️: mapa colorido (padrão) ou escuro
+function mapToggleStyle() {
+  const next = turismMapStyle() === "dark" ? "light" : "dark";
+  try {
+    localStorage.setItem(TURISM_MAP_STYLE_KEY, next);
+  } catch (err) {
+    /* sem storage: troca só agora */
+  }
+  if (placesMap.tiles) placesMap.tiles.setUrl(turismTilesUrl(next));
+  document.getElementById("placesMap").classList.toggle("is-dark", next === "dark");
+  renderAll();
+}
+
 function mapHelp() {
   const list = turismFindList(placesState.listId);
   const city = list?.city ? `"${list.city}"` : "da lista";
@@ -409,6 +439,7 @@ function mapHelp() {
 
 tobaActions({
   mapHelp,
+  mapToggleStyle,
   mapLocate,
   mapFindAll,
   mapPinPlace,
