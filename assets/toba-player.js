@@ -21,7 +21,7 @@
  *   { v: 1, createdAt: "AAAA-MM-DD",
  *     settings: { weeklyGoal: 1..7 },              // meta do streak (dias de treino por semana)
  *     seen: { xp, level, achievements: [ids] },    // o que já foi comemorado
- *     equipped: { title, avatar, frame, color } }  // recompensas escolhidas ("" = automático)
+ *     equipped: { title, avatar, frame, color, bg } } // recompensas escolhidas ("" = automático; bg desde v1.62)
  *   Campo novo: default em createEmptyPlayerDb() E em normalizePlayerDb().
  * - toba_player_prefs: { sound, vibrate } (preferência de tela).
  * - Ids de conquista/recompensa são gravados em seen/equipped: nunca troque.
@@ -318,7 +318,7 @@ function buildPlayerAchievements() {
     { id: "am-duelo", cat: "amizade", tier: "bronze", icon: "⚔️", name: "X1 marcado", desc: "Abriu o comparador contra um amigo de verdade. Que vença o mais monstro.", hint: "Compare teus troféus com um amigo.", metric: (s) => s.socialDuels, goal: 1 },
     { id: "am-placar", cat: "amizade", tier: "prata", icon: "👑", name: "Amassou no placar", desc: "Ganhou o placar do 📊 Duelo contra um amigo. Pode printar e mandar no grupo.", hint: "Ganhe o placar do Duelo contra um amigo.", metric: (s) => s.socialBeat, goal: 1 },
     { id: "am-placar3", cat: "amizade", tier: "ouro", icon: "🦁", name: "Rei da tropa", desc: "Ganhou o placar contra 3 amigos diferentes. Nunca foi sorte.", hint: "Ganhe o placar do Duelo contra 3 amigos diferentes.", metric: (s) => s.socialBeat, goal: 3, title: "🦁 Rei da Tropa" },
-    { id: "am-fantasma", cat: "amizade", tier: "bronze", icon: "👻", name: "Caça-fantasma", desc: "Duelou com o Maracujeba fantasma. Treino é treino, jogo é jogo.", hint: "Abra o exemplo do fantasma no Toba dos amigos.", metric: (s) => s.socialGhost, goal: 1, mystery: true },
+    { id: "am-fantasma", cat: "amizade", tier: "bronze", icon: "👻", name: "Caça-fantasma", desc: "Adicionou o Cloba fantasma 👻 e encarou o X1. Ele copia teu Toba, mas o shape é de mentira.", hint: "Adicione o Cloba fantasma no Toba dos amigos.", metric: (s) => s.socialGhost, goal: 1, mystery: true },
   );
   return list;
 }
@@ -328,42 +328,117 @@ const PLAYER_ACHIEVEMENTS = buildPlayerAchievements();
 /* ---------------------------------------------------------------------
  * Recompensas (só visuais). Liberadas por nível ou por conquista.
  * ------------------------------------------------------------------- */
+// Ordem = ordem na tela do 🧱 Personalizar. Ids gravados em equipped: nunca troque.
+// extra: true (v1.62) = liberado por nível, mas o "automático" não troca pra ele.
 const PLAYER_AVATARS = [
   { id: "pintinho", icon: "🐣", level: 1 },
+  { id: "macaco", icon: "🐒", level: 3, extra: true },
   { id: "frango", icon: "🐔", level: 5 },
+  { id: "sapo", icon: "🐸", level: 7, extra: true },
   { id: "rato", icon: "🐀", level: 10 },
+  { id: "pinguim", icon: "🐧", level: 12, extra: true },
+  { id: "lontra", icon: "🦦", level: 15, extra: true },
+  { id: "urso", icon: "🐻", level: 18, extra: true },
   { id: "gorila", icon: "🦍", level: 20 },
+  { id: "tubarao", icon: "🦈", level: 25, extra: true },
   { id: "heroi", icon: "🦸", level: 30 },
+  { id: "ninja", icon: "🥷", level: 35, extra: true },
+  { id: "dragao", icon: "🐉", level: 40, extra: true },
+  { id: "alien", icon: "👽", level: 45, extra: true },
   { id: "robo", icon: "🤖", level: 50 },
+  { id: "unicornio", icon: "🦄", level: 55, extra: true },
   { id: "soco", icon: "👊", level: 60 },
+  { id: "rei", icon: "👑", level: 75, extra: true },
   { id: "gato", icon: "🐈", achievement: "lift-gato" },
   { id: "caramelo", icon: "🐕", achievement: "lift-caramelo" },
   { id: "leao", icon: "🦁", achievement: "lift-leao" },
   { id: "elefante", icon: "🐘", achievement: "lift-elefante" },
   { id: "baleia", icon: "🐋", achievement: "lift-baleia" },
+  { id: "foguete", icon: "🚀", achievement: "lift-falcon9" },
+  { id: "navio", icon: "🚢", achievement: "lift-titanic" },
   { id: "boi", icon: "🐂", achievement: "gr-boiada" },
   { id: "planeta", icon: "🌍", achievement: "km-mundo" },
+  { id: "foguinho", icon: "🔥", achievement: "sk-7" },
   { id: "vulcao", icon: "🌋", achievement: "sk-30" },
   { id: "careca", icon: "🦲", achievement: "st-completo" },
+  { id: "cerebro", icon: "🧠", achievement: "pr-10" },
+  { id: "monge", icon: "🧘", achievement: "rt-monge" },
+  { id: "chef", icon: "🧑‍🍳", achievement: "kt-10" },
+  { id: "pizza", icon: "🍕", achievement: "kt-larica" },
+  { id: "piloto", icon: "🏎️", achievement: "rc-10" },
+  { id: "milho", icon: "🌽", achievement: "rc-etanol" },
+  { id: "bussola", icon: "🧭", achievement: "tu-fui10" },
+  { id: "parca", icon: "🤜", achievement: "am-3" },
+  { id: "trofeu", icon: "🏆", achievement: "am-placar" },
+  { id: "fantasma", icon: "👻", achievement: "am-fantasma" },
 ];
 const PLAYER_FRAMES = [
   { id: "simples", name: "Simples", level: 1 },
   { id: "bronze", name: "Bronze", level: 5 },
+  { id: "neon", name: "Neon", level: 10, extra: true },
   { id: "prata", name: "Prata", level: 15 },
+  { id: "esmeralda", name: "Esmeralda", level: 20, extra: true },
   { id: "ouro", name: "Ouro", level: 25 },
+  { id: "rubi", name: "Rubi", level: 30, extra: true },
   { id: "diamante", name: "Diamante", level: 40 },
+  { id: "galaxia", name: "Galáxia", level: 45, extra: true },
   { id: "chamas", name: "Em chamas", level: 50 },
+  { id: "rgb", name: "Gamer RGB", level: 55, extra: true },
+  { id: "lendaria", name: "Lendária", level: 60, extra: true },
   { id: "brasa", name: "Brasa", achievement: "sk-100" },
   { id: "arquibancada", name: "Arquibancada", achievement: "gr-maracana" },
+  { id: "zen", name: "Zen", achievement: "rt-seq30" },
+  { id: "toalha", name: "Toalha de mesa", achievement: "kt-50" },
+  { id: "bandeirada", name: "Bandeirada", achievement: "rc-50" },
+  { id: "passaporte", name: "Passaporte", achievement: "tu-fui50" },
+  { id: "tropa", name: "Tropa", achievement: "am-5" },
+  { id: "ectoplasma", name: "Ectoplasma", achievement: "am-fantasma" },
 ];
+// Cor = selo do nível e o aro da moldura Simples. Gradiente pede "badge" (cor
+// sólida pra quem ainda está numa versão antiga) e só usa hex + "Ndeg".
 const PLAYER_COLORS = [
   { id: "azul", name: "Azul", color: "#58a6ff", level: 1 },
   { id: "verde", name: "Verde", color: "#3fb950", level: 3 },
+  { id: "ciano", name: "Ciano", color: "#39d0d8", level: 6, extra: true },
+  { id: "laranja", name: "Laranja", color: "#f0883e", level: 8, extra: true },
   { id: "roxo", name: "Roxo", color: "#bc8cff", level: 10 },
+  { id: "lima", name: "Lima", color: "#a3e635", level: 12, extra: true },
   { id: "coral", name: "Coral", color: "#ff7b72", level: 15 },
   { id: "dourado", name: "Dourado", color: "#e3b341", level: 20 },
+  { id: "gelo", name: "Gelo", color: "#e6edf3", level: 25, extra: true },
   { id: "rosa", name: "Rosa", color: "#f778ba", level: 30 },
-  { id: "arcoiris", name: "Arco-íris", color: "linear-gradient(90deg,#f85149,#e3b341,#3fb950,#58a6ff,#bc8cff)", level: 45 },
+  { id: "vermelho", name: "Vermelho", color: "#f85149", level: 35, extra: true },
+  { id: "por-do-sol", name: "Pôr do sol", color: "linear-gradient(135deg,#f85149,#f0883e,#e3b341)", badge: "#f0883e", level: 38, extra: true },
+  { id: "oceano", name: "Oceano", color: "linear-gradient(135deg,#1f6feb,#39d0d8)", badge: "#39d0d8", level: 42, extra: true },
+  { id: "arcoiris", name: "Arco-íris", color: "linear-gradient(90deg,#f85149,#e3b341,#3fb950,#58a6ff,#bc8cff)", badge: "#bc8cff", level: 45 },
+  { id: "vaporwave", name: "Vaporwave", color: "linear-gradient(135deg,#f778ba,#bc8cff,#58a6ff)", badge: "#f778ba", level: 52, extra: true },
+  { id: "ouro-branco", name: "Ouro branco", color: "linear-gradient(135deg,#fff8c5,#e3b341,#f0f6fc)", badge: "#e3b341", level: 60, extra: true },
+  { id: "brasil", name: "Brasil", color: "linear-gradient(135deg,#2ea043,#e3b341,#1f6feb)", badge: "#2ea043", achievement: "gr-maracana" },
+  { id: "matrix", name: "Matrix", color: "linear-gradient(180deg,#56d364,#0f5323)", badge: "#56d364", achievement: "pr-50" },
+  { id: "ecto", name: "Ecto", color: "linear-gradient(135deg,#a5f3fc,#7ee787)", badge: "#7ee787", achievement: "am-fantasma" },
+];
+// Fundo do círculo do avatar (desde v1.62). "ultimate" = vitrine da ULTIMATE EDITION.
+// O desenho de cada um fica em toba-player.css (.tp-bg-<id>).
+const PLAYER_BGS = [
+  { id: "padrao", name: "Padrão", level: 1 },
+  { id: "noite", name: "Noite", level: 4 },
+  { id: "floresta", name: "Floresta", level: 8 },
+  { id: "vinho", name: "Vinho", level: 12 },
+  { id: "por-do-sol", name: "Pôr do sol", level: 18 },
+  { id: "oceano", name: "Oceano", level: 22 },
+  { id: "menta", name: "Menta", level: 28 },
+  { id: "uva", name: "Uva", level: 32 },
+  { id: "lava", name: "Lava", level: 38 },
+  { id: "aurora", name: "Aurora", level: 45, ultimate: true },
+  { id: "galaxia", name: "Galáxia", level: 52, ultimate: true },
+  { id: "ouro-liquido", name: "Ouro líquido", level: 60, ultimate: true },
+  { id: "estrada", name: "Estrada", achievement: "rc-km10000" },
+  { id: "praia", name: "Praia", achievement: "tu-fui50" },
+  { id: "toalha", name: "Piquenique", achievement: "kt-50" },
+  { id: "maracana", name: "Maracanã", achievement: "gr-maracana" },
+  { id: "ecto", name: "Ectoplasma", achievement: "am-fantasma", ultimate: true },
+  { id: "holografico", name: "Holográfico", achievement: "lift-titanic", ultimate: true },
+  { id: "vibranium", name: "Vibranium", achievement: "rt-seq100", ultimate: true },
 ];
 
 function isPlayerRewardUnlocked(item, state) {
@@ -377,13 +452,16 @@ function getPlayerLook(state) {
   const pick = (list, id) => {
     const chosen = list.find((item) => item.id === id && isPlayerRewardUnlocked(item, state));
     if (chosen) return chosen;
-    const byLevel = list.filter((item) => !item.achievement && isPlayerRewardUnlocked(item, state));
+    // "extra" (v1.62) só entra se a pessoa escolher: o automático continua igual ao de antes
+    const byLevel = list.filter((item) => !item.achievement && !item.extra && isPlayerRewardUnlocked(item, state));
     return byLevel[byLevel.length - 1] || list[0];
   };
   const levelTitle = playerLevelTitle(state.level);
   const titles = getPlayerTitles(state).filter((t) => t.unlocked);
   const title = titles.find((t) => t.id === eq.title) || { id: "", icon: levelTitle.icon, name: levelTitle.name };
-  return { avatar: pick(PLAYER_AVATARS, eq.avatar), frame: pick(PLAYER_FRAMES, eq.frame), color: pick(PLAYER_COLORS, eq.color), title };
+  // Fundo: escolhido ou o "padrao" (não troca sozinho quando sobe de nível).
+  const bg = PLAYER_BGS.find((item) => item.id === eq.bg && isPlayerRewardUnlocked(item, state)) || PLAYER_BGS[0];
+  return { avatar: pick(PLAYER_AVATARS, eq.avatar), frame: pick(PLAYER_FRAMES, eq.frame), color: pick(PLAYER_COLORS, eq.color), bg, title };
 }
 
 // Títulos: os de nível já alcançados + os que vêm de conquistas.
@@ -408,7 +486,7 @@ function createEmptyPlayerDb() {
     createdAt: toIsoDate(),
     settings: { weeklyGoal: 3 },
     seen: { xp: 0, level: 1, achievements: [] },
-    equipped: { title: "", avatar: "", frame: "", color: "" },
+    equipped: { title: "", avatar: "", frame: "", color: "", bg: "" },
   };
 }
 
@@ -425,7 +503,7 @@ function normalizePlayerDb(db) {
   db.seen.level = Math.max(1, Math.round(Number(db.seen.level)) || 1);
   db.seen.achievements = Array.isArray(db.seen.achievements) ? db.seen.achievements.map(String) : [];
   if (!isObj(db.equipped)) db.equipped = {};
-  ["title", "avatar", "frame", "color"].forEach((key) => {
+  ["title", "avatar", "frame", "color", "bg"].forEach((key) => {
     db.equipped[key] = typeof db.equipped[key] === "string" ? db.equipped[key] : "";
   });
   return db;
@@ -965,11 +1043,17 @@ function formatPlayerNumber(value) {
 
 function renderPlayerAvatar(state, size = "md") {
   const look = getPlayerLook(state);
-  const isGradient = look.color.color.startsWith("linear");
-  return `<span class="tp-avatar is-${size} tp-frame-${look.frame.id}" style="--tp-color:${isGradient ? "#bc8cff" : look.color.color};${isGradient ? `--tp-ring:${look.color.color}` : ""}" aria-hidden="true">
+  return `<span class="tp-avatar is-${size} tp-frame-${look.frame.id} tp-bg-${look.bg.id}" style="${playerColorStyle(look.color)}" aria-hidden="true">
     <span class="tp-avatar-icon">${look.avatar.icon}</span>
     <span class="tp-avatar-level">${state.level}</span>
   </span>`;
+}
+
+// Variáveis de cor do avatar: --tp-color (sólida), --tp-ring/--tp-badge (gradiente).
+function playerColorStyle(colorItem) {
+  const color = colorItem.color || "#58a6ff";
+  if (!color.startsWith("linear")) return `--tp-color:${color};`;
+  return `--tp-color:${colorItem.badge || "#bc8cff"};--tp-ring:${color};--tp-badge:${color};`;
 }
 
 function renderPlayerBar(ratio, extraClass = "") {
@@ -1173,6 +1257,7 @@ function rewardsBetween(fromLevel, toLevel) {
   PLAYER_AVATARS.filter(inRange).forEach((item) => parts.push(`${item.icon} Avatar novo`));
   PLAYER_FRAMES.filter(inRange).forEach((item) => parts.push(`🖼️ Moldura ${item.name}`));
   PLAYER_COLORS.filter(inRange).forEach((item) => parts.push(`🎨 Cor ${item.name}`));
+  PLAYER_BGS.filter(inRange).forEach((item) => parts.push(`${item.ultimate ? "✨" : "🖌️"} Fundo ${item.name}`));
   PLAYER_LEVEL_TITLES.filter((t) => t.min > fromLevel && t.min <= toLevel).forEach((t) => parts.push(`${t.icon} Título ${t.name}`));
   return parts;
 }

@@ -1302,3 +1302,36 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 
 **Commit sugerido:** `v1.61 - Toba dos amigos com username, pedidos de amizade, comparador de trofeus estilo PS5, duelo de numeros, trofeus de amizade e ajuda`
 
+
+---
+
+## v1.62 — 🧱 Perfil personalizável, 👻 Cloba fantasma e Toba dos amigos por módulo
+
+**Arquivos novos/alterados:** `Toba-Perfil.html`, `assets/perfil.js`, `assets/perfil.css`, `assets/toba-player.js`, `assets/toba-player.css`, `Toba-Amigos.html`, `assets/amigos.js`, `assets/amigos.css`, `assets/toba-social.js`, `assets/toba-cloud.js`, `assets/toba-common.css`, `index.html`, `TobaKitchen/js/kitchen-recipes.js`, `TobaTurism/TobaTurism-Places.html`, `TobaRoutine/js/routine-events.js`, `sw.js`, `CLAUDE.md`
+
+1. **🧱 Personalizar:** as Recompensas saíram do fim do Perfil e viraram um bloquinho de lego no canto do card principal (tocar no avatar também abre). Abre uma tela com o teu card ao vivo em cima e 5 abas: Título, Avatar, Moldura, Cor e **Fundo**, cada uma com quantas tu já liberou.
+2. **Muito mais recompensa:** 40 avatares (🐒 🐸 🐧 🦦 🐻 🦈 🥷 🐉 👽 🦄 👑 por nível; 🚀 🚢 🔥 🧠 🧘 🧑‍🍳 🍕 🏎️ 🌽 🧭 🤜 🏆 👻 por conquista), 20 molduras (Neon, Esmeralda, Rubi, Galáxia, Gamer RGB, Lendária, Toalha de mesa, Bandeirada, Passaporte, Tropa, Ectoplasma...) e 19 cores, com gradientes (Pôr do sol, Oceano, Vaporwave, Ouro branco, Brasil, Matrix, Ecto). A cor agora pinta também o aro da moldura Simples.
+3. **🖌️ Fundo (NOVO) + ✨ ULTIMATE EDITION:** fundo do círculo do avatar que também dá o brilho do card do Perfil. 13 normais (Noite, Floresta, Vinho, Pôr do sol, Oceano, Menta, Uva, Lava, Estrada, Praia, Piquenique, Maracanã) e 6 ULTIMATE (Aurora e Ouro líquido mexendo, Galáxia com estrelinha, Holográfico, Vibranium e Ectoplasma).
+4. **Automático continua igual:** quem nunca escolheu nada não muda de cara sozinho. As peças novas só entram se tu escolher.
+5. **Perfil só com o teu:** os dois botões gigantes de amigo sumiram do meio do Perfil. Agora tem um **🤝 Amigos** pequenininho lá em cima, do lado da ⚙️ (com a bolinha de pedido). E o card principal ganhou respiro antes dos quadradinhos.
+6. **👻 Cloba fantasma:** o exemplo do comparador agora é o Cloba. Sem amigo ainda, a lista mostra "Adiciona teu primeiro amigo: o Cloba fantasma": abre o ➕ Adicionar com `cloba` e ele aceita na hora (funciona até sem conta e sem internet). Ele **copia o teu Toba e mexe um pouco**: kg levantado e peso um tiquinho pra mais, troféus um pouco a menos, o resto pra cima ou pra baixo. Muda uma vez por dia. Fica na tua lista até tu mandar ele embora no 👻 Toba do Cloba. Nada dele vai pra nuvem.
+7. **Caça-fantasma** agora fala do Cloba (o troféu é o mesmo, quem já tem continua tendo).
+8. **📊 Duelo por módulo:** cada app num card com o emoji dele na frente: 🎮 Toba Perfil, 🥗 Toba Health, ⚡ Toba Routine, 🍳 Toba Kitchen, 🏁 Toba Racing e 🌎 Toba Tourism, cada um com placarzinho próprio, e o 👑 Placar geral em cima somando tudo.
+9. **🔥 Mapa de calor dos dois:** no 🥗 Toba Health aparece o boneco teu do lado do boneco do amigo (vida toda), com uma zoeira de quem treina mais músculo. Amigo que ainda não atualizou o Toba aparece "⏳ aparece quando atualizar".
+10. **Toba dos amigos mais limpo:** botões ➕ Adicionar Toba e 📤 Meu Toba pequenos no topo; os avisos de "entra na conta / liga teu Toba social / sem internet" viraram uma linha só; a aba do amigo virou **👤 Toba dele(a)**.
+11. **☁️ Conta Toba refinada:** "Tudo na nuvem · agora" virou **"Sincronizado agora"** (ou "há 5 min") num cartão com o 🔄 do lado; os chips dos apps foram pra "☁️ O que vai pra nuvem" (abre e fecha); atalho pro 🤝 Toba dos amigos; Sair da conta separado lá embaixo.
+12. **🕰️ Versões guardadas sem poluição:** separado por dia (Hoje, Ontem, sex 31/10...), com filtro por app em cima, uma linha compacta por app, e as 5 "🧩 Preferências" do mesmo dia viraram **uma linha só** (baixa tudo num arquivo). A etiqueta só aparece quando não é a cópia do dia (⚔️ conflito, 🧳 antes da nuvem, 🗑️ antes de apagar).
+13. **Só nome fictício nos exemplos:** username de exemplo virou @ClobaMonstro, o `@cloba` é reservado pro fantasma, "Como te chamam?" sugere Cloba, o Places sugere "o Cloba viu no insta", o evento de exemplo é "Churrasco da tropa", a mousse virou "Mousse de maracujá da tropa" e as receitas proteicas são do "👨‍🍳 Chef da Casa". Gon e Killua continuam (são os brabo).
+
+**Dados:** `TOBA_PLAYER_DB.equipped` ganhou o campo opcional `bg` (fundo escolhido, `""` = padrão); perfil antigo e backup antigo abrem igual. `toba_social_state` ganhou `ghost: { at }` (o Cloba na lista, só neste aparelho). A vitrine na nuvem (`profiles/{uid}`) ganhou `look.bg` e `heat` (níveis 1 a 5 do mapa de calor por músculo, só se Treinos estiver ligado); amigo com versão antiga só ignora. Regras do Firestore **sem mudança**. Ids de receita e de conquista não mudaram. `sw.js` toba-v25. APK sem mudança.
+
+**Como testar:**
+- Perfil: botão **🤝 Amigos** no topo, card com respiro antes dos quadradinhos e nada de botão gigante de amigo.
+- Toca no 🧱 (ou no avatar) › passa pelas 5 abas › equipa um fundo (Noite, por exemplo): o card ganha o brilho; ‹ volta pro Perfil.
+- Toba dos amigos sem amigo: card "Adiciona teu primeiro amigo: o Cloba fantasma" › ➕ com `cloba` › abre o X1 na hora e o troféu Caça-fantasma (se ainda não tinha).
+- 📊 Duelo: cards por app com emoji + mapa de calor dos dois no 🥗 Toba Health.
+- ☁️ Conta: "Sincronizado agora" com o 🔄 do lado › 🕰️ Versões guardadas: por dia, filtro em cima, uma linha de 🧩 Preferências por dia.
+- Tentar pegar o username `cloba`: tem que recusar.
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.62 - Perfil com Personalizar (fundos ultimate, mais avatares/molduras/cores), Cloba fantasma, duelo por modulo com mapa de calor, Conta Toba e versoes guardadas mais limpas`

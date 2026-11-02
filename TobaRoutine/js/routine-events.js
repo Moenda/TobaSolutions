@@ -26,7 +26,7 @@ const ROUTINE_EVENT_HTML = `
         </div>
         <div class="form-group rt-name-group">
           <label for="eventName">Evento</label>
-          <input type="text" id="eventName" class="form-control" maxlength="60" placeholder="Ex: Churrasco do Maracujeba" autocomplete="off" data-input="guessRoutineEvent" />
+          <input type="text" id="eventName" class="form-control" maxlength="60" placeholder="Ex: Churrasco da tropa" autocomplete="off" data-input="guessRoutineEvent" />
         </div>
       </div>
       <div class="rt-emoji-picks" id="eventEmojiPicks"></div>

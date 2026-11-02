@@ -1,49 +1,36 @@
 /* Toba · Toba dos amigos (Toba-Amigos.html, desde v1.61) */
 
+/* v1.62: botões pequenos no topo (antes eram dois cartões grandes) */
 .am-actions {
   display: grid;
-  gap: 10px;
-  margin-bottom: 1rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 0.9rem;
 }
 
-.am-big-btn {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 14px 16px;
+.am-action {
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: 999px;
   background: linear-gradient(135deg, rgba(88, 166, 255, 0.16), rgba(88, 166, 255, 0.04));
   color: var(--text);
-  text-align: left;
   font: inherit;
+  font-size: 0.84rem;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   cursor: pointer;
 }
 
-.am-big-btn.is-share {
+.am-action.is-share {
   background: linear-gradient(135deg, rgba(63, 185, 80, 0.16), rgba(63, 185, 80, 0.04));
 }
 
-.am-big-btn:active {
-  transform: scale(0.98);
-}
-
-.am-big-btn strong,
-.am-big-btn small {
-  display: block;
-}
-
-.am-big-btn small {
-  color: var(--muted);
-  font-size: 0.8rem;
-  margin-top: 2px;
-}
-
-.am-big-icon {
-  font-size: 1.6rem;
-  width: 2.2rem;
-  text-align: center;
+.am-action:active {
+  transform: scale(0.97);
 }
 
 .am-count {
@@ -69,9 +56,217 @@
   font-size: 2.4rem;
 }
 
-.am-ghost-btn {
-  display: block;
-  margin: 1.4rem auto 0.5rem;
+/* Aviso compacto (sem conta, sem internet, carregando) */
+.am-gate.is-mini {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  padding: 10px 12px;
+  margin-bottom: 0.9rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.am-gate.is-mini > span {
+  font-size: 1.3rem;
+}
+
+.am-gate.is-mini p {
+  flex: 1;
+  font-size: 0.82rem;
+}
+
+.am-gate.is-mini .chip-btn {
+  flex: 0 0 auto;
+}
+
+/* 👻 Cloba fantasma */
+.am-friend.is-ghost {
+  border-color: rgba(126, 231, 135, 0.35);
+  background: linear-gradient(135deg, rgba(126, 231, 135, 0.1), rgba(165, 243, 252, 0.04)), var(--surface-2);
+}
+
+.am-ghost-tag {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(126, 231, 135, 0.18);
+  color: #7ee787;
+  font-size: 0.65rem;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
+.am-ghost-invite {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 14px;
+  border: 1px dashed rgba(126, 231, 135, 0.5);
+  background: linear-gradient(135deg, rgba(126, 231, 135, 0.1), rgba(188, 140, 255, 0.06));
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.am-ghost-invite.is-small {
+  padding: 10px 12px;
+}
+
+.am-ghost-invite-icon {
+  font-size: 2rem;
+  animation: am-float 3s ease-in-out infinite;
+}
+
+.am-ghost-invite.is-small .am-ghost-invite-icon {
+  font-size: 1.4rem;
+}
+
+.am-ghost-invite-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.am-ghost-invite-text small {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.am-ghost-invite-go {
+  font-size: 1.2rem;
+}
+
+.am-ghost-note {
+  border-left-color: #7ee787;
+}
+
+@keyframes am-float {
+  50% { transform: translateY(-4px) rotate(-6deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .am-ghost-invite-icon {
+    animation: none;
+  }
+}
+
+/* Duelo por módulo (v1.62) */
+.am-mod {
+  margin-bottom: 12px;
+  padding-top: 10px;
+}
+
+.am-mod-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.am-mod-title {
+  font-weight: 900;
+  font-size: 0.98rem;
+}
+
+.am-mod-score {
+  font-size: 0.9rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.am-mod-score b {
+  font-size: 1.05rem;
+  color: var(--text-2);
+}
+
+.am-mod-score b.is-win {
+  color: var(--gold-2);
+}
+
+.am-mod-score.is-hidden {
+  font-size: 0.78rem;
+}
+
+.am-mod .am-duel {
+  padding: 0;
+  border: 0;
+  background: none;
+  margin: 0;
+}
+
+.am-heat {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.am-heat-title {
+  font-weight: 800;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+
+.am-heat-title small {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.am-heat-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.am-heat-two figure {
+  margin: 0;
+  min-width: 0;
+  padding: 6px 4px 2px;
+  border-radius: var(--radius);
+  background: var(--bg);
+  text-align: center;
+}
+
+.am-heat-two figcaption {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.am-heat-two .muscle-map {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+
+.am-heat-empty {
+  display: grid;
+  place-items: center;
+  min-height: 110px;
+  padding: 0 6px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.am-heat-line {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-2);
+  text-align: center;
 }
 
 .am-request,

@@ -36,23 +36,15 @@
 
     <!-- Lista: botões, pedidos e amigos -->
     <div id="amMainView">
-      <div id="amGate"></div>
-      <div id="amHome" hidden>
-        <div class="am-actions">
-          <button type="button" class="am-big-btn" data-click="amOpenAdd">
-            <span class="am-big-icon">➕</span>
-            <span><strong>Adicionar Toba de um amigo</strong><small>pelo @ dele</small></span>
-          </button>
-          <button type="button" class="am-big-btn is-share" data-click="amOpenShare">
-            <span class="am-big-icon">📤</span>
-            <span><strong>Compartilhar meu Toba</strong><small id="amMyAt"></small></span>
-          </button>
-        </div>
-        <div id="amRequests"></div>
-        <div class="section-title">🤝 Amigos <span class="am-count" id="amFriendCount"></span></div>
-        <div id="amFriends"></div>
+      <!-- v1.62: botões pequenos lá em cima (antes eram dois cartões gigantes) -->
+      <div class="am-actions">
+        <button type="button" class="am-action" data-click="amOpenAdd">➕ Adicionar Toba</button>
+        <button type="button" class="am-action is-share" data-click="amOpenShare">📤 <span id="amMyAt">Meu Toba</span></button>
       </div>
-      <button type="button" class="chip-btn am-ghost-btn" data-click="amOpenGhost">👻 Ver exemplo contra o Maracujeba fantasma</button>
+      <div id="amGate"></div>
+      <div id="amRequests"></div>
+      <div class="section-title">🤝 Toba dos amigos <span class="am-count" id="amFriendCount"></span></div>
+      <div id="amFriends"></div>
     </div>
 
     <!-- Toba de um amigo + comparador -->
@@ -63,15 +55,15 @@
   <div class="toba-modal" id="amAddModal" role="dialog" aria-modal="true" aria-labelledby="amAddTitle">
     <div class="toba-sheet">
       <div class="toba-sheet-header">
-        <h3 id="amAddTitle">➕ Adicionar Toba de um amigo <button type="button" class="am-help-btn" data-click="amHelp" data-help="adicionar" aria-label="Como funciona">❔</button></h3>
+        <h3 id="amAddTitle">➕ Adicionar Toba <button type="button" class="am-help-btn" data-click="amHelp" data-help="adicionar" aria-label="Como funciona">❔</button></h3>
         <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
       </div>
-      <p class="toba-sheet-text">Digita o username do amigo. Ele recebe o pedido e, quando aceitar, vocês veem o Toba um do outro.</p>
+      <p class="toba-sheet-text">Digita o @ do amigo. Ele recebe o pedido e, quando aceitar, um vê o Toba do outro. Sem amigo ainda? Manda <b>cloba</b> e o fantasma 👻 aceita na hora.</p>
       <form class="form-group" data-submit="amAddSubmit">
         <label for="amAddInput">Username do amigo</label>
         <div class="am-at-field">
           <span>@</span>
-          <input class="form-control" id="amAddInput" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="21" placeholder="maracujeba" />
+          <input class="form-control" id="amAddInput" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="21" placeholder="cloba" />
         </div>
       </form>
       <div class="tc-error" id="amAddError" hidden></div>
@@ -125,6 +117,7 @@
   <script src="TobaTurism/js/turism-metrics.js"></script>
   <script src="assets/toba-player.js"></script>
   <script src="assets/toba-social.js"></script>
+  <script src="TobaHealth/js/hall-shared.js"></script>
   <script src="assets/amigos.js"></script>
   <script src="assets/pwa-register.js"></script>
 </body>

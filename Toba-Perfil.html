@@ -28,6 +28,8 @@
         <span class="toba-page">🎮 Perfil do jogador</span>
       </a>
       <div class="toba-header-actions">
+        <!-- Toba dos amigos (v1.62: saiu do meio do Perfil e veio pra cá) -->
+        <a class="pf-friends-btn" href="Toba-Amigos.html" aria-label="Toba dos amigos">🤝 Amigos<span class="social-badge" data-social-badge hidden></span></a>
         <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
       </div>
     </header>
@@ -40,13 +42,6 @@
     <section class="card pf-hero" id="pfHero"></section>
     <div class="toba-stats" id="pfStats"></div>
 
-    <!-- Toba dos amigos (v1.61) -->
-    <div class="pf-social">
-      <a class="pf-social-btn" href="Toba-Amigos.html?open=add"><span>➕</span>Adicionar Toba de um amigo</a>
-      <a class="pf-social-btn is-share" href="Toba-Amigos.html?open=share"><span>📤</span>Compartilhar meu Toba</a>
-      <a class="pf-social-link" href="Toba-Amigos.html">🤝 Ver amigos e comparar troféus <span class="social-badge" data-social-badge hidden></span><span class="pf-social-arrow">›</span></a>
-    </div>
-
     <div class="section-title" id="pfHallTitle">🏆 Hall dos Heróis</div>
     <section id="pfHall" class="pfh"></section>
 
@@ -55,17 +50,6 @@
 
     <div class="section-title">🏅 Conquistas <span class="pf-count" id="pfAchCount"></span></div>
     <div id="pfAchievements"></div>
-
-    <div class="section-title">🎁 Recompensas</div>
-    <div class="card">
-      <div class="tab-nav pf-tabs" role="tablist">
-        <button type="button" class="tab-btn active" data-click="showRewardTab" data-tab="title">Título</button>
-        <button type="button" class="tab-btn" data-click="showRewardTab" data-tab="avatar">Avatar</button>
-        <button type="button" class="tab-btn" data-click="showRewardTab" data-tab="frame">Moldura</button>
-        <button type="button" class="tab-btn" data-click="showRewardTab" data-tab="color">Cor</button>
-      </div>
-      <div id="pfRewards"></div>
-    </div>
 
     <details class="card pf-details">
       <summary>📜 De onde veio seu XP <span class="pf-chevron" aria-hidden="true">›</span></summary>
@@ -76,6 +60,14 @@
       <summary>📈 Tabela de níveis <span class="pf-chevron" aria-hidden="true">›</span></summary>
       <div id="pfLevels"></div>
     </details>
+    </div>
+
+    <!-- 🧱 Personalizar (v1.62, abre no lugar do Perfil pelo bloquinho do card) -->
+    <div id="pfCustomView" hidden>
+      <section class="card pf-custom-preview" id="pfCustomPreview"></section>
+      <div class="tab-nav pf-tabs" role="tablist" id="pfCustomTabs"></div>
+      <p class="pf-custom-hint" id="pfCustomHint"></p>
+      <div id="pfRewards"></div>
     </div>
 
     <!-- Página de um item do Hall dos Heróis (abre no lugar do Perfil) -->

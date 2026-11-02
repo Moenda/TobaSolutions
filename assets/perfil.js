@@ -6,6 +6,14 @@
  * playerDb.settings / playerDb.equipped (TOBA_PLAYER_DB) e toba_player_prefs.
  * ===================================================================== */
 let profileTab = "title";
+let profileCustomOpen = false;
+
+// Bloquinho de lego do 🧱 Personalizar (SVG pra não depender de emoji)
+const PROFILE_LEGO_SVG = `<svg viewBox="0 0 32 24" aria-hidden="true" class="pf-lego-svg">
+  <rect x="6" y="1" width="7" height="5" rx="1.5"/><rect x="19" y="1" width="7" height="5" rx="1.5"/>
+  <rect x="1" y="5" width="30" height="18" rx="3"/>
+  <rect x="4" y="8" width="24" height="3" rx="1.5" class="pf-lego-shine"/>
+</svg>`;
 
 function formatProfileDate(iso) {
   return iso ? isoToBrDate(iso) : "";
@@ -15,7 +23,9 @@ function renderProfileHero(state) {
   const look = getPlayerLook(state);
   const nextTitle = PLAYER_LEVEL_TITLES.find((t) => t.min > state.level);
   document.getElementById("pfHero").innerHTML = `
-    ${renderPlayerAvatar(state, "lg")}
+    <span class="pf-hero-glow tp-bg-${look.bg.id}" aria-hidden="true"></span>
+    <button type="button" class="pf-lego" data-click="openCustomize" aria-label="Personalizar o perfil">${PROFILE_LEGO_SVG}<span>Personalizar</span></button>
+    <button type="button" class="pf-hero-avatar" data-click="openCustomize" aria-label="Personalizar o perfil">${renderPlayerAvatar(state, "lg")}</button>
     <div class="pf-hero-title">${look.title.icon} ${escapeHtml(look.title.name)}</div>
     <div class="pf-hero-level">Nível ${state.level}</div>
     ${renderPlayerBar(state.ratio)}
@@ -107,39 +117,129 @@ function openAchievement(id) {
   openTobaModal("achModal");
 }
 
+/* ---------------------------------------------------------------------
+ * 🧱 Personalizar (v1.62): título, avatar, moldura, cor e fundo.
+ * Abre no lugar do Perfil (igual ao Hall). Só grava playerDb.equipped.
+ * ------------------------------------------------------------------- */
+const PROFILE_CUSTOM_TABS = [
+  { id: "title", name: "Título", hint: "O título aparece embaixo do avatar e pra tropa no 🤝 Toba dos amigos." },
+  { id: "avatar", name: "Avatar", hint: "Uns liberam subindo de nível, outros só com conquista. Pega todos, monstro." },
+  { id: "frame", name: "Moldura", hint: "O aro em volta do avatar. As brabas giram e brilham. ✨" },
+  { id: "color", name: "Cor", hint: "Pinta o selo do nível (e o aro, se a moldura for a Simples)." },
+  { id: "bg", name: "Fundo", hint: "O fundo do círculo e o brilho do teu card. Lá embaixo tem a ULTIMATE EDITION. 🌈" },
+];
+
+function profileRewardList(tab) {
+  return { avatar: PLAYER_AVATARS, frame: PLAYER_FRAMES, color: PLAYER_COLORS, bg: PLAYER_BGS }[tab] || [];
+}
+
+function profileTabCount(tab, state) {
+  if (tab === "title") {
+    const titles = getPlayerTitles(state);
+    return `${titles.filter((t) => t.unlocked).length}/${titles.length}`;
+  }
+  const list = profileRewardList(tab);
+  return `${list.filter((item) => isPlayerRewardUnlocked(item, state)).length}/${list.length}`;
+}
+
+function renderProfileCustomPreview(state) {
+  const look = getPlayerLook(state);
+  document.getElementById("pfCustomPreview").innerHTML = `
+    <span class="pf-hero-glow tp-bg-${look.bg.id}" aria-hidden="true"></span>
+    ${renderPlayerAvatar(state, "lg")}
+    <div class="pf-hero-title">${look.title.icon} ${escapeHtml(look.title.name)}</div>
+    <div class="pf-custom-parts">
+      <span>${look.avatar.icon} Avatar</span>
+      <span>🖼️ ${escapeHtml(look.frame.name)}</span>
+      <span>🎨 ${escapeHtml(look.color.name)}</span>
+      <span>${look.bg.ultimate ? "✨" : "🖌️"} ${escapeHtml(look.bg.name)}</span>
+    </div>`;
+}
+
 function renderProfileRewards(state) {
-  document.querySelectorAll(".pf-tabs .tab-btn").forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === profileTab));
+  if (!profileCustomOpen) return;
+  renderProfileCustomPreview(state);
+  document.getElementById("pfCustomTabs").innerHTML = PROFILE_CUSTOM_TABS.map((t) => `
+    <button type="button" class="tab-btn${t.id === profileTab ? " active" : ""}" data-click="showRewardTab" data-tab="${t.id}">
+      ${t.name}<small>${profileTabCount(t.id, state)}</small>
+    </button>`).join("");
+  document.getElementById("pfCustomHint").textContent = (PROFILE_CUSTOM_TABS.find((t) => t.id === profileTab) || PROFILE_CUSTOM_TABS[0]).hint;
   const look = getPlayerLook(state);
   const need = (item) => {
     if (!item.achievement) return `Nível ${item.level}`;
     const a = PLAYER_ACHIEVEMENTS.find((x) => x.id === item.achievement);
+    if (!a) return "Conquista";
     return isPlayerAchievementHidden(a, state) ? "Conquista ???" : `Conquista: ${a.name}`;
   };
   const tile = ({ id, unlocked, active, preview, name, lockText }) => `
     <button type="button" class="pf-reward${active ? " is-active" : ""}${unlocked ? "" : " is-locked"}" data-click="equipReward" data-kind="${profileTab}" data-id="${id}"${unlocked ? "" : ` data-locked="${escapeHtml(lockText)}"`}>
-      <span class="pf-reward-preview">${unlocked ? preview : "🔒"}</span>
-      <span class="pf-reward-name">${name}</span>
-      ${unlocked ? "" : `<span class="pf-reward-lock">${escapeHtml(lockText)}</span>`}
+      <span class="pf-reward-preview">${preview}</span>
+      ${name ? `<span class="pf-reward-name">${name}</span>` : ""}
+      ${unlocked ? "" : `<span class="pf-reward-lock">🔒 ${escapeHtml(lockText)}</span>`}
     </button>`;
+  // Mini avatar com uma peça trocada (pra ver como fica antes de pôr)
+  const mini = (over) => {
+    const frame = over.frame || look.frame.id;
+    const bg = over.bg || look.bg.id;
+    const color = over.color || look.color;
+    return `<span class="tp-avatar is-sm tp-frame-${frame} tp-bg-${bg}" style="${playerColorStyle(color)}"><span class="tp-avatar-icon">${over.icon || look.avatar.icon}</span></span>`;
+  };
   let html = "";
   if (profileTab === "title") {
     const auto = playerLevelTitle(state.level);
     html = `<div class="pf-title-list">
       ${tile({ id: "", unlocked: true, active: !look.title.id, preview: auto.icon, name: `Automático (${auto.name})`, lockText: "" })}
-      ${getPlayerTitles(state).map((t) => tile({ id: t.id, unlocked: t.unlocked, active: look.title.id === t.id, preview: t.icon, name: t.unlocked || !t.need.includes("???") ? escapeHtml(t.name) : "???", lockText: t.need })).join("")}
+      ${getPlayerTitles(state).map((t) => tile({ id: t.id, unlocked: t.unlocked, active: look.title.id === t.id, preview: t.unlocked ? t.icon : "🔒", name: t.unlocked || !t.need.includes("???") ? escapeHtml(t.name) : "???", lockText: t.need })).join("")}
     </div>`;
   } else {
-    const list = { avatar: PLAYER_AVATARS, frame: PLAYER_FRAMES, color: PLAYER_COLORS }[profileTab];
+    const list = profileRewardList(profileTab);
     const current = look[profileTab].id;
-    html = `<div class="pf-reward-grid">${list.map((item) => {
+    const tiles = (items) => items.map((item) => {
       const unlocked = isPlayerRewardUnlocked(item, state);
       let preview = item.icon || "";
-      if (profileTab === "frame") preview = `<span class="tp-avatar is-sm tp-frame-${item.id}"><span class="tp-avatar-icon">${look.avatar.icon}</span></span>`;
-      if (profileTab === "color") preview = `<span class="pf-color" style="background:${item.color}"></span>`;
-      return tile({ id: item.id, unlocked, active: current === item.id, preview, name: item.name || "", lockText: need(item) });
-    }).join("")}</div>`;
+      let name = item.name ? escapeHtml(item.name) : "";
+      if (profileTab === "avatar") {
+        const a = item.achievement ? PLAYER_ACHIEVEMENTS.find((x) => x.id === item.achievement) : null;
+        if (!unlocked && a && isPlayerAchievementHidden(a, state)) preview = "❓";
+      }
+      if (profileTab === "frame") preview = mini({ frame: item.id });
+      if (profileTab === "color") preview = mini({ color: item, frame: "simples" });
+      if (profileTab === "bg") preview = mini({ bg: item.id });
+      return tile({ id: item.id, unlocked, active: current === item.id, preview, name, lockText: need(item) });
+    }).join("");
+    if (profileTab === "bg") {
+      html = `<div class="pf-reward-grid">${tiles(list.filter((item) => !item.ultimate))}</div>
+        <div class="pf-ultimate-title">✨ ULTIMATE EDITION ✨</div>
+        <div class="pf-reward-grid is-ultimate">${tiles(list.filter((item) => item.ultimate))}</div>`;
+    } else {
+      html = `<div class="pf-reward-grid${profileTab === "avatar" ? " is-avatars" : ""}">${tiles(list)}</div>`;
+    }
   }
   document.getElementById("pfRewards").innerHTML = html;
+}
+
+function openCustomize({ push = true } = {}) {
+  if (!tobaPlayerState) return;
+  profileCustomOpen = true;
+  document.getElementById("pfMainView").hidden = true;
+  document.getElementById("pfCustomView").hidden = false;
+  tobaSetHeader({ page: "🧱 Personalizar", back: "closeCustomize" });
+  if (push) history.pushState({ custom: 1 }, "");
+  renderProfileRewards(tobaPlayerState);
+  window.scrollTo(0, 0);
+}
+
+function closeCustomize({ fromHistory = false } = {}) {
+  if (!profileCustomOpen) return;
+  if (!fromHistory && history.state?.custom) {
+    history.back(); // o popstate chama de novo com fromHistory
+    return;
+  }
+  profileCustomOpen = false;
+  document.getElementById("pfCustomView").hidden = true;
+  document.getElementById("pfMainView").hidden = false;
+  tobaSetHeader({ page: "🎮 Perfil do jogador", back: "" });
+  window.scrollTo(0, 0);
 }
 
 async function equipReward(el) {
@@ -275,6 +375,8 @@ tobaSetupApp({
 });
 
 tobaActions({
+  openCustomize: () => openCustomize(),
+  closeCustomize: () => closeCustomize(),
   showRewardTab: (el) => {
     profileTab = el.dataset.tab;
     if (tobaPlayerState) renderProfileRewards(tobaPlayerState);
@@ -303,6 +405,12 @@ tobaActions({
 });
 
 document.addEventListener("toba:player", (event) => renderProfile(event.detail));
+// Recarregou com o Personalizar no histórico: começa no Perfil
+if (history.state?.custom) history.replaceState(null, "");
+window.addEventListener("popstate", (event) => {
+  if (event.state?.custom) openCustomize({ push: false });
+  else closeCustomize({ fromHistory: true });
+});
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") tobaPlayerCheck();
 });

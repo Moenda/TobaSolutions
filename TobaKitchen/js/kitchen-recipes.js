@@ -104,7 +104,7 @@ const KITCHEN_UNITS = {
 // Quem escreveu a receita (desde v1.48). Sem "author" = Cloba.
 const KITCHEN_AUTHORS = {
   cloba: { name: "Cloba", emoji: "🤖" },
-  bertoba: { name: "Bertoba", emoji: "👨‍🍳" },
+  bertoba: { name: "Chef da Casa", emoji: "👨‍🍳" }, // v1.62: id antigo fica (só o nome na tela mudou)
 };
 
 /* Receitas. Campos:
@@ -375,7 +375,7 @@ const KITCHEN_RECIPES = [
   },
   {
     id: "mousse-maracuja",
-    name: "Mousse de maracujá do Maracujeba",
+    name: "Mousse de maracujá da tropa",
     emoji: "🍮",
     meals: ["sobremesa"],
     minutes: 15,
@@ -390,7 +390,7 @@ const KITCHEN_RECIPES = [
       { text: "Tira a polpa dos maracujás. Bate no liquidificador rapidinho (só pulsar) e coa pra tirar as sementes. Guarda umas sementes pra decorar." },
       { text: "No liquidificador: leite condensado, creme de leite e o suco do maracujá. Bate até engrossar.", timer: 3 },
       { text: "Despeja numa travessa, joga umas sementes por cima." },
-      { text: "Geladeira por pelo menos 2 horas. Homenagem ao Maracujeba concluída. 🫡" },
+      { text: "Geladeira por pelo menos 2 horas. Missão maracujá concluída. 🫡" },
     ],
   },
 ];

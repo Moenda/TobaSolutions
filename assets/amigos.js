@@ -67,7 +67,9 @@ function amMine() {
 }
 
 /* ---------------------------------------------------------------------
- * Rival fantasma 👻 (só na tela, nada vai pra nuvem)
+ * 👻 Cloba fantasma (v1.62; só na tela, nada vai pra nuvem)
+ * Copia o teu Toba e mexe um pouco: uns kg a mais, uns troféus a menos,
+ * meio aleatório. O sorteio muda uma vez por dia (mesmo dia = mesmo Cloba).
  * ------------------------------------------------------------------- */
 function amSeeded(seed) {
   let s = seed >>> 0;
@@ -77,36 +79,65 @@ function amSeeded(seed) {
   };
 }
 
+function amDaySeed(today) {
+  let h = 2166136261;
+  for (const ch of `cloba-${today}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return h >>> 0;
+}
+
+function amShiftDate(iso, days, today) {
+  const d = new Date(`${iso}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return today;
+  d.setDate(d.getDate() + days);
+  const out = toIsoDate(d);
+  return out > today ? today : out;
+}
+
 function amGhostVitrine() {
   const mine = amMine();
-  const rnd = amSeeded(171717);
-  const ach = {};
   const today = toIsoDate();
+  const rnd = amSeeded(amDaySeed(today));
+  const between = (a, b) => a + rnd() * (b - a);
+  const myState = tobaPlayerState;
+  const progress = new Map((myState ? myState.achievements : []).map((a) => [a.id, a.progress || 0]));
+  const ach = {};
   PLAYER_ACHIEVEMENTS.forEach((a) => {
     const have = mine && mine.ach[a.id];
-    const chance = have ? 0.62 : a.tier === "lenda" ? 0.05 : a.tier === "ouro" ? 0.15 : 0.32;
-    if (rnd() < chance) {
-      const d = new Date();
-      d.setDate(d.getDate() - Math.floor(rnd() * 300));
-      ach[a.id] = toIsoDate(d) > today ? today : toIsoDate(d);
-    }
+    const near = progress.get(a.id) || 0;
+    // Troféu pra menos: perde uns que tu tem, pega poucos que tu tá quase pegando
+    const chance = have ? 0.84 : a.tier === "lenda" ? 0.02 : near >= 0.6 ? 0.3 : near >= 0.3 ? 0.08 : 0.02;
+    if (rnd() < chance) ach[a.id] = have ? amShiftDate(have, Math.round(between(-25, 25)), today) : amShiftDate(today, -Math.round(between(1, 60)), today);
   });
   const stats = {};
   SOCIAL_STATS.forEach((s) => {
     const base = mine ? Number(mine.stats[s.key]) || 0 : 0;
-    const fake = Math.max(base * (0.55 + rnd() * 0.9), rnd() * 20);
+    // Peso (kg levantado e balança) um pouco pra mais; o resto pra cima ou pra baixo
+    const mult = s.key === "liftKg" ? between(1.03, 1.18) : s.key === "peso" ? between(1.01, 1.06) : between(0.82, 1.2);
+    const fake = base * mult; // zero continua zero: ele copia, não inventa
     stats[s.key] = s.dec ? Math.round(fake * 10) / 10 : Math.round(fake);
   });
-  stats.peso = null;
+  stats.peso = mine && mine.stats.peso ? stats.peso : null;
   stats.trophies = Object.keys(ach).length;
+  stats.xp = Math.max(0, Math.round((mine ? Number(mine.xp) || 0 : 0) * between(0.88, 1.12)));
   const info = playerLevelInfo(stats.xp);
   stats.level = info.level;
+  // Mapa de calor: o teu, com um ou outro músculo trocado de cor
+  const heat = {};
+  Object.entries((mine && mine.heat) || {}).forEach(([group, level]) => {
+    const next = Math.min(5, Math.max(1, level + Math.round(between(-1.4, 1.4))));
+    heat[group] = next;
+  });
+  if (typeof STRENGTH_GROUPS !== "undefined" && rnd() < 0.6) {
+    const g = STRENGTH_GROUPS[Math.floor(rnd() * STRENGTH_GROUPS.length)];
+    if (!heat[g.id]) heat[g.id] = 1 + Math.floor(rnd() * 2);
+  }
   const show = socialDefaultShow();
+  show.peso = Boolean(stats.peso);
   return {
     v: 1,
-    name: "Maracujeba 👻",
-    username: "maracujeba",
-    look: { avatar: "🦍", frame: "prata", color: "#3fb950", ring: "", titleIcon: "🥭", title: "Fantasma da Bancada" },
+    name: "Cloba 👻",
+    username: "Cloba",
+    look: { avatar: "👻", frame: "ectoplasma", color: "#7ee787", ring: "", bg: "ecto", titleIcon: "👻", title: "Fantasma do Toba" },
     level: info.level,
     xp: stats.xp,
     into: info.into,
@@ -115,6 +146,7 @@ function amGhostVitrine() {
     show,
     stats,
     ach,
+    heat,
     achTotal: PLAYER_ACHIEVEMENTS.length,
     updatedAt: Date.now(),
   };
@@ -125,17 +157,15 @@ function amGhostVitrine() {
  * ------------------------------------------------------------------- */
 function amRenderGate() {
   const gate = amEl("amGate");
-  const home = amEl("amHome");
-  home.hidden = AM.phase !== "on";
   if (AM.phase === "on") {
     gate.innerHTML = "";
     return;
   }
   const cards = {
-    loading: `<div class="card am-gate"><div class="am-gate-icon">⏳</div><p>Chamando a nuvem...</p></div>`,
-    offline: `<div class="card am-gate"><div class="am-gate-icon">📴</div><strong>Sem internet agora</strong><p>O Toba dos amigos mora na nuvem. Volta quando tiver sinal (ou brinca com o fantasma ali embaixo 👻).</p><button type="button" class="btn btn-secondary" data-click="amRefresh">🔄 Tentar de novo</button></div>`,
-    login: `<div class="card am-gate"><div class="am-gate-icon">☁️</div><strong>Entra na Conta Toba primeiro</strong><p>Pra visitar o Toba dos amigos e mostrar o teu, precisa estar logado. Teus dados continuam aqui no aparelho igual sempre.</p><button type="button" class="btn btn-primary" data-click="tobaCloudOpen">☁️ Entrar na Conta Toba</button></div>`,
-    off: `<div class="card am-gate"><div class="am-gate-icon">🤝</div><strong>Liga teu Toba social</strong><p>Escolhe um <b>@username</b> e o que os amigos podem ver. Eles só veem um resumo (nível, troféus e números somados), nunca teus dados de verdade. O 💰 Bank não aparece nunca.</p><button type="button" class="btn btn-primary" data-click="amOpenShare">🚀 Escolher meu @username</button></div>`,
+    loading: `<div class="am-gate is-mini"><span>⏳</span><p>Chamando a nuvem...</p></div>`,
+    offline: `<div class="am-gate is-mini"><span>📴</span><p><b>Sem internet agora.</b> A tropa mora na nuvem, mas o Cloba 👻 joga offline.</p><button type="button" class="chip-btn" data-click="amRefresh">🔄 De novo</button></div>`,
+    login: `<div class="am-gate is-mini"><span>☁️</span><p><b>Entra na Conta Toba</b> pra visitar o Toba dos amigos e mostrar o teu.</p><button type="button" class="chip-btn" data-click="tobaCloudOpen">Entrar</button></div>`,
+    off: `<div class="am-gate is-mini"><span>🤝</span><p><b>Liga teu Toba social:</b> escolhe um @ e o que a tropa pode ver. O 💰 Bank nunca aparece.</p><button type="button" class="chip-btn" data-click="amOpenShare">🚀 Ligar</button></div>`,
   };
   gate.innerHTML = cards[AM.phase] || "";
 }
@@ -158,22 +188,44 @@ function amRenderRequests() {
       </div>`).join("")}`;
 }
 
+function amGhostCard() {
+  const v = amGhostVitrine();
+  const trophies = Object.keys(v.ach || {}).length;
+  return `
+    <div class="card am-friend is-ghost" role="button" tabindex="0" data-click="amOpenGhost">
+      ${socialAvatar(v, "md")}
+      <span class="am-friend-body">
+        <strong>Cloba 👻 <span class="am-ghost-tag">fantasma</span></strong>
+        <small>Copia teu Toba e mexe um pouco · Nível ${Number(v.level) || 1}</small>
+        <small>🏆 ${trophies} troféus · ✨ ${formatPlayerNumber(v.xp)} XP</small>
+      </span>
+      <span class="am-friend-go">⚔️</span>
+    </div>`;
+}
+
+function amGhostInvite(first) {
+  return `
+    <button type="button" class="card am-ghost-invite${first ? "" : " is-small"}" data-click="amAddGhost">
+      <span class="am-ghost-invite-icon">👻</span>
+      <span class="am-ghost-invite-text">
+        <strong>${first ? "Adiciona teu primeiro amigo: o Cloba fantasma" : "Treinar contra o Cloba fantasma"}</strong>
+        ${first ? `<small>Ele copia teu Toba e mexe um pouquinho (uns kg a mais, uns troféus a menos). Testa o ➕ Adicionar com <b>@cloba</b> e já sai no X1.</small>` : ""}
+      </span>
+      <span class="am-ghost-invite-go">➕</span>
+    </button>`;
+}
+
 function amRenderFriends() {
   const box = amEl("amFriends");
   const count = amEl("amFriendCount");
-  if (AM.friends === null) {
-    box.innerHTML = `<div class="card am-gate"><p>⏳ Buscando a tropa...</p></div>`;
-    count.textContent = "";
-    return;
-  }
-  count.textContent = AM.friends.length ? String(AM.friends.length) : "";
-  if (!AM.friends.length) {
-    box.innerHTML = tobaEmpty("🦗", "Nenhum amigo ainda", "Toca em ➕ e digita o @ do Maracujeba, ou manda o teu @ pra ele pelo 📤.");
-    return;
-  }
+  const ghost = socialGhostAdded();
+  const real = AM.phase === "on" && Array.isArray(AM.friends) ? AM.friends : [];
+  const loading = AM.phase === "on" && AM.friends === null;
+  const realOk = real.filter((f) => f.status === "ok").length;
+  count.textContent = realOk + (ghost ? 1 : 0) ? String(realOk + (ghost ? 1 : 0)) : "";
   const order = { ok: 0, pending: 1, off: 2, gone: 3, error: 4 };
-  const list = [...AM.friends].sort((a, b) => (order[a.status] - order[b.status]) || ((b.vitrine?.xp || 0) - (a.vitrine?.xp || 0)));
-  box.innerHTML = list.map((f) => {
+  const list = [...real].sort((a, b) => (order[a.status] - order[b.status]) || ((b.vitrine?.xp || 0) - (a.vitrine?.xp || 0)));
+  const rows = list.map((f) => {
     const name = escapeHtml(f.vitrine ? amPlayerName(f.vitrine) : f.name || "amigo");
     if (f.status === "ok") {
       const v = f.vitrine;
@@ -201,17 +253,22 @@ function amRenderFriends() {
         <button type="button" class="chip-btn" data-click="amRemove" data-uid="${escapeHtml(f.uid)}">${f.status === "pending" ? "Cancelar" : "Tirar"}</button>
       </div>`;
   }).join("");
+  const parts = [];
+  if (rows) parts.push(rows);
+  if (loading) parts.push(`<div class="am-gate is-mini"><span>⏳</span><p>Buscando a tropa...</p></div>`);
+  if (ghost && tobaPlayerState) parts.push(amGhostCard());
+  if (!ghost) parts.push(amGhostInvite(!rows && !loading));
+  box.innerHTML = parts.join("");
 }
 
 function amRenderHome() {
   amRenderGate();
   const me = socialMyState();
   const at = amEl("amMyAt");
-  if (at) at.textContent = me.username ? `teu @: ${socialAt(me.username)}` : "manda teu @ pra tropa";
-  if (AM.phase === "on") {
-    amRenderRequests();
-    amRenderFriends();
-  }
+  if (at) at.textContent = AM.phase === "on" && me.username ? socialAt(me.username) : "Meu Toba";
+  if (AM.phase === "on") amRenderRequests();
+  else amEl("amRequests").innerHTML = "";
+  amRenderFriends();
 }
 
 async function amLoadLists() {
@@ -281,12 +338,8 @@ async function amOnUser(user) {
 /* ---------------------------------------------------------------------
  * Adicionar amigo
  * ------------------------------------------------------------------- */
+// Abre sempre: o @cloba (fantasma) funciona até sem conta e sem internet.
 function amOpenAdd(el, prefill = "") {
-  if (AM.phase !== "on") {
-    if (AM.phase === "off") return amOpenShare();
-    if (AM.phase === "login") return tobaCloudOpen();
-    return;
-  }
   amEl("amAddInput").value = prefill || "";
   amEl("amAddError").hidden = true;
   openTobaModal("amAddModal");
@@ -298,6 +351,33 @@ async function amAddSubmit() {
   const err = amEl("amAddError");
   const btn = amEl("amAddBtn");
   err.hidden = true;
+  // 👻 @cloba nunca vai pra nuvem: entra na lista na hora
+  if (socialUsernameId(input.value) === SOCIAL_GHOST_ID) {
+    socialSetGhost(true);
+    closeTobaModal("amAddModal");
+    tobaToast("👻 @Cloba aceitou na hora (ele não tem vida social)");
+    amRenderHome();
+    setTimeout(() => amOpenGhost(), 350);
+    return;
+  }
+  if (AM.phase !== "on") {
+    const typed = socialCleanUsername(input.value);
+    if (AM.phase === "offline" || AM.phase === "loading") {
+      err.textContent = "Sem nuvem agora. Amigo de verdade precisa de internet (o @cloba funciona offline 👻).";
+      err.hidden = false;
+      return;
+    }
+    closeTobaModal("amAddModal");
+    AM.pendingAdd = typed;
+    if (AM.phase === "login") {
+      tobaToast("Entra na Conta Toba primeiro e já mando o pedido 👊");
+      tobaCloudOpen();
+    } else {
+      tobaToast("Escolhe teu @ primeiro e já adiciono o amigo 👊");
+      amOpenShare();
+    }
+    return;
+  }
   btn.disabled = true;
   try {
     const res = await socialAddByUsername(input.value);
@@ -384,7 +464,7 @@ function amRenderShare() {
         <label for="amUsername" class="am-label-help">Teu username <button type="button" class="am-help-btn" data-click="amHelp" data-help="username" aria-label="Sobre o username">❔</button></label>
         <div class="am-at-field">
           <span>@</span>
-          <input class="form-control" id="amUsername" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="20" placeholder="Bertoba" value="${escapeHtml(d.username)}" data-input="amDraftName" />
+          <input class="form-control" id="amUsername" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="20" placeholder="ClobaMonstro" value="${escapeHtml(d.username)}" data-input="amDraftName" />
         </div>
         <small class="am-hint">É assim que a tropa te acha e te vê. Letras, números, _ e ponto. Maiúscula vale só pro visual.</small>
       </div>
@@ -543,6 +623,7 @@ function amOpenFriend(el) {
 
 function amOpenGhost() {
   if (!tobaPlayerState) return tobaToast("⏳ Calculando teu Perfil...");
+  if (!socialGhostAdded()) socialSetGhost(true);
   AM.friend = { uid: "ghost", vitrine: amGhostVitrine(), ghost: true };
   AM.tab = "trofeus";
   AM.filter = "todos";
@@ -612,8 +693,8 @@ function amRenderFriend() {
     return;
   }
   const v = AM.friend.vitrine;
-  const tabs = [["trofeus", "🏆 Troféus"], ["duelo", "📊 Duelo"], ["perfil", "👤 Toba dele"]];
-  const ghostNote = AM.friend.ghost ? `<div class="hint-box">👻 Isso é um exemplo de mentira, gerado só na tua tela. Quando o Maracujeba de verdade entrar, aparece igualzinho.</div>` : "";
+  const tabs = [["trofeus", "🏆 Troféus"], ["duelo", "📊 Duelo"], ["perfil", AM.friend.ghost ? "👻 Toba do Cloba" : "👤 Toba dele(a)"]];
+  const ghostNote = AM.friend.ghost ? `<div class="hint-box am-ghost-note">👻 O Cloba fantasma copia o teu Toba e mexe um pouquinho todo dia. É de mentira, só na tua tela, mas o X1 vale. Amigo de verdade aparece igualzinho.</div>` : "";
   box.innerHTML = `
     ${ghostNote}
     <section class="card am-vs">
@@ -638,7 +719,7 @@ function amRenderTab(mine, v) {
 function amTrophiesHtml(mine, v) {
   const myState = tobaPlayerState;
   const mineById = new Map(myState.achievements.map((a) => [a.id, a]));
-  const filters = [["todos", "Todos"], ["eu", "Só eu"], ["ele", "Só ele"], ["dois", "Os dois"], ["ninguem", "Ninguém"]];
+  const filters = [["todos", "Todos"], ["eu", "Só eu"], ["ele", AM.friend && AM.friend.ghost ? "Só o Cloba" : "Só ele(a)"], ["dois", "Os dois"], ["ninguem", "Ninguém"]];
   const rowsByCat = PLAYER_ACHIEVEMENT_CATS.map((cat) => {
     const items = PLAYER_ACHIEVEMENTS.filter((a) => a.cat === cat.id);
     if (!items.length) return "";
@@ -669,7 +750,7 @@ function amTrophiesHtml(mine, v) {
       return `
         <button type="button" class="am-trow${myDate || hisDate ? " is-some" : ""}${first}" data-click="amOpenTrophy" data-id="${a.id}">
           <span class="tp-medal tp-tier-${a.tier}${myDate ? "" : " is-locked"}">${mystery ? "❓" : a.icon}</span>
-          <span class="am-trow-name"><strong>${mystery ? "???" : escapeHtml(a.name)}</strong><small>${PLAYER_TIERS[a.tier].name}${mystery && hisDate ? " · ele já tem 👀" : ""}</small></span>
+          <span class="am-trow-name"><strong>${mystery ? "???" : escapeHtml(a.name)}</strong><small>${PLAYER_TIERS[a.tier].name}${mystery && hisDate ? " · já pegou 👀" : ""}</small></span>
           ${myCell}${hisCell}
         </button>`;
     }).join("");
@@ -719,30 +800,92 @@ function amOpenTrophy(el) {
   openTobaModal("amAchModal");
 }
 
+// Duelo por módulo (v1.62): cada app do Toba num card com o emoji dele na frente.
+const AM_DUEL_MODULES = [
+  { icon: "🎮", name: "Toba Perfil", sections: ["base"] },
+  { icon: "🥗", name: "Toba Health", sections: ["treinos", "peso"], heat: true },
+  { icon: "⚡", name: "Toba Routine", sections: ["rotina"] },
+  { icon: "🍳", name: "Toba Kitchen", sections: ["cozinha"] },
+  { icon: "🏁", name: "Toba Racing", sections: ["racing"] },
+  { icon: "🌎", name: "Toba Tourism", sections: ["places"] },
+];
+
+// Boneco do mapa de calor a partir dos níveis 1-5 da vitrine (sem os pontos crus).
+function amMuscleMap(levels) {
+  if (typeof MUSCLE_SHAPES === "undefined") return "";
+  const part = ([group, shape]) => {
+    const level = Math.min(5, Math.max(0, Math.round(Number((levels || {})[group]) || 0)));
+    return `<g class="muscle lv-${level}"><title>${escapeHtml(getHallGroupName(group))}</title>${shape}</g>`;
+  };
+  const body = (x) => `<g class="muscle-base"><circle cx="${x + 35}" cy="10" r="7"/><rect x="${x + 32}" y="16" width="6" height="5" rx="2"/><rect x="${x + 26}" y="56" width="18" height="6" rx="3"/></g>`;
+  return `<svg class="muscle-map" viewBox="0 0 140 124" role="img" aria-label="Mapa de calor dos músculos">
+    ${body(0)}${body(70)}${MUSCLE_SHAPES.front.map(part).join("")}${MUSCLE_SHAPES.back.map(part).join("")}
+    <text x="35" y="122" class="muscle-side">frente</text><text x="105" y="122" class="muscle-side">costas</text>
+  </svg>`;
+}
+
+function amHeatHtml(mine, v, shown) {
+  const name = escapeHtml(amPlayerName(v).split(" ")[0]);
+  const hisLevels = shown ? v.heat : null;
+  const sum = (lv) => Object.values(lv || {}).reduce((t, n) => t + (Number(n) || 0), 0);
+  let line = "";
+  if (hisLevels && mine.heat) {
+    const a = Object.keys(mine.heat).length;
+    const b = Object.keys(hisLevels).length;
+    line = a > b ? "Tu treina mais músculo diferente. Corpo completo vibes. 💪" : b > a ? `${name} espalha mais o treino. Bora variar! 🔥` : sum(mine.heat) >= sum(hisLevels) ? "Mesma quantidade de músculo, mas o teu tá mais quente. 🌶️" : `Empate de músculo, mas o de ${name} tá mais quente. 🥵`;
+  }
+  return `
+    <div class="am-heat">
+      <div class="am-heat-title">🔥 Mapa de calor <small>(vida toda)</small></div>
+      <div class="am-heat-two">
+        <figure><figcaption>Você</figcaption>${mine.heat ? amMuscleMap(mine.heat) : `<div class="am-heat-empty">Sem treino ainda 🦗</div>`}</figure>
+        <figure><figcaption>${name}</figcaption>${!shown ? `<div class="am-heat-empty">🙈 escondido</div>` : hisLevels ? amMuscleMap(hisLevels) : `<div class="am-heat-empty">⏳ aparece quando o Toba de ${name} atualizar</div>`}</figure>
+      </div>
+      ${line ? `<p class="am-heat-line">${line}</p>` : ""}
+    </div>`;
+}
+
 function amDuelHtml(mine, v) {
   let me = 0;
   let him = 0;
-  const rows = SOCIAL_STATS.map((s) => {
-    const shown = s.section === "base" || (v.show || {})[s.section];
-    const a = mine.stats[s.key];
-    const b = shown ? v.stats?.[s.key] : undefined;
-    // Peso só aparece se o amigo também mostra o dele
-    if (s.key === "peso" && (b === null || b === undefined || a === null || a === undefined)) return "";
-    const fmt = (x) => (x === null || x === undefined ? "--" : `${amNum(x, s.dec || 0)}${s.unit ? ` <small>${s.unit}</small>` : ""}`);
-    let winA = false;
-    let winB = false;
-    if (shown && !s.noCrown && b !== null && b !== undefined) {
-      const na = Number(a) || 0;
-      const nb = Number(b) || 0;
-      if (na > nb) { winA = true; me += 1; }
-      if (nb > na) { winB = true; him += 1; }
-    }
+  const cards = AM_DUEL_MODULES.map((mod) => {
+    let modMe = 0;
+    let modHim = 0;
+    const stats = SOCIAL_STATS.filter((s) => mod.sections.includes(s.section));
+    const hidden = mod.sections[0] !== "base" && !(v.show || {})[mod.sections[0]];
+    const rows = stats.map((s) => {
+      const shown = s.section === "base" || (v.show || {})[s.section];
+      const a = mine.stats[s.key];
+      const b = shown ? v.stats?.[s.key] : undefined;
+      // Peso só aparece se o amigo também mostra o dele
+      if (s.key === "peso" && (b === null || b === undefined || a === null || a === undefined)) return "";
+      const unit = (x) => (s.unit === "dias" && Number(x) === 1 ? "dia" : s.unit);
+      const fmt = (x) => (x === null || x === undefined ? "--" : `${amNum(x, s.dec || 0)}${s.unit ? ` <small>${unit(x)}</small>` : ""}`);
+      let winA = false;
+      let winB = false;
+      if (shown && !s.noCrown && b !== null && b !== undefined) {
+        const na = Number(a) || 0;
+        const nb = Number(b) || 0;
+        if (na > nb) { winA = true; modMe += 1; }
+        if (nb > na) { winB = true; modHim += 1; }
+      }
+      return `
+        <div class="am-duel-row">
+          <span class="am-duel-val${winA ? " is-win" : ""}">${winA ? "👑 " : ""}${fmt(a)}</span>
+          <span class="am-duel-label">${s.icon} ${escapeHtml(s.label)}</span>
+          <span class="am-duel-val is-right${winB ? " is-win" : ""}">${shown ? fmt(b) : "🙈"}${winB ? " 👑" : ""}</span>
+        </div>`;
+    }).join("");
+    me += modMe;
+    him += modHim;
+    const score = hidden ? `<span class="am-mod-score is-hidden">🙈 escondido</span>`
+      : `<span class="am-mod-score"><b class="${modMe > modHim ? "is-win" : ""}">${modMe}</b> x <b class="${modHim > modMe ? "is-win" : ""}">${modHim}</b></span>`;
     return `
-      <div class="am-duel-row">
-        <span class="am-duel-val${winA ? " is-win" : ""}">${winA ? "👑 " : ""}${fmt(a)}</span>
-        <span class="am-duel-label">${s.icon} ${escapeHtml(s.label)}</span>
-        <span class="am-duel-val is-right${winB ? " is-win" : ""}">${shown ? fmt(b) : "🙈"}${winB ? " 👑" : ""}</span>
-      </div>`;
+      <section class="card am-mod">
+        <div class="am-mod-head"><span class="am-mod-title">${mod.icon} ${mod.name}</span>${score}</div>
+        <div class="am-duel">${rows}</div>
+        ${mod.heat ? amHeatHtml(mine, v, !hidden) : ""}
+      </section>`;
   }).join("");
   if (me > him && AM.friend && !AM.friend.ghost) setTimeout(() => socialNoteFact("beat", AM.friend.uid), 0);
   const name = escapeHtml(amPlayerName(v));
@@ -753,7 +896,7 @@ function amDuelHtml(mine, v) {
       <span class="am-score-mid">👑 Placar <button type="button" class="am-help-btn" data-click="amHelp" data-help="duelo" aria-label="Como funciona o placar">❔</button><small>${verdict}</small></span>
       <span class="am-score-num${him > me ? " is-win" : ""}">${him}</span>
     </div>
-    <div class="card am-duel">${rows}</div>`;
+    ${cards}`;
 }
 
 function amFriendProfileHtml(v) {
@@ -775,10 +918,11 @@ function amFriendProfileHtml(v) {
       <div class="pf-hero-xp"><span>${formatPlayerNumber(v.into)} / ${formatPlayerNumber(v.need)} XP</span><span>✨ ${formatPlayerNumber(v.xp)} XP total</span></div>
       <div class="am-updated">${v.username ? `${escapeHtml(socialAt(v.username))} · ` : ""}atualizado ${escapeHtml(amAgo(v.updatedAt) || "--")}</div>
     </section>
-    <div class="section-title">👀 O que ${name} mostra</div>
+    <div class="section-title">👀 O que ${AM.friend && AM.friend.ghost ? "o Cloba" : name} mostra</div>
     <div class="tc-chips">${shares || `<span class="tp-chip">⭐ Só nível e troféus</span>`}</div>
     ${tiles ? `<div class="toba-stats am-stats">${tiles}</div>` : ""}
-    ${AM.friend && !AM.friend.ghost ? `<button type="button" class="btn btn-secondary am-unfriend" data-click="amRemove" data-uid="${escapeHtml(AM.friend.uid)}">💔 Desfazer amizade</button>` : ""}`;
+    ${AM.friend && !AM.friend.ghost ? `<button type="button" class="btn btn-secondary am-unfriend" data-click="amRemove" data-uid="${escapeHtml(AM.friend.uid)}">💔 Desfazer amizade</button>` : ""}
+    ${AM.friend && AM.friend.ghost ? `<button type="button" class="btn btn-secondary am-unfriend" data-click="amRemoveGhost">👻 Mandar o Cloba embora</button>` : ""}`;
 }
 
 /* ---------------------------------------------------------------------
@@ -788,12 +932,12 @@ const AM_HELP = {
   geral: {
     title: "🤝 Como funciona o Toba dos amigos",
     html: `
-      <p><b>1. Escolhe teu @.</b> Em 📤 Compartilhar meu Toba tu cria um username (tipo <b>@Bertoba</b>). Ninguém mais pega o mesmo.</p>
-      <p><b>2. Chama a tropa.</b> Manda teu @ ou o link pro Maracujeba. Ou toca em ➕ e digita o @ dele.</p>
+      <p><b>1. Escolhe teu @.</b> Em 📤 Meu Toba tu cria um username (tipo <b>@ClobaMonstro</b>). Ninguém mais pega o mesmo.</p>
+      <p><b>2. Chama a tropa.</b> Manda teu @ ou o link pros amigos. Ou toca em ➕ e digita o @ deles.</p>
       <p><b>3. Aceita o pedido.</b> Quem te adicionar aparece em 🔔 Pedidos. Aceitou, um vê o Toba do outro.</p>
       <p><b>4. X1 de troféus.</b> Toca no amigo e compara: 🏆 Troféus estilo PS5, 📊 Duelo dos números e 👤 o Toba dele.</p>
       <p>🔒 Teus dados de verdade nunca saem daqui: o amigo vê só um <b>resumo</b> (nível, troféus e totais). O 💰 Bank não aparece nunca, nem se tu pedir com jeitinho.</p>
-      <p>👻 Sem amigo ainda? Abre o exemplo do Maracujeba fantasma lá embaixo pra ver como fica.</p>`,
+      <p>👻 Sem amigo ainda? Adiciona o <b>@cloba</b>: o Cloba fantasma copia teu Toba, mexe um pouquinho e vira teu sparring. Funciona até sem conta.</p>`,
   },
   privacidade: {
     title: "🙈 O que os amigos veem",
@@ -809,7 +953,8 @@ const AM_HELP = {
     title: "🏷️ Username",
     html: `
       <p>É o teu nome na tropa: <b>3 a 20</b> letras sem acento, números, <b>_</b> ou ponto.</p>
-      <p>Maiúscula é só visual: <b>@Bertoba</b> e <b>@bertoba</b> são o mesmo, então ninguém te imita trocando uma letrinha. 😏</p>
+      <p>Maiúscula é só visual: <b>@ClobaMonstro</b> e <b>@clobamonstro</b> são o mesmo, então ninguém te imita trocando uma letrinha. 😏</p>
+      <p>O <b>@cloba</b> é do fantasma 👻, esse ninguém pega.</p>
       <p>Dá pra trocar quando quiser. O @ antigo fica livre e os amigos continuam amigos.</p>`,
   },
   trofeus: {
@@ -818,22 +963,25 @@ const AM_HELP = {
       <p>Igual o comparador do PS5: cada linha é um troféu, com <b>Você</b> de um lado e o amigo do outro.</p>
       <p>✅ + data = pegou. 🔒 = ainda não (do teu lado mostra quanto falta em %). 🙈 = o amigo escondeu esse app.</p>
       <p>⚡ do lado de quem pegou <b>primeiro</b>. Toca no troféu pra ver os detalhes.</p>
-      <p>Os filtros mostram o que <b>só tu tem</b> (pra tirar sarro), o que <b>só ele tem</b> (pra correr atrás), o que os dois têm e o que ninguém pegou.</p>
-      <p>❓ Troféu secreto continua secreto até TU pegar. Se o amigo já tem, aparece "ele já tem 👀".</p>
+      <p>Os filtros mostram o que <b>só tu tem</b> (pra tirar sarro), o que <b>só o amigo tem</b> (pra correr atrás), o que os dois têm e o que ninguém pegou.</p>
+      <p>❓ Troféu secreto continua secreto até TU pegar. Se o amigo já tem, aparece "já pegou 👀".</p>
       <p>🥉 Bronze · 🥈 Prata · 🥇 Ouro · 💎 Lendária.</p>`,
   },
   duelo: {
     title: "👑 Placar do Duelo",
     html: `
+      <p>O duelo é separado por app do Toba: 🎮 Perfil, 🥗 Health, ⚡ Routine, 🍳 Kitchen, 🏁 Racing e 🌎 Tourism. Cada um tem o placarzinho dele.</p>
       <p>Cada número vale um ponto pra quem tiver mais: ganhou a linha, leva a 👑.</p>
       <p>O placar soma as coroas. Empate na linha não vale ponto, e o ⚖️ peso não tem coroa (não é competição de quem pesa mais 😂).</p>
       <p>Linha 🙈 = o amigo escondeu aquele app, então não conta.</p>
-      <p>Ganhou o placar contra um amigo de verdade? Tem troféu 🤝 Amizade esperando por ti.</p>`,
+      <p>🔥 No 🥗 Health tem o mapa de calor dos dois lado a lado: dá pra ver quem pula perna. 🦩</p>
+      <p>Ganhou o placar contra um amigo de verdade? Tem troféu 🤝 Amizade esperando por ti. (Ganhar do Cloba não conta, ele é de mentira. 👻)</p>`,
   },
   adicionar: {
     title: "➕ Adicionar amigo",
     html: `
       <p>Digita o <b>@</b> do amigo (sem o @ também vale). Ele recebe o pedido em 🔔.</p>
+      <p>👻 Digita <b>cloba</b> pra adicionar o Cloba fantasma: ele aceita na hora e funciona até sem conta.</p>
       <p>Mandou o pedido? Ele já pode ver o teu Toba. Tu vê o dele quando ele <b>aceitar</b>.</p>
       <p>Mudou de ideia? Toca em <b>Cancelar</b> na lista. Desfazer a amizade corta o acesso dos dois na hora. 💔</p>`,
   },
@@ -889,6 +1037,15 @@ tobaActions({
   },
   amOpenFriend,
   amOpenGhost,
+  amAddGhost: () => amOpenAdd(null, "cloba"),
+  amRemoveGhost: async () => {
+    const ok = await showPageMessage("Ele some da tua lista. Saudade bateu? É só adicionar o @cloba de novo.", { title: "Mandar o Cloba embora?", icon: "👻", confirm: true, confirmLabel: "Tchau, Cloba" });
+    if (!ok) return;
+    socialSetGhost(false);
+    amCloseFriend();
+    amRenderHome();
+    tobaToast("👻 O Cloba vazou. Volta quando quiser.");
+  },
   amCloseFriend,
   amTab: (el) => {
     AM.tab = el.dataset.tab;
@@ -904,6 +1061,7 @@ tobaActions({
 
 document.addEventListener("toba:social-user", (event) => amOnUser(event.detail));
 document.addEventListener("toba:player", () => {
+  if (!AM.friend) amRenderFriends();
   if (AM.friend) {
     if (AM.friend.ghost) AM.friend.vitrine = amGhostVitrine();
     amRenderFriend();
@@ -916,7 +1074,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (location.search) history.replaceState(null, "", location.pathname);
   AM.pendingAdd = socialCleanUsername(params.get("add") || "");
   const open = params.get("open");
-  if (open === "ghost") setTimeout(() => amOpenGhost(), 400);
+  if (open === "ghost") setTimeout(() => (socialGhostAdded() ? amOpenGhost() : amOpenAdd(null, "cloba")), 400);
   if (open === "share") AM.pendingShare = true;
   if (open === "add" && !AM.pendingAdd) AM.pendingAddOpen = true;
   amRenderHome();

@@ -114,6 +114,21 @@ function socialWriteState(state) {
   }
 }
 
+// 👻 Cloba fantasma (v1.62): amigo de mentira que mora só neste aparelho.
+// toba_social_state.ghost = { at: ms } enquanto ele está na lista (sem conta também).
+function socialGhostAdded() {
+  const st = socialReadState();
+  return Boolean(st.ghost && st.ghost.at);
+}
+
+function socialSetGhost(on) {
+  const st = socialReadState();
+  if (on) st.ghost = { at: (st.ghost && st.ghost.at) || Date.now() };
+  else delete st.ghost;
+  socialWriteState(st);
+  if (on) socialNoteFact("ghostAt");
+}
+
 // Estado da conta logada agora (estado de outra conta no mesmo aparelho não vale).
 function socialMyState() {
   const user = typeof TOBA_CLOUD !== "undefined" ? TOBA_CLOUD.user : null;
@@ -125,7 +140,9 @@ function socialMyState() {
 }
 
 // @username: 3 a 20 letras sem acento, números, _ ou ponto. Guardado em minúsculo
-// (o id na nuvem); o jeito que a pessoa escreveu (Bertoba) vira o nome na tela.
+// (o id na nuvem); o jeito que a pessoa escreveu (ClobaMonstro) vira o nome na tela.
+// "cloba" é do fantasma 👻 (v1.62): adicionar @cloba nunca vai pra nuvem.
+const SOCIAL_GHOST_ID = "cloba";
 function socialCleanUsername(text) {
   return String(text || "").trim().replace(/^@+/, "").replace(/\s+/g, "");
 }
@@ -137,9 +154,10 @@ function socialUsernameId(text) {
 function socialUsernameError(text) {
   const name = socialCleanUsername(text);
   if (name.length < 3) return "O username precisa de pelo menos 3 letras.";
-  if (name.length > 20) return "No máximo 20 letras, Bertoba. 😂";
+  if (name.length > 20) return "No máximo 20 letras, campeão. 😂";
   if (!/^[A-Za-z0-9_.]+$/.test(name)) return "Só letras sem acento, números, _ e ponto.";
   if (/^[._]|[._]$/.test(name)) return "Não pode começar nem terminar com _ ou ponto.";
+  if (name.toLowerCase() === SOCIAL_GHOST_ID) return "@Cloba é do fantasma 👻. Escolhe outro!";
   return "";
 }
 
@@ -169,6 +187,31 @@ function socialLastWeight() {
   } catch (err) {
     return null;
   }
+}
+
+// Mapa de calor da vida toda em níveis 0 a 5 por grupo (hall-shared.js).
+// Guardado por estado do Perfil: a tela redesenha muito e a conta é pesada.
+const socialHeatCache = new WeakMap();
+
+function socialHeatLevels(state) {
+  if (typeof calcMuscleHeat !== "function" || typeof getMuscleLevel !== "function" || typeof readPlayerSource !== "function") return null;
+  if (socialHeatCache.has(state)) return socialHeatCache.get(state);
+  let out = null;
+  try {
+    const health = readPlayerSource("TOBA_HEALTH_DB").data;
+    const workouts = (Array.isArray(health.workouts) ? health.workouts : [])
+      .filter((w) => w && /^\d{4}-\d{2}-\d{2}$/.test(String(w.date || "")) && w.date <= state.today);
+    const heat = calcMuscleHeat(workouts, health);
+    out = {};
+    Object.keys(heat).forEach((group) => {
+      const level = getMuscleLevel(heat, group);
+      if (level > 0) out[group] = level;
+    });
+  } catch (err) {
+    out = null;
+  }
+  socialHeatCache.set(state, out);
+  return out;
 }
 
 function socialBuildVitrine(state, prefs) {
@@ -212,6 +255,7 @@ function socialBuildVitrine(state, prefs) {
     if (s.section === "base" || show[s.section]) stats[s.key] = all[s.key] ?? null;
   });
   const isGradient = look.color.color.startsWith("linear");
+  const heat = show.treinos ? socialHeatLevels(state) : null;
   return {
     v: 1,
     name: prefs.name,
@@ -219,8 +263,9 @@ function socialBuildVitrine(state, prefs) {
     look: {
       avatar: look.avatar.icon,
       frame: look.frame.id,
-      color: isGradient ? "#bc8cff" : look.color.color,
+      color: isGradient ? look.color.badge || "#bc8cff" : look.color.color,
       ring: isGradient ? look.color.color : "",
+      bg: look.bg ? look.bg.id : "padrao",
       titleIcon: look.title.icon,
       title: look.title.name,
     },
@@ -233,6 +278,7 @@ function socialBuildVitrine(state, prefs) {
     stats,
     ach,
     achTotal: state.achievements.length,
+    ...(heat ? { heat } : {}),
   };
 }
 
@@ -352,7 +398,7 @@ async function socialAddByUsername(text) {
   const uid = socialMe();
   const state = socialMyState();
   const id = socialUsernameId(text);
-  if (id.length < 3) return { ok: false, msg: "Digita o @ do amigo, tipo @maracujeba." };
+  if (id.length < 3) return { ok: false, msg: "Digita o @ do amigo, tipo @cloba." };
   if (id === (state.username || "").toLowerCase()) return { ok: false, msg: "Esse é VOCÊ, campeão. 🤡 Manda o teu @ pro amigo." };
   if (socialUsernameError(text)) return { ok: false, msg: `Não achei ninguém com @${socialCleanUsername(text)}.` };
   const snap = await socialDb().collection("usernames").doc(id).get();
@@ -423,9 +469,11 @@ async function socialListFriends() {
 function socialAvatar(v, size = "md") {
   const look = (v && v.look) || {};
   const color = /^#[0-9a-fA-F]{3,8}$/.test(look.color || "") ? look.color : "#58a6ff";
-  const ring = /^linear-gradient\([#0-9a-fA-F,\s%]+\)$/.test(look.ring || "") ? look.ring : "";
+  // v1.62: aceita "135deg," no começo (antes o Arco-íris dos amigos sumia)
+  const ring = /^linear-gradient\((\d{1,3}deg,\s*)?[#0-9a-fA-F,\s%]+\)$/.test(look.ring || "") ? look.ring : "";
   const frame = /^[a-z0-9-]+$/.test(look.frame || "") ? look.frame : "simples";
-  return `<span class="tp-avatar is-${size} tp-frame-${frame}" style="--tp-color:${color};${ring ? `--tp-ring:${ring}` : ""}" aria-hidden="true">
+  const bg = /^[a-z0-9-]+$/.test(look.bg || "") ? look.bg : "padrao";
+  return `<span class="tp-avatar is-${size} tp-frame-${frame} tp-bg-${bg}" style="--tp-color:${color};${ring ? `--tp-ring:${ring};--tp-badge:${ring}` : ""}" aria-hidden="true">
     <span class="tp-avatar-icon">${escapeHtml(look.avatar || "🐣")}</span>
     <span class="tp-avatar-level">${Number(v && v.level) || 1}</span>
   </span>`;

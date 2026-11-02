@@ -61,7 +61,7 @@
   min-width: 22px;
   padding: 1px 5px;
   border-radius: 999px;
-  background: var(--tp-color);
+  background: var(--tp-badge, var(--tp-color));
   color: #0d1117;
   font-size: 0.7rem;
   font-weight: 900;
@@ -74,7 +74,8 @@
   min-width: 30px;
 }
 
-.tp-frame-simples::before { background: var(--border); }
+/* Simples pega a Cor escolhida (v1.62): a cor pinta o aro e o selo */
+.tp-frame-simples::before { background: var(--tp-ring); }
 .tp-frame-bronze::before { background: linear-gradient(135deg, #cd7f32, #8a5222, #e3a869); }
 .tp-frame-prata::before { background: linear-gradient(135deg, #e6edf3, #8b949e, #f0f6fc); }
 .tp-frame-ouro::before { background: linear-gradient(135deg, #e3b341, #9e6a03, #ffd866); }
@@ -101,6 +102,96 @@
 }
 .tp-frame-arquibancada {
   box-shadow: 0 0 0 3px var(--bg), 0 0 16px 2px rgba(46, 160, 67, 0.4);
+}
+
+/* Molduras novas (v1.62) */
+.tp-frame-neon::before { background: linear-gradient(135deg, #39d0d8, #f778ba); }
+.tp-frame-neon { box-shadow: 0 0 0 3px var(--bg), 0 0 14px 2px rgba(57, 208, 216, 0.45); }
+.tp-frame-esmeralda::before { background: linear-gradient(135deg, #7ee787, #1a7f37, #aff5b4); }
+.tp-frame-rubi::before { background: linear-gradient(135deg, #ff7b72, #8e1519, #ffa198); }
+.tp-frame-galaxia::before {
+  background: conic-gradient(from 0deg, #1f6feb, #bc8cff, #f778ba, #1f6feb);
+  animation: tp-spin 5s linear infinite;
+}
+.tp-frame-galaxia { box-shadow: 0 0 0 3px var(--bg), 0 0 18px 2px rgba(188, 140, 255, 0.45); }
+.tp-frame-rgb::before {
+  background: conic-gradient(from 0deg, #f85149, #e3b341, #3fb950, #39d0d8, #58a6ff, #bc8cff, #f85149);
+  animation: tp-spin 1.8s linear infinite;
+}
+.tp-frame-rgb { box-shadow: 0 0 0 3px var(--bg), 0 0 20px 3px rgba(88, 166, 255, 0.5); }
+.tp-frame-lendaria::before {
+  background: conic-gradient(from 0deg, #fff8c5, #e3b341, #9e6a03, #ffd866, #fff8c5);
+  animation: tp-spin 3.5s linear infinite;
+}
+.tp-frame-lendaria { box-shadow: 0 0 0 3px var(--bg), 0 0 24px 4px rgba(227, 179, 65, 0.55); }
+.tp-frame-zen::before { background: linear-gradient(135deg, #a5f3fc, #2ea0a0, #d2fff8); animation: tp-pulse 3s ease-in-out infinite; }
+.tp-frame-toalha::before { background: repeating-conic-gradient(from 0deg, #f85149 0 15deg, #f0f6fc 15deg 30deg); }
+.tp-frame-bandeirada::before {
+  background: repeating-conic-gradient(from 0deg, #f0f6fc 0 20deg, #161b22 20deg 40deg);
+  animation: tp-spin 7s linear infinite;
+}
+.tp-frame-passaporte::before { background: linear-gradient(135deg, #1f6feb, #2ea043, #e3b341); }
+.tp-frame-tropa::before { background: repeating-conic-gradient(from 0deg, #bc8cff 0 45deg, #e3b341 45deg 90deg); animation: tp-spin 9s linear infinite; }
+.tp-frame-ectoplasma::before { background: linear-gradient(135deg, #a5f3fc, #7ee787, #f0f6fc); animation: tp-pulse 2.2s ease-in-out infinite; }
+.tp-frame-ectoplasma { box-shadow: 0 0 0 3px var(--bg), 0 0 18px 3px rgba(126, 231, 135, 0.45); }
+
+/* ---------------------------------------------------------------------
+ * Fundo do círculo (v1.62, PLAYER_BGS). Vem depois do .tp-avatar pra ganhar.
+ * O .tp-bg-* também pinta qualquer bloco (o brilho do card do Perfil).
+ * ------------------------------------------------------------------- */
+.tp-bg-padrao { background: radial-gradient(circle at 50% 35%, var(--surface-3), var(--bg)); }
+.tp-bg-noite { background: radial-gradient(circle at 50% 30%, #2d4f7c, #0b1626); }
+.tp-bg-floresta { background: radial-gradient(circle at 50% 30%, #2d6a4f, #081c15); }
+.tp-bg-vinho { background: radial-gradient(circle at 50% 30%, #7a2a4a, #16060d); }
+.tp-bg-por-do-sol { background: linear-gradient(170deg, #ffb86b, #f0883e 35%, #b4235a 75%, #3a0d2b); }
+.tp-bg-oceano { background: linear-gradient(170deg, #67e8f9, #0ea5e9 40%, #1e3a8a); }
+.tp-bg-menta { background: radial-gradient(circle at 50% 30%, #6ee7b7, #047857 70%, #022c22); }
+.tp-bg-uva { background: radial-gradient(circle at 50% 30%, #c084fc, #6d28d9 60%, #2e1065); }
+.tp-bg-lava { background: radial-gradient(circle at 50% 75%, #ffb86b, #f85149 35%, #6b0f0a 75%, #1a0402); }
+.tp-bg-aurora {
+  background: linear-gradient(120deg, #22d3ee, #a855f7, #22c55e, #22d3ee);
+  background-size: 300% 300%;
+  animation: tp-bg-flow 7s ease-in-out infinite;
+}
+.tp-bg-galaxia {
+  background:
+    radial-gradient(1px 1px at 25% 30%, #fff, transparent),
+    radial-gradient(1px 1px at 70% 20%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 60% 70%, #fff, transparent),
+    radial-gradient(1px 1px at 35% 75%, #d2a8ff, transparent),
+    radial-gradient(circle at 40% 40%, #6d28d9, #1e1b4b 55%, #05030f);
+}
+.tp-bg-ouro-liquido {
+  background: linear-gradient(120deg, #9e6a03, #ffd866, #e3b341, #fff8c5, #9e6a03);
+  background-size: 300% 300%;
+  animation: tp-bg-flow 5s ease-in-out infinite;
+}
+.tp-bg-estrada { background: repeating-linear-gradient(180deg, transparent 0 10%, #e3b341 10% 18%, transparent 18% 28%) center / 8% 100% no-repeat, linear-gradient(#3b3f45, #1c1f23); }
+.tp-bg-praia { background: linear-gradient(180deg, #7dd3fc 0 45%, #0ea5e9 45% 62%, #fde68a 62%); }
+.tp-bg-toalha { background: repeating-conic-gradient(#f85149 0 25%, #f0f6fc 0 50%) 50% / 25% 25%; }
+.tp-bg-maracana { background: repeating-linear-gradient(135deg, #2ea043 0 12%, #e3b341 12% 24%); }
+.tp-bg-ecto {
+  background: radial-gradient(circle at 50% 35%, #d2fff8, #7ee787 45%, #0f5323);
+  animation: tp-bg-glow 2.6s ease-in-out infinite;
+}
+.tp-bg-holografico {
+  background: conic-gradient(from 0deg, #f778ba, #a5f3fc, #fff8c5, #bc8cff, #7ee787, #f778ba);
+  background-size: 200% 200%;
+  animation: tp-bg-flow 4s linear infinite;
+}
+.tp-bg-vibranium {
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.35), transparent 30%),
+    radial-gradient(circle at 50% 30%, #c4b5fd, #4c1d95 55%, #0b0420);
+}
+
+@keyframes tp-bg-glow {
+  50% { filter: brightness(1.2) saturate(1.2); }
+}
+
+@keyframes tp-bg-flow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 @keyframes tp-spin {
@@ -536,6 +627,17 @@
   .tp-frame-chamas::before,
   .tp-frame-brasa::before,
   .tp-frame-arquibancada::before,
+  .tp-frame-galaxia::before,
+  .tp-frame-rgb::before,
+  .tp-frame-lendaria::before,
+  .tp-frame-zen::before,
+  .tp-frame-bandeirada::before,
+  .tp-frame-tropa::before,
+  .tp-frame-ectoplasma::before,
+  .tp-bg-aurora,
+  .tp-bg-ouro-liquido,
+  .tp-bg-ecto,
+  .tp-bg-holografico,
   .tp-strip-fire.is-on {
     animation: none;
   }

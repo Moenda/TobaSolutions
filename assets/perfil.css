@@ -4,7 +4,10 @@
   --accent: var(--gold-2);
 }
 
-.pf-hero {
+.pf-hero,
+.pf-custom-preview {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -16,8 +19,148 @@
     var(--surface);
 }
 
-.pf-hero .tp-avatar {
+/* v1.62: respiro entre o card e os quadradinhos */
+.pf-hero {
+  margin-bottom: 12px;
+}
+
+.pf-hero > *,
+.pf-custom-preview > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Brilho do Fundo escolhido (PLAYER_BGS) atrás do card */
+.pf-hero > .pf-hero-glow,
+.pf-custom-preview > .pf-hero-glow {
+  position: absolute;
+  z-index: 0;
+  inset: -30% -10% 35%;
+  opacity: 0.28;
+  filter: blur(28px);
+  pointer-events: none;
+}
+
+.pf-hero .tp-avatar,
+.pf-custom-preview .tp-avatar {
   margin-bottom: 6px;
+}
+
+.pf-hero-avatar {
+  padding: 6px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* 🧱 Bloquinho de lego = Personalizar */
+.pf-lego {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 7px 5px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(13, 17, 23, 0.55);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.pf-lego:active {
+  transform: scale(0.95);
+}
+
+.pf-lego-svg {
+  width: 28px;
+  height: 21px;
+  fill: #f85149;
+  filter: drop-shadow(0 2px 0 #8e1519);
+}
+
+.pf-lego-shine {
+  fill: rgba(255, 255, 255, 0.25);
+}
+
+/* 🤝 Amigos no cabeçalho */
+.pf-friends-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: var(--tap);
+  padding: 0 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(88, 166, 255, 0.18), rgba(63, 185, 80, 0.12));
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pf-friends-btn .social-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+}
+
+/* 🧱 Personalizar */
+.pf-custom-preview {
+  margin-bottom: 12px;
+  padding-bottom: 1rem;
+}
+
+.pf-custom-parts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
+.pf-custom-parts span {
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: rgba(13, 17, 23, 0.5);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+.pf-custom-hint {
+  margin: -0.4rem 0 0.8rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.pf-tabs .tab-btn small {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.pf-ultimate-title {
+  margin: 1.1rem 0 0.6rem;
+  text-align: center;
+  font-weight: 900;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  background: linear-gradient(90deg, #f778ba, #a5f3fc, #fff8c5, #bc8cff, #7ee787);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .pf-hero .tp-bar {
@@ -262,8 +405,17 @@
 
 .pf-reward-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
+}
+
+.pf-reward-grid.is-avatars {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.pf-reward-grid.is-ultimate .pf-reward {
+  border-color: rgba(188, 140, 255, 0.45);
+  background: linear-gradient(160deg, rgba(188, 140, 255, 0.12), rgba(126, 231, 135, 0.06));
 }
 
 .pf-title-list {
@@ -1163,57 +1315,4 @@
 
 .pfh-far[open] summary {
   margin-bottom: 4px;
-}
-
-/* Toba dos amigos (v1.61) */
-.pf-social {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin: 0.9rem 0 0.2rem;
-}
-
-.pf-social-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 12px 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, rgba(88, 166, 255, 0.16), rgba(88, 166, 255, 0.04));
-  color: var(--text);
-  font-weight: 700;
-  font-size: 0.82rem;
-  line-height: 1.2;
-  text-align: center;
-  text-decoration: none;
-}
-
-.pf-social-btn.is-share {
-  background: linear-gradient(135deg, rgba(63, 185, 80, 0.16), rgba(63, 185, 80, 0.04));
-}
-
-.pf-social-btn span {
-  font-size: 1.4rem;
-}
-
-.pf-social-link {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--text);
-  font-weight: 600;
-  font-size: 0.88rem;
-  text-decoration: none;
-}
-
-.pf-social-arrow {
-  margin-left: auto;
-  color: var(--muted);
 }

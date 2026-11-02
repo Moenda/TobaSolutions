@@ -1820,6 +1820,237 @@ body:has(> .toba-fullpage.active) > .container {
   font-weight: 600;
 }
 
+/* v1.62: cartão de sincronização (status + 🔄 juntos) */
+.tc-sync {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0.9rem;
+  padding: 0.7rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.tc-sync.is-ok {
+  border-color: rgba(63, 185, 80, 0.45);
+  background: linear-gradient(135deg, rgba(63, 185, 80, 0.12), rgba(63, 185, 80, 0.02)), var(--surface-2);
+}
+
+.tc-sync.is-warn {
+  border-color: rgba(227, 179, 65, 0.45);
+}
+
+.tc-sync-icon {
+  font-size: 1.4rem;
+}
+
+.tc-sync-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.tc-sync-text strong {
+  font-size: 0.95rem;
+}
+
+.tc-sync-text small {
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.tc-sync-btn {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-3);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.tc-sync-btn.is-spinning {
+  animation: tc-spin 1s linear infinite;
+}
+
+@keyframes tc-spin {
+  to { transform: rotate(360deg); }
+}
+
+.tc-apps {
+  margin-bottom: 0.9rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.tc-apps summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  list-style: none;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tc-apps summary::-webkit-details-marker {
+  display: none;
+}
+
+.tc-apps-count {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.tc-apps[open] summary {
+  margin-bottom: 0.7rem;
+}
+
+.tc-apps .tc-hint {
+  margin: -0.3rem 0 0.1rem;
+}
+
+#tobaCloudModal a.toba-menu-btn {
+  text-decoration: none;
+}
+
+.tc-signout {
+  display: block;
+  margin: 1rem auto 0.2rem;
+  padding: 6px 12px;
+  border: 0;
+  background: none;
+  color: var(--coral);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tc-signout small {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* v1.62: 🕰️ Versões guardadas por dia, compacta */
+.tc-ver-intro {
+  margin: 0 0 0.8rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.tc-ver-filters {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 6px;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.tc-ver-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.tc-ver-filters .tc-chip {
+  flex: none;
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+}
+
+.tc-ver-day {
+  margin: 0.8rem 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tc-ver-list {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.tc-ver-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.5rem 0.7rem;
+  border: 0;
+  border-bottom: 1px solid var(--border-soft);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tc-ver-row:last-child {
+  border-bottom: 0;
+}
+
+.tc-ver-row:active {
+  background: var(--surface-3);
+}
+
+.tc-ver-emoji {
+  font-size: 1.15rem;
+  width: 1.5rem;
+  text-align: center;
+}
+
+.tc-ver-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.tc-ver-name {
+  font-size: 0.88rem;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tc-ver-kind {
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.tc-ver-kind.is-conflito { color: var(--gold-2); }
+.tc-ver-kind.is-apagado { color: var(--coral); }
+.tc-ver-kind.is-antes { color: var(--blue); }
+
+.tc-ver-meta {
+  color: var(--muted);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tc-ver-get {
+  font-size: 1.05rem;
+  opacity: 0.85;
+}
+
 .tc-conflict {
   margin-bottom: 0.8rem;
 }

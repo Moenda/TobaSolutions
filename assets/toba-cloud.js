@@ -215,6 +215,7 @@ const TOBA_CLOUD = {
   view: "main",
   mode: "login",
   versions: null,
+  verFilter: "all", // filtro da 🕰️ Versões guardadas (v1.62)
 };
 
 function tobaCloudLoadScript(src) {
@@ -850,14 +851,20 @@ async function tobaCloudLoadVersions() {
   tobaCloudRender();
 }
 
+// Uma linha da lista pode juntar várias versões (as 🧩 Preferências do mesmo dia):
+// baixa todas num arquivo só, no formato do backup geral.
 async function tobaCloudDownloadVersion(el) {
-  const item = (TOBA_CLOUD.versions || []).find((v) => v.id === el.dataset.id);
-  if (!item) return;
+  const ids = String(el.dataset.ids || el.dataset.id || "").split(",").filter(Boolean);
+  const items = ids.map((id) => (TOBA_CLOUD.versions || []).find((v) => v.id === id)).filter(Boolean);
+  if (!items.length) return;
   try {
-    const value = await tobaCloudReadChunks(`ver_${item.id}`, Number(item.chunks) || 1);
+    const out = {};
+    for (const item of items) out[item.key] = await tobaCloudReadChunks(`ver_${item.id}`, Number(item.chunks) || 1);
+    const item = items[0];
     const day = new Date(item.at);
     const stamp = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
-    tobaDownloadJson({ [item.key]: value }, `toba_nuvem_${item.key}_${item.kind}_${stamp}.json`);
+    const name = items.length > 1 ? "preferencias" : item.key;
+    tobaDownloadJson(out, `toba_nuvem_${name}_${item.kind}_${stamp}.json`);
     showPageMessage(
       "Baixei no formato do backup geral. Pra voltar essa versão: portal ⚙️ › Dados & Backup › Restaurar backup.",
       { title: "📥 Versão baixada", icon: "📥" },
@@ -896,6 +903,10 @@ tobaActions({
   tobaCloudDownloadVersion,
   tobaCloudDownloadAll,
   tobaCloudSyncNow: () => tobaCloudSync("manual"),
+  tobaCloudVerFilter: (el) => {
+    TOBA_CLOUD.verFilter = el.dataset.filter || "all";
+    tobaCloudRender();
+  },
   tobaCloudMode: (el) => {
     TOBA_CLOUD.mode = el.dataset.mode;
     TOBA_CLOUD.error = "";
@@ -956,6 +967,56 @@ function ensureTobaCloudUi() {
   }
 }
 
+// "Sincronizado agora" / "Sincronizado há 5 min" / "Sincronizado em 30/10 14:02"
+function tobaCloudSyncedText(ms) {
+  if (!ms) return "Ainda não sincronizou";
+  const ago = tobaCloudAgo(ms);
+  return `Sincronizado ${ago === "agora" || ago.startsWith("há") ? ago : `em ${ago}`}`;
+}
+
+// Grupo de uma chave na lista de versões: app (a própria chave) ou "prefs"
+function tobaCloudVerGroup(key) {
+  const info = tobaCloudKeyInfo(key);
+  return info.group === "prefs" ? "prefs" : key;
+}
+
+function tobaCloudDayLabel(ms) {
+  const d = new Date(ms);
+  const iso = (x) => `${x.getFullYear()}-${x.getMonth()}-${x.getDate()}`;
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  if (iso(d) === iso(today)) return "Hoje";
+  if (iso(d) === iso(yesterday)) return "Ontem";
+  const week = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"][d.getDay()];
+  return `${week}, ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+// Junta a lista crua (até 80 versões) em linhas por dia. As 🧩 Preferências do
+// mesmo dia e do mesmo tipo viram UMA linha (antes eram 5 iguais em sequência).
+function tobaCloudVersionRows(list) {
+  const rows = [];
+  const byKey = new Map();
+  list.forEach((v) => {
+    const group = tobaCloudVerGroup(v.key);
+    const d = new Date(v.at);
+    const day = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const rowKey = group === "prefs" ? `${day}|prefs|${v.kind}` : `${day}|${v.id}`;
+    let row = byKey.get(rowKey);
+    if (!row) {
+      row = { day, group, kind: v.kind, at: v.at, device: v.device || "", size: 0, items: new Map() };
+      byKey.set(rowKey, row);
+      rows.push(row);
+    }
+    if (!row.items.has(v.key)) {
+      row.items.set(v.key, v);
+      row.size += Number(v.size) || 0;
+      row.at = Math.max(row.at, v.at);
+    }
+  });
+  return rows;
+}
+
 function tobaCloudStatusLine() {
   const state = tobaCloudReadState();
   const pending = TOBA_CLOUD_KEYS.some(({ key }) => !state.off[key] && state.keys[key] &&
@@ -968,7 +1029,7 @@ function tobaCloudStatusLine() {
     default:
       if (!TOBA_CLOUD.user) return { icon: "☁️", text: "Entrar e salvar tudo na nuvem" };
       if (pending) return { icon: "⏳", text: "Tem mudança esperando pra subir" };
-      return { icon: "✅", text: `Tudo na nuvem · ${tobaCloudAgo(state.lastSync)}` };
+      return { icon: "✅", text: tobaCloudSyncedText(state.lastSync) };
   }
 }
 
@@ -1012,7 +1073,7 @@ function tobaCloudRender() {
         <button type="button" class="tc-chip${signup ? "" : " is-on"}" data-click="tobaCloudMode" data-mode="login">Entrar</button>
         <button type="button" class="tc-chip${signup ? " is-on" : ""}" data-click="tobaCloudMode" data-mode="signup">Criar conta</button>
       </div>
-      ${signup ? `<div class="form-group"><label for="tcName">Como te chamam?</label><input class="form-control" id="tcName" autocomplete="nickname" maxlength="40" placeholder="Rafa" /></div>` : ""}
+      ${signup ? `<div class="form-group"><label for="tcName">Como te chamam?</label><input class="form-control" id="tcName" autocomplete="nickname" maxlength="40" placeholder="Cloba" /></div>` : ""}
       <div class="form-group"><label for="tcEmail">E-mail</label><input class="form-control" id="tcEmail" type="email" inputmode="email" autocomplete="email" placeholder="voce@gmail.com" /></div>
       <div class="form-group"><label for="tcPassword">Senha</label><input class="form-control" id="tcPassword" type="password" autocomplete="${signup ? "new-password" : "current-password"}" placeholder="${signup ? "pelo menos 6 caracteres" : "tua senha"}" /></div>
       ${err}
@@ -1041,21 +1102,53 @@ function tobaCloudRender() {
   }
 
   if (TOBA_CLOUD.view === "versions") {
-    const kinds = { antes: "🧳 Antes da nuvem", dia: "📅 Cópia do dia", conflito: "⚔️ Conflito", apagado: "🗑️ Antes de apagar" };
+    // v1.62: separado por dia, filtro por app e as preferências numa linha só
+    const kinds = { antes: ["🧳", "Antes da nuvem"], dia: ["📅", "Cópia do dia"], conflito: ["⚔️", "Conflito"], apagado: ["🗑️", "Antes de apagar"] };
     const list = TOBA_CLOUD.versions;
+    let content = "";
+    if (list === null) content = `<p class="toba-sheet-text">⏳ Buscando...</p>`;
+    else if (!list.length) content = `<p class="toba-sheet-text">Nenhuma cópia ainda. A primeira aparece amanhã. 😴</p>`;
+    else {
+      const all = tobaCloudVersionRows(list);
+      const groups = [...new Set(all.map((r) => r.group))];
+      const filter = groups.includes(TOBA_CLOUD.verFilter) ? TOBA_CLOUD.verFilter : "all";
+      const groupName = (g) => (g === "prefs" ? "🧩 Preferências" : tobaCloudKeyName(g));
+      const chips = groups.length > 1 ? `<div class="tc-chips tc-ver-filters">
+        <button type="button" class="tc-chip${filter === "all" ? " is-on" : ""}" data-click="tobaCloudVerFilter" data-filter="all">Todos</button>
+        ${groups.map((g) => `<button type="button" class="tc-chip${filter === g ? " is-on" : ""}" data-click="tobaCloudVerFilter" data-filter="${tobaCloudEsc(g)}">${tobaCloudEsc(groupName(g))}</button>`).join("")}
+      </div>` : "";
+      const rows = all.filter((r) => filter === "all" || r.group === filter);
+      const days = [];
+      rows.forEach((r) => {
+        const last = days[days.length - 1];
+        if (last && last.day === r.day) last.rows.push(r);
+        else days.push({ day: r.day, label: tobaCloudDayLabel(r.at), rows: [r] });
+      });
+      content = chips + days.map((d) => `
+        <div class="tc-ver-day">${tobaCloudEsc(d.label)}</div>
+        <div class="tc-ver-list">${d.rows.map((r) => {
+          const items = [...r.items.values()];
+          const [kIcon, kName] = kinds[r.kind] || ["📦", r.kind];
+          const time = new Date(r.at);
+          const hh = `${String(time.getHours()).padStart(2, "0")}:${String(time.getMinutes()).padStart(2, "0")}`;
+          const emoji = r.group === "prefs" ? "🧩" : tobaCloudKeyInfo(r.group).emoji || "📦";
+          const name = r.group === "prefs" ? "Preferências" : tobaCloudKeyInfo(r.group).label || r.group;
+          return `
+          <button type="button" class="tc-ver-row" data-click="tobaCloudDownloadVersion" data-ids="${tobaCloudEsc(items.map((v) => v.id).join(","))}">
+            <span class="tc-ver-emoji">${tobaCloudEsc(emoji)}</span>
+            <span class="tc-ver-text">
+              <span class="tc-ver-name">${tobaCloudEsc(name)}${r.kind === "dia" ? "" : ` <span class="tc-ver-kind is-${tobaCloudEsc(r.kind)}">${kIcon} ${tobaCloudEsc(kName)}</span>`}</span>
+              <span class="tc-ver-meta">${hh} · ${tobaCloudEsc(r.device.replace(/^\S+\s/, ""))} · ${tobaCloudKb(r.size)}</span>
+            </span>
+            <span class="tc-ver-get">📥</span>
+          </button>`;
+        }).join("")}</div>`).join("");
+    }
     body.innerHTML = `
       <button type="button" class="back-nav-btn" data-click="tobaCloudView" data-view="main">‹ Conta</button>
-      <p class="toba-sheet-text">Cópias que a nuvem guardou. Toca pra baixar e restaurar pelo portal (⚙️ › Dados & Backup › Restaurar).</p>
+      <p class="tc-ver-intro">Uma cópia por dia de cada app (7 dias), mais as marcadas ⚔️ conflito, 🧳 antes da nuvem e 🗑️ antes de apagar. Toca pra baixar; pra voltar: portal ⚙️ › Dados &amp; Backup › Restaurar.</p>
       ${err}
-      ${list === null ? `<p class="toba-sheet-text">⏳ Buscando...</p>` : list.length === 0 ? `<p class="toba-sheet-text">Nenhuma cópia ainda.</p>` : `<div class="toba-menu">${list.map((v) => `
-        <button type="button" class="toba-menu-btn" data-click="tobaCloudDownloadVersion" data-id="${tobaCloudEsc(v.id)}">
-          <span class="toba-menu-icon">${tobaCloudEsc(tobaCloudKeyInfo(v.key).emoji || "📦")}</span>
-          <span class="toba-menu-text">
-            <span class="toba-menu-title">${tobaCloudEsc(tobaCloudKeyName(v.key))} · ${tobaCloudEsc(kinds[v.kind] || v.kind)}</span>
-            <span class="toba-menu-desc">${tobaCloudEsc(tobaCloudAgo(v.at))} · ${tobaCloudEsc(v.device || "")} · ${tobaCloudKb(v.size)}</span>
-          </span>
-          <span class="toba-hub-chevron">📥</span>
-        </button>`).join("")}</div>`}`;
+      ${content}`;
     footer.innerHTML = "";
     return;
   }
@@ -1066,24 +1159,46 @@ function tobaCloudRender() {
     const groupAttr = item.group === "prefs" ? ` data-group="prefs"` : "";
     return `<button type="button" class="tc-chip${on ? " is-on" : ""}" data-click="tobaCloudToggleKey" data-key="${item.key}"${groupAttr}>${item.emoji} ${tobaCloudEsc(item.label)}</button>`;
   }).join("");
+  // v1.62: cartão de sincronização com o 🔄 junto, apps num "abre e fecha" e Sair separado
+  const appItems = TOBA_CLOUD_KEYS.filter((item) => item.label);
+  const appsOn = appItems.filter((item) => !state.off[item.key]).length;
+  const syncing = TOBA_CLOUD.status === "syncing" || TOBA_CLOUD.status === "loading";
+  const avatar = typeof tobaPlayerState !== "undefined" && tobaPlayerState && typeof renderPlayerAvatar === "function"
+    ? renderPlayerAvatar(tobaPlayerState, "sm")
+    : `<div class="tc-avatar">${tobaCloudEsc(((user.displayName || user.email || "?").trim()[0] || "?").toUpperCase())}</div>`;
+  const friendsHref = (() => {
+    const script = document.querySelector('script[src$="toba-cloud.js"]');
+    return script ? script.getAttribute("src").replace(/assets\/toba-cloud\.js$/, "Toba-Amigos.html") : "Toba-Amigos.html";
+  })();
+  const onFriendsPage = /Toba-Amigos\.html$/.test(location.pathname);
   body.innerHTML = `
     <div class="tc-user">
-      <div class="tc-avatar">${tobaCloudEsc(((user.displayName || user.email || "?").trim()[0] || "?").toUpperCase())}</div>
+      ${avatar}
       <div>
         <div class="tc-user-name">${tobaCloudEsc(user.displayName || "Jogador Toba")}</div>
         <div class="tc-user-mail">${tobaCloudEsc(user.email || "")}</div>
       </div>
     </div>
-    <div class="tc-status">${line.icon} ${tobaCloudEsc(line.text)}</div>
+    <div class="tc-sync is-${line.icon === "✅" ? "ok" : syncing ? "busy" : "warn"}">
+      <span class="tc-sync-icon">${line.icon}</span>
+      <span class="tc-sync-text">
+        <strong>${tobaCloudEsc(line.text)}</strong>
+        <small>${appsOn}/${appItems.length} apps · ${tobaCloudEsc(tobaCloudDeviceLabel())}</small>
+      </span>
+      <button type="button" class="tc-sync-btn${syncing ? " is-spinning" : ""}" data-click="tobaCloudSyncNow" aria-label="Sincronizar agora"${syncing ? " disabled" : ""}>🔄</button>
+    </div>
     ${err}
-    <div class="toba-settings-label">Vai pra nuvem</div>
-    <div class="tc-chips">${appChips}</div>
-    <p class="tc-hint">Desligado = esse app fica só neste aparelho.</p>
+    <details class="tc-apps">
+      <summary><span>☁️ O que vai pra nuvem</span><span class="tc-apps-count">${appsOn}/${appItems.length} ›</span></summary>
+      <div class="tc-chips">${appChips}</div>
+      <p class="tc-hint">Desligado = esse app fica só neste aparelho.</p>
+    </details>
     <div class="toba-menu">
-      <button type="button" class="toba-menu-btn" data-click="tobaCloudSyncNow">
-        <span class="toba-menu-icon">🔄</span>
-        <span class="toba-menu-text"><span class="toba-menu-title">Sincronizar agora</span><span class="toba-menu-desc">Sobe o que mudou aqui e baixa o que mudou fora</span></span>
-      </button>
+      ${onFriendsPage ? "" : `<a class="toba-menu-btn" href="${tobaCloudEsc(friendsHref)}">
+        <span class="toba-menu-icon">🤝</span>
+        <span class="toba-menu-text"><span class="toba-menu-title">Toba dos amigos</span><span class="toba-menu-desc">Teu @, a tropa e o X1 de troféus</span></span>
+        <span class="toba-hub-chevron">›</span>
+      </a>`}
       <button type="button" class="toba-menu-btn" data-click="tobaCloudLoadVersions">
         <span class="toba-menu-icon">🕰️</span>
         <span class="toba-menu-text"><span class="toba-menu-title">Versões guardadas</span><span class="toba-menu-desc">Cópia de cada dia (7 dias), de conflito e de antes da nuvem</span></span>
@@ -1098,11 +1213,8 @@ function tobaCloudRender() {
         <span class="toba-menu-text"><span class="toba-menu-title">Criar senha pro app</span><span class="toba-menu-desc">Pra entrar com essa conta no app Android</span></span>
         <span class="toba-hub-chevron">›</span>
       </button>`}
-      <button type="button" class="toba-menu-btn" data-click="tobaCloudSignOut">
-        <span class="toba-menu-icon">🚪</span>
-        <span class="toba-menu-text"><span class="toba-menu-title">Sair da conta</span><span class="toba-menu-desc">Os dados ficam neste aparelho</span></span>
-      </button>
-    </div>`;
+    </div>
+    <button type="button" class="tc-signout" data-click="tobaCloudSignOut">🚪 Sair da conta <small>(os dados ficam neste aparelho)</small></button>`;
   footer.innerHTML = "";
 }
 
