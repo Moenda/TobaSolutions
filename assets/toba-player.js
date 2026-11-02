@@ -130,6 +130,7 @@ const PLAYER_ACHIEVEMENT_CATS = [
   { id: "cozinha", name: "🍳 Cozinha" },
   { id: "pista", name: "🏁 Pista" },
   { id: "roles", name: "🌎 Rolês" },
+  { id: "amizade", name: "🤝 Amizade" },
 ];
 
 // Tamanho do livro de receitas pra conquista "Zerou o livro" (sem kitchen-recipes.js = inalcançável)
@@ -308,6 +309,16 @@ function buildPlayerAchievements() {
     { id: "tu-tipos", cat: "roles", tier: "ouro", icon: "🍱", name: "Paladar sem fronteiras", desc: "Visitou 10 tipos diferentes de lugar (italiana, japa, parque...).", hint: "Visite lugares de 10 tipos diferentes (escolha o tipo no lugar).", metric: (s) => s.turismKinds, goal: 10 },
     { id: "tu-fregues", cat: "roles", tier: "prata", icon: "🔁", name: "Freguês", desc: "10 lugares que você iria de novo. Já tem os seus cantinhos.", hint: "Marque 🔁 Iria de novo em 10 lugares.", metric: (s) => s.turismAgain, goal: 10 },
     { id: "tu-garimpo", cat: "roles", tier: "bronze", icon: "🤑", name: "Garimpeiro", desc: "5 lugares que valeram cada real. Bom e barato existe!", hint: "Marque 🤑 Valeu cada real em 5 lugares.", metric: (s) => s.turismValue, goal: 5 },
+    // Toba dos amigos (desde v1.61; números de calcSocialPlayer, lidos do toba_social_state)
+    { id: "am-vitrine", cat: "amizade", tier: "bronze", icon: "🪟", name: "Vitrine aberta", desc: "Escolheu teu @ e abriu o Toba pra tropa. Agora não tem mais como esconder o shape.", hint: "Ligue o Toba social em 🤝 Toba dos amigos.", metric: (s) => s.socialOn, goal: 1 },
+    { id: "am-1", cat: "amizade", tier: "bronze", icon: "🤝", name: "Primeiro parça", desc: "Primeiro amigo no Toba. Sozinho ninguém levanta um Titanic.", hint: "Tenha 1 amigo no Toba dos amigos.", metric: (s) => s.socialFriends, goal: 1 },
+    { id: "am-3", cat: "amizade", tier: "prata", icon: "👥", name: "Tropa formada", desc: "3 amigos no Toba. Já dá pra montar o trio da bancada.", hint: "Tenha 3 amigos no Toba.", metric: (s) => s.socialFriends, goal: 3 },
+    { id: "am-5", cat: "amizade", tier: "ouro", icon: "🚐", name: "Bonde do Toba", desc: "5 amigos no Toba. A van da tropa lotou.", hint: "Tenha 5 amigos no Toba.", metric: (s) => s.socialFriends, goal: 5, title: "🚐 Dono do Bonde" },
+    { id: "am-10", cat: "amizade", tier: "lenda", icon: "🏟️", name: "Tobalândia", desc: "10 amigos no Toba. Isso já é uma torcida organizada.", hint: "Tenha 10 amigos no Toba.", metric: (s) => s.socialFriends, goal: 10, title: "🏟️ Presidente da Torcida" },
+    { id: "am-duelo", cat: "amizade", tier: "bronze", icon: "⚔️", name: "X1 marcado", desc: "Abriu o comparador contra um amigo de verdade. Que vença o mais monstro.", hint: "Compare teus troféus com um amigo.", metric: (s) => s.socialDuels, goal: 1 },
+    { id: "am-placar", cat: "amizade", tier: "prata", icon: "👑", name: "Amassou no placar", desc: "Ganhou o placar do 📊 Duelo contra um amigo. Pode printar e mandar no grupo.", hint: "Ganhe o placar do Duelo contra um amigo.", metric: (s) => s.socialBeat, goal: 1 },
+    { id: "am-placar3", cat: "amizade", tier: "ouro", icon: "🦁", name: "Rei da tropa", desc: "Ganhou o placar contra 3 amigos diferentes. Nunca foi sorte.", hint: "Ganhe o placar do Duelo contra 3 amigos diferentes.", metric: (s) => s.socialBeat, goal: 3, title: "🦁 Rei da Tropa" },
+    { id: "am-fantasma", cat: "amizade", tier: "bronze", icon: "👻", name: "Caça-fantasma", desc: "Duelou com o Maracujeba fantasma. Treino é treino, jogo é jogo.", hint: "Abra o exemplo do fantasma no Toba dos amigos.", metric: (s) => s.socialGhost, goal: 1, mystery: true },
   );
   return list;
 }
@@ -632,6 +643,38 @@ function calcPlayerStreak(trainingDays, goal, today) {
   return result;
 }
 
+// Fatos do Toba dos amigos (toba-social.js grava em toba_social_state.facts):
+// { onAt, friends: { uid: data }, duels: { uid: data }, beat: { uid: data }, ghostAt }.
+// Amigo que já passou continua contando (desfazer não tira conquista). Ilegível = nada.
+function calcSocialPlayer(today) {
+  let facts = null;
+  try {
+    const raw = JSON.parse(localStorage.getItem("toba_social_state") || "null");
+    facts = raw && raw.facts && typeof raw.facts === "object" ? raw.facts : null;
+  } catch (err) {
+    facts = null;
+  }
+  if (!facts) return [];
+  const steps = [];
+  const add = (date, key) => {
+    if (playerIsIso(date) && date <= today) steps.push({ date, key });
+  };
+  add(facts.onAt, "socialOn");
+  add(facts.ghostAt, "socialGhost");
+  ["friends", "duels", "beat"].forEach((group) => {
+    const map = facts[group] && typeof facts[group] === "object" ? facts[group] : {};
+    Object.keys(map).forEach((uid) => add(map[uid], group));
+  });
+  steps.sort((a, b) => a.date.localeCompare(b.date));
+  const stats = { socialOn: 0, socialFriends: 0, socialDuels: 0, socialBeat: 0, socialGhost: 0 };
+  const names = { friends: "socialFriends", duels: "socialDuels", beat: "socialBeat" };
+  return steps.map((step) => {
+    if (step.key === "socialOn" || step.key === "socialGhost") stats[step.key] = 1;
+    else stats[names[step.key]] += 1;
+    return { date: step.date, stats: { ...stats } };
+  });
+}
+
 function computePlayer(options = {}) {
   const today = toIsoDate(options.today || new Date());
   const goal = playerDb.settings.weeklyGoal;
@@ -651,6 +694,7 @@ function computePlayer(options = {}) {
     racingFuelings: 0, racingKm: 0, racingSegments: 0, racingEco: 0, racingEthanol: 0, racingBigFill: 0, racingFuelTypes: 0, racingRoad: 0,
     turismLists: 0, turismAdded: 0, turismVisits: 0, turismTop: 0, turismNem: 0, turismCities: 0,
     turismKinds: 0, turismSameDay: 0, turismAgain: 0, turismValue: 0, turismZerou: 0,
+    socialOn: 0, socialFriends: 0, socialDuels: 0, socialBeat: 0, socialGhost: 0,
   };
   const checkAchievements = (date) => {
     PLAYER_ACHIEVEMENTS.forEach((a) => {
@@ -830,6 +874,11 @@ function computePlayer(options = {}) {
   } else {
     console.warn("toba-player: turism-metrics.js não carregado; conquistas dos rolês fora da conta.");
   }
+  /* ---------- Amizade (toba_social_state, desde v1.61): só conquistas ---------- */
+  calcSocialPlayer(today).forEach((step) => {
+    Object.assign(stats, step.stats);
+    checkAchievements(step.date);
+  });
   checkAchievements(today);
 
   /* ---------- Conquistas ---------- */

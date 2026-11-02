@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
+  <title>Toba | Toba dos amigos 🤝</title>
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="assets/toba-common.css" />
+  <link rel="stylesheet" href="assets/toba-player.css" />
+  <link rel="stylesheet" href="assets/perfil.css" />
+  <link rel="stylesheet" href="assets/amigos.css" />
+</head>
+
+<body data-social="page">
+  <main class="container">
+    <header class="toba-header">
+      <a class="toba-back" href="Toba-Perfil.html" id="amBack" data-label="Voltar para o Perfil" aria-label="Voltar para o Perfil">‹</a>
+      <a class="toba-titles" href="Toba-Perfil.html">
+        <span class="toba-app">🎮 Perfil</span>
+        <span class="toba-page" id="amPageTitle">🤝 Toba dos amigos</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-icon-btn" data-click="amHelp" data-help="geral" aria-label="Como funciona">❔</button>
+        <button type="button" class="toba-icon-btn" data-click="amRefresh" aria-label="Atualizar">🔄</button>
+      </div>
+    </header>
+
+    <!-- Lista: botões, pedidos e amigos -->
+    <div id="amMainView">
+      <div id="amGate"></div>
+      <div id="amHome" hidden>
+        <div class="am-actions">
+          <button type="button" class="am-big-btn" data-click="amOpenAdd">
+            <span class="am-big-icon">➕</span>
+            <span><strong>Adicionar Toba de um amigo</strong><small>pelo @ dele</small></span>
+          </button>
+          <button type="button" class="am-big-btn is-share" data-click="amOpenShare">
+            <span class="am-big-icon">📤</span>
+            <span><strong>Compartilhar meu Toba</strong><small id="amMyAt"></small></span>
+          </button>
+        </div>
+        <div id="amRequests"></div>
+        <div class="section-title">🤝 Amigos <span class="am-count" id="amFriendCount"></span></div>
+        <div id="amFriends"></div>
+      </div>
+      <button type="button" class="chip-btn am-ghost-btn" data-click="amOpenGhost">👻 Ver exemplo contra o Maracujeba fantasma</button>
+    </div>
+
+    <!-- Toba de um amigo + comparador -->
+    <div id="amFriendView" hidden></div>
+  </main>
+
+  <!-- Adicionar amigo -->
+  <div class="toba-modal" id="amAddModal" role="dialog" aria-modal="true" aria-labelledby="amAddTitle">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="amAddTitle">➕ Adicionar Toba de um amigo <button type="button" class="am-help-btn" data-click="amHelp" data-help="adicionar" aria-label="Como funciona">❔</button></h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <p class="toba-sheet-text">Digita o username do amigo. Ele recebe o pedido e, quando aceitar, vocês veem o Toba um do outro.</p>
+      <form class="form-group" data-submit="amAddSubmit">
+        <label for="amAddInput">Username do amigo</label>
+        <div class="am-at-field">
+          <span>@</span>
+          <input class="form-control" id="amAddInput" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="21" placeholder="maracujeba" />
+        </div>
+      </form>
+      <div class="tc-error" id="amAddError" hidden></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-primary" id="amAddBtn" data-click="amAddSubmit">🤝 Mandar pedido</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compartilhar / ligar o Toba social -->
+  <div class="toba-modal" id="amShareModal" role="dialog" aria-modal="true" aria-labelledby="amShareTitle">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="amShareTitle">📤 Compartilhar meu Toba</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="amShareBody"></div>
+      <div class="toba-sheet-footer" id="amShareFooter"></div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="amHelpModal" role="dialog" aria-modal="true" aria-labelledby="amHelpTitle">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="amHelpTitle">❔ Ajuda</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div class="am-help" id="amHelpBody"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-primary" data-close>Saquei 👊</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="amAchModal" role="dialog" aria-modal="true" aria-labelledby="amAchTitle">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="amAchTitle">🏆 Troféu</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="amAchBody"></div>
+    </div>
+  </div>
+
+  <script src="assets/toba-common.js"></script>
+  <script src="assets/toba-cloud.js"></script>
+  <script src="TobaHealth/js/health-metrics.js"></script>
+  <script src="TobaRoutine/js/routine-metrics.js"></script>
+  <script src="TobaKitchen/js/kitchen-recipes.js"></script>
+  <script src="TobaRacing/js/racing-metrics.js"></script>
+  <script src="TobaTurism/js/turism-metrics.js"></script>
+  <script src="assets/toba-player.js"></script>
+  <script src="assets/toba-social.js"></script>
+  <script src="assets/amigos.js"></script>
+  <script src="assets/pwa-register.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,598 @@
+/* Toba · Toba dos amigos (Toba-Amigos.html, desde v1.61) */
+
+.am-actions {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.am-big-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(88, 166, 255, 0.16), rgba(88, 166, 255, 0.04));
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.am-big-btn.is-share {
+  background: linear-gradient(135deg, rgba(63, 185, 80, 0.16), rgba(63, 185, 80, 0.04));
+}
+
+.am-big-btn:active {
+  transform: scale(0.98);
+}
+
+.am-big-btn strong,
+.am-big-btn small {
+  display: block;
+}
+
+.am-big-btn small {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-top: 2px;
+}
+
+.am-big-icon {
+  font-size: 1.6rem;
+  width: 2.2rem;
+  text-align: center;
+}
+
+.am-count {
+  color: var(--muted);
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.am-gate {
+  text-align: center;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+
+.am-gate p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.am-gate-icon {
+  font-size: 2.4rem;
+}
+
+.am-ghost-btn {
+  display: block;
+  margin: 1.4rem auto 0.5rem;
+}
+
+.am-request,
+.am-friend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.am-friend[role="button"] {
+  cursor: pointer;
+}
+
+.am-friend.is-dim {
+  opacity: 0.8;
+}
+
+.am-request-text,
+.am-friend-body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.am-request-text small,
+.am-friend-body small {
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.am-request-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.am-request-btns .btn {
+  width: auto;
+  padding-inline: 12px;
+}
+
+.am-friend-go {
+  font-size: 1.4rem;
+}
+
+.am-at-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.am-at-field > span {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.am-hint {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin: 6px 0 0;
+}
+
+.tc-chip.is-fixed {
+  cursor: default;
+}
+
+.tc-chip.is-locked {
+  cursor: default;
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.am-share-at {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  margin: 0.4rem 0;
+  background: linear-gradient(90deg, #58a6ff, #3fb950);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  overflow-wrap: anywhere;
+}
+
+.am-center {
+  text-align: center;
+}
+
+.am-share-link {
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  margin-bottom: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- VS (estilo comparar troféus) ---------- */
+.am-vs {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 16px 10px;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(88, 166, 255, 0.22), transparent 55%),
+    radial-gradient(circle at 100% 0%, rgba(248, 81, 73, 0.2), transparent 55%),
+    var(--surface);
+  overflow: hidden;
+}
+
+.am-side {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+  min-width: 0;
+}
+
+.am-side-name {
+  font-size: 1rem;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.am-side-title {
+  font-size: 0.72rem;
+  color: var(--muted);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.am-side-trophies {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--gold-2, #e3b341);
+  text-shadow: 0 0 14px rgba(227, 179, 65, 0.35);
+}
+
+.am-tiers {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  justify-content: center;
+  gap: 3px;
+}
+
+.am-tier {
+  font-size: 0.64rem;
+  font-weight: 700;
+  white-space: nowrap;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.am-tier-lenda { border-color: #bc8cff; }
+.am-tier-ouro { border-color: #e3b341; }
+.am-tier-prata { border-color: #c9d1d9; }
+.am-tier-bronze { border-color: #cd7f32; }
+
+.am-pct {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.am-pct .tp-bar {
+  flex: 1;
+}
+
+.am-pct small {
+  font-weight: 800;
+  font-size: 0.75rem;
+}
+
+.am-vs-badge {
+  position: absolute;
+  left: 50%;
+  top: 46px;
+  transform: translateX(-50%);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 1.1rem;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--coral);
+}
+
+.am-tabs {
+  margin: 0.9rem 0;
+}
+
+.am-filters {
+  margin-bottom: 0.6rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.am-filters .tc-chip {
+  flex: 0 0 auto;
+}
+
+.am-filters .tc-chip {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+}
+
+.am-cat {
+  margin-bottom: 1rem;
+}
+
+.am-cat-head {
+  list-style: none;
+  cursor: pointer;
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--surface);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-weight: 800;
+  margin: 0.6rem 2px 4px;
+}
+
+.am-cat-score b {
+  color: var(--muted);
+}
+
+.am-cat-score b.is-win {
+  color: var(--green);
+}
+
+.am-cat-score small {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.am-cat-cols,
+.am-trow {
+  display: grid;
+  grid-template-columns: auto 1fr 58px 58px;
+  align-items: center;
+  gap: 8px;
+}
+
+.am-cat-cols {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0 10px;
+}
+
+.am-cat-cols span:nth-child(1) {
+  width: 40px;
+}
+
+.am-cat-cols span:nth-child(n + 3),
+.am-cat-cols span:nth-child(3) {
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.am-trow {
+  width: 100%;
+  padding: 8px 10px;
+  margin-top: 6px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.am-trow:not(.is-some) {
+  opacity: 0.6;
+}
+
+.am-trow .tp-medal {
+  width: 40px;
+  height: 40px;
+  font-size: 1.2rem;
+}
+
+.am-trow-name {
+  min-width: 0;
+  display: grid;
+}
+
+.am-trow-name strong {
+  font-size: 0.86rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.am-trow-name small {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.am-cell {
+  display: grid;
+  justify-items: center;
+  font-size: 1rem;
+}
+
+.am-cell small {
+  font-size: 0.64rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.am-cell.is-got small {
+  color: var(--green);
+}
+
+.am-trow.is-me-first .am-cell:nth-of-type(1) small::after,
+.am-trow.is-him-first .am-cell:nth-of-type(2) small::after {
+  content: " ⚡";
+}
+
+.am-ach-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  margin: 6px 0;
+}
+
+.am-ach-two span {
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+/* ---------- Duelo de números ---------- */
+.am-score {
+  display: grid;
+  grid-template-columns: 64px 1fr 64px;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.am-score-num {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--muted);
+}
+
+.am-score-num.is-win {
+  color: var(--gold-2, #e3b341);
+}
+
+.am-score-mid {
+  display: block;
+  font-weight: 800;
+}
+
+.am-score-mid small {
+  display: block;
+  margin-top: 4px;
+}
+
+.am-score-mid small {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.78rem;
+}
+
+.am-duel {
+  padding: 4px 10px;
+}
+
+.am-duel-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.am-duel-row:last-child {
+  border-bottom: 0;
+}
+
+.am-duel-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.am-duel-val {
+  font-weight: 800;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.am-duel-val small {
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.am-duel-val.is-right {
+  text-align: right;
+}
+
+.am-duel-val.is-win {
+  color: var(--gold-2, #e3b341);
+}
+
+.am-hero .am-updated {
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-top: 6px;
+}
+
+.am-stats {
+  margin-top: 0.6rem;
+}
+
+.am-unfriend {
+  margin-top: 1.4rem;
+}
+
+@media (max-width: 370px) {
+  .am-cat-cols,
+  .am-trow {
+    grid-template-columns: auto 1fr 50px 50px;
+    gap: 6px;
+  }
+  .am-duel-label {
+    font-size: 0.7rem;
+  }
+}
+
+/* ❔ ajuda */
+.am-help-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  margin-left: 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-3, var(--surface));
+  font-size: 0.75rem;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.am-label-help {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.am-help-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+}
+
+.am-help p {
+  margin: 0 0 0.7rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.am-cat-head::-webkit-details-marker {
+  display: none;
+}
+
+.am-cat-chev {
+  display: inline-block;
+  color: var(--muted);
+  transition: transform 0.2s ease;
+}
+
+.am-cat[open] .am-cat-chev {
+  transform: rotate(90deg);
+}
+
+.am-cat[open] .am-cat-cols {
+  margin-top: 6px;
+}

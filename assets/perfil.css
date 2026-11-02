@@ -1164,3 +1164,56 @@
 .pfh-far[open] summary {
   margin-bottom: 4px;
 }
+
+/* Toba dos amigos (v1.61) */
+.pf-social {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0.9rem 0 0.2rem;
+}
+
+.pf-social-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(88, 166, 255, 0.16), rgba(88, 166, 255, 0.04));
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+}
+
+.pf-social-btn.is-share {
+  background: linear-gradient(135deg, rgba(63, 185, 80, 0.16), rgba(63, 185, 80, 0.04));
+}
+
+.pf-social-btn span {
+  font-size: 1.4rem;
+}
+
+.pf-social-link {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.88rem;
+  text-decoration: none;
+}
+
+.pf-social-arrow {
+  margin-left: auto;
+  color: var(--muted);
+}

@@ -1271,3 +1271,34 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.60 - Toba Places com mapa colorido da CARTO por padrao e botao pra trocar claro/escuro`
+
+---
+
+## v1.61 — 🤝 Toba dos amigos: visita o Toba da tropa e compara troféus estilo PS5
+
+**Arquivos novos/alterados:** `Toba-Amigos.html` (NOVO), `assets/toba-social.js` (NOVO), `assets/amigos.js` (NOVO), `assets/amigos.css` (NOVO), `assets/toba-player.js`, `assets/toba-player.css`, `assets/perfil.css`, `Toba-Perfil.html`, `index.html`, `sw.js`, `CLAUDE.md`
+
+1. **@username:** em 📤 Compartilhar meu Toba tu escolhe teu nome na tropa (tipo **@Bertoba**). Ninguém mais pega o mesmo. Dá pra trocar quando quiser.
+2. **Adicionar Toba de um amigo / Compartilhar meu Toba:** botões novos no Perfil. Digita o @ do amigo (ou abre o link que ele mandou) e ele recebe o pedido em 🔔. Aceitou, um vê o Toba do outro. Desfazer corta o acesso dos dois na hora.
+3. **Comparador de troféus estilo PS5:** Você x amigo lado a lado com 🏆 total, 💎🥇🥈🥉 e % do álbum. Cada troféu mostra ✅ + data dos dois lados, ⚡ em quem pegou primeiro, e filtros Só eu / Só ele / Os dois / Ninguém. Troféu secreto continua secreto até TU pegar ("ele já tem 👀").
+4. **📊 Duelo:** nível, XP, XP do mês, treinos, kg levantado, km, streak, tarefas, pratos, abastecidas, lugares... cada linha dá 👑 pra quem tem mais, com placar no topo.
+5. **👤 Toba dele:** o perfil do amigo (avatar, título, nível, XP e os números que ele mostra).
+6. **Privacidade:** o amigo vê só um **resumo** (nível, troféus e totais), nunca teus dados. Tu escolhe os apps que aparecem; ⚖️ peso vem desligado; 💰 **Bank nunca aparece** (nem tem botão pra isso).
+7. **👻 Maracujeba fantasma:** exemplo de mentira pra ver o comparador sem ter amigo ainda (só na tua tela).
+8. **🤝 Troféus de Amizade (9 novos):** Vitrine aberta, Primeiro parça, Tropa formada, Bonde do Toba, Tobalândia, X1 marcado, Amassou no placar, Rei da tropa e um secreto 🤫.
+9. **❔ em tudo:** ajuda no jeito Toberson no topo da página, no username, no que os amigos veem, nos troféus, no placar e no Adicionar.
+10. **Portal:** faixa "🤝 Toba dos amigos" embaixo do card do jogador, com bolinha vermelha quando tem pedido de amizade.
+
+**Dados:** nenhum banco `TOBA_*` mudou. Chave nova só deste aparelho: `toba_social_state` (cache do teu @, do que aparece e dos fatos que viram troféu de Amizade; não vai pra nuvem). Na nuvem: `usernames/`, `profiles/{uid}` (a vitrine), `profiles/{uid}/friends/` e `profiles/{uid}/requests/`. **Precisa publicar as regras novas do Firestore** (arquivo `firestore.rules` mandado junto). `sw.js` toba-v24. APK sem mudança.
+
+**Como testar:**
+- **Antes:** Firebase console › Firestore › Regras › cola o `firestore.rules` novo › Publicar. Sem isso dá "A nuvem recusou".
+- Perfil › 📤 Compartilhar meu Toba › escolhe @Bertoba › 🚀 Ligar. Tem que aparecer o @ grandão e o link.
+- Aba anônima › cria conta `rnardocci13+teste@gmail.com` › Perfil › ➕ Adicionar › `bertoba`. Aparece "⏳ Esperando @Bertoba aceitar".
+- Na tua aba › 🔄: aparece 🔔 Pedidos › ✅ Aceitar. Toca no amigo: 🏆 Troféus, 📊 Duelo e 👤 Toba dele.
+- 👻 Ver exemplo: abre o comparador contra o fantasma sem conta de teste.
+- Perfil › 🏅 Conquistas: categoria 🤝 Amizade com os troféus novos.
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.61 - Toba dos amigos com username, pedidos de amizade, comparador de trofeus estilo PS5, duelo de numeros, trofeus de amizade e ajuda`
+
