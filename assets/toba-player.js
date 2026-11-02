@@ -131,7 +131,109 @@ const PLAYER_ACHIEVEMENT_CATS = [
   { id: "pista", name: "🏁 Pista" },
   { id: "roles", name: "🌎 Rolês" },
   { id: "amizade", name: "🤝 Amizade" },
+  { id: "sazonal", name: "🎉 Sazonais" },
 ];
+
+/* ---------------------------------------------------------------------
+ * Temporadas (v1.63): as festas do mundo no Toba. Usou o Toba na janela da
+ * festa = troféu "Participou do ... AAAA" (cat "sazonal"). Conta qualquer
+ * coisa feita no dia (treino, tarefa, receita, abastecida, rolê...) ou só
+ * abrir o Toba (playerDb.seasons guarda essa visita). O troféu de qualquer
+ * ano libera pra sempre os itens com season: id no 🧱 Personalizar.
+ * Troféu de festa que já passou e a pessoa não pegou some do álbum (não
+ * pesa no %); os das próximas festas aparecem uns 45 dias antes.
+ * Festa com data que muda: Páscoa/Carnaval calculados, as lunares em tabela
+ * (ano fora da tabela = sem troféu naquele ano; é só aumentar a tabela).
+ * ------------------------------------------------------------------- */
+const PLAYER_SEASON_FIRST_YEAR = 2026;
+const PLAYER_SEASON_SOON_DAYS = 45;
+
+function playerEasterIso(year) {
+  // Algoritmo de Meeus/Jones/Butcher (calendário gregoriano)
+  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function playerSeasonRange(year, from, to) {
+  return [`${year}-${from}`, `${year}-${to || from}`];
+}
+
+function playerSeasonFromTable(table, year, before, after) {
+  const day = table[year];
+  if (!day) return null;
+  return [playerAddDays(day, -before), playerAddDays(day, after)];
+}
+
+const PLAYER_CHINESE_NY = { 2026: "2026-02-17", 2027: "2027-02-06", 2028: "2028-01-26", 2029: "2029-02-13", 2030: "2030-02-03" };
+const PLAYER_DIWALI = { 2026: "2026-11-08", 2027: "2027-10-29", 2028: "2028-10-17", 2029: "2029-11-05", 2030: "2030-10-26" };
+
+// Ordem = ordem no ano. range(ano) => [início, fim] ("AAAA-MM-DD", inclusivo).
+const PLAYER_SEASONS = [
+  { id: "ano-novo", icon: "🎆", label: "Ano Novo", of: "do Ano Novo", when: "na virada (31/12 a 07/01)", range: (y) => [`${y - 1}-12-31`, `${y}-01-07`], desc: (y) => `Começou ${y} com o Toba aberto. Meta de ano novo que dura mais de uma semana: raridade.` },
+  { id: "ano-chines", icon: "🧧", label: "Ano Novo Chinês", of: "do Ano Novo Chinês", when: "no Ano Novo Chinês", range: (y) => playerSeasonFromTable(PLAYER_CHINESE_NY, y, 0, 6), desc: (y) => `Pegou o Ano Novo Chinês de ${y}. Envelope vermelho de XP na conta.` },
+  { id: "carnaval", icon: "🎭", label: "Carnaval", of: "do Carnaval", when: "no Carnaval (sexta à Quarta de Cinzas)", range: (y) => { const e = playerEasterIso(y); return [playerAddDays(e, -51), playerAddDays(e, -46)]; }, desc: (y) => `Pulou o Carnaval de ${y} com o Toba no bolso. Bloquinho e shape, os dois.` },
+  { id: "pi", icon: "🥧", label: "Dia do Pi", of: "do Dia do Pi", when: "no Dia do Pi (14/03)", range: (y) => playerSeasonRange(y, "03-14"), desc: (y) => `Usou o Toba no 3,14 de ${y}. Nerd, mas monstro.` },
+  { id: "st-patrick", icon: "☘️", label: "St. Patrick's", of: "do St. Patrick's", when: "no St. Patrick's (17/03)", range: (y) => playerSeasonRange(y, "03-17"), desc: (y) => `Achou o trevo de 4 folhas no St. Patrick's ${y}. Sorte é treinar.` },
+  { id: "pascoa", icon: "🐰", label: "Páscoa", of: "da Páscoa", when: "na semana da Páscoa", range: (y) => { const e = playerEasterIso(y); return [playerAddDays(e, -7), playerAddDays(e, 1)]; }, desc: (y) => `Achou o Toba na Páscoa de ${y}. O ovo de chocolate a gente queima depois.` },
+  { id: "terra", icon: "🌱", label: "Dia da Terra", of: "do Dia da Terra", when: "no Dia da Terra (22/04)", range: (y) => playerSeasonRange(y, "04-22"), desc: (y) => `Dia da Terra ${y}. O planeta agradece cada km a pé.` },
+  { id: "star-wars", icon: "🛸", label: "May the 4th", of: "do May the 4th", when: "no May the 4th (04/05)", range: (y) => playerSeasonRange(y, "05-04"), desc: (y) => `May the 4th ${y}. Que a força (no supino) esteja com você.` },
+  { id: "junina", icon: "🔥", label: "Arraiá", of: "do Arraiá", when: "em junho (Festa Junina)", range: (y) => playerSeasonRange(y, "06-01", "06-30"), desc: (y) => `Passou no Arraiá do Toba ${y}. Quentão liberado, dieta não.` },
+  { id: "namorados", icon: "💘", label: "Dia dos Namorados", of: "do Dia dos Namorados", when: "no Dia dos Namorados (12/06)", range: (y) => playerSeasonRange(y, "06-12"), desc: (y) => `Dia dos Namorados ${y} e você aqui. O Toba também te ama.` },
+  { id: "rock", icon: "🎸", label: "Dia do Rock", of: "do Dia do Rock", when: "no Dia do Rock (13/07)", range: (y) => playerSeasonRange(y, "07-13"), desc: (y) => `Dia do Rock ${y}. Treino com solo de guitarra conta dobrado (não conta).` },
+  { id: "gamer", icon: "🕹️", label: "Dia do Gamer", of: "do Dia do Gamer", when: "no Dia do Gamer (29/08)", range: (y) => playerSeasonRange(y, "08-29"), desc: (y) => `Dia do Gamer ${y}. Você zera a vida real, o Toba é o save.` },
+  { id: "oktoberfest", icon: "🥨", label: "Oktoberfest", of: "da Oktoberfest", when: "na Oktoberfest (20/09 a 05/10)", range: (y) => playerSeasonRange(y, "09-20", "10-05"), desc: (y) => `Oktoberfest ${y}. Pretzel na mão, Toba na outra.` },
+  { id: "criancas", icon: "🪁", label: "Dia das Crianças", of: "do Dia das Crianças", when: "no Dia das Crianças (12/10)", range: (y) => playerSeasonRange(y, "10-12"), desc: (y) => `Dia das Crianças ${y}. A criança interior quer conquista, e ganhou.` },
+  { id: "halloween", icon: "🎃", label: "Halloween", of: "do Halloween", when: "em outubro (Halloween)", range: (y) => playerSeasonRange(y, "10-01", "10-31"), desc: (y) => `Encarou o Halloween do Toba ${y}. Doce ou treino? Os dois, monstro.` },
+  { id: "muertos", icon: "💀", label: "Día de Muertos", of: "do Día de Muertos", when: "no Día de Muertos (01 e 02/11)", range: (y) => playerSeasonRange(y, "11-01", "11-02"), desc: (y) => `Día de Muertos ${y}. Os ancestrais viram você treinar e se orgulharam.` },
+  { id: "diwali", icon: "🪔", label: "Diwali", of: "do Diwali", when: "no Diwali (festa das luzes)", range: (y) => playerSeasonFromTable(PLAYER_DIWALI, y, 2, 2), desc: (y) => `Acendeu a lamparina no Diwali ${y}. Festa das luzes e do shape.` },
+  { id: "natal", icon: "🎄", label: "Natal", of: "do Natal", when: "em dezembro (Natal)", range: (y) => playerSeasonRange(y, "12-01", "12-30"), desc: (y) => `Bateu ponto no Natal do Toba ${y}. O peru que lute.` },
+];
+
+// Festas que pegam essa data "AAAA-MM-DD": [{ season, year, key, start, end }]
+function playerSeasonsOn(iso) {
+  const year = Number(String(iso || "").slice(0, 4));
+  const hits = [];
+  [year, year + 1].forEach((y) => {
+    if (y < PLAYER_SEASON_FIRST_YEAR) return;
+    PLAYER_SEASONS.forEach((season) => {
+      const range = season.range(y);
+      if (range && iso >= range[0] && iso <= range[1]) hits.push({ season, year: y, key: `${season.id}-${y}`, start: range[0], end: range[1] });
+    });
+  });
+  return hits;
+}
+
+function buildPlayerSeasonAchievements() {
+  const lastYear = Math.max(PLAYER_SEASON_FIRST_YEAR, Number(toIsoDate().slice(0, 4)) + 1);
+  const list = [];
+  for (let year = PLAYER_SEASON_FIRST_YEAR; year <= lastYear; year++) {
+    PLAYER_SEASONS.forEach((season) => {
+      const range = season.range(year);
+      if (!range) return;
+      list.push({
+        id: `ss-${season.id}-${year}`, cat: "sazonal", tier: "prata", icon: season.icon,
+        name: `Participou ${season.of} ${year}`,
+        desc: season.desc(year),
+        hint: `Use o Toba ${season.when} de ${year}. Vale treino, tarefa ou só passar aqui.`,
+        metric: (s) => s[`season-${season.id}-${year}`] || 0, goal: 1,
+        season: season.id, year, start: range[0], end: range[1],
+      });
+    });
+  }
+  return list;
+}
+
+// Troféu de festa aparece se: pegou, a festa tá rolando/vem aí (45 dias), ou o amigo pegou.
+function isPlayerSeasonShown(a, today, unlocked) {
+  if (!a.season || unlocked) return true;
+  return a.end >= today && a.start <= playerAddDays(today, PLAYER_SEASON_SOON_DAYS);
+}
 
 // Tamanho do livro de receitas pra conquista "Zerou o livro" (sem kitchen-recipes.js = inalcançável)
 const KITCHEN_BOOK_SIZE = typeof KITCHEN_RECIPES !== "undefined" ? KITCHEN_RECIPES.length : Infinity;
@@ -323,7 +425,7 @@ function buildPlayerAchievements() {
   return list;
 }
 
-const PLAYER_ACHIEVEMENTS = buildPlayerAchievements();
+const PLAYER_ACHIEVEMENTS = [...buildPlayerAchievements(), ...buildPlayerSeasonAchievements()];
 
 /* ---------------------------------------------------------------------
  * Recompensas (só visuais). Liberadas por nível ou por conquista.
@@ -371,6 +473,35 @@ const PLAYER_AVATARS = [
   { id: "parca", icon: "🤜", achievement: "am-3" },
   { id: "trofeu", icon: "🏆", achievement: "am-placar" },
   { id: "fantasma", icon: "👻", achievement: "am-fantasma" },
+  // Sazonais (v1.63): liberam com o troféu "Participou do ..." de qualquer ano
+  { id: "festeiro", icon: "🥳", season: "ano-novo" },
+  { id: "champanhe", icon: "🍾", season: "ano-novo" },
+  { id: "envelope", icon: "🧧", season: "ano-chines" },
+  { id: "lanterna", icon: "🏮", season: "ano-chines" },
+  { id: "mascara", icon: "🎭", season: "carnaval" },
+  { id: "tamborim", icon: "🥁", season: "carnaval" },
+  { id: "torta", icon: "🥧", season: "pi" },
+  { id: "trevo", icon: "🍀", season: "st-patrick" },
+  { id: "coelho", icon: "🐰", season: "pascoa" },
+  { id: "ovo", icon: "🥚", season: "pascoa" },
+  { id: "arvore", icon: "🌳", season: "terra" },
+  { id: "disco-voador", icon: "🛸", season: "star-wars" },
+  { id: "caipira", icon: "🤠", season: "junina" },
+  { id: "pescaria", icon: "🎣", season: "junina" },
+  { id: "cupido", icon: "💘", season: "namorados" },
+  { id: "guitarra", icon: "🎸", season: "rock" },
+  { id: "fliperama", icon: "🕹️", season: "gamer" },
+  { id: "pretzel", icon: "🥨", season: "oktoberfest" },
+  { id: "pipa", icon: "🪁", season: "criancas" },
+  { id: "ursinho", icon: "🧸", season: "criancas" },
+  { id: "abobora", icon: "🎃", season: "halloween" },
+  { id: "morcego", icon: "🦇", season: "halloween" },
+  { id: "vampiro", icon: "🧛", season: "halloween" },
+  { id: "caveira", icon: "💀", season: "muertos" },
+  { id: "lamparina", icon: "🪔", season: "diwali" },
+  { id: "noel", icon: "🎅", season: "natal" },
+  { id: "boneco-neve", icon: "⛄", season: "natal" },
+  { id: "rena", icon: "🦌", season: "natal" },
 ];
 const PLAYER_FRAMES = [
   { id: "simples", name: "Simples", level: 1 },
@@ -393,6 +524,14 @@ const PLAYER_FRAMES = [
   { id: "passaporte", name: "Passaporte", achievement: "tu-fui50" },
   { id: "tropa", name: "Tropa", achievement: "am-5" },
   { id: "ectoplasma", name: "Ectoplasma", achievement: "am-fantasma" },
+  { id: "fogos", name: "Fogos", season: "ano-novo" },
+  { id: "confete", name: "Confete", season: "carnaval" },
+  { id: "casca-de-ovo", name: "Ovo de Páscoa", season: "pascoa" },
+  { id: "sabre", name: "Sabre de luz", season: "star-wars" },
+  { id: "bandeirinhas", name: "Bandeirinhas", season: "junina" },
+  { id: "teia", name: "Teia de aranha", season: "halloween" },
+  { id: "cempasuchil", name: "Cempasúchil", season: "muertos" },
+  { id: "pisca-pisca", name: "Pisca-pisca", season: "natal" },
 ];
 // Cor = selo do nível e o aro da moldura Simples. Gradiente pede "badge" (cor
 // sólida pra quem ainda está numa versão antiga) e só usa hex + "Ndeg".
@@ -416,6 +555,16 @@ const PLAYER_COLORS = [
   { id: "brasil", name: "Brasil", color: "linear-gradient(135deg,#2ea043,#e3b341,#1f6feb)", badge: "#2ea043", achievement: "gr-maracana" },
   { id: "matrix", name: "Matrix", color: "linear-gradient(180deg,#56d364,#0f5323)", badge: "#56d364", achievement: "pr-50" },
   { id: "ecto", name: "Ecto", color: "linear-gradient(135deg,#a5f3fc,#7ee787)", badge: "#7ee787", achievement: "am-fantasma" },
+  { id: "champanhe", name: "Champanhe", color: "linear-gradient(135deg,#fff8c5,#e3b341,#f0f6fc)", badge: "#e3b341", season: "ano-novo" },
+  { id: "lanterna", name: "Lanterna", color: "linear-gradient(135deg,#f85149,#e3b341)", badge: "#f85149", season: "ano-chines" },
+  { id: "sapucai", name: "Sapucaí", color: "linear-gradient(90deg,#f778ba,#e3b341,#3fb950,#39d0d8)", badge: "#f778ba", season: "carnaval" },
+  { id: "trevo", name: "Trevo", color: "linear-gradient(135deg,#7ee787,#1a7f37)", badge: "#3fb950", season: "st-patrick" },
+  { id: "chocolate", name: "Chocolate", color: "linear-gradient(135deg,#d4a373,#7f4f24)", badge: "#b5835a", season: "pascoa" },
+  { id: "paixao", name: "Paixão", color: "linear-gradient(135deg,#f778ba,#f85149)", badge: "#f778ba", season: "namorados" },
+  { id: "quentao", name: "Quentão", color: "linear-gradient(135deg,#e3b341,#f0883e,#da3633)", badge: "#f0883e", season: "junina" },
+  { id: "abobora", name: "Abóbora", color: "linear-gradient(135deg,#f0883e,#8957e5)", badge: "#f0883e", season: "halloween" },
+  { id: "diwali", name: "Diwali", color: "linear-gradient(135deg,#e3b341,#db61a2)", badge: "#e3b341", season: "diwali" },
+  { id: "natal", name: "Natal", color: "linear-gradient(135deg,#f85149,#f0f6fc,#2ea043)", badge: "#f85149", season: "natal" },
 ];
 // Fundo do círculo do avatar (desde v1.62). "ultimate" = vitrine da ULTIMATE EDITION.
 // O desenho de cada um fica em toba-player.css (.tp-bg-<id>).
@@ -439,10 +588,55 @@ const PLAYER_BGS = [
   { id: "ecto", name: "Ectoplasma", achievement: "am-fantasma", ultimate: true },
   { id: "holografico", name: "Holográfico", achievement: "lift-titanic", ultimate: true },
   { id: "vibranium", name: "Vibranium", achievement: "rt-seq100", ultimate: true },
+  // Sazonais (v1.63): fx = efeito que roda por cima do card do Perfil (renderPlayerFx)
+  { id: "reveillon", name: "Réveillon", season: "ano-novo", ultimate: true, fx: "pop", fxIcons: ["🎆", "🎇", "✨"] },
+  { id: "ano-chines", name: "Lanternas", season: "ano-chines", ultimate: true, fx: "rise", fxIcons: ["🏮"] },
+  { id: "carnaval", name: "Sapucaí", season: "carnaval", ultimate: true, fx: "confetti" },
+  { id: "pascoa", name: "Caça aos ovos", season: "pascoa", ultimate: true, fx: "pop", fxIcons: ["🥚", "🐣", "🌷", "🍫"] },
+  { id: "espaco", name: "Galáxia distante", season: "star-wars", ultimate: true, fx: "stars" },
+  { id: "arraia", name: "Arraiá", season: "junina", ultimate: true, fx: "flags" },
+  { id: "halloween", name: "Noite das bruxas", season: "halloween", ultimate: true, fx: "bats" },
+  { id: "muertos", name: "Altar de muertos", season: "muertos", ultimate: true, fx: "rise", fxIcons: ["🌼", "🕯️"] },
+  { id: "diwali", name: "Festa das luzes", season: "diwali", ultimate: true, fx: "rise", fxIcons: ["🪔", "✨"] },
+  { id: "neve", name: "Neve caindo", season: "natal", ultimate: true, fx: "snow" },
 ];
+
+// Texto de "como libera" de um item sazonal
+function playerSeasonNeed(item) {
+  const season = PLAYER_SEASONS.find((s) => s.id === item.season);
+  return season ? `${season.icon} ${season.label}` : "Temporada";
+}
+
+// Efeito animado do Fundo escolhido, por cima do card (neve, morcego, fogos...).
+// Posições fixas (sem Math.random) pra não pular a cada redesenho.
+function renderPlayerFx(bgId) {
+  const bg = PLAYER_BGS.find((item) => item.id === bgId);
+  if (!bg || !bg.fx) return "";
+  const many = (n, fn) => Array.from({ length: n }, (_, i) => fn(i)).join("");
+  const party = ["#f85149", "#e3b341", "#3fb950", "#58a6ff", "#bc8cff", "#f778ba"];
+  let inner = "";
+  if (bg.fx === "flags") {
+    inner = many(18, (i) => `<i style="--c:${party[i % party.length]};--d:${(i % 4) * 0.3}s"></i>`);
+  } else if (bg.fx === "bats") {
+    inner = [[12, 0, 9], [30, 2.6, 11], [55, 5.1, 8], [20, 7.4, 10], [42, 9.8, 12]].map(([top, delay, dur], i) =>
+      `<i style="top:${top}%;animation-delay:${delay}s;animation-duration:${dur}s;font-size:${0.9 + (i % 3) * 0.25}rem">🦇</i>`).join("") + "<b>🎃</b>";
+  } else if (bg.fx === "snow" || bg.fx === "confetti") {
+    const confetti = bg.fx === "confetti";
+    inner = many(confetti ? 30 : 26, (i) => `<i style="left:${(i * 37) % 100}%;animation-delay:${-((i * 1.7) % 9).toFixed(1)}s;animation-duration:${(confetti ? 5 : 7) + (i % 5)}s;--s:${3 + (i % 3) * 2}px;--x:${(i % 2 ? 1 : -1) * (8 + (i % 4) * 6)}px${confetti ? `;--c:${party[i % party.length]}` : ""}"></i>`);
+  } else if (bg.fx === "stars") {
+    inner = many(22, (i) => `<i style="left:${(i * 41) % 100}%;top:${(i * 29) % 100}%;animation-delay:${-((i * 0.7) % 3).toFixed(1)}s;--s:${1 + (i % 3)}px"></i>`);
+  } else {
+    // pop (aparece e some no lugar) e rise (sobe devagar): emojis do fxIcons
+    const icons = bg.fxIcons || ["✨"];
+    const n = bg.fx === "rise" ? 9 : 8;
+    inner = many(n, (i) => `<i style="left:${(i * 43 + 6) % 92}%;top:${(i * 31 + 8) % 80}%;animation-delay:${-(i * 0.9).toFixed(1)}s;animation-duration:${(bg.fx === "rise" ? 8 : 3.2) + (i % 3)}s;font-size:${0.9 + (i % 3) * 0.3}rem">${icons[i % icons.length]}</i>`);
+  }
+  return `<span class="tp-fx tp-fx-${bg.fx}" aria-hidden="true">${inner}</span>`;
+}
 
 function isPlayerRewardUnlocked(item, state) {
   if (item.achievement) return state.unlockedIds.has(item.achievement);
+  if (item.season) return [...state.unlockedIds].some((id) => id.startsWith(`ss-${item.season}-`));
   return state.level >= (item.level || 1);
 }
 
@@ -453,7 +647,7 @@ function getPlayerLook(state) {
     const chosen = list.find((item) => item.id === id && isPlayerRewardUnlocked(item, state));
     if (chosen) return chosen;
     // "extra" (v1.62) só entra se a pessoa escolher: o automático continua igual ao de antes
-    const byLevel = list.filter((item) => !item.achievement && !item.extra && isPlayerRewardUnlocked(item, state));
+    const byLevel = list.filter((item) => !item.achievement && !item.season && !item.extra && isPlayerRewardUnlocked(item, state));
     return byLevel[byLevel.length - 1] || list[0];
   };
   const levelTitle = playerLevelTitle(state.level);
@@ -506,6 +700,14 @@ function normalizePlayerDb(db) {
   ["title", "avatar", "frame", "color", "bg"].forEach((key) => {
     db.equipped[key] = typeof db.equipped[key] === "string" ? db.equipped[key] : "";
   });
+  // v1.63 (opcional): visitas nas temporadas { "halloween-2026": "2026-10-31" }
+  if (db.seasons !== undefined) {
+    const seasons = {};
+    if (isObj(db.seasons)) Object.keys(db.seasons).forEach((key) => {
+      if (/^[a-z-]+-\d{4}$/.test(key) && /^\d{4}-\d{2}-\d{2}$/.test(String(db.seasons[key]))) seasons[key] = db.seasons[key];
+    });
+    db.seasons = seasons;
+  }
   return db;
 }
 
@@ -774,7 +976,9 @@ function computePlayer(options = {}) {
     turismKinds: 0, turismSameDay: 0, turismAgain: 0, turismValue: 0, turismZerou: 0,
     socialOn: 0, socialFriends: 0, socialDuels: 0, socialBeat: 0, socialGhost: 0,
   };
-  const checkAchievements = (date) => {
+  const activeDays = new Set(); // dias com alguma coisa feita (pras temporadas)
+  const checkAchievements = (date, active = true) => {
+    if (active) activeDays.add(date);
     PLAYER_ACHIEVEMENTS.forEach((a) => {
       if (!unlockedAt[a.id] && a.metric(stats) >= a.goal) unlockedAt[a.id] = date;
     });
@@ -957,14 +1161,30 @@ function computePlayer(options = {}) {
     Object.assign(stats, step.stats);
     checkAchievements(step.date);
   });
-  checkAchievements(today);
+  checkAchievements(today, false);
+
+  /* ---------- Temporadas (v1.63): primeiro dia ativo na janela da festa ---------- */
+  const seasonVisits = playerDb.seasons && typeof playerDb.seasons === "object" ? playerDb.seasons : {};
+  Object.keys(seasonVisits).forEach((key) => {
+    if (playerIsIso(seasonVisits[key]) && seasonVisits[key] <= today) activeDays.add(seasonVisits[key]);
+  });
+  const seasonFirst = {};
+  activeDays.forEach((date) => {
+    playerSeasonsOn(date).forEach((hit) => {
+      if (!seasonFirst[hit.key] || date < seasonFirst[hit.key]) seasonFirst[hit.key] = date;
+    });
+  });
+  Object.keys(seasonFirst).sort((a, b) => seasonFirst[a].localeCompare(seasonFirst[b])).forEach((key) => {
+    stats[`season-${key}`] = 1;
+    checkAchievements(seasonFirst[key], false);
+  });
 
   /* ---------- Conquistas ---------- */
   const achievements = PLAYER_ACHIEVEMENTS.map((a) => {
     const value = a.metric(stats);
     const date = unlockedAt[a.id] || "";
     return { ...a, value, date, unlocked: Boolean(date), progress: Math.min(1, a.goal ? value / a.goal : 0), xp: a.xp ?? PLAYER_TIERS[a.tier].xp };
-  });
+  }).filter((a) => isPlayerSeasonShown(a, today, a.unlocked)); // festa perdida some do álbum
   achievements.filter((a) => a.unlocked).forEach((a) => {
     events.push({ date: a.date, kind: "achievement", xp: a.xp, icon: a.icon, label: `Conquista: ${a.name}` });
   });
@@ -1252,7 +1472,7 @@ function showPlayerBigScreen({ kicker, big, title, line, extra = "", button = "B
 }
 
 function rewardsBetween(fromLevel, toLevel) {
-  const inRange = (item) => !item.achievement && item.level > fromLevel && item.level <= toLevel;
+  const inRange = (item) => !item.achievement && !item.season && item.level > fromLevel && item.level <= toLevel;
   const parts = [];
   PLAYER_AVATARS.filter(inRange).forEach((item) => parts.push(`${item.icon} Avatar novo`));
   PLAYER_FRAMES.filter(inRange).forEach((item) => parts.push(`🖼️ Moldura ${item.name}`));
@@ -1306,8 +1526,26 @@ function tobaPlayerCheck({ reason = "", silent = false } = {}) {
   }, 200);
 }
 
+// Abriu o Toba no mês da temporada: grava a visita (uma vez por temporada).
+function markPlayerSeasonVisit() {
+  if (!isPlayerDbLoaded || playerIsNew) return;
+  const today = toIsoDate();
+  const hits = playerSeasonsOn(today);
+  if (!hits.length) return;
+  if (!playerDb.seasons || typeof playerDb.seasons !== "object") playerDb.seasons = {};
+  const fresh = hits.filter((hit) => !playerDb.seasons[hit.key]);
+  if (!fresh.length) return;
+  fresh.forEach((hit) => { playerDb.seasons[hit.key] = today; });
+  savePlayerDb();
+}
+
 function runPlayerCheck(reason, silent) {
   let state;
+  try {
+    markPlayerSeasonVisit();
+  } catch (err) {
+    console.warn("Perfil do jogador: não marquei a temporada", err);
+  }
   try {
     state = computePlayer();
   } catch (err) {

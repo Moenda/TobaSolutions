@@ -10,7 +10,7 @@ const AM = {
   friends: null,
   requests: [],
   friend: null, // { uid, name, vitrine, ghost }
-  tab: "trofeus",
+  tab: "duelo", // v1.63: Duelo vem primeiro
   openCats: new Set(["amizade"]),
   filter: "todos",
   editing: false,
@@ -103,6 +103,7 @@ function amGhostVitrine() {
   const ach = {};
   PLAYER_ACHIEVEMENTS.forEach((a) => {
     const have = mine && mine.ach[a.id];
+    if (a.season && !have) return; // festa: o fantasma só tem as que tu tem
     const near = progress.get(a.id) || 0;
     // Troféu pra menos: perde uns que tu tem, pega poucos que tu tá quase pegando
     const chance = have ? 0.84 : a.tier === "lenda" ? 0.02 : near >= 0.6 ? 0.3 : near >= 0.3 ? 0.08 : 0.02;
@@ -616,7 +617,7 @@ function amOpenFriend(el) {
   const f = (AM.friends || []).find((x) => x.uid === el.dataset.uid && x.status === "ok");
   if (!f) return;
   AM.friend = { uid: f.uid, vitrine: f.vitrine, ghost: false };
-  AM.tab = "trofeus";
+  AM.tab = "duelo";
   AM.filter = "todos";
   amShowFriend();
 }
@@ -625,7 +626,7 @@ function amOpenGhost() {
   if (!tobaPlayerState) return tobaToast("⏳ Calculando teu Perfil...");
   if (!socialGhostAdded()) socialSetGhost(true);
   AM.friend = { uid: "ghost", vitrine: amGhostVitrine(), ghost: true };
-  AM.tab = "trofeus";
+  AM.tab = "duelo";
   AM.filter = "todos";
   amShowFriend();
 }
@@ -664,15 +665,23 @@ function amTierCounts(v) {
   return counts;
 }
 
+// Troféus que entram na conta (v1.63): festa perdida por você E pelo amigo some.
+function amAchList() {
+  const today = toIsoDate();
+  const mine = (amMine() || {}).ach || {};
+  const his = (AM.friend && AM.friend.vitrine && AM.friend.vitrine.ach) || {};
+  return PLAYER_ACHIEVEMENTS.filter((a) => isPlayerSeasonShown(a, today, Boolean(mine[a.id] || his[a.id])));
+}
+
 function amVisibleTotal(v) {
-  if (v.isMe) return PLAYER_ACHIEVEMENTS.length;
-  return PLAYER_ACHIEVEMENTS.filter((a) => amHas(v, a) !== null).length;
+  if (v.isMe) return amAchList().length;
+  return amAchList().filter((a) => amHas(v, a) !== null).length;
 }
 
 function amSideHtml(v, extra = "") {
   const counts = amTierCounts(v);
   const total = amVisibleTotal(v);
-  const got = PLAYER_ACHIEVEMENTS.filter((a) => amHas(v, a)).length;
+  const got = amAchList().filter((a) => amHas(v, a)).length;
   const pct = total ? Math.round((got / total) * 100) : 0;
   return `
     <div class="am-side${extra}">
@@ -693,7 +702,7 @@ function amRenderFriend() {
     return;
   }
   const v = AM.friend.vitrine;
-  const tabs = [["trofeus", "🏆 Troféus"], ["duelo", "📊 Duelo"], ["perfil", AM.friend.ghost ? "👻 Toba do Cloba" : "👤 Toba dele(a)"]];
+  const tabs = [["duelo", "📊 Duelo"], ["trofeus", "🏆 Troféus"], ["perfil", AM.friend.ghost ? "👻 Toba do Cloba" : "👤 Toba dele(a)"]];
   const ghostNote = AM.friend.ghost ? `<div class="hint-box am-ghost-note">👻 O Cloba fantasma copia o teu Toba e mexe um pouquinho todo dia. É de mentira, só na tua tela, mas o X1 vale. Amigo de verdade aparece igualzinho.</div>` : "";
   box.innerHTML = `
     ${ghostNote}
@@ -711,17 +720,19 @@ function amRenderFriend() {
 
 function amRenderTab(mine, v) {
   const body = amEl("amTabBody");
-  if (AM.tab === "duelo") body.innerHTML = amDuelHtml(mine, v);
+  if (AM.tab === "trofeus") body.innerHTML = amTrophiesHtml(mine, v);
   else if (AM.tab === "perfil") body.innerHTML = amFriendProfileHtml(v);
-  else body.innerHTML = amTrophiesHtml(mine, v);
+  else body.innerHTML = amDuelHtml(mine, v);
 }
 
 function amTrophiesHtml(mine, v) {
   const myState = tobaPlayerState;
   const mineById = new Map(myState.achievements.map((a) => [a.id, a]));
   const filters = [["todos", "Todos"], ["eu", "Só eu"], ["ele", AM.friend && AM.friend.ghost ? "Só o Cloba" : "Só ele(a)"], ["dois", "Os dois"], ["ninguem", "Ninguém"]];
+  const achList = amAchList();
+  const hisName = escapeHtml(amPlayerName(v).split(" ")[0]);
   const rowsByCat = PLAYER_ACHIEVEMENT_CATS.map((cat) => {
-    const items = PLAYER_ACHIEVEMENTS.filter((a) => a.cat === cat.id);
+    const items = achList.filter((a) => a.cat === cat.id);
     if (!items.length) return "";
     const hidden = items.every((a) => amHas(v, a) === null);
     const myCount = items.filter((a) => amHas(mine, a)).length;
@@ -759,10 +770,16 @@ function amTrophiesHtml(mine, v) {
     return `
       <details class="am-cat" data-cat="${cat.id}"${open ? " open" : ""}>
         <summary class="am-cat-head">
-          <span>${cat.name} <span class="am-cat-chev" aria-hidden="true">›</span></span>
-          <span class="am-cat-score"><b class="${hisCount !== null && myCount > hisCount ? "is-win" : ""}">${myCount}</b> x <b class="${hisCount !== null && hisCount > myCount ? "is-win" : ""}">${hisCount === null ? "🙈" : hisCount}</b> <small>/ ${items.length}</small></span>
+          <span class="am-cat-top">
+            <span class="am-cat-name">${cat.name}&nbsp;<span class="am-cat-chev" aria-hidden="true">›</span></span>
+            <span class="am-cat-total">${items.length} ${items.length === 1 ? "troféu" : "troféus"}</span>
+          </span>
+          <span class="am-cat-bars">
+            ${amCatBar("Você", myCount, items.length, hisCount !== null && myCount > hisCount)}
+            ${amCatBar(hisName, hisCount, items.length, hisCount !== null && hisCount > myCount)}
+          </span>
         </summary>
-        <div class="am-cat-cols"><span></span><span></span><span>Você</span><span>${escapeHtml(amPlayerName(v).split(" ")[0])}</span></div>
+        <div class="am-cat-cols"><span></span><span></span><span>Você</span><span>${hisName}</span></div>
         ${rows}
       </details>`;
   }).join("");
@@ -770,6 +787,13 @@ function amTrophiesHtml(mine, v) {
     <div class="am-help-line"><span>Toca na categoria pra abrir · ⚡ = pegou primeiro</span><button type="button" class="am-help-btn" data-click="amHelp" data-help="trofeus" aria-label="Como ler os troféus">❔</button></div>
     <div class="tc-chips am-filters">${filters.map(([id, label]) => `<button type="button" class="tc-chip${AM.filter === id ? " is-on" : ""}" data-click="amFilter" data-filter="${id}">${label}</button>`).join("")}</div>
     ${rowsByCat || tobaEmpty("🤷", "Nada nesse filtro", "Troca o filtro ali em cima.")}`;
+}
+
+// Barrinha de % da categoria (v1.63, estilo PS5): quem tá na frente ganha 👑
+function amCatBar(name, count, total, win) {
+  if (count === null) return `<span class="am-cb is-hidden"><span class="am-cb-top"><small>${name}</small><b>🙈</b></span>${renderPlayerBar(0)}</span>`;
+  const pct = total ? Math.round((count / total) * 100) : 0;
+  return `<span class="am-cb${win ? " is-win" : ""}"><span class="am-cb-top"><small>${win ? "👑 " : ""}${name}</small><b>${count}/${total} · ${pct}%</b></span>${renderPlayerBar(total ? count / total : 0)}</span>`;
 }
 
 function amOpenTrophy(el) {
@@ -911,6 +935,7 @@ function amFriendProfileHtml(v) {
       </div>`).join("");
   return `
     <section class="card pf-hero am-hero">
+      ${typeof renderPlayerFx === "function" && /^[a-z0-9-]+$/.test(v.look?.bg || "") ? `<span class="pf-hero-glow tp-bg-${v.look.bg}" aria-hidden="true"></span>${renderPlayerFx(v.look.bg)}` : ""}
       ${socialAvatar(v, "lg")}
       <div class="pf-hero-title">${escapeHtml(v.look?.titleIcon || "")} ${escapeHtml(v.look?.title || "")}</div>
       <div class="pf-hero-level">${name} · Nível ${Number(v.level) || 1}</div>
@@ -935,7 +960,7 @@ const AM_HELP = {
       <p><b>1. Escolhe teu @.</b> Em 📤 Meu Toba tu cria um username (tipo <b>@ClobaMonstro</b>). Ninguém mais pega o mesmo.</p>
       <p><b>2. Chama a tropa.</b> Manda teu @ ou o link pros amigos. Ou toca em ➕ e digita o @ deles.</p>
       <p><b>3. Aceita o pedido.</b> Quem te adicionar aparece em 🔔 Pedidos. Aceitou, um vê o Toba do outro.</p>
-      <p><b>4. X1 de troféus.</b> Toca no amigo e compara: 🏆 Troféus estilo PS5, 📊 Duelo dos números e 👤 o Toba dele.</p>
+      <p><b>4. X1 de troféus.</b> Toca no amigo e compara: 📊 Duelo dos números, 🏆 Troféus estilo PS5 e 👤 o Toba dele.</p>
       <p>🔒 Teus dados de verdade nunca saem daqui: o amigo vê só um <b>resumo</b> (nível, troféus e totais). O 💰 Bank não aparece nunca, nem se tu pedir com jeitinho.</p>
       <p>👻 Sem amigo ainda? Adiciona o <b>@cloba</b>: o Cloba fantasma copia teu Toba, mexe um pouquinho e vira teu sparring. Funciona até sem conta.</p>`,
   },
@@ -960,11 +985,13 @@ const AM_HELP = {
   trofeus: {
     title: "🏆 Comparar troféus",
     html: `
-      <p>Igual o comparador do PS5: cada linha é um troféu, com <b>Você</b> de um lado e o amigo do outro.</p>
+      <p>Igual o comparador do PS5: cada categoria mostra quantos troféus tem em disputa (ex.: <b>8 troféus</b>) e uma barrinha de % pra cada um. Quem tá na frente ganha 👑.</p>
+      <p>Abre a categoria e cada linha é um troféu, com <b>Você</b> de um lado e o amigo do outro.</p>
       <p>✅ + data = pegou. 🔒 = ainda não (do teu lado mostra quanto falta em %). 🙈 = o amigo escondeu esse app.</p>
       <p>⚡ do lado de quem pegou <b>primeiro</b>. Toca no troféu pra ver os detalhes.</p>
       <p>Os filtros mostram o que <b>só tu tem</b> (pra tirar sarro), o que <b>só o amigo tem</b> (pra correr atrás), o que os dois têm e o que ninguém pegou.</p>
       <p>❓ Troféu secreto continua secreto até TU pegar. Se o amigo já tem, aparece "já pegou 👀".</p>
+      <p>🎉 Sazonais: troféu de festa (Páscoa, Halloween, Natal...). Festa que passou e ninguém pegou some da conta.</p>
       <p>🥉 Bronze · 🥈 Prata · 🥇 Ouro · 💎 Lendária.</p>`,
   },
   duelo: {

@@ -1335,3 +1335,26 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.62 - Perfil com Personalizar (fundos ultimate, mais avatares/molduras/cores), Cloba fantasma, duelo por modulo com mapa de calor, Conta Toba e versoes guardadas mais limpas`
+
+## v1.63 — 🎉 Temporadas do mundo no Toba e troféus mais claros no X1
+
+**Arquivos alterados:** `assets/toba-player.js`, `assets/toba-player.css`, `assets/perfil.js`, `assets/perfil.css`, `assets/amigos.js`, `assets/amigos.css`, `assets/toba-social.js`, `sw.js`, `CLAUDE.md`
+
+1. **📊 Duelo antes dos 🏆 Troféus:** no Toba do amigo (e do Cloba) a ordem das abas agora é Duelo, Troféus, Toba dele(a), e abre direto no Duelo.
+2. **Troféus sem confusão:** cada categoria mostra quantos troféus tem em disputa (**"8 troféus"**) e embaixo uma **barrinha de % pra cada um**, estilo PS5: "Você 3/8 · 38%" e "Cloba 2/8 · 25%". Quem tá na frente fica verde com 👑. Sumiu o "3 x 2 / 8".
+3. **🎉 Temporadas (NOVO):** 18 festas do mundo no calendário do Toba: 🎆 Ano Novo, 🧧 Ano Novo Chinês, 🎭 Carnaval, 🥧 Dia do Pi, ☘️ St. Patrick's, 🐰 Páscoa, 🌱 Dia da Terra, 🛸 May the 4th, 🔥 Arraiá (junho todo), 💘 Dia dos Namorados, 🎸 Dia do Rock, 🕹️ Dia do Gamer, 🥨 Oktoberfest, 🪁 Dia das Crianças, 🎃 Halloween (outubro todo), 💀 Día de Muertos, 🪔 Diwali e 🎄 Natal (dezembro). Páscoa e Carnaval são calculados todo ano.
+4. **Troféu "Participou do ... AAAA"** (prata, +150 XP): usou o Toba na festa (treino, tarefa, receita, abastecida, rolê ou só abriu o app) e leva. Vale pra trás também: quem treinou em outubro de 2026 já ganha o do Halloween 2026. Festa que passou sem troféu some do álbum (não pesa no %), e as próximas aparecem uns 45 dias antes.
+5. **Itens de temporada no 🧱 Personalizar:** seção 🎉 Temporadas em cada aba. 28 avatares (🥳 🍾 🧧 🏮 🎭 🥁 🥧 🍀 🐰 🥚 🌳 🛸 🤠 🎣 💘 🎸 🕹️ 🥨 🪁 🧸 🎃 🦇 🧛 💀 🪔 🎅 ⛄ 🦌), 8 molduras (Fogos, Confete, Ovo de Páscoa, Sabre de luz, Bandeirinhas, Teia de aranha, Cempasúchil, Pisca-pisca), 10 cores (Champanhe, Lanterna, Sapucaí, Trevo, Chocolate, Paixão, Quentão, Abóbora, Diwali, Natal) e 10 fundos ULTIMATE com efeito animado por cima do card: **❄️ neve caindo** no Natal, 🦇 morcegos voando com 🎃 no Halloween, 🎆 fogos no Réveillon, confete na Sapucaí, 🏮 lanternas subindo, 🥚 ovos pipocando na Páscoa, bandeirinhas balançando no Arraiá, estrelas piscando no May the 4th, 🌼 flores no Día de Muertos e 🪔 lamparinas no Diwali. Ganhou o troféu de qualquer ano, o item é teu pra sempre.
+6. **Chamadinha no Perfil:** em dia de festa aparece um botão tipo "💀 Día de Muertos no Toba!" embaixo do card, que abre o Personalizar direto nas Temporadas. Item bloqueado explica em que festa libera.
+7. **Amigo de roupa de festa:** o 👤 Toba dele(a) também mostra o fundo e o efeito que o amigo equipou (neve caindo no card do parça).
+
+**Dados:** `TOBA_PLAYER_DB` ganhou o campo opcional `seasons` (`{ "muertos-2026": "2026-11-02" }`: o dia em que abriu o Toba na festa); perfil e backup antigos abrem igual. Ids de conquista/recompensa antigos não mudaram. Vitrine e regras do Firestore **sem mudança** (troféu de festa vai no `ach` como qualquer outro). `sw.js` toba-v26. APK sem mudança.
+
+**Como testar:**
+- Perfil: hoje (02/11) aparece "💀 Día de Muertos no Toba!" e o troféu Participou do Día de Muertos 2026. Quem treinou em outubro também ganha o do Halloween 2026 (e Dia das Crianças/Oktoberfest se treinou nesses dias).
+- Toca no botão da festa › abre o 🖌️ Fundo nas Temporadas › equipa o 💀 Altar de muertos e vê as flores no card. Os outros ficam com 🔒 e falam em que festa liberam.
+- 🏆 Conquistas: categoria 🎉 Sazonais, com 🪔 Diwali e 🎄 Natal 2026 já aparecendo como próximas.
+- Toba dos amigos › Cloba: abre no 📊 Duelo; 🏆 Troféus com "N troféus" e as duas barrinhas de %.
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.63 - Temporadas do mundo (trofeus e itens sazonais com neve, morcego, fogos), duelo antes dos trofeus e trofeus com barrinha de %`

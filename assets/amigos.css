@@ -505,23 +505,81 @@
   border-radius: var(--radius);
   background: var(--surface);
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+  flex-direction: column;
+  gap: 8px;
   font-weight: 800;
   margin: 0.6rem 2px 4px;
 }
 
-.am-cat-score b {
-  color: var(--muted);
+/* v1.63: nome + total em cima, duas barrinhas de % embaixo (estilo PS5) */
+.am-cat-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
 }
 
-.am-cat-score b.is-win {
+.am-cat-total {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.am-cat-bars {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.am-cb {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.am-cb-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.am-cb-top small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: inherit;
+}
+
+.am-cb-top b {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.am-cb.is-win .am-cb-top small,
+.am-cb.is-win .am-cb-top b {
   color: var(--green);
 }
 
-.am-cat-score small {
-  color: var(--muted);
-  font-weight: 600;
+.am-cb .tp-bar {
+  height: 6px;
+}
+
+.am-cb:not(.is-win) .tp-bar-fill {
+  filter: grayscale(0.6) brightness(0.85);
+}
+
+.am-hero {
+  position: relative;
+  overflow: hidden;
 }
 
 .am-cat-cols,

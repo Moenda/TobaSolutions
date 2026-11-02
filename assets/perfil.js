@@ -24,6 +24,7 @@ function renderProfileHero(state) {
   const nextTitle = PLAYER_LEVEL_TITLES.find((t) => t.min > state.level);
   document.getElementById("pfHero").innerHTML = `
     <span class="pf-hero-glow tp-bg-${look.bg.id}" aria-hidden="true"></span>
+    ${renderPlayerFx(look.bg.id)}
     <button type="button" class="pf-lego" data-click="openCustomize" aria-label="Personalizar o perfil">${PROFILE_LEGO_SVG}<span>Personalizar</span></button>
     <button type="button" class="pf-hero-avatar" data-click="openCustomize" aria-label="Personalizar o perfil">${renderPlayerAvatar(state, "lg")}</button>
     <div class="pf-hero-title">${look.title.icon} ${escapeHtml(look.title.name)}</div>
@@ -33,7 +34,8 @@ function renderProfileHero(state) {
       <span>${formatPlayerNumber(state.into)} / ${formatPlayerNumber(state.need)} XP</span>
       <span>faltam ${formatPlayerNumber(state.next - state.xp)} para o nível ${state.level + 1}</span>
     </div>
-    ${nextTitle ? `<div class="pf-hero-next">Próximo título no nível ${nextTitle.min}: ${nextTitle.icon} ${nextTitle.name}</div>` : ""}`;
+    ${nextTitle ? `<div class="pf-hero-next">Próximo título no nível ${nextTitle.min}: ${nextTitle.icon} ${nextTitle.name}</div>` : ""}
+    ${renderProfileSeasonChip(state)}`;
 
   const unlocked = state.achievements.filter((a) => a.unlocked).length;
   const stat = (label, value, sub, extra = "") => `
@@ -48,6 +50,16 @@ function renderProfileHero(state) {
     stat("🏅 Conquistas", `<span class="text-green">${unlocked}/${state.achievements.length}</span>`, `${Math.round((unlocked / state.achievements.length) * 100)}% do álbum`),
     stat("📈 Recordes", `<span class="text-blue">${formatPlayerNumber(state.stats.records)}</span>`, "pessoais batidos"),
   ].join("");
+}
+
+// Festa rolando (v1.63): chamadinha pros troféus e itens da temporada
+function renderProfileSeasonChip(state) {
+  const hits = playerSeasonsOn(state.today);
+  if (!hits.length) return "";
+  const icons = hits.map((h) => h.season.icon).join("");
+  const names = hits.map((h) => h.season.label).join(" + ");
+  const got = hits.every((h) => state.unlockedIds.has(`ss-${h.key}`));
+  return `<button type="button" class="pf-season" data-click="openSeason">${icons} ${escapeHtml(names)} no Toba! ${got ? "Troféu na conta 🏆 · ver itens" : "Bora pegar o troféu 🏆"}</button>`;
 }
 
 function renderProfileStreak(state) {
@@ -146,6 +158,7 @@ function renderProfileCustomPreview(state) {
   const look = getPlayerLook(state);
   document.getElementById("pfCustomPreview").innerHTML = `
     <span class="pf-hero-glow tp-bg-${look.bg.id}" aria-hidden="true"></span>
+    ${renderPlayerFx(look.bg.id)}
     ${renderPlayerAvatar(state, "lg")}
     <div class="pf-hero-title">${look.title.icon} ${escapeHtml(look.title.name)}</div>
     <div class="pf-custom-parts">
@@ -166,6 +179,7 @@ function renderProfileRewards(state) {
   document.getElementById("pfCustomHint").textContent = (PROFILE_CUSTOM_TABS.find((t) => t.id === profileTab) || PROFILE_CUSTOM_TABS[0]).hint;
   const look = getPlayerLook(state);
   const need = (item) => {
+    if (item.season) return playerSeasonNeed(item);
     if (!item.achievement) return `Nível ${item.level}`;
     const a = PLAYER_ACHIEVEMENTS.find((x) => x.id === item.achievement);
     if (!a) return "Conquista";
@@ -207,12 +221,21 @@ function renderProfileRewards(state) {
       if (profileTab === "bg") preview = mini({ bg: item.id });
       return tile({ id: item.id, unlocked, active: current === item.id, preview, name, lockText: need(item) });
     }).join("");
+    const grid = profileTab === "avatar" ? " is-avatars" : "";
+    const regular = list.filter((item) => !item.season);
+    const seasonal = list.filter((item) => item.season);
     if (profileTab === "bg") {
-      html = `<div class="pf-reward-grid">${tiles(list.filter((item) => !item.ultimate))}</div>
+      html = `<div class="pf-reward-grid">${tiles(regular.filter((item) => !item.ultimate))}</div>
         <div class="pf-ultimate-title">✨ ULTIMATE EDITION ✨</div>
-        <div class="pf-reward-grid is-ultimate">${tiles(list.filter((item) => item.ultimate))}</div>`;
+        <div class="pf-reward-grid is-ultimate">${tiles(regular.filter((item) => item.ultimate))}</div>`;
     } else {
-      html = `<div class="pf-reward-grid${profileTab === "avatar" ? " is-avatars" : ""}">${tiles(list)}</div>`;
+      html = `<div class="pf-reward-grid${grid}">${tiles(regular)}</div>`;
+    }
+    // Sazonais (v1.63): libera usando o Toba no mês da festa
+    if (seasonal.length) {
+      html += `<div class="pf-season-title" id="pfSeasonItems">🎉 Temporadas</div>
+        <p class="pf-season-text">As festas do mundo no Toba: ${PLAYER_SEASONS.map((x) => x.icon).join(" ")}. Usou o Toba na festa, leva o troféu do ano e libera os itens dela pra sempre.</p>
+        <div class="pf-reward-grid is-season${grid}">${tiles(seasonal)}</div>`;
     }
   }
   document.getElementById("pfRewards").innerHTML = html;
@@ -242,9 +265,19 @@ function closeCustomize({ fromHistory = false } = {}) {
   window.scrollTo(0, 0);
 }
 
+// Chip da temporada: abre o Personalizar já no Fundo, rolado até as Temporadas
+function openSeason() {
+  profileTab = "bg";
+  openCustomize();
+  document.getElementById("pfSeasonItems")?.scrollIntoView({ block: "start" });
+}
+
 async function equipReward(el) {
   if (el.dataset.locked) {
-    showPageMessage(`Ainda bloqueado. Libera com: ${el.dataset.locked}.`, { title: "Calma, apressado", icon: "🔒" });
+    const item = profileRewardList(el.dataset.kind).find((x) => x.id === el.dataset.id);
+    const season = item && item.season ? PLAYER_SEASONS.find((x) => x.id === item.season) : null;
+    const text = season ? `Item de temporada. Use o Toba ${season.when} e leva o troféu ${season.icon} que libera ele pra sempre.` : `Ainda bloqueado. Libera com: ${el.dataset.locked}.`;
+    showPageMessage(text, { title: "Calma, apressado", icon: season ? season.icon : "🔒" });
     return;
   }
   if (!isPlayerDbLoaded) return;
@@ -376,6 +409,7 @@ tobaSetupApp({
 
 tobaActions({
   openCustomize: () => openCustomize(),
+  openSeason,
   closeCustomize: () => closeCustomize(),
   showRewardTab: (el) => {
     profileTab = el.dataset.tab;

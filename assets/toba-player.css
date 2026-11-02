@@ -185,6 +185,181 @@
     radial-gradient(circle at 50% 30%, #c4b5fd, #4c1d95 55%, #0b0420);
 }
 
+/* ---------------------------------------------------------------------
+ * Sazonais (v1.63): Arraiá (junho), Halloween (outubro), Natal (dezembro)
+ * ------------------------------------------------------------------- */
+.tp-frame-bandeirinhas::before {
+  background: repeating-conic-gradient(from 0deg, #f85149 0 20deg, #e3b341 20deg 40deg, #3fb950 40deg 60deg, #58a6ff 60deg 80deg, #f778ba 80deg 100deg);
+  animation: tp-spin 10s linear infinite;
+}
+.tp-frame-teia::before { background: repeating-conic-gradient(from 0deg, #e6edf3 0 3deg, #30363d 3deg 30deg); opacity: 1; }
+.tp-frame-teia { box-shadow: 0 0 0 3px var(--bg), 0 0 18px 3px rgba(240, 136, 62, 0.45); }
+.tp-frame-pisca-pisca::before {
+  background: repeating-conic-gradient(from 0deg, #f85149 0 15deg, #161b22 15deg 22deg, #3fb950 22deg 37deg, #161b22 37deg 44deg, #e3b341 44deg 59deg, #161b22 59deg 66deg);
+  animation: tp-spin 12s linear infinite, tp-blink 1.2s steps(2, jump-none) infinite;
+}
+.tp-frame-pisca-pisca { box-shadow: 0 0 0 3px var(--bg), 0 0 18px 3px rgba(248, 81, 73, 0.4); }
+
+.tp-bg-arraia { background: radial-gradient(circle at 50% 105%, #ffd866, #f0883e 22%, #da3633 42%, #3b1d0a 70%, #120804); animation: tp-bg-glow 1.8s ease-in-out infinite; }
+.tp-bg-halloween {
+  background:
+    radial-gradient(circle at 72% 26%, #fff1b8 0 11%, rgba(255, 241, 184, 0.25) 13%, transparent 20%),
+    radial-gradient(circle at 45% 45%, #8957e5, #3c1e70 50%, #0d0518);
+}
+.tp-bg-neve {
+  background:
+    radial-gradient(1.5px 1.5px at 20% 20%, #fff, transparent),
+    radial-gradient(2px 2px at 70% 45%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 45% 80%, #fff, transparent),
+    linear-gradient(180deg, #1f4e9a, #0b1626);
+  background-size: 50% 50%, 50% 50%, 50% 50%, 100% 100%;
+  animation: tp-snow-bg 4s linear infinite;
+}
+
+.tp-frame-fogos::before { background: conic-gradient(from 0deg, #e3b341, #f85149, #bc8cff, #58a6ff, #fff8c5, #e3b341); animation: tp-spin 2.6s linear infinite, tp-blink 0.9s steps(2, jump-none) infinite; }
+.tp-frame-fogos { box-shadow: 0 0 0 3px var(--bg), 0 0 20px 3px rgba(227, 179, 65, 0.5); }
+.tp-frame-confete::before { background: repeating-conic-gradient(from 0deg, #f778ba 0 12deg, #e3b341 12deg 24deg, #3fb950 24deg 36deg, #39d0d8 36deg 48deg, #bc8cff 48deg 60deg); animation: tp-spin 4s linear infinite; }
+.tp-frame-casca-de-ovo::before { background: repeating-linear-gradient(135deg, #ffd6e8 0 6px, #bde0fe 6px 12px, #fff3b0 12px 18px, #caffbf 18px 24px); opacity: 1; }
+.tp-frame-sabre::before { background: linear-gradient(180deg, #58a6ff, #a5d6ff 50%, #f85149); animation: tp-blink 1.6s ease-in-out infinite; opacity: 1; }
+.tp-frame-sabre { box-shadow: 0 0 0 3px var(--bg), 0 -6px 18px 2px rgba(88, 166, 255, 0.6), 0 6px 18px 2px rgba(248, 81, 73, 0.6); }
+.tp-frame-cempasuchil::before { background: repeating-conic-gradient(from 0deg, #ff9e1b 0 18deg, #f0883e 18deg 30deg, #db61a2 30deg 36deg); animation: tp-spin 14s linear infinite; }
+.tp-frame-cempasuchil { box-shadow: 0 0 0 3px var(--bg), 0 0 16px 2px rgba(255, 158, 27, 0.45); }
+
+.tp-bg-reveillon { background: radial-gradient(circle at 50% 35%, #2b3a67, #0d1325 60%, #04060d); }
+.tp-bg-ano-chines { background: radial-gradient(circle at 50% 40%, #e3b341 0 8%, #b62324 35%, #4a0b0b 80%); }
+.tp-bg-carnaval { background: linear-gradient(135deg, #f778ba, #bc8cff 35%, #39d0d8 70%, #e3b341); background-size: 300% 300%; animation: tp-bg-flow 5s ease-in-out infinite; }
+.tp-bg-pascoa { background: linear-gradient(180deg, #bde0fe 0 55%, #95d5b2 55%); }
+.tp-bg-espaco {
+  background:
+    radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+    radial-gradient(1px 1px at 75% 60%, #fff, transparent),
+    radial-gradient(circle at 78% 22%, #e3b341 0 7%, transparent 8%),
+    radial-gradient(circle at 40% 50%, #111827, #020205);
+}
+.tp-bg-muertos { background: radial-gradient(circle at 50% 70%, #ff9e1b, #db61a2 40%, #3c1e70 75%, #120822); }
+.tp-bg-diwali { background: radial-gradient(circle at 50% 65%, #ffd866, #e3b341 18%, #9e2a6a 55%, #2a0a24); animation: tp-bg-glow 2.2s ease-in-out infinite; }
+
+@keyframes tp-snow-bg {
+  from { background-position: 0 0, 0 0, 0 0, 0 0; }
+  to { background-position: 0 100%, 0 100%, 0 100%, 0 0; }
+}
+
+@keyframes tp-blink {
+  50% { filter: brightness(1.6) saturate(1.3); }
+}
+
+/* Efeito por cima do card do Perfil (renderPlayerFx) */
+.tp-fx {
+  position: absolute !important;
+  inset: 0;
+  z-index: 0 !important;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.tp-fx i { position: absolute; font-style: normal; }
+.tp-fx-snow i {
+  top: -10px;
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0.75;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+  animation: tp-snow linear infinite;
+}
+.tp-fx-confetti i {
+  top: -10px;
+  width: var(--s);
+  height: calc(var(--s) * 1.8);
+  border-radius: 1px;
+  background: var(--c);
+  opacity: 0.85;
+  animation: tp-snow linear infinite, tp-flip 1.1s linear infinite;
+}
+@keyframes tp-flip {
+  50% { rotate: 180deg; }
+}
+.tp-fx-stars i {
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background: #fff;
+  animation: tp-twinkle 3s ease-in-out infinite;
+}
+@keyframes tp-twinkle {
+  50% { opacity: 0.15; }
+}
+.tp-fx-pop i {
+  opacity: 0;
+  animation: tp-pop ease-out infinite;
+}
+@keyframes tp-pop {
+  0% { opacity: 0; transform: scale(0.3); }
+  15% { opacity: 1; transform: scale(1.15); }
+  45% { opacity: 0.9; transform: scale(1); }
+  70%, 100% { opacity: 0; transform: scale(0.8); }
+}
+.tp-fx-rise i {
+  opacity: 0;
+  animation: tp-rise linear infinite;
+  filter: drop-shadow(0 0 8px rgba(255, 216, 102, 0.7));
+}
+@keyframes tp-rise {
+  0% { opacity: 0; transform: translateY(60px); }
+  20% { opacity: 0.9; }
+  80% { opacity: 0.7; }
+  100% { opacity: 0; transform: translateY(-80px); }
+}
+@keyframes tp-snow {
+  0% { top: -10px; transform: translateX(0); }
+  50% { transform: translateX(var(--x)); }
+  100% { top: 105%; transform: translateX(0); }
+}
+.tp-fx-bats i {
+  left: -12%;
+  animation: tp-bat linear infinite;
+  filter: drop-shadow(0 0 6px rgba(137, 87, 229, 0.8));
+}
+@keyframes tp-bat {
+  0% { left: -12%; transform: translateY(0) scaleX(-1); }
+  25% { transform: translateY(-14px) scaleX(-1); }
+  50% { transform: translateY(6px) scaleX(-1); }
+  75% { transform: translateY(-10px) scaleX(-1); }
+  100% { left: 112%; transform: translateY(0) scaleX(-1); }
+}
+.tp-fx-bats b {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  font-size: 1.5rem;
+  filter: drop-shadow(0 0 10px rgba(240, 136, 62, 0.9));
+  animation: tp-pulse 2.4s ease-in-out infinite;
+}
+.tp-fx-flags {
+  display: flex;
+  justify-content: space-around;
+  height: 34px;
+  padding: 0 4px;
+  border-top: 2px solid rgba(230, 237, 243, 0.25);
+}
+.tp-fx-flags i {
+  position: static;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 14px solid var(--c);
+  transform-origin: top center;
+  animation: tp-sway 2.4s ease-in-out infinite;
+  animation-delay: var(--d);
+}
+.tp-fx-flags i:nth-child(odd) { margin-top: 4px; }
+@keyframes tp-sway {
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(8deg); }
+}
+
 @keyframes tp-bg-glow {
   50% { filter: brightness(1.2) saturate(1.2); }
 }
@@ -638,10 +813,27 @@
   .tp-bg-ouro-liquido,
   .tp-bg-ecto,
   .tp-bg-holografico,
+  .tp-frame-bandeirinhas::before,
+  .tp-frame-pisca-pisca::before,
+  .tp-frame-fogos::before,
+  .tp-frame-confete::before,
+  .tp-frame-sabre::before,
+  .tp-frame-cempasuchil::before,
+  .tp-bg-carnaval,
+  .tp-bg-diwali,
+  .tp-bg-arraia,
+  .tp-bg-neve,
+  .tp-fx i,
+  .tp-fx b,
   .tp-strip-fire.is-on {
     animation: none;
   }
-  .tp-confetti {
+  .tp-confetti,
+  .tp-fx-snow,
+  .tp-fx-confetti,
+  .tp-fx-pop,
+  .tp-fx-rise,
+  .tp-fx-bats i {
     display: none;
   }
 }

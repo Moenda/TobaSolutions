@@ -29,7 +29,7 @@ const SOCIAL_SECTIONS = [
 const SOCIAL_CAT_SECTION = {
   treinos: "treinos", peso: "treinos", multidao: "treinos", distancia: "treinos", energia: "treinos",
   saitama: "treinos", musculos: "treinos", recordes: "treinos", streak: "treinos", pesagem: "treinos",
-  rotina: "rotina", cozinha: "cozinha", pista: "racing", roles: "places", amizade: "base",
+  rotina: "rotina", cozinha: "cozinha", pista: "racing", roles: "places", amizade: "base", sazonal: "base",
 };
 
 // Números do duelo. section "base" = sempre (nível, XP, troféus).
