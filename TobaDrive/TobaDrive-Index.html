@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="icon" href="../icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="css/drive-base.css" />
+  <title>Toba Drive 🧭</title>
+</head>
+
+<body>
+  <main class="container">
+    <header class="toba-header">
+      <a class="toba-back" href="../index.html" aria-label="Voltar para o Toba Solutions">‹</a>
+      <a class="toba-titles" href="../index.html">
+        <span class="toba-app">🧭 Toba Drive</span>
+        <span class="toba-page">Hub</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
+      </div>
+    </header>
+
+    <div class="toba-kicker">Recalculando a rota da vida, piloto 🛣️</div>
+    <nav class="toba-hub-list" aria-label="Módulos do Toba Drive">
+      <a class="toba-hub-card" href="TobaDrive-Navegar.html">
+        <span class="toba-hub-icon">🧭</span>
+        <span class="toba-hub-text">
+          <span class="toba-hub-title">Navegar</span>
+          <span class="toba-hub-desc" id="hubNavDesc">GPS com voz, rota e chegada. Destino da busca, dos favoritos ou do Toba Places.</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </a>
+      <div class="toba-hub-card is-soon" role="button" tabindex="0" data-click="soonAuto">
+        <span class="toba-hub-icon">🚘</span>
+        <span class="toba-hub-text">
+          <span class="toba-hub-title">Android Auto <span class="dv-soon">SOON</span></span>
+          <span class="toba-hub-desc">O Toba Drive na tela do carro. Precisa do app Android novo 🔧</span>
+        </span>
+        <span class="toba-hub-chevron">🔒</span>
+      </div>
+    </nav>
+
+    <div class="section-title">🏁 Seu painel</div>
+    <div class="toba-stats" id="hubStats"></div>
+    <p class="dv-hint" style="margin-top: 0.8rem">💡 Navegando, deixa o Toba aberto na tela: o navegador não deixa site usar o GPS com a tela apagada (por isso o Toba segura a tela acesa).</p>
+  </main>
+
+  <script src="../assets/toba-common.js"></script>
+  <script src="../assets/toba-cloud.js"></script>
+  <script src="js/drive-metrics.js"></script>
+  <script src="js/drive-core.js"></script>
+  <script>
+    // O Hub só mostra um resumo; quem grava é o Navegar (e a ⚙️ com backup).
+    function renderDriveHub() {
+      const s = calcDriveSummary(driveDb);
+      document.getElementById("hubNavDesc").textContent = s.last
+        ? `Última: ${s.last.name} · ${driveFormatKm((Number(s.last.km) || 0) * 1000)} km${s.last.arrived ? " 🏁" : ""}`
+        : "GPS com voz, rota e chegada. Destino da busca, dos favoritos ou do Toba Places.";
+      const tile = (label, value, sub) => `
+        <div class="toba-stat">
+          <span class="toba-stat-label">${label}</span>
+          <span class="toba-stat-value">${value}</span>
+          <span class="toba-stat-sub">${sub}</span>
+        </div>`;
+      document.getElementById("hubStats").innerHTML =
+        tile("🛣️ Km no mês", `<span class="text-drive">${driveFormatKm(s.monthKm * 1000)}</span>`, s.km ? `${driveFormatKm(s.km * 1000)} km na vida` : "bora rodar")
+        + tile("🧭 Viagens", String(s.monthTrips), s.trips ? `${s.trips} no total` : "nenhuma ainda")
+        + tile("🏁 Chegou", String(s.arrived), s.arrived ? "sem se perder" : "o destino te espera")
+        + tile("⭐ Favoritos", String(s.favorites), s.favorites ? "a um toque" : "🏠 Casa, 💼 Trampo...");
+    }
+    function onDriveDataReplaced() {
+      renderDriveHub();
+    }
+    tobaActions({
+      soonAuto: () => showPageMessage("🚘 Pra aparecer na tela do carro, o Android Auto só aceita app Android de verdade (não site). Primeiro o Toba Drive fica redondo no celular; depois vem o APK novo com GPS e o modo Android Auto. Enquanto isso, o ↗️ da navegação abre o mesmo destino no Maps/Waze, que já rodam no Auto.", { title: "Em breve", icon: "🚧" }),
+    });
+    window.addEventListener("pageshow", (event) => {
+      if (event.persisted) renderDriveHub();
+    });
+    renderDriveHub();
+  </script>
+  <script src="../assets/pwa-register.js"></script>
+</body>
+
+</html>

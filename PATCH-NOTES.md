@@ -1390,3 +1390,59 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.64 - Balanca com periodo, linha de tendencia e papo reto do Cloba; botao de Temporada no Perfil com tela da festa e segurar no item pra ver como pegou`
+
+## v1.65 — 🧭 Toba Drive no celular + balança sabe pra que lado é bom + ✍️ "Como foi a visita?" no Places
+
+**Arquivos novos:** `TobaDrive/TobaDrive-Index.html`, `TobaDrive/TobaDrive-Navegar.html`, `TobaDrive/css/drive-base.css`, `TobaDrive/css/navegar.css`, `TobaDrive/js/drive-metrics.js`, `TobaDrive/js/drive-core.js`, `TobaDrive/js/drive-route.js`, `TobaDrive/js/navegar.js` (todos NOVOS)
+
+**Arquivos alterados:** `index.html`, `assets/portal.js`, `assets/toba-cloud.js`, `sw.js`, `TobaHealth/js/pesagem.js`, `TobaTurism/TobaTurism-Places.html`, `TobaTurism/js/places.js`, `TobaTurism/js/places-map.js`, `TobaTurism/js/turism-core.js`, `TobaTurism/css/turism-base.css`, `CLAUDE.md`
+
+### 🧭 Toba Drive (app novo): GPS com voz no celular
+1. **Card novo no portal:** 🧭 Toba Drive, com hub próprio (🧭 Navegar + 🚘 Android Auto "SOON") e painel de km no mês, viagens, chegadas e favoritos. O card do portal mostra as viagens e os km do mês.
+2. **Escolher o destino sem digitar muito:** busca de endereço (resultados mais perto de você primeiro, com a distância), chips dos ⭐ Favoritos, chips das listas do 📌 **Toba Places** (toca na lista e no lugar; lugar sem pino vira busca pelo nome), 🕘 Recentes e 🗺️ Escolher no mapa tocando.
+3. **Prévia da rota:** mapa com a rota laranja, distância, tempo e hora de chegada. Botões ☆ Favoritar (🏠 Casa, 💼 Trampo... com emoji), ↗️ Maps (abre o mesmo destino já navegando no Google Maps ou no Waze) e 🚀 Partiu.
+4. **Navegando:** faixa verde em cima com a seta, a distância e a manobra ("Vire à direita na Avenida X"), "Depois:" quando a próxima vem colada, mapa seguindo o carro (arrastou? 🎯 volta), embaixo a chegada, quanto falta e a velocidade.
+5. **Voz em pt-BR:** "Partiu!" com a primeira manobra e a hora de chegada, aviso de longe, "Em 300 metros, vire à direita..." e na hora da manobra. 🔊/🔇 no painel. Chegou: "Você chegou. Nunca foi sorte!" 🙏
+6. **Recalculando:** saiu da rota, o Cloba refaz sozinho a partir de onde você está (no máximo a cada 12 s).
+7. **Tela acesa:** navegando, a tela não apaga (o navegador não deixa site usar o GPS com a tela apagada, então deixa o Toba aberto no suporte).
+8. **⚙️ do Navegar:** voz, tela acesa, 💸 fugir de pedágio e 🗣️ testar a voz. Mapa claro/escuro no 🌙/☀️.
+9. **Histórico:** cada viagem (chegou, ou rodou 300 m+) guarda destino, data e km rodados de verdade pelo GPS.
+10. **Limites de agora:** no app Toba (APK) o GPS ainda não está liberado (aparece um aviso pra abrir pelo Chrome; o ↗️ Maps/Waze funciona). Android Auto só aceita app Android nativo: fica pro APK novo. A rota vem de servidores gratuitos do OpenStreetMap (Valhalla, e o OSRM se o primeiro cair), sem chave.
+
+### 🧭 Toba Health: cada número com o sentido certo
+1. **Basal subir agora é bom:** o Metabolismo Basal estava sendo tratado como gordura (subiu = vermelho, "🚨 Subindo, fica de olho"). Agora subir é verde, a tendência fica branca e o Cloba solta "🔥 Fornalha subindo". Cair fica vermelho ("🥶 Esfriando"), lembrando que se foi porque secou é normal.
+2. **Pensado número por número:** uma tabela só (`METRIC_GOOD_DIRECTION`) decide pra que lado é bom, e ela manda nas cores do **vs Média**, do **vs Anterior**, nas setinhas ▲▼ da lista, na cor da linha de tendência e no papo do Cloba:
+   - ⬇️ **Cair é bom:** Peso, IMC, Gordura, Gordura Visceral, Idade Corporal.
+   - ⬆️ **Subir é bom:** Pontuação, Massa Muscular, Água, Metabolismo Basal, Proteína, Massa Óssea.
+   - Proteína já estava certa (cair = vermelho) e continua assim.
+3. **Papo reto do Cloba com frase própria pra cada número:** antes Água, Ossos e Pontuação ganhavam a frase do músculo ("vira pudim 🍮") e Visceral/Idade a frase genérica. Agora cada um tem título e piada próprios: 💧 Hidratando / 🌵 Secando, 🧱 proteína, 🦴 Wolverine, ⏪ Rejuvenescendo / 👴 Envelhecendo, 🧹 Despejando a visceral, ⭐ nota da balança etc.
+4. **Chega de "-0,0%" vermelho:** diferença que arredonda pra zero (ex.: proteína 16,63 vs média 16,66) aparece como **0,0 (0%)** cinza, empate. Mesma coisa nas setinhas da lista (vira "=").
+5. **Rótulos do gráfico sem encavalar:** duas pesagens coladas (ex.: duas no mesmo dia) não viram mais "16,7%16,7%". Rótulo que bateria em outro desce pra baixo da bolinha; se for o mesmo número ou ainda bater, some. A última pesagem, a primeira, a maior e a menor têm prioridade.
+
+### ✍️ Toba Places: "Como foi a visita?" depois de ir no lugar
+1. **Comentário de quem já foi:** no ✏️ Editar lugar, marcou ✅ Já fui, aparece embaixo do "E voltaria?" o campo **✍️ Conta aí, como foi a visita?** pra escrever do jeito que quiser (até 500 letras). É separado da **Anotação**, que continua sendo o lembrete de antes de ir ("pedir o pão de queijo").
+2. **Frases prontas pra tocar (fast UI):** embaixo do campo tem chips tipo 😋 Comida top, ☕ Café bom, 🐢 Demorou, ⏳ Fila grande, 👥 Lotado, 📸 Instagramável, 💸 Saiu caro... Tocar acrescenta no texto, tocar de novo tira. Dá pra misturar com o que digitou.
+3. **No ✅ Fui rápido também:** a folha do "✅ Fui! Riscar da lista" ganhou o mesmo campo (opcional), então dá pra contar como foi na hora de riscar.
+4. **Aparece no card:** o lugar que já foi mostra o comentário em itálico com a barrinha verde-água, embaixo da nota (até 3 linhas; o resto aparece no ✏️). Também aparece no balão do 🗺️ Mapa.
+5. **📤 Mandar:** o texto pro WhatsApp leva o comentário numa linha ✍️ nos lugares que você já foi. O 📥 Colar lista ignora essa linha (lá tudo entra como "quero ir").
+
+**Dados:**
+- Toba Drive: banco novo `TOBA_DRIVE_DB` (favoritos, recentes e viagens) com `TOBA_DRIVE_DB_AUTO_BACKUP`, entra na ☁️ Conta (`TOBA_CLOUD_KEYS`) e no backup geral. Preferências só do aparelho em `toba_drive_prefs`. Só **lê** o `TOBA_TURISM_DB`. Detalhes no CLAUDE.md 3.14.
+- Balança: Nenhuma mudança no banco nem nas preferências. É só cálculo e texto.
+- Places: campo novo opcional `review` em cada lugar do `TOBA_TURISM_DB` (texto até 500, `""` = sem). Banco e backups antigos abrem normal (o `normalizeTurismDb` põe `""`). Voltar o lugar pra 📌 Quero ir e salvar limpa o comentário, igual já fazia com a nota e o custo-benefício.
+- `sw.js` com os 8 arquivos novos no `PRECACHE` e `VERSION` `toba-v27`.
+
+**Como testar:**
+- **Toba Drive (no celular, pelo Chrome):** portal › 🧭 Toba Drive › Navegar. Deixa a localização. Busca um endereço ou toca num lugar do Toba Places › confere a prévia › ☆ Favoritar como 🏠 Casa › 🚀 Partiu. Dá uma volta no quarteirão: a voz fala as manobras, a faixa muda, saindo da rota ele recalcula. Chegando, aparece "🏁 Chegou, piloto!" e o hub/portal contam a viagem. Testa o ↗️ Maps com Google Maps e Waze. No PC dá pra simular o GPS no DevTools (⋮ › More tools › Sensors › Location).
+- Toba Health › Pesagem › Metabolismo Basal (Tudo): se o basal subiu, vs Média/vs Anterior positivos ficam **verdes**, tendência branca e o card do Cloba verde "Fornalha subindo".
+- Proteína (Últimas 5): queda fica vermelha; se a diferença pra média for menor que 0,05, aparece "0,0 (0%)" cinza. O começo do gráfico mostra um "16,7%" só, sem encavalar.
+- Abre Água, Gordura Visceral, Idade Corporal, Massa Óssea e Pontuação: cada uma com frase própria e cor no sentido da lista acima.
+- Peso, IMC e Gordura continuam iguais (cair = verde).
+- Toba Tourism › uma lista › toca num lugar ✅ › rola até "✍️ Conta aí, como foi a visita?", escreve e toca em umas frases prontas (toca de novo numa pra ver sair) › Salvar. O card mostra o comentário.
+- Num lugar 📌, toca no ✅ do lado › escolhe a nota › escreve/toca frases › "✅ Fui! Riscar da lista". O card já aparece com o comentário.
+- Edita um lugar ✅, troca pra 📌 Quero ir e salva: o comentário some junto com a nota.
+- 🗺️ Mapa: abre o pino de um lugar ✅ com comentário e vê o ✍️ no balão.
+- 📤 Mandar: confere a linha ✍️.
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.65 - Toba Drive no celular (GPS com voz, rota, recalculo, favoritos, destinos do Places, Maps/Waze), balanca com o sentido certo de cada numero e comentario de como foi a visita no Places`

@@ -242,6 +242,39 @@
   color: var(--text-2);
 }
 
+/* v1.65: "Como foi a visita?" de quem já foi */
+.tr-place-review {
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--text);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  border-left: 2px solid var(--turism);
+  padding-left: 0.45rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tr-review-group {
+  margin: 0.9rem 0 0.4rem;
+}
+
+.tr-review-chips .tr-chip {
+  font-size: 0.76rem;
+  padding: 0.3rem 0.6rem;
+}
+
+.tr-opt {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.tr-pop-review {
+  font-style: italic;
+}
+
 /* v1.57: bairro/região */
 .tr-place-region {
   font-size: 0.76rem;

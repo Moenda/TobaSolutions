@@ -92,6 +92,42 @@ function chipHtml({ label, on = false, action, data = {}, extra = "" }) {
   return `<button type="button" class="chip-btn tr-chip${on ? " is-on" : ""}${extra}" data-click="${action}"${attrs}>${label}</button>`;
 }
 
+/* v1.65: frases prontas do "Como foi a visita?" (tocar = acrescenta no texto; não são gravadas como key) */
+const TURISM_REVIEW_CHIPS = [
+  "😋 Comida top", "☕ Café bom", "🧑‍🍳 Bem servido", "🤏 Porção pequena",
+  "😍 Atendimento top", "🐢 Demorou", "⏳ Fila grande", "👥 Lotado",
+  "🛋️ Ambiente gostoso", "📢 Barulhento", "📸 Instagramável", "💸 Saiu caro",
+];
+
+// Desenha as frases prontas embaixo do textarea (aceso = já está no texto)
+function renderReviewChips(boxId) {
+  const box = document.getElementById(boxId);
+  const wrap = document.getElementById(`${boxId}Chips`);
+  if (!box || !wrap) return;
+  const cur = box.value;
+  wrap.innerHTML = TURISM_REVIEW_CHIPS
+    .map((t) => chipHtml({ label: t, on: cur.includes(t), action: "addReviewChip", data: { target: boxId, text: t } }))
+    .join("");
+}
+
+// Toque numa frase pronta: acrescenta no fim do texto; tocar de novo tira
+function addReviewChip(el) {
+  const box = document.getElementById(el.dataset.target);
+  if (!box) return;
+  const text = el.dataset.text;
+  const cur = box.value.trim();
+  if (cur.includes(text)) {
+    box.value = cur.replace(text, "").replace(/\s*,\s*,\s*/g, ", ").replace(/^\s*,\s*|\s*,\s*$/g, "").trim();
+  } else {
+    box.value = (cur ? `${cur.replace(/[,.;]\s*$/, "")}, ${text}` : text).slice(0, 500);
+  }
+  renderReviewChips(box.id);
+}
+
+function onReviewInput(el) {
+  renderReviewChips(el.id);
+}
+
 function turismHasPin(p) {
   return p && p.lat !== null && p.lng !== null && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
 }
@@ -327,6 +363,7 @@ function placeCardHtml(p) {
       ${p.note ? `<span class="tr-place-note">📝 ${escapeHtml(p.note)}</span>` : ""}
       ${kind || tags.length ? `<span class="tr-place-tags">${kind ? `<span class="tr-mini-tag is-kind">${kind.icon} ${kind.label}</span>` : ""}${tags.map((t) => `<span class="tr-mini-tag">${t.icon} ${t.label}</span>`).join("")}</span>` : ""}
       ${been ? `<span class="tr-place-rating">${verdict.length ? verdict.join(" · ") : "Já foi"}${p.visitedAt ? ` · ${isoToBrDate(p.visitedAt).slice(0, 5)}` : ""}</span>` : ""}
+      ${been && p.review ? `<span class="tr-place-review">✍️ ${escapeHtml(p.review)}</span>` : ""}
     </div>
     <div class="tr-place-side">
       <button type="button" class="tr-side-btn" data-click="openPlaceMaps" data-id="${escapeHtml(p.id)}" aria-label="Abrir no Google Maps">🗺️</button>
@@ -493,6 +530,8 @@ function openPlaceSheet(place, prefill = null) {
   document.getElementById("placeAddress").value = place ? place.address : prefill?.address || "";
   document.getElementById("placeRegion").value = place ? place.region : turismRegionFromAddress(prefill?.address);
   document.getElementById("placeNote").value = place ? place.note : "";
+  document.getElementById("placeReview").value = place ? place.review || "" : "";
+  renderReviewChips("placeReview");
   document.getElementById("deletePlaceBtn").hidden = !place;
   const fallbackList = placesState.listId || (turismDb.lists[0] ? [...turismDb.lists].sort((a, b) => listActivity(b) - listActivity(a))[0].id : null);
   const list = turismFindList(place ? place.listId : fallbackList);
@@ -734,6 +773,7 @@ async function savePlace() {
     rating: been ? f.rating : null,
     value: been ? f.value : null,
     again: been ? f.again : null,
+    review: been ? document.getElementById("placeReview").value.trim().slice(0, 500) : "",
   };
   let place;
   if (id) {
@@ -814,6 +854,8 @@ function openRate(el) {
   const p = turismFindPlace(el.dataset.id);
   if (!p) return;
   placesState.rate = { id: p.id, rating: null, value: null, again: null };
+  document.getElementById("rateReview").value = p.review || "";
+  renderReviewChips("rateReview");
   document.getElementById("rateSheetTitle").textContent = `✅ Fui no ${p.name}`.slice(0, 60);
   renderRate();
   openTobaModal("rateSheet");
@@ -850,6 +892,7 @@ function saveRate() {
   p.rating = r.rating;
   p.value = r.value;
   p.again = r.again;
+  p.review = document.getElementById("rateReview").value.trim().slice(0, 500);
   p.visitedAt = toIsoDate();
   if (!saveTurismDb({ silent: true })) return;
   closeTobaModal("rateSheet");
@@ -952,6 +995,7 @@ function turismListText(list) {
     if (p.status === "been") {
       const extra = [turismValue(p.value), turismAgain(p.again)].filter(Boolean);
       if (extra.length) lines.push(`💬 ${extra.map((x) => `${x.icon} ${x.label}`).join(", ")}`);
+      if (p.review) lines.push(`✍️ ${p.review.replace(/\s*\n\s*/g, " ")}`); // v1.65; o 📥 Colar ignora (lá tudo entra como "quero ir")
     }
   });
   return lines.join("\n");
@@ -1074,6 +1118,7 @@ function importList() {
       rating: null,
       value: null,
       again: null,
+      review: "",
       visitedAt: null,
       lat: coords ? coords.lat : null,
       lng: coords ? coords.lng : null,
@@ -1143,6 +1188,8 @@ tobaActions({
   pinFromSheet,
   openRate,
   pickRate,
+  addReviewChip,
+  onReviewInput,
   saveRate,
   openRoute,
   toggleRoute,

@@ -1,0 +1,235 @@
+/* =====================================================================
+ * Toba Drive · rota, busca, voz e tela acesa (desde v1.65)
+ * - Rota: Valhalla público do OpenStreetMap (valhalla1.openstreetmap.de, sem
+ *   chave, já devolve as frases em pt-BR). Caiu? tenta o OSRM público
+ *   (router.project-osrm.org) e monta as frases aqui (drive-metrics.js).
+ *   Os dois são servidores de uso justo: 1 rota por vez, recálculo no máximo a
+ *   cada DRIVE_REROUTE_GAP_MS. Nada disso vai pro cache do sw.js.
+ * - Busca de endereço: Nominatim (mesma regra do Toba Places: 1 por segundo).
+ * - Mapa: Leaflet 1.9.4 + CARTO com a MESMA chave do Toba Places
+ *   (TURISM_CARTO_KEY em TobaTurism/js/places-map.js). Trocou lá, troca aqui.
+ * - Voz: speechSynthesis do navegador em pt-BR.
+ * - Tela acesa: Wake Lock (navegador) ou TOBA_NATIVE.keepScreenOn (APK).
+ * ===================================================================== */
+const DRIVE_VALHALLA_URL = "https://valhalla1.openstreetmap.de/route?json=";
+const DRIVE_OSRM_URL = "https://router.project-osrm.org/route/v1/driving/";
+const DRIVE_SEARCH_URL = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=1&accept-language=pt-BR&countrycodes=br&q=";
+const DRIVE_REVERSE_URL = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&addressdetails=1&accept-language=pt-BR";
+const DRIVE_LEAFLET_CSS = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css";
+const DRIVE_LEAFLET_JS = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";
+const DRIVE_CARTO_KEY = "cb1_4zv2_1_2e88aba5239e1a6ac05ddc60"; // = TURISM_CARTO_KEY (places-map.js)
+const DRIVE_TILE_STYLES = { light: "voyager", dark: "dark_all" };
+const DRIVE_TILES_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>';
+const DRIVE_FETCH_TIMEOUT_MS = 12000;
+const DRIVE_REROUTE_GAP_MS = 12000;
+const DRIVE_PREFS_KEY = "toba_drive_prefs";
+
+/* ---------- preferências (só deste aparelho) ---------- */
+function readDrivePrefs() {
+  let p = {};
+  try {
+    p = JSON.parse(localStorage.getItem(DRIVE_PREFS_KEY) || "{}") || {};
+  } catch (err) {
+    p = {};
+  }
+  return {
+    voice: p.voice !== false,
+    keepAwake: p.keepAwake !== false,
+    mapStyle: p.mapStyle === "dark" ? "dark" : "light",
+    avoidTolls: Boolean(p.avoidTolls),
+  };
+}
+
+function storeDrivePrefs(patch) {
+  try {
+    localStorage.setItem(DRIVE_PREFS_KEY, JSON.stringify({ ...readDrivePrefs(), ...patch }));
+  } catch (err) {
+    /* sem storage: vale só agora */
+  }
+}
+
+/* ---------- rede ---------- */
+async function driveFetchJson(url) {
+  const ctrl = typeof AbortController === "function" ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), DRIVE_FETCH_TIMEOUT_MS) : null;
+  try {
+    const res = await fetch(url, ctrl ? { signal: ctrl.signal } : {});
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+// from/to = { lat, lng }; heading (graus) ajuda a não mandar fazer retorno à toa
+async function driveFetchRoute(from, to, options = {}) {
+  const prefs = readDrivePrefs();
+  const start = { lat: from.lat, lon: from.lng };
+  if (Number.isFinite(options.heading) && options.speed > 3) {
+    start.heading = Math.round(options.heading);
+    start.heading_tolerance = 60;
+  }
+  const body = {
+    locations: [start, { lat: to.lat, lon: to.lng }],
+    costing: "auto",
+    costing_options: { auto: { use_tolls: prefs.avoidTolls ? 0 : 0.5 } },
+    units: "kilometers",
+    language: "pt-BR",
+    directions_options: { units: "kilometers", language: "pt-BR" },
+  };
+  try {
+    const json = await driveFetchJson(DRIVE_VALHALLA_URL + encodeURIComponent(JSON.stringify(body)));
+    const route = driveRouteFromValhalla(json);
+    if (route) return route;
+    throw new Error("Valhalla sem rota");
+  } catch (err) {
+    console.warn("Valhalla falhou, tentando OSRM", err);
+  }
+  const json = await driveFetchJson(`${DRIVE_OSRM_URL}${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson&steps=true`);
+  const route = driveRouteFromOsrm(json);
+  if (!route) throw new Error("Sem rota");
+  return route;
+}
+
+/* ---------- busca de endereço (Nominatim, 1 por segundo) ---------- */
+let driveLastSearch = 0;
+
+async function driveNominatim(url) {
+  const wait = driveLastSearch + 1100 - Date.now();
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+  driveLastSearch = Date.now();
+  return driveFetchJson(url);
+}
+
+function driveAddressLine(addr, fallback = "") {
+  if (!addr) return fallback;
+  const street = [addr.road || addr.pedestrian || addr.footway, addr.house_number].filter(Boolean).join(", ");
+  const area = addr.suburb || addr.neighbourhood || addr.city_district || "";
+  const city = addr.city || addr.town || addr.village || addr.municipality || "";
+  return [street, area, city].filter(Boolean).join(" · ") || fallback;
+}
+
+// near = { lat, lng } (opcional): resultados perto de onde a pessoa está vêm primeiro
+async function driveSearchPlaces(q, near) {
+  let url = DRIVE_SEARCH_URL + encodeURIComponent(q);
+  if (near) {
+    const d = 0.5;
+    url += `&viewbox=${near.lng - d},${near.lat + d},${near.lng + d},${near.lat - d}`;
+  }
+  const rows = await driveNominatim(url);
+  const out = (Array.isArray(rows) ? rows : []).map((r) => ({
+    name: r.name || String(r.display_name || "").split(",")[0] || "Lugar",
+    address: driveAddressLine(r.address, String(r.display_name || "").split(",").slice(1, 3).join(",").trim()),
+    lat: Number(r.lat),
+    lng: Number(r.lon),
+  })).filter(driveValidPoint);
+  if (near) out.forEach((r) => (r.km = driveDist([near.lat, near.lng], [r.lat, r.lng]) / 1000));
+  return out;
+}
+
+async function driveReverse(lat, lng) {
+  const r = await driveNominatim(`${DRIVE_REVERSE_URL}&lat=${lat}&lon=${lng}`);
+  return {
+    name: r?.name || r?.address?.road || "Ponto no mapa",
+    address: driveAddressLine(r?.address, ""),
+  };
+}
+
+/* ---------- mapa ---------- */
+let driveLeafletPromise = null;
+
+function loadDriveLeaflet() {
+  if (window.L) return Promise.resolve();
+  if (!driveLeafletPromise) {
+    driveLeafletPromise = new Promise((resolve, reject) => {
+      const css = document.createElement("link");
+      css.rel = "stylesheet";
+      css.href = DRIVE_LEAFLET_CSS;
+      document.head.appendChild(css);
+      const js = document.createElement("script");
+      js.src = DRIVE_LEAFLET_JS;
+      js.onload = () => (window.L ? resolve() : reject(new Error("Leaflet sem L")));
+      js.onerror = () => reject(new Error("Leaflet não carregou"));
+      document.head.appendChild(js);
+    }).catch((err) => {
+      driveLeafletPromise = null; // tenta de novo na próxima
+      throw err;
+    });
+  }
+  return driveLeafletPromise;
+}
+
+function driveTilesUrl(style) {
+  return `https://basemaps.cartocdn.com/rastertiles/${DRIVE_TILE_STYLES[style] || DRIVE_TILE_STYLES.light}/{z}/{x}/{y}.png?key=${DRIVE_CARTO_KEY}`;
+}
+
+/* ---------- voz ---------- */
+let driveVoice = null;
+
+function drivePickVoice() {
+  if (!("speechSynthesis" in window)) return null;
+  const voices = speechSynthesis.getVoices() || [];
+  driveVoice = voices.find((v) => /pt[-_]BR/i.test(v.lang) && /google/i.test(v.name))
+    || voices.find((v) => /pt[-_]BR/i.test(v.lang))
+    || voices.find((v) => /^pt/i.test(v.lang))
+    || null;
+  return driveVoice;
+}
+
+if ("speechSynthesis" in window) {
+  drivePickVoice();
+  speechSynthesis.addEventListener?.("voiceschanged", drivePickVoice);
+}
+
+function driveSpeak(text, options = {}) {
+  if (!text || !readDrivePrefs().voice || !("speechSynthesis" in window)) return;
+  try {
+    if (options.interrupt !== false) speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "pt-BR";
+    if (driveVoice || drivePickVoice()) u.voice = driveVoice;
+    u.rate = 1.02;
+    speechSynthesis.speak(u);
+  } catch (err) {
+    /* sem voz neste aparelho: segue só na tela */
+  }
+}
+
+function driveShutUp() {
+  try {
+    if ("speechSynthesis" in window) speechSynthesis.cancel();
+  } catch (err) {
+    /* nada */
+  }
+}
+
+/* ---------- tela acesa ---------- */
+let driveWakeLock = null;
+let driveWantAwake = false;
+
+async function driveKeepAwake(on) {
+  driveWantAwake = on && readDrivePrefs().keepAwake;
+  if (TOBA_NATIVE && typeof TOBA_NATIVE.keepScreenOn === "function") {
+    TOBA_NATIVE.keepScreenOn(driveWantAwake);
+    return;
+  }
+  if (!driveWantAwake) {
+    if (driveWakeLock) driveWakeLock.release().catch(() => {});
+    driveWakeLock = null;
+    return;
+  }
+  if (!("wakeLock" in navigator) || driveWakeLock || document.hidden) return;
+  try {
+    driveWakeLock = await navigator.wakeLock.request("screen");
+    driveWakeLock.addEventListener("release", () => {
+      driveWakeLock = null;
+    });
+  } catch (err) {
+    driveWakeLock = null; // navegador não deixou: navega igual
+  }
+}
+
+// O navegador solta o Wake Lock quando a aba some; volta ao aparecer
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && driveWantAwake) driveKeepAwake(true);
+});

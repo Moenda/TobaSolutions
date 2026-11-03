@@ -48,6 +48,7 @@ const TOBA_CLOUD_KEYS = [
   { key: "TOBA_KITCHEN_DB", label: "Kitchen", emoji: "🍳" },
   { key: "TOBA_RACING_DB", label: "Racing", emoji: "🏎️" },
   { key: "TOBA_TURISM_DB", label: "Tourism", emoji: "🌎" },
+  { key: "TOBA_DRIVE_DB", label: "Drive", emoji: "🧭" },
   { key: "TOBA_PLAYER_DB", label: "Perfil", emoji: "🎮" },
   { key: "toba_modules_config", label: "Cards", emoji: "🧩", group: "prefs" },
   { key: "toba_bank_card_config", group: "prefs" },

@@ -1,0 +1,526 @@
+/* Toba Drive · 🧭 Navegar */
+
+/* ---------- escolher destino ---------- */
+.dv-notice {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  padding: 0.7rem 0.85rem;
+  margin-bottom: 0.8rem;
+  border: 1px solid rgba(251, 146, 60, 0.45);
+  background: rgba(251, 146, 60, 0.1);
+  border-radius: var(--radius);
+}
+
+.dv-gps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.74rem;
+  color: var(--muted);
+  margin-bottom: 0.6rem;
+}
+
+.dv-gps-dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--gold);
+  animation: dv-pulse 1.4s ease-in-out infinite;
+}
+
+.dv-gps-dot.is-ok {
+  background: var(--green);
+  animation: none;
+}
+
+.dv-gps-dot.is-bad {
+  background: var(--red);
+  animation: none;
+}
+
+@keyframes dv-pulse {
+  50% { opacity: 0.3; }
+}
+
+.dv-search {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 0.6rem;
+}
+
+.dv-search .form-control {
+  flex: 1;
+  min-width: 0;
+}
+
+.dv-search-btn {
+  flex: 0 0 48px;
+  padding: 0;
+}
+
+.dv-results {
+  margin-bottom: 0.4rem;
+}
+
+.dv-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 0.6rem;
+  scrollbar-width: none;
+}
+
+.dv-chips:empty {
+  display: none;
+}
+
+.dv-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.dv-chips.is-wrap {
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+.dv-chip {
+  flex: 0 0 auto;
+  height: 34px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dv-chip.is-on {
+  color: var(--text);
+  border-color: var(--drive);
+  background: rgba(251, 146, 60, 0.16);
+}
+
+.dv-emoji {
+  font-size: 1.1rem;
+  padding: 0 9px;
+}
+
+.dv-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dv-mini {
+  height: 26px;
+  font-size: 0.7rem;
+}
+
+.dv-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 0.88rem;
+}
+
+.dv-item-text b,
+.dv-item-text small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dv-item-text small {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.dv-item-km {
+  flex: 0 0 auto;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--drive);
+}
+
+.dv-full {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+/* ---------- mapa em tela cheia ---------- */
+body.is-driving {
+  overflow: hidden;
+}
+
+.dv-route {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--bg);
+}
+
+.dv-route[hidden] {
+  display: none;
+}
+
+.dv-map {
+  position: absolute;
+  inset: 0;
+  background: #e8e4dc;
+}
+
+.dv-map.is-dark {
+  background: #1b1d22;
+}
+
+.dv-map .toba-empty {
+  position: absolute;
+  inset: 30% 16px auto;
+}
+
+.dv-round {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: rgba(22, 27, 34, 0.94);
+  color: var(--text);
+  font-size: 1.2rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.dv-top {
+  position: absolute;
+  z-index: 500;
+  top: calc(env(safe-area-inset-top) + 10px);
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dv-top[hidden] {
+  display: none;
+}
+
+.dv-top-text {
+  flex: 1;
+  min-width: 0;
+  padding: 0.55rem 0.85rem;
+  border-radius: var(--radius);
+  background: rgba(22, 27, 34, 0.94);
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.dv-top-text:empty {
+  visibility: hidden;
+}
+
+/* Faixa da manobra */
+.dv-banner {
+  position: absolute;
+  z-index: 500;
+  top: calc(env(safe-area-inset-top) + 10px);
+  left: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-lg);
+  background: #14532d;
+  border: 1px solid #1f7a43;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+.dv-banner[hidden] {
+  display: none;
+}
+
+.dv-banner-icon {
+  flex: 0 0 auto;
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.dv-banner-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dv-banner-dist {
+  font-size: 1.7rem;
+  font-weight: 900;
+  line-height: 1.1;
+  color: #fff;
+}
+
+.dv-banner-text {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #dcfce7;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.dv-then {
+  position: absolute;
+  z-index: 500;
+  top: calc(env(safe-area-inset-top) + 112px);
+  left: 10px;
+  max-width: calc(100% - 20px);
+  padding: 0.35rem 0.7rem;
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: #0f3d22;
+  color: #dcfce7;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dv-then[hidden] {
+  display: none;
+}
+
+.dv-recenter {
+  position: absolute;
+  z-index: 500;
+  right: 12px;
+  bottom: calc(env(safe-area-inset-bottom) + 150px);
+}
+
+.dv-recenter[hidden] {
+  display: none;
+}
+
+/* Card de baixo (prévia / chegou) */
+.dv-card {
+  position: absolute;
+  z-index: 500;
+  left: 10px;
+  right: 10px;
+  bottom: calc(env(safe-area-inset-bottom) + 10px);
+  padding: 0.9rem;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.dv-card[hidden] {
+  display: none;
+}
+
+.dv-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.dv-card-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dv-card-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dv-card-sub {
+  font-size: 0.76rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dv-fav {
+  width: 40px;
+  height: 40px;
+  box-shadow: none;
+}
+
+.dv-fav.is-on {
+  border-color: var(--gold);
+}
+
+.dv-stats {
+  margin: 0;
+}
+
+.dv-error {
+  font-size: 0.82rem;
+  color: var(--coral);
+}
+
+.dv-quote {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--gold-2);
+  text-align: center;
+}
+
+.dv-go {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+/* Painel de baixo navegando */
+.dv-panel {
+  position: absolute;
+  z-index: 500;
+  left: 10px;
+  right: 10px;
+  bottom: calc(env(safe-area-inset-bottom) + 10px);
+  padding: 0.7rem 0.8rem;
+  border-radius: var(--radius-lg);
+  background: rgba(22, 27, 34, 0.97);
+  border: 1px solid var(--border);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.dv-panel[hidden] {
+  display: none;
+}
+
+.dv-panel-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  text-align: center;
+}
+
+.dv-ps {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dv-ps b {
+  font-size: 1.3rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.dv-ps:first-child b {
+  color: var(--green);
+}
+
+.dv-ps small {
+  font-size: 0.66rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dv-panel-btns {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dv-panel-btns .dv-round {
+  box-shadow: none;
+}
+
+.dv-end {
+  flex: 1;
+  height: 44px;
+}
+
+/* Carro e bandeira no mapa */
+.dv-car-wrap,
+.dv-flag-wrap {
+  background: none;
+  border: 0;
+}
+
+.dv-car {
+  display: block;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #2563eb;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  position: relative;
+  transition: transform 0.4s ease;
+}
+
+.dv-car::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 4px;
+  transform: translateX(-50%);
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 13px solid #fff;
+}
+
+.dv-car.is-nav {
+  background: var(--drive);
+}
+
+.dv-flag {
+  font-size: 1.8rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+}
+
+.dv-out-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 0.8rem;
+}
+
+/* Leaflet: atribuição discreta acima do card */
+.dv-route .leaflet-control-attribution {
+  font-size: 9px;
+  margin-bottom: 0 !important;
+}
+
+body.is-driving .dv-route .leaflet-bottom {
+  bottom: 0;
+}
+
+.dv-stats.toba-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dv-stats .toba-stat-value {
+  font-size: 1.05rem;
+  white-space: nowrap;
+}

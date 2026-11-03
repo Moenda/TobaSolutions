@@ -20,7 +20,8 @@ function createEmptyTurismDb() {
     //             status: "want"|"been", rating: key de TURISM_RATINGS|null, visitedAt: "AAAA-MM-DD"|null, addedAt: ms,
     //             v1.56: kind: key de TURISM_KINDS|null, value: key de TURISM_VALUES|null, again: "sim"|"nao"|null,
     //                    lat/lng: number|null (pino do 🗺️ Mapa), geoMiss: bool (busca automática não achou),
-    //             v1.57: region: "" | texto livre até 40 (bairro/região, ex. "Pinheiros", "Zona Sul") }]
+    //             v1.57: region: "" | texto livre até 40 (bairro/região, ex. "Pinheiros", "Zona Sul"),
+    //             v1.65: review: "" | texto livre até 500 (como foi a visita; só de quem "já foi") }]
   };
 }
 
@@ -63,6 +64,8 @@ function normalizeTurismDb(db) {
     if (p.geoMiss === undefined) p.geoMiss = false;
     // v1.57
     p.region = p.region === undefined || p.region === null ? "" : String(p.region).slice(0, 40);
+    // v1.65
+    p.review = p.review === undefined || p.review === null ? "" : String(p.review).slice(0, 500);
     // Sem pino mas o link comprido do Maps tem a coordenada: usa ela (só em memória até a próxima gravação)
     if (p.lat === null) {
       const coords = turismCoordsFromUrl(p.url);

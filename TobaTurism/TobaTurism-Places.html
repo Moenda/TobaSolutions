@@ -144,6 +144,11 @@
           <div class="tr-chips is-wrap" id="placeValueChips"></div>
           <div class="tr-label">🔁 E voltaria?</div>
           <div class="tr-chips is-wrap" id="placeAgainChips"></div>
+          <div class="form-group tr-review-group">
+            <label for="placeReview">✍️ Conta aí, como foi a visita?</label>
+            <textarea id="placeReview" class="form-control" data-input="onReviewInput" rows="3" maxlength="500" placeholder="Ex: o Cloba pediu o brunch, veio frio, mas o café salvou"></textarea>
+          </div>
+          <div class="tr-chips is-wrap tr-review-chips" id="placeReviewChips"></div>
         </div>
         <div id="placeListBox">
           <div class="tr-label">Em qual lista?</div>
@@ -180,6 +185,11 @@
         <div class="tr-chips is-wrap" id="rateValueChips"></div>
         <div class="tr-label">🔁 E voltaria?</div>
         <div class="tr-chips is-wrap" id="rateAgainChips"></div>
+        <div class="form-group tr-review-group">
+          <label for="rateReview">✍️ Conta aí, como foi? <span class="tr-opt">(opcional)</span></label>
+          <textarea id="rateReview" class="form-control" data-input="onReviewInput" rows="3" maxlength="500" placeholder="Ex: fila de 20 min, mas o pastel valeu"></textarea>
+        </div>
+        <div class="tr-chips is-wrap tr-review-chips" id="rateReviewChips"></div>
       </div>
       <div class="toba-sheet-footer">
         <button type="button" class="btn btn-primary" data-click="saveRate">✅ Fui! Riscar da lista</button>

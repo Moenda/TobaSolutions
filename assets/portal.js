@@ -712,6 +712,28 @@ function renderTurismCard() {
   box.hidden = !parts.length;
 }
 
+/* ---------------------------------------------------------------------
+ * Card do Toba Drive (v1.65): viagens e km do mês
+ * (só leitura do TOBA_DRIVE_DB, contas do drive-metrics.js)
+ * ------------------------------------------------------------------- */
+function renderDriveCard() {
+  const box = document.getElementById("driveCardToday");
+  if (!box || typeof calcDriveSummary !== "function") return;
+  let data = null;
+  try {
+    data = JSON.parse(localStorage.getItem("TOBA_DRIVE_DB") || "null");
+  } catch (e) {
+    console.error("Erro ao ler os dados do Toba Drive", e);
+  }
+  const s = calcDriveSummary(data);
+  const parts = [];
+  if (s.monthTrips) parts.push(`🧭 ${s.monthTrips} ${s.monthTrips === 1 ? "viagem" : "viagens"} no mês`);
+  if (s.monthKm) parts.push(`🛣️ ${driveFormatKm(s.monthKm * 1000)} km`);
+  if (!parts.length && s.favorites) parts.push(`⭐ ${s.favorites} ${s.favorites === 1 ? "favorito" : "favoritos"}`);
+  box.innerHTML = parts.map((part) => `<span class="routine-chip">${part}</span>`).join("");
+  box.hidden = !parts.length;
+}
+
 // App Android (v1.47): compras lidas das notificações esperando aprovação
 // no Gastos. Só lê a fila do app e o TOBA_BANK_DB (tira o que já foi lançado).
 function renderPortalPending() {
@@ -748,6 +770,7 @@ function renderPortalPanels() {
   renderKitchenCard();
   renderRacingCard();
   renderTurismCard();
+  renderDriveCard();
   tobaPlayerCheck();
   // App Android: refaz os avisos das tarefas a cada abertura (o portal é a tela mais aberta)
   syncRoutineAlerts(readRoutineDbRaw());

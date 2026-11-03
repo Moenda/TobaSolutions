@@ -342,8 +342,26 @@ const TREND_STABLE_BAND = {
   bodyAge: 1,
 };
 
-// Regra de cores Toba: o que é bom subir? (o resto, cair é bom)
-const METRIC_UP_IS_GOOD = ["muscle", "water", "protein", "bone", "score"];
+// Regra de cores Toba (v1.65): pra que lado cada número da balança é bom.
+// "up" = subir é bom (verde), "down" = cair é bom. Vale pros quadradinhos
+// vs Média/vs Anterior, as setinhas da lista, a cor da tendência e o Cloba.
+const METRIC_GOOD_DIRECTION = {
+  weight: "down", // peso: secar é a meta
+  bmi: "down", // IMC anda junto com o peso
+  score: "up", // pontuação corporal: nota da balança
+  fat: "down", // gordura %
+  muscle: "up", // massa muscular
+  water: "up", // água %: hidratado e mais músculo (músculo é ~75% água)
+  bmr: "up", // metabolismo basal: fornalha mais forte queima mais parado
+  visceral: "down", // gordura em volta dos órgãos
+  protein: "up", // proteína %: tijolo do shape
+  bone: "up", // massa óssea
+  bodyAge: "down", // idade corporal: mais novo que o RG é a meta
+};
+
+function metricUpIsGood(metricKey) {
+  return METRIC_GOOD_DIRECTION[metricKey] === "up";
+}
 
 const compareState = { key: null, period: readComparePeriod() };
 
@@ -449,8 +467,11 @@ function calcTrend(chrono) {
 
 // Frases do Cloba. {delta} = variação com sinal, {periodo} = "nas últimas 10",
 // {tempo} = "há 3 meses", {label} = nome da métrica.
+// v1.65: cada número da balança tem as próprias frases e títulos (good/bad),
+// sempre no sentido de METRIC_GOOD_DIRECTION. "up"/"down" = reserva genérica.
 const TREND_LINES = {
   fat: {
+    titles: { good: "🔥 Derretendo", bad: "🚨 Subindo", badStrong: "🚨 Alerta vermelho" },
     stable: ["Estável {tempo}, pai. Tá ótimo 👌", "A capa da gaita não mexe {tempo}. Constância de monge 🧘"],
     good: ["{delta} {periodo}. A banha tá pedindo arrego, segue o baile 🚀", "{delta} {periodo}. O tanquinho tá mandando sinal de fumaça 💪"],
     goodStrong: ["{delta} {periodo}?? Isso é cutting de filme, pai. Nunca foi sorte 🙏"],
@@ -458,18 +479,91 @@ const TREND_LINES = {
     badStrong: ["{delta} {periodo}?? A gordura comprou apê e tá mobiliando 😂 Bora voltar pro básico"],
   },
   weight: {
+    titles: { good: "🔥 Secando", bad: "🚨 Subindo" },
     stable: ["Peso cravado {tempo}. Balança de vidro, pai 👌", "Nem pra cima nem pra baixo {tempo}. Manutenção nível monge 🧘"],
     good: ["{delta} {periodo}. Tá secando bonito 🔥", "{delta} {periodo}. A balança tá começando a gostar de você 😎"],
     goodStrong: ["{delta} {periodo}?? Calma, Saitama 😂 Só não esquece de comer proteína"],
     bad: ["{delta} {periodo}. A balança tá rindo da tua cara 😂 Segura a larica", "{delta} {periodo}. O bulk sujo mandou lembranças 🍕"],
     badStrong: ["{delta} {periodo}?? Fudeu, pai. Fecha a geladeira e bora caminhar 🚶"],
   },
+  bmi: {
+    titles: { good: "📏 Caindo", bad: "🚨 Subindo" },
+    stable: ["IMC cravado {tempo}. A régua não mexe, pai 👌"],
+    good: ["IMC {delta} {periodo}. A régua tá a teu favor 📏🔥", "IMC {delta} {periodo}. Andando junto com o peso, do jeito certo 😎"],
+    goodStrong: ["IMC {delta} {periodo}?? Tá encolhendo de propósito, Saitama 😂"],
+    bad: ["IMC {delta} {periodo}. A régua tá apertando, segura a larica 🍕"],
+    badStrong: ["IMC {delta} {periodo}?? Fudeu, pai. Bora voltar pro básico 🚶"],
+  },
+  score: {
+    titles: { good: "⭐ Subindo", bad: "📉 Caindo" },
+    stable: ["Nota parada {tempo}. Nem cola nem bomba 👌"],
+    good: ["Nota {delta} {periodo}. A balança tá te dando estrelinha ⭐", "Nota {delta} {periodo}. Boletim melhorando, pai 📈"],
+    goodStrong: ["Nota {delta} {periodo}?? Passou de ano direto 🎓"],
+    bad: ["Nota {delta} {periodo}. A balança tá te dando recuperação 📉 Bora estudar (treinar)"],
+    badStrong: ["Nota {delta} {periodo}?? Reprovado, pai 😂 Volta pro básico"],
+  },
+  muscle: {
+    titles: { good: "💪 Crescendo", bad: "😬 Escorrendo" },
+    stable: ["Músculo parado {tempo}. Segurando o que construiu 👌"],
+    good: ["Músculo {delta} {periodo}. O shape tá vindo 🚀", "Músculo {delta} {periodo}. Tá construindo, pai 🧱"],
+    goodStrong: ["Músculo {delta} {periodo}?? Monstro, saindo da jaula 🦍"],
+    bad: ["Músculo {delta} {periodo}. Bora treino de força e proteína antes que vire pudim 🍮", "Músculo {delta} {periodo}. Tá escorrendo, pai. Bora reagir 👊"],
+    badStrong: ["Músculo {delta} {periodo}?? Alerta vermelho. Volta pro treino ontem 🚨"],
+  },
+  water: {
+    titles: { good: "💧 Hidratando", bad: "🌵 Secando" },
+    stable: ["Água estável {tempo}. Hidratado tipo planta bem cuidada 🪴"],
+    good: ["Água {delta} {periodo}. Hidratação em dia, o corpo agradece 💧", "Água {delta} {periodo}. Tá bebendo água igual o Killua na torneira 🐱💧"],
+    goodStrong: ["Água {delta} {periodo}?? Virou camelo, pai 🐫💧"],
+    bad: ["Água {delta} {periodo}. Tá secando por dentro. Entre um café da V60 e outro, bebe água 🚰"],
+    badStrong: ["Água {delta} {periodo}?? Cacto mode ativado 🌵 Garrafinha do lado AGORA"],
+  },
+  bmr: {
+    titles: { good: "🔥 Fornalha subindo", bad: "🥶 Esfriando" },
+    stable: ["Basal estável {tempo}. A fornalha tá no mesmo fogo 🔥👌"],
+    good: ["Basal {delta} {periodo}. A fornalha tá esquentando, queima mais até no sofá 🔥", "Basal {delta} {periodo}. Motor turbinado, pai. Pizza liberada (com moderação) 🍕"],
+    goodStrong: ["Basal {delta} {periodo}?? Virou alto-forno, pai 🏭🔥"],
+    bad: ["Basal {delta} {periodo}. Se foi porque secou, normal; se foi músculo indo embora, bora treino de força 💪"],
+    badStrong: ["Basal {delta} {periodo}?? Modo economia de bateria 🪫 Proteína e treino de força pra reacender"],
+  },
+  visceral: {
+    titles: { good: "🧹 Despejando", bad: "🚨 Subindo" },
+    stable: ["Visceral parada {tempo}. Ninguém novo morando aí dentro 👌"],
+    good: ["Visceral {delta} {periodo}. Despejando a gordura que mora nos órgãos 🧹🔥"],
+    goodStrong: ["Visceral {delta} {periodo}?? Ordem de despejo cumprida 🏠🚪"],
+    bad: ["Visceral {delta} {periodo}. Essa é a gordura traiçoeira, fica de olho 👀 Menos açúcar e bora caminhar"],
+    badStrong: ["Visceral {delta} {periodo}?? Alerta vermelho, essa é a que pega o coração 🚨"],
+  },
+  protein: {
+    titles: { good: "🧱 Subindo", bad: "😬 Caindo" },
+    stable: ["Proteína parada {tempo}. Constância é o nome do jogo 👌"],
+    good: ["Proteína {delta} {periodo}. Os tijolos do shape tão chegando 🧱", "Proteína {delta} {periodo}. O frango com batata doce tá trabalhando 🍗"],
+    goodStrong: ["Proteína {delta} {periodo}?? Virou whey em forma de gente 🥛💪"],
+    bad: ["Proteína {delta} {periodo}. Tá faltando tijolo na obra 🧱 Capricha no ovo, frango e feijão"],
+    badStrong: ["Proteína {delta} {periodo}?? Obra embargada, pai 🚧 Proteína em toda refeição"],
+  },
+  bone: {
+    titles: { good: "🦴 Subindo", bad: "😬 Caindo" },
+    stable: ["Massa óssea estável {tempo}. Esqueleto firme, como tem que ser 🦴👌"],
+    good: ["Massa óssea {delta} {periodo}. Esqueleto de adamantium em construção 🦴"],
+    goodStrong: ["Massa óssea {delta} {periodo}?? Wolverine, é tu? 🦴⚔️"],
+    bad: ["Massa óssea {delta} {periodo}. Treino de força, cálcio e sol que o esqueleto agradece ☀️🦴"],
+    badStrong: ["Massa óssea {delta} {periodo}?? Bora cuidar disso, pai: força, cálcio e vitamina D 🚨"],
+  },
+  bodyAge: {
+    titles: { good: "⏪ Rejuvenescendo", bad: "👴 Envelhecendo" },
+    stable: ["Idade corporal parada {tempo}. O tempo não passa pra tu 🧘"],
+    good: ["Idade corporal {delta} {periodo}. Rejuvenescendo, pai ⏪", "Idade corporal {delta} {periodo}. O RG mente, o corpo não 😎"],
+    goodStrong: ["Idade corporal {delta} {periodo}?? Benjamin Button mode 👶"],
+    bad: ["Idade corporal {delta} {periodo}. O corpo tá correndo na frente do calendário 👴 Bora treinar"],
+    badStrong: ["Idade corporal {delta} {periodo}?? Virou tiozão do pavê 😂 Volta pro básico"],
+  },
   up: {
     stable: ["{label} parado {tempo}. Constância é o nome do jogo 👌"],
-    good: ["{label} {delta} {periodo}. O shape tá vindo 🚀", "{label} {delta} {periodo}. Tá construindo, pai 🧱"],
-    goodStrong: ["{label} {delta} {periodo}?? Monstro, saindo da jaula 🦍"],
-    bad: ["{label} {delta} {periodo}. Bora treino de força e proteína antes que vire pudim 🍮", "{label} {delta} {periodo}. Tá escorrendo, pai. Bora reagir 👊"],
-    badStrong: ["{label} {delta} {periodo}?? Alerta vermelho. Volta pro treino ontem 🚨"],
+    good: ["{label} {delta} {periodo}. É isso, tá no caminho 🚀"],
+    goodStrong: ["{label} {delta} {periodo}?? Nunca foi sorte, Cloba 🙏"],
+    bad: ["{label} {delta} {periodo}. Tá caindo, pai. Bora reagir 👊"],
+    badStrong: ["{label} {delta} {periodo}?? Alerta vermelho. Bora voltar pro básico 🚨"],
   },
   down: {
     stable: ["{label} parado {tempo}. Constância é o nome do jogo 👌"],
@@ -484,7 +578,7 @@ const TREND_TITLES = {
   stable: "🧘 Estável",
   noisy: "🎢 Sanfona",
   good: { up: "💪 Subindo", down: "🔥 Derretendo" },
-  bad: { up: "🚨 Subindo", down: "😬 Escorrendo" },
+  bad: { up: "🚨 Subindo", down: "😬 Caindo" },
 };
 
 function buildTrendVerdict(metricKey, meta, chrono, trend, period) {
@@ -501,9 +595,9 @@ function buildTrendVerdict(metricKey, meta, chrono, trend, period) {
     return `${zero ? "" : v > 0 ? "+" : "−"}${abs}${meta.unit}`;
   };
   const band = trendBand(metricKey, trend);
-  const upIsGood = METRIC_UP_IS_GOOD.includes(metricKey);
-  const family = metricKey === "fat" || metricKey === "weight" ? metricKey : upIsGood ? "up" : "down";
-  const lines = TREND_LINES[family];
+  const upIsGood = metricUpIsGood(metricKey);
+  const lines = TREND_LINES[metricKey] || TREND_LINES[upIsGood ? "up" : "down"];
+  const titles = lines.titles || {};
   const change = trend.change;
   const pick = (arr) => arr[(n + Math.round(Math.abs(change) * 100)) % arr.length];
 
@@ -523,8 +617,8 @@ function buildTrendVerdict(metricKey, meta, chrono, trend, period) {
     const good = up === upIsGood;
     const strong = Math.abs(change) >= band * 3;
     tone = good ? "is-good" : "is-bad";
-    title = good ? TREND_TITLES.good[up ? "up" : "down"] : TREND_TITLES.bad[up ? "up" : "down"];
-    if (strong && !good && family === "fat") title = "🚨 Alerta vermelho";
+    const dir = up ? "up" : "down";
+    title = good ? titles.good || TREND_TITLES.good[dir] : (strong && titles.badStrong) || titles.bad || TREND_TITLES.bad[dir];
     const set = good ? (strong ? lines.goodStrong : lines.good) : strong ? lines.badStrong : lines.bad;
     text = pick(set);
   }
@@ -563,7 +657,7 @@ function trendToneColor(metricKey, trend) {
   if (!trend) return "var(--blue)";
   const band = trendBand(metricKey, trend);
   if (Math.abs(trend.change) < band) return "var(--blue)";
-  const good = (trend.change > 0) === METRIC_UP_IS_GOOD.includes(metricKey);
+  const good = (trend.change > 0) === metricUpIsGood(metricKey);
   return good ? "var(--text-2)" : "var(--red)";
 }
 
@@ -603,7 +697,7 @@ function renderMetricCompare() {
     <button type="button" class="compare-chip${p.id === period.id ? " is-on" : ""}" data-click="setComparePeriod" data-period="${p.id}" aria-pressed="${p.id === period.id}">${p.label}</button>
   `).join("");
 
-  const upIsGood = METRIC_UP_IS_GOOD.includes(metricKey);
+  const upIsGood = metricUpIsGood(metricKey);
   const formataEvolucao = (valorBase, valorComp, idVal, idPct) => {
     const elVal = document.getElementById(idVal);
     const elPct = document.getElementById(idPct);
@@ -620,7 +714,8 @@ function renderMetricCompare() {
     const diff = valorBase - valorComp;
     const pct = valorComp !== 0 ? (diff / valorComp) * 100 : 0;
 
-    if (diff > -0.001 && diff < 0.001) {
+    // v1.65: diferença que arredonda pra zero ("-0,0%") é empate, não vermelho.
+    if (/^[0,]+$/.test(formatMetricValue(Math.abs(diff), decType))) {
       elVal.textContent = `${formatMetricValue(0, decType)}${unit}`;
       elPct.textContent = "(0%)";
       elVal.classList.add("text-muted");
@@ -662,7 +757,7 @@ function renderMetricCompare() {
       let delta = "";
       if (prev) {
         const d = item.val - prev.val;
-        if (Math.abs(d) >= 0.001) {
+        if (!/^[0,]+$/.test(formatMetricValue(Math.abs(d), decType))) {
           const cls = (d > 0) === upIsGood ? "text-green" : "text-red";
           delta = `<small class="cmp-delta ${cls}">${d > 0 ? "▲" : "▼"} ${formatMetricValue(Math.abs(d), decType)}</small>`;
         } else {
@@ -777,21 +872,42 @@ function renderSvgChart(points, type, unit, trend, trendColor = "var(--blue)", m
   });
 
   // Rótulos: todos com até 7 pontos; senão só primeiro, último, maior e menor.
-  const labelIdx = new Set();
-  if (n <= 7) coords.forEach((_, i) => labelIdx.add(i));
-  else {
-    labelIdx.add(0);
-    labelIdx.add(n - 1);
-    labelIdx.add(vals.indexOf(Math.max(...points.map((p) => p.val))));
-    labelIdx.add(vals.indexOf(Math.min(...points.map((p) => p.val))));
-  }
-  labelIdx.forEach((i) => {
+  // v1.65: rótulo que bateria em outro (pesagens coladas, ex. "16,7%16,7%")
+  // tenta ir pra baixo da bolinha; se ainda bater (ou é o mesmo número), some. Prioridade: última,
+  // primeira, maior, menor, depois o resto na ordem.
+  const ptVals = points.map((p) => p.val);
+  const maxIdx = ptVals.indexOf(Math.max(...ptVals));
+  const minIdx = ptVals.indexOf(Math.min(...ptVals));
+  const order = [n - 1, 0, maxIdx, minIdx];
+  if (n <= 7) coords.forEach((_, i) => order.push(i));
+  const placed = [];
+  const seen = new Set();
+  const clash = (box) => placed.filter((o) => box.x1 < o.x2 + 3 && box.x2 > o.x1 - 3 && box.y1 < o.y2 + 1 && box.y2 > o.y1 - 1);
+  order.forEach((i) => {
+    if (seen.has(i)) return;
+    seen.add(i);
     const c = coords[i];
+    const isLast = i === n - 1;
+    const text = `${formatMetricValue(c.val, decType)}${unit}`;
+    const fs = isLast ? 11.5 : 10;
+    const tw = text.length * fs * 0.6;
     const anchor = c.x < 40 ? "start" : c.x > w - 40 ? "end" : "middle";
     const dx = anchor === "start" ? -4 : anchor === "end" ? 4 : 0;
-    const y = Math.max(12, c.y - 10);
-    const cls = i === n - 1 ? "chart-label is-last" : "chart-label";
-    svg += `<text class="${cls}" x="${r1(c.x + dx)}" y="${r1(y)}" text-anchor="${anchor}">${formatMetricValue(c.val, decType)}${unit}</text>`;
+    const lx = c.x + dx;
+    const x1 = anchor === "start" ? lx : anchor === "end" ? lx - tw : lx - tw / 2;
+    const above = Math.max(12, c.y - 10);
+    const below = Math.min(h - padBottom + 4, c.y + 18);
+    const boxAt = (y) => ({ x1, x2: x1 + tw, y1: y - fs, y2: y + 2, text });
+    let y = above;
+    const first = clash(boxAt(above));
+    if (first.length) {
+      // Mesmo número colado no vizinho não precisa aparecer duas vezes.
+      if (first.some((o) => o.text === text) || clash(boxAt(below)).length) return;
+      y = below;
+    }
+    placed.push(boxAt(y));
+    const cls = isLast ? "chart-label is-last" : "chart-label";
+    svg += `<text class="${cls}" x="${r1(lx)}" y="${r1(y)}" text-anchor="${anchor}">${text}</text>`;
   });
 
   // Datas no pé: primeira, do meio (se couber) e última.

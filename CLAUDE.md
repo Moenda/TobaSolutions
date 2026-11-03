@@ -55,6 +55,7 @@ Ao terminar um patch, informe a lista de arquivos alterados e o que testar — n
   - **Toba Kitchen** — Livro de Receitas (receitas no código, busca pelo que tem em casa, modo cozinha) e Programação da Semana, desde v1.43, e Lista de compras com catálogo do mercado pra tocar (página própria desde v1.53).
   - **Toba Racing** — Combustível (abastecimentos e histórico de km/l de tanque cheio a tanque cheio), desde v1.51. Dá só conquistas no Perfil (categoria 🏁 Pista, desde v1.56).
   - **Toba Turism** (na tela **"Toba Tourism"** desde v1.56; pasta, arquivos e banco continuam `TobaTurism`/`TOBA_TURISM_DB`) — Toba Places (listas de lugares pra visitar com link do Google Maps, tipo, anotação, "por que entrou", nota/custo-benefício/"iria de novo" de quem já foi e 🗺️ Mapa com os pinos desde v1.56), desde v1.55; Toba Travel aparece no hub como "SOON" (desabilitado). Não dá XP.
+  - **Toba Drive** — 🧭 Navegar (GPS com voz em pt-BR, rota, recálculo e chegada no celular com a tela acesa; destino pela busca, ⭐ favoritos, recentes ou do Toba Places), desde v1.65; Android Auto aparece no hub como "SOON" (precisa de app Android nativo). Não dá XP.
 - Dependências externas, sempre **fixadas** (nunca versão flutuante), pelo jsdelivr: Chart.js `chart.js@4.4.7` e, desde v1.56, Leaflet `leaflet@1.9.4` (só o 🗺️ Mapa do Toba Places, carregado na hora que abre; os dois no `PRECACHE`). O mapa usa os quadradinhos do OpenStreetMap da CARTO (`basemaps.cartocdn.com/rastertiles/<estilo>/...png?key=`, não vão pro cache): desde v1.60 o padrão é o colorido `voyager` (o escuro `dark_all` ficava preto demais pra ler), com o 🌙/☀️ da barra do mapa pra trocar; a escolha fica só no celular em `localStorage["toba_turism_map_style"]` ("light"|"dark", conveniência, não é dado nem vai pra nuvem). **Desde v1.57 a CARTO exige chave**: a chave grátis de navegador do Rafa fica em `TURISM_CARTO_KEY` (places-map.js), pública no site como toda chave de mapa de front-end; trocar/limitar ao domínio é no painel da CARTO (Basemaps). Sem `{r}`/`@2x` na URL (não confirmado no endpoint novo) e a busca de endereço do Nominatim (`nominatim.openstreetmap.org`, sem chave, no máximo 1 busca por segundo).
 - Commits seguem o padrão `vX.YY - descrição` (ex.: `v1.16 - Novo modulo de treino de força...`).
 
@@ -152,6 +153,14 @@ TobaTurism/                  (desde v1.55; ver 3.13)
   js/turism-metrics.js     Regras puras (resumo, link do Maps / busca, roteiro) + catálogos TURISM_TAGS e TURISM_RATINGS. Também no portal
   js/turism-core.js        Dono do TOBA_TURISM_DB + turismOpenExternal (abre o Maps; no APK vai pelo próprio WebView)
   css/turism-base.css
+TobaDrive/                   (desde v1.65; ver 3.14)
+  TobaDrive-Index.html     Hub do Drive (card do Navegar + Android Auto "SOON" + resumo) -> js/drive-metrics.js + js/drive-core.js
+  TobaDrive-Navegar.html   Navegar: escolher destino -> prévia da rota -> navegando -> chegou (?lat=&lng=&name= abre já com destino)
+                             -> js/drive-metrics.js + ../TobaTurism/js/turism-metrics.js + js/drive-core.js + js/drive-route.js + js/navegar.js
+  js/drive-metrics.js      Regras puras (resumo, distância, projeção do GPS na rota, polyline, frases das manobras, links Maps/Waze). Também no portal
+  js/drive-core.js         Dono do TOBA_DRIVE_DB + driveOpenExternal
+  js/drive-route.js        Rota (Valhalla, cai pro OSRM), busca (Nominatim), mapa (Leaflet/CARTO), voz e tela acesa
+  css/drive-base.css + css/navegar.css
 TobaAndroid/               App Android (APK): WebView que abre o site publicado + ponte window.TobaNative
                            (gastos lidos das notificações, alarmes, salvar arquivo). Java puro, Android Studio.
                            Fora do PRECACHE. Passo a passo em TobaAndroid/README.md (ver seção 4.1)
@@ -206,6 +215,9 @@ CLAUDE.md                  Este guia
 | `TOBA_RACING_DB_AUTO_BACKUP` | `TobaRacing/js/racing-core.js` | Cópia do valor **anterior** do Racing, atualizada a cada `saveRacingDb()` |
 | `TOBA_TURISM_DB` | `TobaTurism/js/turism-core.js` | Banco do Toba Turism (desde v1.55), ver 3.13 |
 | `TOBA_TURISM_DB_AUTO_BACKUP` | `TobaTurism/js/turism-core.js` | Cópia do valor **anterior** do Turism, atualizada a cada `saveTurismDb()` |
+| `TOBA_DRIVE_DB` | `TobaDrive/js/drive-core.js` | Banco do Toba Drive (desde v1.65), ver 3.14 |
+| `TOBA_DRIVE_DB_AUTO_BACKUP` | `TobaDrive/js/drive-core.js` | Cópia do valor **anterior** do Drive, atualizada a cada `saveDriveDb()` |
+| `toba_drive_prefs` | `TobaDrive/js/drive-route.js` | Preferências do Navegar (desde v1.65): `{ voice, keepAwake, mapStyle: "light"\|"dark", avoidTolls }`. Ausente = voz e tela acesa ligadas, mapa claro, pedágio liberado. Só deste aparelho (fora de `TOBA_CLOUD_KEYS`) |
 | `toba_modules_config` | `assets/portal.js` | `[{ id, visible }]` — ordem/visibilidade dos cards do portal |
 | `toba_bank_card_config` | `assets/portal.js` | `{ type: "personalizado"\|"simples", orcamento, cofre, gastos, sobra, addGasto, privacy }` (mesclado com defaults) |
 | `toba_health_card_config` | `assets/portal.js` | Desde v1.37: `{ type: "personalizado"\|"simples", metrics: { peso, pesoMes, treinos, km, semana, kcal, minutos, saitama, gordura }, links, privacy }`. `metrics` é mesclado com os defaults de `HEALTH_CARD_METRICS` (número novo = item novo na lista, nunca renomear a `key`) |
@@ -327,6 +339,7 @@ Arquivo: [TobaHealth/js/health-core.js](TobaHealth/js/health-core.js). Variável
 - **Formato do campo na balança** (desde v1.51, ⚙️ "Métricas da balança" → "Visor"): `metricsOrder[].type` (casas decimais: `int`/`dec1`/`dec2`, agora escolhível) + `metricsOrder[].digits` (dígitos antes da vírgula, 1–4; ausente = `DEFAULT_METRIC_DIGITS`; escolhido na folha de quadradinhos `#formatPickerModal`, desde v1.52) e `weightFormat` pro peso (só muda o campo de digitar; a tela continua mostrando o peso com 2 casas). A máscara (`toba-mask-*` + `data-digits`, toba-common) pula pro próximo campo quando completa dígitos + casas. Editar uma pesagem sem mexer num campo mantém o valor gravado exato (`data-orig`), mesmo que o formato novo mostre menos casas.
 - **`metricsOrder` é salvo no banco do usuário.** Adicionar uma métrica em `DEFAULT_METRICS_ORDER` **não** faz ela aparecer para quem já tem dados. Para isso, acrescente em `normalizeHealthDb()` um merge: para cada métrica padrão cuja `key` não existe em `db.metricsOrder`, dar `push` (preservando ordem/`active` do usuário). Para remover uma métrica, filtre por `key` (como já é feito com `bmi`), mas **não apague** o valor dos `weighIns` antigos.
 - Ao salvar uma pesagem, métricas inativas (fora da tela) **mantêm o valor antigo** do registro — preserve esse comportamento.
+- **Sentido bom de cada número da balança** (desde v1.65): `METRIC_GOOD_DIRECTION` em [pesagem.js](TobaHealth/js/pesagem.js) diz se subir (`"up"`) ou cair (`"down"`) é bom: peso, IMC, gordura, visceral e idade corporal = cair; pontuação, músculo, água, **basal**, proteína e massa óssea = subir. É a fonte única das cores do vs Média/vs Anterior, das setinhas da lista, da cor da tendência e do papo do Cloba (`TREND_LINES[key]`, com frases e títulos próprios por métrica). Métrica nova = entrada nova nas duas tabelas.
 - **Catálogo de força** (`STRENGTH_GROUPS` / `STRENGTH_EXERCISES` em [health-metrics.js](TobaHealth/js/health-metrics.js) desde v1.40, antes em forca.js): os `id` são referência gravada.
   - `strengthRoutines` guardam **só** `exerciseId` → nunca renomeie nem remova um `id` de exercício; para "remover", esconda da UI mas mantenha no catálogo.
   - `workouts` de força guardam um **snapshot** de `name` e `group` (histórico não muda se o catálogo mudar). O `group` alimenta o futuro mapa de calor; mantenha-o gravado.
@@ -531,7 +544,9 @@ Arquivos: [TobaTurism/js/turism-core.js](TobaTurism/js/turism-core.js) (dono do 
     value: "vale"|"justo"|"caro"|null /* custo-benefício, TURISM_VALUES */, again: "sim"|"nao"|null /* iria de novo, TURISM_AGAIN */,
     lat: number|null, lng: number|null /* pino do 🗺️ Mapa */, geoMiss: bool /* a busca automática não achou */,
     // v1.57:
-    region: "" /* bairro/região, texto livre até 40 ("Pinheiros", "Zona Sul"); "" = sem */
+    region: "" /* bairro/região, texto livre até 40 ("Pinheiros", "Zona Sul"); "" = sem */,
+    // v1.65:
+    review: "" /* "como foi a visita", texto livre até 500; só com status "been" (salvar como "want" grava "") */
   } ]
 }
 ```
@@ -547,14 +562,37 @@ Arquivos: [TobaTurism/js/turism-core.js](TobaTurism/js/turism-core.js) (dono do 
 - **Colar do Maps** (`turismParseShared` em places.js): do texto do Compartilhar pega 1ª linha = nome, 2ª = endereço, link do Maps (ou o 1º link); só o link comprido `/maps/place/<nome>/` também dá o nome. O link curto `maps.app.goo.gl` não é aberto (sem rede/CORS), só guardado.
 - **📤 Mandar / 📥 Colar lista**: texto pra WhatsApp (`turismListText`) que o `turismParseListText` lê de volta: cabeçalho `emoji nome · cidade`, cada lugar começa com `📌`/`✅` e tem linhas `📍` endereço, `🗺️` link, `📝` anotação, `🏷️` tags pelo rótulo. Importar junta numa lista de mesmo nome+cidade (pula nome repetido) ou cria uma nova; tudo entra como `want` (o "já fui" é de quem mandou). Mudou o formato do Mandar? Mude o leitor junto, e continue lendo o antigo.
 - Conquistas `tu-*` no Perfil desde v1.56 (ver 3.9); visitar não dá XP sozinho. 📤 Mandar leva o tipo na linha `🏷️` (antes das tags) e custo-benefício/"iria de novo" numa linha `💬` (o 📥 Colar ignora a `💬`).
+- **Comentário da visita** (v1.65, `review`): diferente do `note` (lembrete de antes de ir). Campo no ✏️ (dentro do `placeRatingBox`, só com ✅ Já fui) e no ✅ Fui (`rateSheet`, opcional). As frases prontas `TURISM_REVIEW_CHIPS` (places.js) só acrescentam/tiram texto do campo: **não são keys gravadas**, pode mudar à vontade. Aparece no card (`.tr-place-review`, 3 linhas), no balão do mapa e no 📤 Mandar numa linha `✍️` (o 📥 Colar ignora; importado entra com `review: ""`).
 - Backup do app: `toba_turism_backup_*.json` (objeto puro, precisa de `lists` e `places`). Importar passa pelo `normalizeTurismDb()`.
+
+### 3.14 Toba Drive — `TOBA_DRIVE_DB` (desde v1.65)
+
+Arquivos: [TobaDrive/js/drive-core.js](TobaDrive/js/drive-core.js) (dono do banco; variável `driveDb`, trava `isDriveDbLoaded`) e [TobaDrive/js/drive-metrics.js](TobaDrive/js/drive-metrics.js) (regras puras, também no portal).
+
+```js
+{
+  version: 1,
+  favorites: [ { id: "fv-<ts>-<rand4>", name, emoji, lat, lng, address, createdAt: ms } ],
+  recent: [ { name, address, lat, lng, at: ms, placeId? /* id do lugar no Toba Places */ } ], // mais novo primeiro, até 12
+  trips: [ { id: "t-<ts>-<rand4>", date: "AAAA-MM-DD", startedAt: ms, endedAt: ms, name, lat, lng /* destino */,
+             km: number /* rodado de verdade pelo GPS, 1 casa */, arrived: bool } ] // até 500
+}
+```
+
+- **Rota:** Valhalla público do OpenStreetMap (`valhalla1.openstreetmap.de`, sem chave, frases já em pt-BR); se falhar, OSRM público (`router.project-osrm.org`) com as frases montadas em `driveOsrmStepText`. São servidores de uso justo: recálculo no máximo a cada 12 s (`DRIVE_REROUTE_GAP_MS`). Rota normalizada (`driveRouteFromValhalla`/`driveRouteFromOsrm`): `{ provider, coords: [[lat,lng]], cum: [m], distance, duration, steps: [{ idx, type, icon, text, alert, pre, street }] }`. Nada disso vai pro cache do `sw.js`.
+- **Navegando:** `watchPosition` de alta precisão; `driveLocateOnRoute` projeta o GPS na linha (procura perto do último segmento, senão na rota toda). Fora da linha (mais de 40 m, ou 1,3 × a precisão) em 3 leituras seguidas = recalcula com o rumo do carro. Chegou = a menos de 35 m do destino (ou fim da rota a menos de 120 m). Voz (`speakNext`): de longe ("Siga por X. Depois, ..."), antes (150 a 500 m, conforme a velocidade) e na hora (40 a 90 m). Viagem só entra em `trips` se chegou ou rodou 300 m+.
+- **Tela acesa / GPS:** navegador não deixa site usar GPS com a tela apagada; o Navegar pede Wake Lock (APK: `TOBA_NATIVE.keepScreenOn`). **O APK atual não tem permissão de localização** (nem `onGeolocationPermissionsShowPrompt`): no APK aparece aviso pra usar pelo Chrome. GPS no APK e Android Auto = APK novo (Android Auto só aceita app nativo com a Car App Library).
+- **Destinos do Toba Places:** só **lê** o `TOBA_TURISM_DB` (lugares com `lat`/`lng` ou link comprido); lugar sem pino vai pra busca pelo nome + cidade.
+- **Mapa:** mesma chave CARTO do Places, copiada em `DRIVE_CARTO_KEY` (drive-route.js): trocou a `TURISM_CARTO_KEY`, troque a dela junto.
+- **↗️ Maps/Waze** (`driveGoogleMapsUrl`/`driveWazeUrl`): abre o mesmo destino já navegando, pelo `driveOpenExternal`.
+- Backup do app: `toba_drive_backup_*.json` (objeto puro, precisa de `favorites` e `trips`). Importar passa pelo `normalizeDriveDb()`.
 
 ---
 
 ## 4. Service worker / PWA
 
 - [sw.js](sw.js): páginas/JS/CSS **network-first** (timeout 4 s, cai no cache); jsdelivr **cache-first**. Sem cópia no cache, só **navegação** (`request.mode === "navigate"`) cai no `index.html`; JS/CSS faltando devolvem erro (desde v1.37 — antes o HTML ia no lugar do script e a tela quebrava offline sem aviso). O network-first usa `fetch(..., { cache: "no-cache" })` de propósito: o GitHub Pages manda `max-age=600`, e sem isso o celular misturava HTML novo com JS antigo logo depois de publicar. Não tire.
-- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v23"` → `"toba-v24"`…). Sem isso, o app offline fica sem o arquivo.
+- **Arquivo novo ou renomeado?** Acrescente em `PRECACHE` **e** aumente `VERSION` (hoje `"toba-v27"` → `"toba-v28"`…). Sem isso, o app offline fica sem o arquivo.
 - Atualizar a versão do Chart.js exige trocar a URL nos HTML **e** no `PRECACHE`.
 - Toda página nova deve incluir `<script src="../assets/pwa-register.js"></script>` (ou `assets/...` na raiz), as metas de `color-scheme: dark` e o link do manifest, como as existentes.
 
@@ -571,7 +609,7 @@ Arquivos: [TobaTurism/js/turism-core.js](TobaTurism/js/turism-core.js) (dono do 
 ### 4.2 ☁️ Conta e nuvem (`assets/toba-cloud.js`, desde v1.59)
 
 - **Local primeiro:** o `localStorage` continua sendo a casa dos dados; a nuvem (Firebase, projeto `toba-solutions`, Firestore em São Paulo) guarda uma **cópia por conta**. Sem login nada muda e o Firebase nem é baixado (SDK compat 10.14.1 pelo jsdelivr, só quando o aparelho já entrou ou abriu a ☁️).
-- **Toda página carrega `toba-cloud.js` logo depois do `toba-common.js`** (antes dos cores). Página nova = mesma linha. Ele embrulha `localStorage.setItem/removeItem` só para **perceber** gravações nas chaves de `TOBA_CLOUD_KEYS` (os 7 `TOBA_*_DB` + preferências de card/tela); os cores não sabem da nuvem e não precisam mudar. Banco novo de app novo = item novo em `TOBA_CLOUD_KEYS` (nunca troque uma `key`: é o id na nuvem).
+- **Toda página carrega `toba-cloud.js` logo depois do `toba-common.js`** (antes dos cores). Página nova = mesma linha. Ele embrulha `localStorage.setItem/removeItem` só para **perceber** gravações nas chaves de `TOBA_CLOUD_KEYS` (os 8 `TOBA_*_DB` + preferências de card/tela; `TOBA_DRIVE_DB` desde v1.65); os cores não sabem da nuvem e não precisam mudar. Banco novo de app novo = item novo em `TOBA_CLOUD_KEYS` (nunca troque uma `key`: é o id na nuvem).
 - **Regra do sync** (ao abrir página logado, ao voltar pro app depois de 30 s, ao voltar a internet e 2,5 s depois de cada gravação): compara o hash de cada chave com o último sincronizado (`toba_cloud_state.keys`). Mudou só aqui = sobe; só na nuvem = desce e **a página recarrega** (os apps guardam o banco na memória; sem recarregar, a próxima gravação passaria por cima); nos dois = o mais novo ganha (`localAt` x `at` da nuvem) e o outro vira versão "conflito". 1º login de um aparelho com dados dos dois lados = folha "Com qual eu fico?" (sugere o lado maior).
 - **Nada some sem cópia:** antes do 1º sync baixa um backup geral e sobe cópia "antes"; ao descer da nuvem o valor daqui vai pra `<CHAVE>_AUTO_BACKUP`; 1ª subida do dia guarda versão "dia" (7 dias); "Apagar tudo" num app sobe a deleção mas guarda versão "apagado" (nos outros aparelhos o valor local vai pro `_AUTO_BACKUP`). Chave que sumiu sem "Apagar tudo" (dados do navegador limpos) é devolvida pela nuvem.
 - **Firestore:** `users/{uid}` = resumo `{ apps: { CHAVE: { hash, at, device, size, chunks, deleted } } }` (1 leitura por página); `users/{uid}/apps/{CHAVE}` = valor; texto maior que 300 mil caracteres vai em pedaços em `users/{uid}/chunks/` (doc tem limite de 1 MB; cada versão vai num envio próprio por causa do limite de 10 MB por envio); `users/{uid}/versions/{id}` = versões guardadas (o valor sempre em pedaços, a lista fica leve). Regras: só o dono lê/grava `users/{uid}/**`, o resto fechado (copiadas em `/mnt/project-files/toba-online/firestore.rules` no projeto do Claude; mudou a estrutura, mude as regras no console).

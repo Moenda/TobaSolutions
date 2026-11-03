@@ -1,0 +1,41 @@
+/* Toba Drive · só o que é do app. A base vem de ../assets/toba-common.css. */
+
+:root {
+  --drive: #fb923c; /* laranja de cone de pista */
+  --accent: var(--drive);
+}
+
+.text-drive {
+  color: var(--drive);
+}
+
+/* Hub: módulo que ainda não abriu (Android Auto) */
+.toba-hub-card.is-soon {
+  opacity: 0.45;
+  filter: grayscale(100%);
+  cursor: pointer;
+}
+
+.toba-hub-card.is-soon:hover {
+  transform: none;
+  border-color: var(--border-soft);
+}
+
+.dv-soon {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  vertical-align: middle;
+}
+
+.dv-hint {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.4;
+}

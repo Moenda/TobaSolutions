@@ -156,6 +156,7 @@ function drawPlacesMap(list) {
       ${p.region ? `<span>🏘️ ${escapeHtml(p.region)}</span>` : ""}
       ${p.note ? `<span>📝 ${escapeHtml(p.note)}</span>` : ""}
       ${verdict.length ? `<span>${verdict.join(" · ")}</span>` : ""}
+      ${been && p.review ? `<span class="tr-pop-review">✍️ ${escapeHtml(p.review)}</span>` : ""}
       <div class="tr-pop-btns">
         <button type="button" class="chip-btn" data-pop="openPlaceMaps" data-id="${escapeHtml(p.id)}">🗺️ Maps</button>
         ${been ? "" : `<button type="button" class="chip-btn" data-pop="openRate" data-id="${escapeHtml(p.id)}">✅ Fui</button>`}

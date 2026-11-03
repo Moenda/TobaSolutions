@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="icon" href="../icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="css/drive-base.css" />
+  <link rel="stylesheet" href="css/navegar.css" />
+  <title>Toba Drive | Navegar</title>
+</head>
+
+<body>
+  <!-- 1. Escolher o destino -->
+  <div class="container" id="pickView">
+    <header class="toba-header">
+      <a class="toba-back" href="TobaDrive-Index.html" data-label="Voltar para o Toba Drive" aria-label="Voltar para o Toba Drive">‹</a>
+      <a class="toba-titles" href="TobaDrive-Index.html">
+        <span class="toba-app">🧭 Toba Drive</span>
+        <span class="toba-page">Navegar</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
+      </div>
+    </header>
+
+    <div class="dv-notice" id="apkNotice" hidden></div>
+    <div class="dv-gps" id="gpsStatus"></div>
+
+    <form class="dv-search" data-submit="searchSubmit" autocomplete="off">
+      <input type="search" id="driveQuery" class="form-control" placeholder="Pra onde, piloto? Endereço ou lugar" enterkeyhint="search" />
+      <button type="submit" class="btn btn-primary dv-search-btn" aria-label="Buscar">🔎</button>
+    </form>
+    <div id="searchResults"></div>
+
+    <div class="section-title">⭐ Favoritos</div>
+    <div class="dv-chips is-wrap" id="favChips"></div>
+
+    <div class="section-title" id="placesTitle">📌 Do Toba Places</div>
+    <div class="dv-chips" id="placesLists"></div>
+    <div class="dv-chips is-wrap" id="placesChips"></div>
+
+    <div class="section-title dv-title-row"><span>🕘 Recentes</span><button type="button" class="chip-btn dv-mini" id="clearRecentBtn" data-click="clearRecent" hidden>🧹 Limpar</button></div>
+    <div class="toba-list" id="recentList"></div>
+
+    <button type="button" class="btn btn-outline dv-full" data-click="chooseOnMap">🗺️ Escolher no mapa</button>
+  </div>
+
+  <!-- 2. Mapa: escolher tocando / prévia da rota / navegando -->
+  <div class="dv-route" id="routeView" hidden>
+    <div class="dv-map" id="driveMap"></div>
+
+    <div class="dv-top" id="routeTop">
+      <button type="button" class="dv-round" id="routeBackBtn" data-click="routeBack" aria-label="Voltar">‹</button>
+      <div class="dv-top-text" id="routeTopText"></div>
+      <button type="button" class="dv-round" id="styleBtn" data-click="toggleMapStyle" aria-label="Mapa claro/escuro">🌙</button>
+    </div>
+
+    <!-- Faixa da próxima manobra (navegando) -->
+    <div class="dv-banner" id="navBanner" hidden>
+      <span class="dv-banner-icon" id="navIcon">⬆️</span>
+      <span class="dv-banner-main">
+        <span class="dv-banner-dist" id="navDist">--</span>
+        <span class="dv-banner-text" id="navText">Bora</span>
+      </span>
+    </div>
+    <div class="dv-then" id="navThen" hidden></div>
+
+    <button type="button" class="dv-round dv-recenter" id="recenterBtn" data-click="recenter" hidden>🎯</button>
+
+    <!-- Prévia: destino + resumo + partiu -->
+    <div class="dv-card" id="previewCard" hidden></div>
+
+    <!-- Painel de baixo (navegando) -->
+    <div class="dv-panel" id="navPanel" hidden>
+      <div class="dv-panel-stats">
+        <span class="dv-ps"><b id="navEta">--:--</b><small>chegada</small></span>
+        <span class="dv-ps"><b id="navLeft">--</b><small id="navLeftSub">faltam</small></span>
+        <span class="dv-ps"><b id="navSpeed">0</b><small>km/h</small></span>
+      </div>
+      <div class="dv-panel-btns">
+        <button type="button" class="dv-round" id="voiceBtn" data-click="toggleVoice" aria-label="Voz">🔊</button>
+        <button type="button" class="dv-round" data-click="openOut" aria-label="Abrir no Maps ou Waze">↗️</button>
+        <button type="button" class="btn btn-danger dv-end" data-click="endNav">✕ Encerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tobaSettingsExtra" hidden>
+    <div class="toba-settings-section">
+      <div class="toba-settings-label">🧭 Navegação</div>
+      <label class="check-row"><input type="checkbox" id="prefVoice" data-change="prefChange" /> 🔊 Voz falando as manobras</label>
+      <label class="check-row"><input type="checkbox" id="prefAwake" data-change="prefChange" /> 🔆 Tela acesa navegando</label>
+      <label class="check-row"><input type="checkbox" id="prefTolls" data-change="prefChange" /> 💸 Fugir de pedágio</label>
+      <button type="button" class="btn btn-outline btn-sm" data-click="testVoice">🗣️ Testar a voz</button>
+    </div>
+  </div>
+
+  <!-- Favoritar -->
+  <div class="toba-modal" id="favSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="favSheetTitle">⭐ Favoritar</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form data-submit="saveFav">
+        <div class="form-group">
+          <label for="favName">Nome</label>
+          <input type="text" id="favName" class="form-control" maxlength="30" placeholder="Ex: Casa" />
+        </div>
+        <div class="dv-chips is-wrap" id="favEmojiChips"></div>
+        <div class="toba-sheet-footer">
+          <div class="btn-row">
+            <button type="button" class="btn btn-danger btn-grow-1" id="favDeleteBtn" data-click="deleteFav" hidden>🗑️ Tirar</button>
+            <button type="submit" class="btn btn-primary btn-grow-2">Salvar</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Abrir em outro app -->
+  <div class="toba-modal" id="outSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>↗️ Ir por outro app</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <p class="dv-hint">Abre o mesmo destino já navegando. É o caminho pro Android Auto enquanto o Toba Drive não roda lá.</p>
+      <div class="dv-out-btns">
+        <button type="button" class="btn btn-outline" data-click="openGoogleMaps">🗺️ Google Maps</button>
+        <button type="button" class="btn btn-outline" data-click="openWaze">🚙 Waze</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/toba-common.js"></script>
+  <script src="../assets/toba-cloud.js"></script>
+  <script src="js/drive-metrics.js"></script>
+  <script src="../TobaTurism/js/turism-metrics.js"></script>
+  <script src="js/drive-core.js"></script>
+  <script src="js/drive-route.js"></script>
+  <script src="js/navegar.js"></script>
+  <script src="../assets/pwa-register.js"></script>
+</body>
+
+</html>
