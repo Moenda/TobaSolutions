@@ -382,3 +382,35 @@
 .rc-check small {
   font-weight: 500;
 }
+
+/* v1.66: Navegar (Toba Drive) dentro do Racing */
+.toba-hub-card.is-soon {
+  opacity: 0.45;
+  filter: grayscale(100%);
+  cursor: pointer;
+}
+
+.toba-hub-card.is-soon:hover {
+  transform: none;
+  border-color: var(--border-soft);
+}
+
+.rc-soon {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  vertical-align: middle;
+}
+
+.rc-hint {
+  margin-top: 0.8rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.4;
+}

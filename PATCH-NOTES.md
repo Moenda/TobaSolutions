@@ -1446,3 +1446,47 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.65 - Toba Drive no celular (GPS com voz, rota, recalculo, favoritos, destinos do Places, Maps/Waze), balanca com o sentido certo de cada numero e comentario de como foi a visita no Places`
+
+---
+
+## v1.66 — 🚦 Mapas e rotas do TomTom com trânsito ao vivo + 🧭 Navegar dentro do Toba Racing + ✨ Fundo do Perfil sem pisca-pisca
+
+**Arquivos novos/alterados:** `assets/toba-maps.js` (NOVO), `assets/perfil.css`, `TobaDrive/TobaDrive-Navegar.html`, `TobaDrive/TobaDrive-Index.html`, `TobaDrive/js/drive-route.js`, `TobaDrive/js/drive-metrics.js`, `TobaDrive/js/navegar.js`, `TobaDrive/css/navegar.css`, `TobaRacing/TobaRacing-Index.html`, `TobaRacing/css/racing-base.css`, `TobaTurism/TobaTurism-Places.html`, `TobaTurism/js/places-map.js`, `index.html`, `assets/portal.js`, `sw.js`, `CLAUDE.md`
+
+### 🧭 O Toba Drive agora mora no 🏁 Toba Racing
+1. **Sem card próprio no portal:** o Navegar virou módulo do Toba Racing, do lado do ⛽ Combustível (com o 🚘 Android Auto SOON embaixo).
+2. **Hub do Racing com "🧭 Na estrada":** km do mês, viagens, chegadas e favoritos, igual ao antigo hub do Drive. O card do Racing no portal mostra "🧭 X km navegados".
+3. **Nada se perde:** favoritos, recentes e viagens continuam no mesmo lugar. O ‹ do Navegar volta pro hub do Racing, e quem tinha o atalho antigo do Toba Drive cai direto no Racing.
+
+### 🚦 TomTom no Navegar
+1. **Mapa do TomTom:** claro ou escuro no 🌙/☀️ de sempre.
+2. **Rota com trânsito ao vivo:** o tempo e a chegada já contam o trânsito de agora. Na prévia aparece "🚦 Trânsito ao vivo: +7 min de lentidão" (laranja quando passa de 5 min) e os trechos parados ficam pintados na linha da rota (amarelo lento, laranja/vermelho parado).
+3. **Camada de trânsito no mapa:** botão 🚦 em cima (e no painel navegando) liga/desliga as ruas coloridas pelo trânsito. Atualiza sozinha a cada 3 min.
+4. **Desvio esperto:** navegando, a cada 5 min o Cloba confere o trânsito. Achou caminho 3 min+ mais rápido, troca e avisa na voz; senão só acerta o horário de chegada.
+5. **Plano B automático:** se o TomTom recusar (chave errada ou cota grátis acabou), o Toba desliga ele por 6 h nesse celular e volta pro mapa da CARTO e pras rotas do OpenStreetMap (a prévia avisa "sem trânsito ao vivo"). Sem internet não desliga nada.
+
+### 🗺️ Toba Places com o mapa do TomTom
+1. O 🗺️ Mapa das listas usa o TomTom (claro ou escuro no 🌙/☀️), com o mesmo plano B da CARTO.
+
+### 💸 Plano grátis (sem cartão)
+- Por mês: 200 mil quadradinhos de mapa, 200 mil de trânsito e 20 mil rotas. Pra durar: mapa já visto fica guardado no celular (até 3000 quadradinhos, abre até offline), trânsito só atualiza com a tela à vista e no máximo 400 rotas TomTom por dia por celular (passou disso, vai de OpenStreetMap até o dia virar).
+
+### ✨ Fundo do Perfil sem pisca-pisca
+1. **Fim do retângulo piscando no card:** nos Fundos que "respiram" (🎉 **Arraiá**, 👻 **Ectoplasma** e 🪔 **Festa das luzes**), o brilho atrás do card perdia o desfoque no meio da animação e virava um bloco com quina, piscando nos cantos e nas bordas a cada 1 ou 2 segundos. Agora o brilho fica sempre desfocado e a "respiração" é só ele acendendo e apagando de leve, liso.
+2. **Vale em todo lugar que mostra o card:** Perfil do jogador, prévia do 🧱 Personalizar, telona da 🎉 Temporada e o Toba dos amigos.
+3. **Cantos sempre arredondados:** o card agora corta de verdade tudo que passa da borda arredondada, então bandeirinhas, emojis subindo, morcegos, neve e confete não escapam mais pelos cantos no celular.
+4. **Conferidos todos os Fundos animados:** Aurora, Ouro líquido, Holográfico, Sapucaí e Neve caindo já mantinham o desfoque (eles só mexem as cores) e continuam iguais. As molduras que piscam de propósito (Pisca-pisca, Fogos, Sabre) seguem piscando, é o charme delas. 😎
+5. **"Reduzir movimento"** do celular continua parando a animação desses Fundos.
+
+**Dados:** Nenhuma mudança no `TOBA_DRIVE_DB` nem no `TOBA_TURISM_DB`. Preferência nova `traffic` no `toba_drive_prefs` (ausente = ligado) e chave nova `toba_tomtom_state` (só deste aparelho: se o TomTom tá desligado e quantas rotas pediu hoje). `sw.js` com `assets/toba-maps.js` no `PRECACHE`, `VERSION` `toba-v28` e um cache à parte pros quadradinhos do mapa (`toba-tiles-v1`).
+
+**Como testar:**
+- Portal: não tem mais card do Toba Drive; o 🏁 Toba Racing mostra "🧭 X km navegados" se rodou no mês.
+- 🏁 Toba Racing › 🧭 Navegar › escolhe um destino: mapa do TomTom (embaixo aparece "© TomTom"), prévia com a linha 🚦 Trânsito ao vivo. Toca no 🚦 pra ligar/desligar as ruas coloridas. Troca 🌙/☀️.
+- 🚀 Partiu e roda: voz em pt-BR nas manobras. O ‹ volta pro Racing.
+- Toba Tourism › uma lista › 🗺️ Mapa: mapa do TomTom.
+- Plano B: no DevTools › Network › bloqueia `api.tomtom.com` e recarrega: mapa vira CARTO e a rota vem "do OpenStreetMap". (Pra religar o TomTom na hora: Application › Local Storage › apaga `toba_tomtom_state`.)
+- Perfil: no 🧱 Personalizar, escolha o Fundo **Arraiá** (ou Ectoplasma / Festa das luzes) e fique olhando o card do Perfil uns segundos no celular: o brilho só pulsa suave, sem quina aparecendo nem canto piscando. Troque pra Altar de muertos, Neve e Sapucaí e confira que as animações seguem rodando dentro do card.
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.66 - TomTom com transito ao vivo no Navegar e no Places, Toba Drive dentro do Toba Racing e fundo do Perfil sem pisca-pisca`

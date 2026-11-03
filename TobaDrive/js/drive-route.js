@@ -1,16 +1,21 @@
 /* =====================================================================
  * Toba Drive · rota, busca, voz e tela acesa (desde v1.65)
- * - Rota: Valhalla público do OpenStreetMap (valhalla1.openstreetmap.de, sem
+ * - v1.66: TomTom primeiro (../../assets/toba-maps.js): rota com TRÂNSITO AO
+ *   VIVO (Routing API v1, frases em pt-BR, trechos parados em traffic) e mapa
+ *   TomTom. Recusou/cota/limite do dia? cai sozinho no plano B abaixo.
+ * - Plano B da rota: Valhalla público do OpenStreetMap (valhalla1.openstreetmap.de, sem
  *   chave, já devolve as frases em pt-BR). Caiu? tenta o OSRM público
  *   (router.project-osrm.org) e monta as frases aqui (drive-metrics.js).
  *   Os dois são servidores de uso justo: 1 rota por vez, recálculo no máximo a
  *   cada DRIVE_REROUTE_GAP_MS. Nada disso vai pro cache do sw.js.
  * - Busca de endereço: Nominatim (mesma regra do Toba Places: 1 por segundo).
- * - Mapa: Leaflet 1.9.4 + CARTO com a MESMA chave do Toba Places
- *   (TURISM_CARTO_KEY em TobaTurism/js/places-map.js). Trocou lá, troca aqui.
+ * - Mapa: Leaflet 1.9.4 + TomTom (tobaBaseTiles); plano B = CARTO com a MESMA
+ *   chave do Toba Places (TURISM_CARTO_KEY em TobaTurism/js/places-map.js).
+ *   Trocou lá, troca aqui. Camada 🚦 de trânsito: tobaTrafficTiles.
  * - Voz: speechSynthesis do navegador em pt-BR.
  * - Tela acesa: Wake Lock (navegador) ou TOBA_NATIVE.keepScreenOn (APK).
  * ===================================================================== */
+const DRIVE_TOMTOM_ROUTE_URL = "https://api.tomtom.com/routing/1/calculateRoute/";
 const DRIVE_VALHALLA_URL = "https://valhalla1.openstreetmap.de/route?json=";
 const DRIVE_OSRM_URL = "https://router.project-osrm.org/route/v1/driving/";
 const DRIVE_SEARCH_URL = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=1&accept-language=pt-BR&countrycodes=br&q=";
@@ -18,8 +23,6 @@ const DRIVE_REVERSE_URL = "https://nominatim.openstreetmap.org/reverse?format=js
 const DRIVE_LEAFLET_CSS = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css";
 const DRIVE_LEAFLET_JS = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";
 const DRIVE_CARTO_KEY = "cb1_4zv2_1_2e88aba5239e1a6ac05ddc60"; // = TURISM_CARTO_KEY (places-map.js)
-const DRIVE_TILE_STYLES = { light: "voyager", dark: "dark_all" };
-const DRIVE_TILES_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>';
 const DRIVE_FETCH_TIMEOUT_MS = 12000;
 const DRIVE_REROUTE_GAP_MS = 12000;
 const DRIVE_PREFS_KEY = "toba_drive_prefs";
@@ -37,6 +40,7 @@ function readDrivePrefs() {
     keepAwake: p.keepAwake !== false,
     mapStyle: p.mapStyle === "dark" ? "dark" : "light",
     avoidTolls: Boolean(p.avoidTolls),
+    traffic: p.traffic !== false, // 🚦 camada de trânsito no mapa (v1.66)
   };
 }
 
@@ -54,15 +58,51 @@ async function driveFetchJson(url) {
   const timer = ctrl ? setTimeout(() => ctrl.abort(), DRIVE_FETCH_TIMEOUT_MS) : null;
   try {
     const res = await fetch(url, ctrl ? { signal: ctrl.signal } : {});
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      const err = new Error(`HTTP ${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
     return await res.json();
   } finally {
     if (timer) clearTimeout(timer);
   }
 }
 
+// TomTom (v1.66): rota com trânsito ao vivo. Devolve null se o TomTom estiver
+// desligado/sem cota do dia; 4xx de chave/cota desliga o TomTom por umas horas.
+async function driveFetchTomTom(from, to, options = {}) {
+  if (typeof tobaTomTomCanRoute !== "function" || !tobaTomTomCanRoute()) return null;
+  const prefs = readDrivePrefs();
+  const params = new URLSearchParams({
+    key: TOBA_TOMTOM_KEY,
+    travelMode: "car",
+    routeType: "fastest",
+    traffic: "true",
+    departAt: "now",
+    instructionsType: "text",
+    language: "pt-BR",
+    sectionType: "traffic",
+  });
+  if (prefs.avoidTolls) params.set("avoid", "tollRoads");
+  if (Number.isFinite(options.heading) && options.speed > 3) params.set("vehicleHeading", String(Math.round(options.heading) % 360));
+  const locs = `${from.lat.toFixed(6)},${from.lng.toFixed(6)}:${to.lat.toFixed(6)},${to.lng.toFixed(6)}`;
+  tobaTomTomCountRoute();
+  try {
+    const route = driveRouteFromTomTom(await driveFetchJson(`${DRIVE_TOMTOM_ROUTE_URL}${locs}/json?${params}`));
+    if (route) return route;
+  } catch (err) {
+    // 400 = TomTom não achou caminho (ex.: destino no meio do mato): não é culpa da chave
+    if (err.status && err.status !== 400 && err.status < 500) tobaTomTomOff(`rota HTTP ${err.status}`);
+    console.warn("TomTom falhou, tentando Valhalla", err);
+  }
+  return null;
+}
+
 // from/to = { lat, lng }; heading (graus) ajuda a não mandar fazer retorno à toa
 async function driveFetchRoute(from, to, options = {}) {
+  const tomtom = await driveFetchTomTom(from, to, options);
+  if (tomtom) return tomtom;
   const prefs = readDrivePrefs();
   const start = { lat: from.lat, lon: from.lng };
   if (Number.isFinite(options.heading) && options.speed > 3) {
@@ -159,9 +199,6 @@ function loadDriveLeaflet() {
   return driveLeafletPromise;
 }
 
-function driveTilesUrl(style) {
-  return `https://basemaps.cartocdn.com/rastertiles/${DRIVE_TILE_STYLES[style] || DRIVE_TILE_STYLES.light}/{z}/{x}/{y}.png?key=${DRIVE_CARTO_KEY}`;
-}
 
 /* ---------- voz ---------- */
 let driveVoice = null;

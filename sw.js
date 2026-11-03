@@ -2,9 +2,14 @@
  * - Páginas, scripts e estilos: tenta a rede primeiro (você sempre vê a versão
  *   mais nova publicada) e cai no cache se estiver offline ou a rede demorar.
  * - Chart.js (CDN): cache primeiro, para os gráficos funcionarem offline.
+ * - Tiles do mapa (TomTom e CARTO, v1.66): cache primeiro num cache à parte
+ *   (TILE_CACHE, sobrevive à troca de VERSION, até TILE_MAX tiles). Economiza a
+ *   cota grátis do TomTom e o mapa já visto abre offline. Trânsito NÃO entra.
  * - NUNCA mexe no localStorage: seus dados não passam por aqui.
  * Mudou a lista de arquivos? Aumente a versão abaixo. */
-const VERSION = "toba-v27";
+const VERSION = "toba-v28";
+const TILE_CACHE = "toba-tiles-v1";
+const TILE_MAX = 3000;
 const NETWORK_TIMEOUT_MS = 4000;
 
 const PRECACHE = [
@@ -21,6 +26,7 @@ const PRECACHE = [
   "./assets/toba-common.css",
   "./assets/toba-common.js",
   "./assets/toba-cloud.js",
+  "./assets/toba-maps.js",
   "./assets/portal.css",
   "./assets/portal.js",
   "./assets/toba-player.css",
@@ -126,7 +132,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k !== TILE_CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
@@ -176,6 +182,38 @@ function cacheFirst(request) {
   );
 }
 
+// Tile do mapa base: TomTom (display/raster) e CARTO. Trânsito fica de fora (é ao vivo).
+function isMapTile(url) {
+  return (url.hostname === "api.tomtom.com" && url.pathname.startsWith("/maps/orbis/display/raster/tile/"))
+    || url.hostname === "basemaps.cartocdn.com";
+}
+
+let tilePuts = 0;
+
+function trimTiles(cache) {
+  return cache.keys().then((keys) => {
+    // keys() vem na ordem em que entrou: apaga os mais antigos
+    const extra = keys.length - TILE_MAX;
+    return extra > 0 ? Promise.all(keys.slice(0, extra).map((k) => cache.delete(k))) : null;
+  });
+}
+
+function tileFirst(request) {
+  return caches.open(TILE_CACHE).then((cache) =>
+    cache.match(request).then((hit) =>
+      hit || fetch(request).then((response) => {
+        if (response && response.ok) {
+          cache.put(request, response.clone()).then(() => {
+            tilePuts += 1;
+            if (tilePuts % 100 === 0) trimTiles(cache);
+          }).catch(() => {});
+        }
+        return response;
+      }),
+    ),
+  );
+}
+
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
@@ -184,6 +222,8 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(networkFirst(request));
   } else if (url.hostname === "cdn.jsdelivr.net") {
     event.respondWith(cacheFirst(request));
+  } else if (isMapTile(url)) {
+    event.respondWith(tileFirst(request));
   }
 });
 

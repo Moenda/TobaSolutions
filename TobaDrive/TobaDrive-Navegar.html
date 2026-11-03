@@ -16,16 +16,16 @@
   <link rel="stylesheet" href="../assets/toba-common.css" />
   <link rel="stylesheet" href="css/drive-base.css" />
   <link rel="stylesheet" href="css/navegar.css" />
-  <title>Toba Drive | Navegar</title>
+  <title>Toba Racing | Navegar</title>
 </head>
 
 <body>
   <!-- 1. Escolher o destino -->
   <div class="container" id="pickView">
     <header class="toba-header">
-      <a class="toba-back" href="TobaDrive-Index.html" data-label="Voltar para o Toba Drive" aria-label="Voltar para o Toba Drive">‹</a>
-      <a class="toba-titles" href="TobaDrive-Index.html">
-        <span class="toba-app">🧭 Toba Drive</span>
+      <a class="toba-back" href="../TobaRacing/TobaRacing-Index.html" data-label="Voltar para o Toba Racing" aria-label="Voltar para o Toba Racing">‹</a>
+      <a class="toba-titles" href="../TobaRacing/TobaRacing-Index.html">
+        <span class="toba-app">🏁 Toba Racing</span>
         <span class="toba-page">Navegar</span>
       </a>
       <div class="toba-header-actions">
@@ -62,6 +62,7 @@
     <div class="dv-top" id="routeTop">
       <button type="button" class="dv-round" id="routeBackBtn" data-click="routeBack" aria-label="Voltar">‹</button>
       <div class="dv-top-text" id="routeTopText"></div>
+      <button type="button" class="dv-round" data-click="toggleTraffic" aria-label="Trânsito no mapa">🚦</button>
       <button type="button" class="dv-round" id="styleBtn" data-click="toggleMapStyle" aria-label="Mapa claro/escuro">🌙</button>
     </div>
 
@@ -89,6 +90,7 @@
       </div>
       <div class="dv-panel-btns">
         <button type="button" class="dv-round" id="voiceBtn" data-click="toggleVoice" aria-label="Voz">🔊</button>
+        <button type="button" class="dv-round" data-click="toggleTraffic" aria-label="Trânsito no mapa">🚦</button>
         <button type="button" class="dv-round" data-click="openOut" aria-label="Abrir no Maps ou Waze">↗️</button>
         <button type="button" class="btn btn-danger dv-end" data-click="endNav">✕ Encerrar</button>
       </div>
@@ -135,7 +137,7 @@
         <h3>↗️ Ir por outro app</h3>
         <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
       </div>
-      <p class="dv-hint">Abre o mesmo destino já navegando. É o caminho pro Android Auto enquanto o Toba Drive não roda lá.</p>
+      <p class="dv-hint">Abre o mesmo destino já navegando. É o caminho pro Android Auto enquanto o Navegar não roda lá.</p>
       <div class="dv-out-btns">
         <button type="button" class="btn btn-outline" data-click="openGoogleMaps">🗺️ Google Maps</button>
         <button type="button" class="btn btn-outline" data-click="openWaze">🚙 Waze</button>
@@ -148,6 +150,7 @@
   <script src="js/drive-metrics.js"></script>
   <script src="../TobaTurism/js/turism-metrics.js"></script>
   <script src="js/drive-core.js"></script>
+  <script src="../assets/toba-maps.js"></script>
   <script src="js/drive-route.js"></script>
   <script src="js/navegar.js"></script>
   <script src="../assets/pwa-register.js"></script>

@@ -8,6 +8,8 @@
  *   (5 mi de tiles/mês). Ela fica pública no site (é chave de navegador); pra
  *   trocar/limitar ao domínio, painel da CARTO (Basemaps). Nunca pôr em memória.
  *   Só carrega quando a pessoa abre o 🗺️ Mapa (offline = aviso, o resto segue).
+ * - v1.66: o mapa vem do TomTom (street-light / street-dark, ../../assets/toba-maps.js,
+ *   tobaBaseTiles). TomTom recusou ou a cota acabou? cai sozinho na CARTO acima.
  * - Pino de cada lugar = place.lat / place.lng. De onde vem:
  *   1. link comprido do Maps (tem a coordenada dentro; turismCoordsFromUrl em places.js);
  *   2. busca automática no Nominatim (OpenStreetMap) pelo endereço ou nome + cidade,
@@ -22,12 +24,8 @@
 const TURISM_LEAFLET_CSS = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css";
 const TURISM_LEAFLET_JS = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";
 const TURISM_CARTO_KEY = "cb1_4zv2_1_2e88aba5239e1a6ac05ddc60";
-const TURISM_TILE_STYLES = { light: "voyager", dark: "dark_all" };
 const TURISM_MAP_STYLE_KEY = "toba_turism_map_style"; // "light" | "dark" (conveniência, não é dado)
 
-function turismTilesUrl(style) {
-  return `https://basemaps.cartocdn.com/rastertiles/${TURISM_TILE_STYLES[style] || TURISM_TILE_STYLES.light}/{z}/{x}/{y}.png?key=${TURISM_CARTO_KEY}`;
-}
 
 function turismMapStyle() {
   try {
@@ -36,7 +34,6 @@ function turismMapStyle() {
     return "light";
   }
 }
-const TURISM_TILES_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>';
 const TURISM_GEOCODE_URL = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=1&accept-language=pt-BR&q=";
 const TURISM_REVERSE_URL = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=16&addressdetails=1&accept-language=pt-BR";
 const TURISM_GEOCODE_GAP_MS = 1100;
@@ -117,7 +114,7 @@ function drawPlacesMap(list) {
   if (!placesMap.map) {
     box.innerHTML = "";
     placesMap.map = L.map(box, { zoomControl: true, attributionControl: true }).setView([TURISM_MAP_DEFAULT.lat, TURISM_MAP_DEFAULT.lng], TURISM_MAP_DEFAULT.zoom);
-    placesMap.tiles = L.tileLayer(turismTilesUrl(turismMapStyle()), { maxZoom: 19, attribution: TURISM_TILES_ATTR }).addTo(placesMap.map);
+    placesMap.tiles = tobaBaseTiles(placesMap.map, turismMapStyle(), { cartoKey: TURISM_CARTO_KEY });
     placesMap.layer = L.layerGroup().addTo(placesMap.map);
     placesMap.map.on("click", onPlacesMapClick);
     // Botões dentro do balão do pino (o Leaflet segura o clique; liga na mão)
@@ -419,7 +416,7 @@ function mapToggleStyle() {
   } catch (err) {
     /* sem storage: troca só agora */
   }
-  if (placesMap.tiles) placesMap.tiles.setUrl(turismTilesUrl(next));
+  if (placesMap.tiles) placesMap.tiles.tobaSetStyle(next);
   document.getElementById("placesMap").classList.toggle("is-dark", next === "dark");
   renderAll();
 }

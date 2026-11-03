@@ -288,6 +288,66 @@ function driveRouteFromValhalla(json) {
   };
 }
 
+// TomTom Routing v1 (v1.66): maneuver -> nosso tipo de seta
+const DRIVE_TOMTOM_TYPES = {
+  DEPART: "depart",
+  ARRIVE: "arrive", ARRIVE_LEFT: "arrive", ARRIVE_RIGHT: "arrive",
+  STRAIGHT: "straight", FOLLOW: "straight", SWITCH_PARALLEL_ROAD: "straight", SWITCH_MAIN_ROAD: "straight",
+  KEEP_RIGHT: "slight-right", BEAR_RIGHT: "slight-right", TURN_RIGHT: "right", SHARP_RIGHT: "sharp-right",
+  KEEP_LEFT: "slight-left", BEAR_LEFT: "slight-left", TURN_LEFT: "left", SHARP_LEFT: "sharp-left",
+  MAKE_UTURN: "uturn", TRY_MAKE_UTURN: "uturn",
+  ROUNDABOUT_CROSS: "roundabout", ROUNDABOUT_RIGHT: "roundabout", ROUNDABOUT_LEFT: "roundabout", ROUNDABOUT_BACK: "roundabout",
+  ENTER_MOTORWAY: "merge", ENTER_FREEWAY: "merge", ENTER_HIGHWAY: "merge", ENTRANCE_RAMP: "ramp",
+  TAKE_EXIT: "ramp", MOTORWAY_EXIT_LEFT: "ramp", MOTORWAY_EXIT_RIGHT: "ramp",
+  TAKE_FERRY: "ferry",
+};
+
+// Trechos de trânsito da rota: { from, to (índices em coords), level 1-4 }
+function driveTomTomJams(route) {
+  return (route?.sections || [])
+    .filter((s) => s && s.sectionType === "TRAFFIC" && Number.isFinite(s.startPointIndex) && Number.isFinite(s.endPointIndex))
+    .map((s) => ({
+      from: s.startPointIndex,
+      to: s.endPointIndex,
+      level: s.simpleCategory === "ROAD_CLOSURE" ? 4 : Math.max(1, Math.min(4, Number(s.magnitudeOfDelay) || 1)),
+      delay: Number(s.delayInSeconds) || 0,
+    }));
+}
+
+function driveRouteFromTomTom(json) {
+  const r = json?.routes?.[0];
+  const points = (r?.legs || []).flatMap((leg) => leg?.points || []);
+  if (!r || points.length < 2) return null;
+  const coords = points.map((p) => [Number(p.latitude), Number(p.longitude)]);
+  const cum = driveCumulative(coords);
+  const steps = (r.guidance?.instructions || []).map((ins) => {
+    const type = DRIVE_TOMTOM_TYPES[ins.maneuver] || "straight";
+    let pre = driveStripDot(String(ins.message || "").replace(/<[^>]*>/g, ""));
+    if (!pre) pre = type === "arrive" ? "Você chegou ao destino" : `Siga${ins.street ? ` pela ${ins.street}` : " em frente"}`;
+    return {
+      idx: Math.max(0, Math.min(coords.length - 1, Number(ins.pointIndex) || 0)),
+      type,
+      icon: driveArrow(type),
+      text: pre,
+      alert: pre,
+      pre,
+      street: ins.street || "",
+      time: Number(ins.travelTimeInSeconds) || 0,
+    };
+  });
+  const sum = r.summary || {};
+  return {
+    provider: "tomtom",
+    coords,
+    cum,
+    distance: Number(sum.lengthInMeters) || cum[cum.length - 1],
+    duration: Number(sum.travelTimeInSeconds) || 0,
+    trafficDelay: Number(sum.trafficDelayInSeconds) || 0,
+    jams: driveTomTomJams(r),
+    steps,
+  };
+}
+
 function driveRouteFromOsrm(json) {
   const r = json?.routes?.[0];
   const line = r?.geometry?.coordinates;

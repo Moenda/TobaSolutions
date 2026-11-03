@@ -10,10 +10,16 @@
  * não deixa site usar GPS com a tela apagada, por isso a tela acesa).
  * Abrir já com destino: TobaDrive-Navegar.html?lat=-23.5&lng=-46.6&name=Café
  * Só LÊ o TOBA_TURISM_DB (destinos do Toba Places); grava só o TOBA_DRIVE_DB.
+ * v1.66: mora dentro do Toba Racing (‹ volta pro hub do Racing). Mapa e rota
+ * do TomTom (assets/toba-maps.js + drive-route.js), 🚦 camada de trânsito e,
+ * navegando com rota TomTom, confere o trânsito a cada DRIVE_TRAFFIC_CHECK_MS:
+ * atualiza a chegada e troca de caminho se o novo poupar DRIVE_SWAP_SAVE_S+.
  * ===================================================================== */
 const DRIVE_FAV_EMOJIS = ["🏠", "💼", "❤️", "☕", "🏋️", "🛒", "🍻", "🐾", "⭐"];
 const DRIVE_GPS_TIMEOUT_MS = 20000;
 const DRIVE_ARRIVE_M = 35;
+const DRIVE_TRAFFIC_CHECK_MS = 5 * 60 * 1000;
+const DRIVE_SWAP_SAVE_S = 180;
 
 const nav = {
   mode: "pick",
@@ -32,6 +38,8 @@ const nav = {
   follow: true,
   map: null,
   tiles: null,
+  traffic: null, // camada 🚦 (tobaTrafficTiles)
+  lastTrafficCheck: 0,
   layers: {},
   trip: null, // { startedAt, km, last: [lat, lng] }
   result: null, // resumo do "done"
@@ -271,7 +279,10 @@ async function ensureMap() {
   box.innerHTML = "";
   const start = nav.pos ? [nav.pos.lat, nav.pos.lng] : [-23.5505, -46.6333];
   nav.map = L.map(box, { zoomControl: false, attributionControl: true }).setView(start, nav.pos ? 15 : 12);
-  nav.tiles = L.tileLayer(driveTilesUrl(readDrivePrefs().mapStyle), { maxZoom: 19, attribution: DRIVE_TILES_ATTR }).addTo(nav.map);
+  const style = readDrivePrefs().mapStyle;
+  nav.tiles = tobaBaseTiles(nav.map, style, { cartoKey: DRIVE_CARTO_KEY, onFallback: renderTrafficBtn });
+  nav.traffic = tobaTrafficTiles(nav.map, style);
+  nav.traffic.tobaSetOn(readDrivePrefs().traffic);
   nav.layers.route = L.layerGroup().addTo(nav.map);
   nav.layers.marks = L.layerGroup().addTo(nav.map);
   nav.map.on("click", onMapClick);
@@ -308,6 +319,13 @@ function drawRoute() {
   if (nav.route) {
     L.polyline(nav.route.coords, { color: "#0d1117", weight: 10, opacity: 0.55 }).addTo(nav.layers.route);
     L.polyline(nav.route.coords, { color: "#fb923c", weight: 6, opacity: 0.95 }).addTo(nav.layers.route);
+    // Trechos parados da rota TomTom por cima (amarelo = lento, vermelho = parado)
+    (nav.route.jams || []).forEach((j) => {
+      const part = nav.route.coords.slice(j.from, j.to + 1);
+      if (part.length < 2) return;
+      const color = j.level >= 4 ? "#7f1d1d" : j.level >= 3 ? "#ef4444" : j.level >= 2 ? "#f97316" : "#facc15";
+      L.polyline(part, { color, weight: 6, opacity: 0.95 }).addTo(nav.layers.route);
+    });
   }
   if (nav.dest) {
     L.marker([nav.dest.lat, nav.dest.lng], { icon: L.divIcon({ className: "dv-flag-wrap", html: `<span class="dv-flag">🏁</span>`, iconSize: [32, 32], iconAnchor: [8, 30] }) }).addTo(nav.layers.marks);
@@ -327,9 +345,41 @@ function fitRoute() {
 function toggleMapStyle() {
   const next = readDrivePrefs().mapStyle === "dark" ? "light" : "dark";
   storeDrivePrefs({ mapStyle: next });
-  if (nav.tiles) nav.tiles.setUrl(driveTilesUrl(next));
+  if (nav.tiles) nav.tiles.tobaSetStyle(next);
+  if (nav.traffic) nav.traffic.tobaSetStyle(next);
   document.getElementById("driveMap").classList.toggle("is-dark", next === "dark");
   document.getElementById("styleBtn").textContent = next === "dark" ? "☀️" : "🌙";
+}
+
+// 🚦 camada de trânsito do TomTom (some sozinha se o TomTom estiver fora)
+function toggleTraffic() {
+  if (!tobaTomTomOn()) {
+    const s = tobaTomTomState();
+    tobaToast(`🚦 TomTom fora agora (${s.offWhy || "sem resposta"}). Volta sozinho em algumas horas.`);
+    return;
+  }
+  const on = !readDrivePrefs().traffic;
+  storeDrivePrefs({ traffic: on });
+  if (nav.traffic) nav.traffic.tobaSetOn(on);
+  renderTrafficBtn();
+  tobaToast(on ? "🚦 Trânsito ligado" : "🚦 Trânsito desligado");
+}
+
+function renderTrafficBtn() {
+  const on = readDrivePrefs().traffic && tobaTomTomOn();
+  document.querySelectorAll("[data-click='toggleTraffic']").forEach((btn) => {
+    btn.classList.toggle("is-off", !on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+}
+
+// "TomTom · trânsito ao vivo" ou o plano B
+function routeSourceLine(r) {
+  if (r.provider === "tomtom") {
+    const late = Math.round((r.trafficDelay || 0) / 60);
+    return late >= 1 ? `🚦 Trânsito ao vivo: +${late} min de lentidão no caminho` : "🚦 Trânsito ao vivo: caminho livre";
+  }
+  return "🗺️ Rota do OpenStreetMap (sem trânsito ao vivo)";
 }
 
 async function onMapClick(ev) {
@@ -447,6 +497,7 @@ function renderRoute() {
   const then = document.getElementById("navThen");
   document.getElementById("styleBtn").textContent = readDrivePrefs().mapStyle === "dark" ? "☀️" : "🌙";
   document.getElementById("voiceBtn").textContent = readDrivePrefs().voice ? "🔊" : "🔇";
+  renderTrafficBtn();
   const isNav = nav.mode === "nav";
   banner.hidden = !isNav;
   panel.hidden = !isNav;
@@ -497,7 +548,8 @@ function renderRoute() {
         <div class="toba-stat"><span class="toba-stat-label">🛣️ Distância</span><span class="toba-stat-value">${driveFormatKm(r.distance)} km</span></div>
         <div class="toba-stat"><span class="toba-stat-label">⏱️ Tempo</span><span class="toba-stat-value">${driveFormatDuration(r.duration)}</span></div>
         <div class="toba-stat"><span class="toba-stat-label">🏁 Chega</span><span class="toba-stat-value">${driveFormatClock(Date.now() + r.duration * 1000)}</span></div>
-      </div>`;
+      </div>
+      <div class="dv-source${r.provider === "tomtom" && r.trafficDelay >= 300 ? " is-late" : ""}">${routeSourceLine(r)}</div>`;
   } else {
     body = `<div class="dv-error">😵 ${escapeHtml(nav.routeError || "Sem rota.")}</div>`;
   }
@@ -529,6 +581,7 @@ function startNav() {
   nav.spoken = {};
   nav.follow = true;
   nav.trip = { startedAt: Date.now(), m: 0, last: [nav.pos.lat, nav.pos.lng] };
+  nav.lastTrafficCheck = Date.now();
   driveKeepAwake(true);
   setMode("nav").then(() => {
     if (nav.map) nav.map.setView([nav.pos.lat, nav.pos.lng], 17);
@@ -579,6 +632,7 @@ function navTick() {
     return;
   }
   if (nav.offCount >= 3) reroute();
+  else if (r.provider === "tomtom" && Date.now() - nav.lastTrafficCheck > DRIVE_TRAFFIC_CHECK_MS) checkTraffic(total);
 
   const next = driveNextStep(r, nav.along);
   renderNav(next, left, total);
@@ -670,6 +724,43 @@ async function reroute() {
     nav.lastReroute = Date.now();
     if (nav.mode === "nav") navTick();
   }
+}
+
+// Navegando com TomTom: pergunta de novo como tá o trânsito daqui pra frente.
+// Achou caminho bem mais rápido = troca e avisa; senão só acerta a chegada.
+async function checkTraffic(total) {
+  nav.lastTrafficCheck = Date.now();
+  if (nav.rerouting || !nav.pos || !nav.dest || document.hidden) return;
+  const target = nav.dest;
+  const routeId = nav.routeId;
+  let fresh = null;
+  try {
+    fresh = await driveFetchTomTom(nav.pos, target, { heading: nav.pos.heading, speed: nav.pos.speed });
+  } catch (err) {
+    fresh = null;
+  }
+  if (!fresh || nav.mode !== "nav" || nav.dest !== target || nav.routeId !== routeId || nav.rerouting) return;
+  const r = nav.route;
+  const nowLeft = r.duration * (Math.max(0, (r.cum[r.cum.length - 1] || r.distance) - nav.along) / (total || 1));
+  const save = nowLeft - fresh.duration;
+  if (save >= DRIVE_SWAP_SAVE_S) {
+    nav.route = fresh;
+    nav.routeId += 1;
+    nav.seg = 0;
+    nav.along = 0;
+    nav.offCount = 0;
+    nav.spoken = {};
+    drawRoute();
+    const min = Math.round(save / 60);
+    tobaToast(`🚦 Caminho ${min} min mais rápido!`);
+    driveSpeak(`Trânsito mudou. Achei um caminho ${min} minutos mais rápido.`);
+    navTick();
+    return;
+  }
+  // Mesmo caminho: só acerta a chegada com o trânsito de agora
+  const leftNow = Math.max(1, (r.cum[r.cum.length - 1] || r.distance) - nav.along);
+  r.duration = fresh.duration * ((r.cum[r.cum.length - 1] || r.distance) / leftNow);
+  r.trafficDelay = fresh.trafficDelay;
 }
 
 function finishTrip(arrived) {
@@ -851,6 +942,7 @@ tobaActions({
   recenter,
   toggleVoice,
   toggleMapStyle,
+  toggleTraffic,
   openOut,
   openGoogleMaps,
   openWaze,
@@ -872,7 +964,7 @@ window.addEventListener("pagehide", () => {
   if (tobaIsApp()) {
     const notice = document.getElementById("apkNotice");
     notice.hidden = false;
-    notice.innerHTML = "📱 No app Toba (APK) o GPS ainda não tá liberado. Abre o Toba Drive pelo <b>Chrome</b> (ou pelo Toba instalado pelo Chrome) que funciona. O Maps/Waze do ↗️ funciona daqui mesmo.";
+    notice.innerHTML = "📱 No app Toba (APK) o GPS ainda não tá liberado. Abre o Navegar pelo <b>Chrome</b> (ou pelo Toba instalado pelo Chrome) que funciona. O Maps/Waze do ↗️ funciona daqui mesmo.";
   }
   renderGpsStatus();
   // Já deu permissão antes? liga o GPS de cara pra ordenar por distância

@@ -41,6 +41,49 @@
   pointer-events: none;
 }
 
+/* v1.66: o card corta o que passa da borda arredondada de verdade. Sem isso,
+   no celular as animações (bandeirinhas, emojis subindo, morcegos) às vezes
+   escapavam do arredondado e os cantos piscavam. */
+.pf-hero,
+.pf-custom-preview,
+.pf-ss-hero {
+  isolation: isolate;
+  clip-path: inset(0 round var(--radius-lg));
+}
+
+/* v1.66: Fundo que "respira" (Arraiá, Ectoplasma, Festa das luzes) usava o
+   tp-bg-glow, que troca o filter inteiro: no meio da animação o blur(28px)
+   sumia e o brilho virava um retângulo com quina, piscando no card.
+   No brilho do card a respiração agora é pela opacidade, e o blur fica fixo. */
+.pf-hero-glow.tp-bg-arraia,
+.pf-hero-glow.tp-bg-ecto,
+.pf-hero-glow.tp-bg-diwali {
+  animation-name: pf-glow-breathe;
+}
+
+@keyframes pf-glow-breathe {
+  50% { opacity: 0.42; }
+}
+
+/* Na telona da Temporada o brilho já é mais forte (0.4) */
+.pf-ss-hero > .pf-hero-glow.tp-bg-arraia,
+.pf-ss-hero > .pf-hero-glow.tp-bg-ecto,
+.pf-ss-hero > .pf-hero-glow.tp-bg-diwali {
+  animation-name: pf-glow-breathe-ss;
+}
+
+@keyframes pf-glow-breathe-ss {
+  50% { opacity: 0.58; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-hero-glow.tp-bg-arraia,
+  .pf-hero-glow.tp-bg-ecto,
+  .pf-hero-glow.tp-bg-diwali {
+    animation: none;
+  }
+}
+
 .pf-hero .tp-avatar,
 .pf-custom-preview .tp-avatar {
   margin-bottom: 6px;

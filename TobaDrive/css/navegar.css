@@ -524,3 +524,21 @@ body.is-driving .dv-route .leaflet-bottom {
   font-size: 1.05rem;
   white-space: nowrap;
 }
+
+/* v1.66: 🚦 trânsito (TomTom) */
+.dv-round.is-off {
+  opacity: 0.45;
+  filter: grayscale(100%);
+}
+
+.dv-source {
+  margin: -0.2rem 0 0.7rem;
+  font-size: 0.76rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.dv-source.is-late {
+  color: #f97316;
+  font-weight: 700;
+}

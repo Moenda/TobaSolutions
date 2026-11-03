@@ -686,6 +686,17 @@ function renderRacingCard() {
     if (s.avgKml) parts.push(`📊 média ${formatRacingKml(s.avgKml)}`);
   }
   if (s.monthSpent) parts.push(`⛽ ${formatCurrency(s.monthSpent)} no mês`);
+  // Navegar (Toba Drive, dentro do Racing desde v1.66): km do mês pelo GPS
+  if (typeof calcDriveSummary === "function") {
+    let drive = null;
+    try {
+      drive = JSON.parse(localStorage.getItem("TOBA_DRIVE_DB") || "null");
+    } catch (e) {
+      console.error("Erro ao ler os dados do Navegar", e);
+    }
+    const d = calcDriveSummary(drive);
+    if (d.monthKm) parts.push(`🧭 ${driveFormatKm(d.monthKm * 1000)} km navegados`);
+  }
   box.innerHTML = parts.map((part) => `<span class="routine-chip">${part}</span>`).join("");
   box.hidden = !parts.length;
 }
@@ -708,28 +719,6 @@ function renderTurismCard() {
   if (s.want) parts.push(`📌 ${s.want} ${s.want === 1 ? "lugar pra ir" : "lugares pra ir"}`);
   if (s.been) parts.push(`✅ ${s.been} já ${s.been === 1 ? "visitado" : "visitados"}`);
   if (!parts.length && s.lists) parts.push(`🗂️ ${s.lists} ${s.lists === 1 ? "lista" : "listas"}`);
-  box.innerHTML = parts.map((part) => `<span class="routine-chip">${part}</span>`).join("");
-  box.hidden = !parts.length;
-}
-
-/* ---------------------------------------------------------------------
- * Card do Toba Drive (v1.65): viagens e km do mês
- * (só leitura do TOBA_DRIVE_DB, contas do drive-metrics.js)
- * ------------------------------------------------------------------- */
-function renderDriveCard() {
-  const box = document.getElementById("driveCardToday");
-  if (!box || typeof calcDriveSummary !== "function") return;
-  let data = null;
-  try {
-    data = JSON.parse(localStorage.getItem("TOBA_DRIVE_DB") || "null");
-  } catch (e) {
-    console.error("Erro ao ler os dados do Toba Drive", e);
-  }
-  const s = calcDriveSummary(data);
-  const parts = [];
-  if (s.monthTrips) parts.push(`🧭 ${s.monthTrips} ${s.monthTrips === 1 ? "viagem" : "viagens"} no mês`);
-  if (s.monthKm) parts.push(`🛣️ ${driveFormatKm(s.monthKm * 1000)} km`);
-  if (!parts.length && s.favorites) parts.push(`⭐ ${s.favorites} ${s.favorites === 1 ? "favorito" : "favoritos"}`);
   box.innerHTML = parts.map((part) => `<span class="routine-chip">${part}</span>`).join("");
   box.hidden = !parts.length;
 }
@@ -770,7 +759,6 @@ function renderPortalPanels() {
   renderKitchenCard();
   renderRacingCard();
   renderTurismCard();
-  renderDriveCard();
   tobaPlayerCheck();
   // App Android: refaz os avisos das tarefas a cada abertura (o portal é a tela mais aberta)
   syncRoutineAlerts(readRoutineDbRaw());
