@@ -43,9 +43,11 @@
     </div>
 
     <div class="app-view" id="viewCompare">
+      <div class="compare-periods" id="comparePeriods" role="group" aria-label="Período do gráfico"></div>
+
       <div class="toba-stats is-3 compare-stats">
         <div class="toba-stat is-center">
-          <span class="toba-stat-label">Média (5)</span>
+          <span class="toba-stat-label" id="thMediaLabel">Média (5)</span>
           <span class="toba-stat-value text-blue" id="thMedia5">--</span>
         </div>
         <div class="toba-stat is-center">
@@ -61,13 +63,15 @@
       </div>
 
       <div class="card compare-chart-card">
-        <div class="card-title">📈 Últimas 5 pesagens</div>
+        <div class="card-title" id="compareChartTitle">📈 Últimas 5 pesagens</div>
         <div id="svgChartContainer"></div>
       </div>
 
+      <div id="trendVerdict"></div>
+
       <div id="metricExplanatoryBox"></div>
 
-      <div class="section-title">🗓️ Últimos registros</div>
+      <div class="section-title" id="compareListTitle">🗓️ Registros do período</div>
       <div id="compHistoryList" class="kv-list compare-history"></div>
     </div>
   </div>

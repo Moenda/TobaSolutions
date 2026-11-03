@@ -7,6 +7,8 @@
  * ===================================================================== */
 let profileTab = "title";
 let profileCustomOpen = false;
+let profileSeasonOpen = false;
+let profileSeasonPick = ""; // "halloween-2026" escolhida no calendário
 
 // Bloquinho de lego do 🧱 Personalizar (SVG pra não depender de emoji)
 const PROFILE_LEGO_SVG = `<svg viewBox="0 0 32 24" aria-hidden="true" class="pf-lego-svg">
@@ -25,6 +27,7 @@ function renderProfileHero(state) {
   document.getElementById("pfHero").innerHTML = `
     <span class="pf-hero-glow tp-bg-${look.bg.id}" aria-hidden="true"></span>
     ${renderPlayerFx(look.bg.id)}
+    ${renderProfileSeasonButton(state)}
     <button type="button" class="pf-lego" data-click="openCustomize" aria-label="Personalizar o perfil">${PROFILE_LEGO_SVG}<span>Personalizar</span></button>
     <button type="button" class="pf-hero-avatar" data-click="openCustomize" aria-label="Personalizar o perfil">${renderPlayerAvatar(state, "lg")}</button>
     <div class="pf-hero-title">${look.title.icon} ${escapeHtml(look.title.name)}</div>
@@ -34,8 +37,7 @@ function renderProfileHero(state) {
       <span>${formatPlayerNumber(state.into)} / ${formatPlayerNumber(state.need)} XP</span>
       <span>faltam ${formatPlayerNumber(state.next - state.xp)} para o nível ${state.level + 1}</span>
     </div>
-    ${nextTitle ? `<div class="pf-hero-next">Próximo título no nível ${nextTitle.min}: ${nextTitle.icon} ${nextTitle.name}</div>` : ""}
-    ${renderProfileSeasonChip(state)}`;
+    ${nextTitle ? `<div class="pf-hero-next">Próximo título no nível ${nextTitle.min}: ${nextTitle.icon} ${nextTitle.name}</div>` : ""}`;
 
   const unlocked = state.achievements.filter((a) => a.unlocked).length;
   const stat = (label, value, sub, extra = "") => `
@@ -52,14 +54,18 @@ function renderProfileHero(state) {
   ].join("");
 }
 
-// Festa rolando (v1.63): chamadinha pros troféus e itens da temporada
-function renderProfileSeasonChip(state) {
+// 🎉 Botãozinho da Temporada (v1.64, no lugar do aviso fixo da v1.63).
+// Mostra o emoji da festa rolando (ou da próxima); o pontinho pisca se tem troféu pra pegar.
+function renderProfileSeasonButton(state) {
   const hits = playerSeasonsOn(state.today);
-  if (!hits.length) return "";
-  const icons = hits.map((h) => h.season.icon).join("");
-  const names = hits.map((h) => h.season.label).join(" + ");
-  const got = hits.every((h) => state.unlockedIds.has(`ss-${h.key}`));
-  return `<button type="button" class="pf-season" data-click="openSeason">${icons} ${escapeHtml(names)} no Toba! ${got ? "Troféu na conta 🏆 · ver itens" : "Bora pegar o troféu 🏆"}</button>`;
+  const next = hits[0] || profileSeasonTimeline(state.today).find((h) => h.start > state.today);
+  const icon = next ? next.season.icon : "🎉";
+  const live = hits.length > 0;
+  const pending = hits.some((h) => !state.unlockedIds.has(`ss-${h.key}`));
+  const label = live ? `Temporada: ${hits.map((h) => h.season.label).join(" + ")} rolando` : "Temporadas do Toba";
+  return `<button type="button" class="pf-season-btn${live ? " is-live" : ""}" data-click="openSeason" aria-label="${escapeHtml(label)}">
+      <span class="pf-season-btn-icon">${icon}</span><span>Temporada</span>${pending ? `<i class="pf-season-dot" aria-hidden="true"></i>` : ""}
+    </button>`;
 }
 
 function renderProfileStreak(state) {
@@ -169,6 +175,32 @@ function renderProfileCustomPreview(state) {
     </div>`;
 }
 
+// Mini avatar com uma peça trocada (pra ver como fica antes de pôr)
+function profileMiniAvatar(look, over) {
+  const frame = over.frame || look.frame.id;
+  const bg = over.bg || look.bg.id;
+  const color = over.color || look.color;
+  return `<span class="tp-avatar is-sm tp-frame-${frame} tp-bg-${bg}" style="${playerColorStyle(color)}"><span class="tp-avatar-icon">${over.icon || look.avatar.icon}</span></span>`;
+}
+
+// Quadradinho de item (Personalizar e Temporada). kind = aba (avatar, frame, color, bg, title).
+function profileRewardTile({ kind, id, unlocked, active, preview, name, lockText }) {
+  return `
+    <button type="button" class="pf-reward${active ? " is-active" : ""}${unlocked ? "" : " is-locked"}" data-click="equipReward" data-kind="${kind}" data-id="${id}"${unlocked ? "" : ` data-locked="${escapeHtml(lockText)}"`}>
+      <span class="pf-reward-preview">${preview}</span>
+      ${name ? `<span class="pf-reward-name">${name}</span>` : ""}
+      ${unlocked ? "" : `<span class="pf-reward-lock">🔒 ${escapeHtml(lockText)}</span>`}
+    </button>`;
+}
+
+// Prévia do item: avatar = emoji; moldura/cor/fundo = mini avatar com a peça trocada
+function profileRewardPreview(kind, item, look) {
+  if (kind === "frame") return profileMiniAvatar(look, { frame: item.id });
+  if (kind === "color") return profileMiniAvatar(look, { color: item, frame: "simples" });
+  if (kind === "bg") return profileMiniAvatar(look, { bg: item.id });
+  return item.icon || "";
+}
+
 function renderProfileRewards(state) {
   if (!profileCustomOpen) return;
   renderProfileCustomPreview(state);
@@ -176,7 +208,7 @@ function renderProfileRewards(state) {
     <button type="button" class="tab-btn${t.id === profileTab ? " active" : ""}" data-click="showRewardTab" data-tab="${t.id}">
       ${t.name}<small>${profileTabCount(t.id, state)}</small>
     </button>`).join("");
-  document.getElementById("pfCustomHint").textContent = (PROFILE_CUSTOM_TABS.find((t) => t.id === profileTab) || PROFILE_CUSTOM_TABS[0]).hint;
+  document.getElementById("pfCustomHint").textContent = `${(PROFILE_CUSTOM_TABS.find((t) => t.id === profileTab) || PROFILE_CUSTOM_TABS[0]).hint} Segura num liberado pra ver como pegou. 👆`;
   const look = getPlayerLook(state);
   const need = (item) => {
     if (item.season) return playerSeasonNeed(item);
@@ -185,19 +217,7 @@ function renderProfileRewards(state) {
     if (!a) return "Conquista";
     return isPlayerAchievementHidden(a, state) ? "Conquista ???" : `Conquista: ${a.name}`;
   };
-  const tile = ({ id, unlocked, active, preview, name, lockText }) => `
-    <button type="button" class="pf-reward${active ? " is-active" : ""}${unlocked ? "" : " is-locked"}" data-click="equipReward" data-kind="${profileTab}" data-id="${id}"${unlocked ? "" : ` data-locked="${escapeHtml(lockText)}"`}>
-      <span class="pf-reward-preview">${preview}</span>
-      ${name ? `<span class="pf-reward-name">${name}</span>` : ""}
-      ${unlocked ? "" : `<span class="pf-reward-lock">🔒 ${escapeHtml(lockText)}</span>`}
-    </button>`;
-  // Mini avatar com uma peça trocada (pra ver como fica antes de pôr)
-  const mini = (over) => {
-    const frame = over.frame || look.frame.id;
-    const bg = over.bg || look.bg.id;
-    const color = over.color || look.color;
-    return `<span class="tp-avatar is-sm tp-frame-${frame} tp-bg-${bg}" style="${playerColorStyle(color)}"><span class="tp-avatar-icon">${over.icon || look.avatar.icon}</span></span>`;
-  };
+  const tile = (opts) => profileRewardTile({ kind: profileTab, ...opts });
   let html = "";
   if (profileTab === "title") {
     const auto = playerLevelTitle(state.level);
@@ -210,15 +230,12 @@ function renderProfileRewards(state) {
     const current = look[profileTab].id;
     const tiles = (items) => items.map((item) => {
       const unlocked = isPlayerRewardUnlocked(item, state);
-      let preview = item.icon || "";
-      let name = item.name ? escapeHtml(item.name) : "";
+      let preview = profileRewardPreview(profileTab, item, look);
+      const name = item.name ? escapeHtml(item.name) : "";
       if (profileTab === "avatar") {
         const a = item.achievement ? PLAYER_ACHIEVEMENTS.find((x) => x.id === item.achievement) : null;
         if (!unlocked && a && isPlayerAchievementHidden(a, state)) preview = "❓";
       }
-      if (profileTab === "frame") preview = mini({ frame: item.id });
-      if (profileTab === "color") preview = mini({ color: item, frame: "simples" });
-      if (profileTab === "bg") preview = mini({ bg: item.id });
       return tile({ id: item.id, unlocked, active: current === item.id, preview, name, lockText: need(item) });
     }).join("");
     const grid = profileTab === "avatar" ? " is-avatars" : "";
@@ -234,7 +251,7 @@ function renderProfileRewards(state) {
     // Sazonais (v1.63): libera usando o Toba no mês da festa
     if (seasonal.length) {
       html += `<div class="pf-season-title" id="pfSeasonItems">🎉 Temporadas</div>
-        <p class="pf-season-text">As festas do mundo no Toba: ${PLAYER_SEASONS.map((x) => x.icon).join(" ")}. Usou o Toba na festa, leva o troféu do ano e libera os itens dela pra sempre.</p>
+        <p class="pf-season-text">As festas do mundo no Toba: ${PLAYER_SEASONS.map((x) => x.icon).join(" ")}. Usou o Toba na festa, leva o troféu do ano e libera os itens dela pra sempre. Datas no 🎉 Temporada do card.</p>
         <div class="pf-reward-grid is-season${grid}">${tiles(seasonal)}</div>`;
     }
   }
@@ -265,11 +282,265 @@ function closeCustomize({ fromHistory = false } = {}) {
   window.scrollTo(0, 0);
 }
 
-// Chip da temporada: abre o Personalizar já no Fundo, rolado até as Temporadas
-function openSeason() {
-  profileTab = "bg";
-  openCustomize();
-  document.getElementById("pfSeasonItems")?.scrollIntoView({ block: "start" });
+/* ---------------------------------------------------------------------
+ * 🎉 Temporada (v1.64): telona da festa (rolando ou a próxima) com datas,
+ * troféu, itens que libera e o calendário do ano. Abre no lugar do Perfil
+ * pelo botãozinho do card. Só lê; equipar usa o mesmo equipReward.
+ * ------------------------------------------------------------------- */
+// Festas deste ano e do próximo, em ordem de data: [{ season, year, key, start, end }]
+function profileSeasonTimeline(today) {
+  const year = Number(String(today).slice(0, 4));
+  const list = [];
+  [year, year + 1].forEach((y) => {
+    if (y < PLAYER_SEASON_FIRST_YEAR) return;
+    PLAYER_SEASONS.forEach((season) => {
+      const range = season.range(y);
+      if (range) list.push({ season, year: y, key: `${season.id}-${y}`, start: range[0], end: range[1] });
+    });
+  });
+  return list.sort((a, b) => a.start.localeCompare(b.start));
+}
+
+function profileDaysBetween(fromIso, toIso) {
+  const utc = (iso) => Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)));
+  return Math.round((utc(toIso) - utc(fromIso)) / 86400000);
+}
+
+// "14/03/2026" · "01/10 a 31/10/2026" · "31/12/2026 a 07/01/2027"
+function profileSeasonDates(hit) {
+  if (hit.start === hit.end) return isoToBrDate(hit.start);
+  const a = isoToBrDate(hit.start);
+  const b = isoToBrDate(hit.end);
+  return hit.start.slice(0, 4) === hit.end.slice(0, 4) ? `${a.slice(0, 5)} a ${b}` : `${a} a ${b}`;
+}
+
+function profileSeasonStatus(hit, today, got) {
+  if (today >= hit.start && today <= hit.end) {
+    const left = profileDaysBetween(today, hit.end);
+    return { cls: "is-live", text: left === 0 ? "🔴 Rolando agora · acaba hoje" : `🔴 Rolando agora · acaba em ${left} ${left === 1 ? "dia" : "dias"}`, badge: got ? "✅ agora" : "🔴 agora" };
+  }
+  if (hit.start > today) {
+    const n = profileDaysBetween(today, hit.start);
+    return { cls: "is-soon", text: n === 1 ? "⏳ Começa amanhã" : `⏳ Começa em ${n} dias`, badge: n === 1 ? "amanhã" : `em ${n} dias` };
+  }
+  return got
+    ? { cls: "is-done", text: "✅ Já passou, e tu pegou", badge: "✅" }
+    : { cls: "is-past", text: "💨 Já passou. Ano que vem tem de novo", badge: "💨" };
+}
+
+const PROFILE_SEASON_KINDS = [
+  { kind: "avatar", name: "😎 Avatares", list: () => PLAYER_AVATARS },
+  { kind: "frame", name: "🖼️ Molduras", list: () => PLAYER_FRAMES },
+  { kind: "color", name: "🎨 Cores", list: () => PLAYER_COLORS },
+  { kind: "bg", name: "✨ Fundos (com efeito no card)", list: () => PLAYER_BGS },
+];
+
+function renderProfileSeason(state) {
+  if (!profileSeasonOpen) return;
+  const view = document.getElementById("pfSeasonView");
+  const today = state.today;
+  const year = Number(today.slice(0, 4));
+  const timeline = profileSeasonTimeline(today);
+  const live = playerSeasonsOn(today);
+  const pick = timeline.find((h) => h.key === profileSeasonPick) || live[0] || timeline.find((h) => h.start > today) || timeline[0];
+  if (!pick) {
+    view.innerHTML = tobaEmpty("🎉", "Sem festa no calendário", "Volta mais perto da próxima temporada.");
+    return;
+  }
+  profileSeasonPick = pick.key;
+  const season = pick.season;
+  const trophyId = `ss-${pick.key}`;
+  const got = state.unlockedIds.has(trophyId);
+  const inAlbum = state.achievements.find((x) => x.id === trophyId);
+  const trophy = inAlbum || PLAYER_ACHIEVEMENTS.find((x) => x.id === trophyId);
+  const status = profileSeasonStatus(pick, today, got);
+  const look = getPlayerLook(state);
+  const bg = PLAYER_BGS.find((x) => x.season === season.id);
+
+  let total = 0;
+  let mine = 0;
+  const groups = PROFILE_SEASON_KINDS.map((k) => {
+    const items = k.list().filter((item) => item.season === season.id);
+    if (!items.length) return "";
+    const tiles = items.map((item) => {
+      const unlocked = isPlayerRewardUnlocked(item, state);
+      total += 1;
+      if (unlocked) mine += 1;
+      return profileRewardTile({
+        kind: k.kind, id: item.id, unlocked, active: look[k.kind].id === item.id,
+        preview: profileRewardPreview(k.kind, item, look), name: item.name ? escapeHtml(item.name) : "", lockText: playerSeasonNeed(item),
+      });
+    }).join("");
+    return `<div class="pf-ss-kind">${k.name}</div><div class="pf-reward-grid${k.kind === "avatar" ? " is-avatars" : ""}">${tiles}</div>`;
+  }).join("");
+
+  const xp = trophy ? trophy.xp ?? PLAYER_TIERS[trophy.tier].xp : 0;
+  const trophyText = got
+    ? `Na conta desde ${formatProfileDate(trophy.date)} · +${formatPlayerNumber(xp)} XP`
+    : trophy ? `${escapeHtml(trophy.hint)} +${formatPlayerNumber(xp)} XP` : "";
+  const calendar = timeline.filter((h) => h.year === year || h.start <= `${year}-12-31`);
+
+  view.innerHTML = `
+    <section class="card pf-ss-hero">
+      ${bg ? `<span class="pf-hero-glow tp-bg-${bg.id}" aria-hidden="true"></span>${renderPlayerFx(bg.id)}` : ""}
+      <span class="pf-ss-icon">${season.icon}</span>
+      <h2 class="pf-ss-name">${escapeHtml(season.label)} ${pick.year}</h2>
+      <div class="pf-ss-dates">📅 ${profileSeasonDates(pick)}</div>
+      <span class="pf-ss-status ${status.cls}">${status.text}</span>
+      <p class="pf-ss-how">Vale qualquer coisa no Toba ${escapeHtml(season.when)}: treino, tarefa, receita ou só abrir o app. O troféu libera os itens pra sempre.</p>
+    </section>
+
+    ${trophy ? `
+    <div class="section-title">🏆 Troféu</div>
+    <button type="button" class="card pf-ss-trophy${got ? " is-got" : ""}"${inAlbum ? ` data-click="openAchievement" data-id="${trophyId}"` : ""}>
+      <span class="tp-medal tp-tier-${trophy.tier}${got ? "" : " is-locked"}">${season.icon}</span>
+      <span class="pf-ss-trophy-text"><strong>${escapeHtml(trophy.name)}</strong><span>${trophyText}</span></span>
+    </button>` : ""}
+
+    ${total ? `
+    <div class="section-title">🎁 O que dá pra ganhar <span class="pf-count">${mine}/${total}</span></div>
+    <div class="card pf-ss-items">${groups}</div>` : ""}
+
+    <div class="section-title">📅 Calendário ${year}</div>
+    <div class="card pf-ss-cal">${calendar.map((h) => {
+      const st = profileSeasonStatus(h, today, state.unlockedIds.has(`ss-${h.key}`));
+      return `
+      <button type="button" class="pf-ss-row ${st.cls}${h.key === pick.key ? " is-picked" : ""}" data-click="pickSeason" data-key="${h.key}">
+        <span class="pf-ss-row-icon">${h.season.icon}</span>
+        <span class="pf-ss-row-text"><strong>${escapeHtml(h.season.label)}</strong><span>${profileSeasonDates(h)}</span></span>
+        <span class="pf-ss-row-badge">${st.badge}</span>
+      </button>`;
+    }).join("")}</div>`;
+}
+
+function openSeason({ push = true } = {}) {
+  if (!tobaPlayerState) return;
+  if (push) profileSeasonPick = "";
+  profileSeasonOpen = true;
+  document.getElementById("pfMainView").hidden = true;
+  document.getElementById("pfSeasonView").hidden = false;
+  tobaSetHeader({ page: "🎉 Temporada", back: "closeSeason" });
+  if (push) history.pushState({ season: 1 }, "");
+  renderProfileSeason(tobaPlayerState);
+  window.scrollTo(0, 0);
+}
+
+function closeSeason({ fromHistory = false } = {}) {
+  if (!profileSeasonOpen) return;
+  if (!fromHistory && history.state?.season) {
+    history.back(); // o popstate chama de novo com fromHistory
+    return;
+  }
+  profileSeasonOpen = false;
+  document.getElementById("pfSeasonView").hidden = true;
+  document.getElementById("pfMainView").hidden = false;
+  tobaSetHeader({ page: "🎮 Perfil do jogador", back: "" });
+  window.scrollTo(0, 0);
+}
+
+/* ---------------------------------------------------------------------
+ * 👆 Segurar num item liberado = balãozinho "como pegou" + data (v1.64).
+ * Tocar continua equipando; o balão some sozinho ou no próximo toque.
+ * ------------------------------------------------------------------- */
+// Dia em que o XP acumulado chegou no nível (os eventos já vêm em ordem de data)
+function profileLevelDate(state, level) {
+  let need = 0;
+  for (let l = 1; l < level; l++) need += playerXpToNext(l);
+  let sum = 0;
+  for (const e of state.events) {
+    sum += e.xp;
+    if (sum >= need) return e.date;
+  }
+  return "";
+}
+
+function profileHowInfo(kind, id, state) {
+  const byAch = (achId) => {
+    const a = state.achievements.find((x) => x.id === achId);
+    return a ? { how: `🏅 Conquista: ${a.name}`, date: a.date } : { how: "🏅 Com uma conquista", date: "" };
+  };
+  const byLevel = (level) => (level <= 1
+    ? { how: "🏭 Vem de fábrica: liberado desde o nível 1", date: "" }
+    : { how: `⬆️ Chegou no nível ${level}`, date: profileLevelDate(state, level) });
+  if (kind === "title") {
+    if (!id) return { how: "🤖 Automático: acompanha o título do teu nível", date: "" };
+    if (id.startsWith("nivel-")) return byLevel(Number(id.slice(6)));
+    if (id.startsWith("conq-")) return byAch(id.slice(5));
+    return null;
+  }
+  const item = profileRewardList(kind).find((x) => x.id === id);
+  if (!item) return null;
+  if (item.achievement) return byAch(item.achievement);
+  if (item.season) {
+    const got = state.achievements.filter((a) => a.unlocked && a.season === item.season).sort((a, b) => a.date.localeCompare(b.date));
+    if (!got.length) return null;
+    return { how: `🎉 ${got[0].name}${got.length > 1 ? ` (e mais ${got.length - 1})` : ""}`, date: got[0].date };
+  }
+  return byLevel(item.level || 1);
+}
+
+let profileHowTimer = 0;
+
+function hideProfileHow() {
+  clearTimeout(profileHowTimer);
+  const box = document.getElementById("pfHow");
+  if (box) box.hidden = true;
+}
+
+function showProfileHow(tile) {
+  const state = tobaPlayerState;
+  const box = document.getElementById("pfHow");
+  if (!state || !box) return;
+  const info = profileHowInfo(tile.dataset.kind, tile.dataset.id, state);
+  if (!info) return;
+  box.innerHTML = `<strong>${escapeHtml(info.how)}</strong>${info.date ? `<span>📅 ${formatProfileDate(info.date)}</span>` : ""}`;
+  box.hidden = false;
+  const r = tile.getBoundingClientRect();
+  const b = box.getBoundingClientRect();
+  const left = Math.min(window.innerWidth - b.width - 8, Math.max(8, r.left + r.width / 2 - b.width / 2));
+  let top = r.top - b.height - 8;
+  if (top < 8) top = r.bottom + 8;
+  box.style.left = `${Math.round(left)}px`;
+  box.style.top = `${Math.round(top)}px`;
+  clearTimeout(profileHowTimer);
+  profileHowTimer = setTimeout(hideProfileHow, 4000);
+}
+
+function setupProfileHold() {
+  let timer = 0;
+  let startX = 0;
+  let startY = 0;
+  let fired = false;
+  const cancel = () => clearTimeout(timer);
+  document.addEventListener("pointerdown", (event) => {
+    hideProfileHow();
+    fired = false;
+    cancel();
+    const tile = event.target instanceof Element ? event.target.closest(".pf-reward") : null;
+    if (!tile || tile.dataset.locked) return;
+    startX = event.clientX;
+    startY = event.clientY;
+    timer = setTimeout(() => {
+      fired = true;
+      showProfileHow(tile);
+    }, 450);
+  });
+  document.addEventListener("pointermove", (event) => {
+    if (Math.hypot(event.clientX - startX, event.clientY - startY) > 10) cancel();
+  });
+  document.addEventListener("pointerup", cancel);
+  document.addEventListener("pointercancel", cancel);
+  window.addEventListener("scroll", () => { cancel(); hideProfileHow(); }, { passive: true });
+  // Segurou: o "click" que vem depois não equipa
+  document.addEventListener("click", (event) => {
+    if (!fired) return;
+    fired = false;
+    event.preventDefault();
+    event.stopPropagation();
+  }, true);
+  document.addEventListener("contextmenu", (event) => {
+    if (event.target instanceof Element && event.target.closest(".pf-reward")) event.preventDefault();
+  });
 }
 
 async function equipReward(el) {
@@ -342,6 +613,7 @@ function renderProfile(state) {
   renderProfileStreak(state);
   renderProfileAchievements(state);
   renderProfileRewards(state);
+  renderProfileSeason(state);
   renderProfileLedger(state);
   renderProfileLevels(state);
   fillProfileSettings();
@@ -409,7 +681,13 @@ tobaSetupApp({
 
 tobaActions({
   openCustomize: () => openCustomize(),
-  openSeason,
+  openSeason: () => openSeason(),
+  closeSeason: () => closeSeason(),
+  pickSeason: (el) => {
+    profileSeasonPick = el.dataset.key;
+    if (tobaPlayerState) renderProfileSeason(tobaPlayerState);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  },
   closeCustomize: () => closeCustomize(),
   showRewardTab: (el) => {
     profileTab = el.dataset.tab;
@@ -439,12 +717,16 @@ tobaActions({
 });
 
 document.addEventListener("toba:player", (event) => renderProfile(event.detail));
-// Recarregou com o Personalizar no histórico: começa no Perfil
-if (history.state?.custom) history.replaceState(null, "");
+// Recarregou com o Personalizar/Temporada no histórico: começa no Perfil
+if (history.state?.custom || history.state?.season) history.replaceState(null, "");
 window.addEventListener("popstate", (event) => {
+  hideProfileHow();
   if (event.state?.custom) openCustomize({ push: false });
   else closeCustomize({ fromHistory: true });
+  if (event.state?.season) openSeason({ push: false });
+  else closeSeason({ fromHistory: true });
 });
+setupProfileHold();
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") tobaPlayerCheck();
 });

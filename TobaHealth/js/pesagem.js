@@ -312,55 +312,305 @@ function formatWeighDate(dateStr) {
 }
 
 /* TELA DE COMPARATIVO (abre como "página" dentro do app) */
-function openMetricCompare(metricKey) {
-  const meta = getMetricMeta(metricKey);
-  if (!meta || healthDb.weighIns.length === 0) return;
-  const { type, unit } = meta;
+// v1.64: período escolhível (chips), linha de tendência e o veredito do Cloba.
+// Tudo aqui só LÊ o healthDb; o período escolhido fica em toba_health_compare_prefs.
+const COMPARE_PERIODS = [
+  { id: "5", label: "Últimas 5", count: 5 },
+  { id: "10", label: "Últimas 10", count: 10 },
+  { id: "1m", label: "1 mês", days: 30, phrase: "no último mês" },
+  { id: "3m", label: "3 meses", days: 91, phrase: "nos últimos 3 meses" },
+  { id: "6m", label: "6 meses", days: 182, phrase: "nos últimos 6 meses" },
+  { id: "all", label: "Tudo", phrase: "desde o começo" },
+];
+const COMPARE_PREFS_KEY = "toba_health_compare_prefs";
+const COMPARE_DEFAULT_PERIOD = "10";
+const DAY_MS = 86400000;
 
-  const sorted = [...healthDb.weighIns].sort(
-    (a, b) => new Date(b.date) - new Date(a.date),
-  );
-  // Ordena uma cópia para mostrar a evolução sem reordenar o banco em memória.
-  const dataPoints = [];
+// "Estável" = a linha de tendência mexeu menos que isso no período inteiro
+// (na unidade da métrica). Métrica sem número aqui usa 1% da média.
+const TREND_STABLE_BAND = {
+  weight: 0.5,
+  bmi: 0.2,
+  score: 1,
+  fat: 0.5,
+  muscle: 0.4,
+  water: 0.6,
+  bmr: 25,
+  visceral: 0.5,
+  protein: 0.3,
+  bone: 0.1,
+  bodyAge: 1,
+};
 
-  sorted.forEach((w) => {
+// Regra de cores Toba: o que é bom subir? (o resto, cair é bom)
+const METRIC_UP_IS_GOOD = ["muscle", "water", "protein", "bone", "score"];
+
+const compareState = { key: null, period: readComparePeriod() };
+
+function readComparePeriod() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(COMPARE_PREFS_KEY) || "null");
+    if (raw && COMPARE_PERIODS.some((p) => p.id === raw.period)) return raw.period;
+  } catch (err) {
+    /* preferência ilegível: volta pro padrão */
+  }
+  return COMPARE_DEFAULT_PERIOD;
+}
+
+function storeComparePeriod(period) {
+  try {
+    localStorage.setItem(COMPARE_PREFS_KEY, JSON.stringify({ period }));
+  } catch (err) {
+    /* sem espaço: só não lembra o período */
+  }
+}
+
+function getComparePeriod() {
+  return COMPARE_PERIODS.find((p) => p.id === compareState.period) || COMPARE_PERIODS[1];
+}
+
+// Todos os valores da métrica, do mais novo pro mais velho (cópia, não reordena o banco).
+function collectMetricPoints(metricKey) {
+  const points = [];
+  healthDb.weighIns.forEach((w) => {
     let val = null;
     if (metricKey === "weight") val = w.weight;
     else if (metricKey === "bmi") val = getBmi(w.weight);
     else val = w[metricKey];
-
-    if (val !== null && val !== undefined) {
-      dataPoints.push({ date: new Date(w.date), val: val });
-    }
+    const date = new Date(w.date);
+    if (val === null || val === undefined || !Number.isFinite(Number(val)) || Number.isNaN(date.getTime())) return;
+    points.push({ date, t: date.getTime(), val: Number(val) });
   });
+  return points.sort((a, b) => b.t - a.t);
+}
 
-  const last5 = dataPoints.slice(0, 5);
-  if (last5.length === 0) {
+function filterPointsByPeriod(points, period) {
+  if (period.count) return points.slice(0, period.count);
+  if (period.days) {
+    const cutoff = Date.now() - period.days * DAY_MS;
+    return points.filter((p) => p.t >= cutoff);
+  }
+  return points.slice();
+}
+
+function periodPhrase(period, n) {
+  if (period.count) return n === 1 ? "na última" : `nas últimas ${n}`;
+  return period.phrase;
+}
+
+function chartTitleFor(period, n) {
+  const label = n === 1 ? "1 pesagem" : `${n} pesagens`;
+  if (period.count) return n === 1 ? "📈 Última pesagem" : `📈 Últimas ${n} pesagens`;
+  if (period.days === 30) return `📈 Último mês · ${label}`;
+  if (period.days) return `📈 ${period.label} · ${label}`;
+  return `📈 Desde o começo · ${label}`;
+}
+
+function spanPhrase(days) {
+  if (days < 2) return "nas últimas pesagens";
+  if (days < 14) return `há ${Math.round(days)} dias`;
+  if (days < 60) return `há ${Math.round(days / 7)} semanas`;
+  const months = Math.round(days / 30.4);
+  return months <= 1 ? "há 1 mês" : `há ${months} meses`;
+}
+
+// Regressão linear (mínimos quadrados) pelo tempo: devolve a reta e o quanto
+// ela andou do primeiro ao último ponto. Pontos do mesmo instante usam o índice.
+function calcTrend(chrono) {
+  const n = chrono.length;
+  if (n < 2) return null;
+  const t0 = chrono[0].t;
+  const spanDays = (chrono[n - 1].t - t0) / DAY_MS;
+  const xs = spanDays > 0 ? chrono.map((p) => (p.t - t0) / DAY_MS) : chrono.map((_, i) => i);
+  const ys = chrono.map((p) => p.val);
+  const mx = xs.reduce((a, b) => a + b, 0) / n;
+  const my = ys.reduce((a, b) => a + b, 0) / n;
+  let sxy = 0;
+  let sxx = 0;
+  xs.forEach((x, i) => {
+    sxy += (x - mx) * (ys[i] - my);
+    sxx += (x - mx) * (x - mx);
+  });
+  const slope = sxx > 0 ? sxy / sxx : 0;
+  const at = (x) => my + slope * (x - mx);
+  const start = at(xs[0]);
+  const end = at(xs[n - 1]);
+  const resid = Math.sqrt(ys.reduce((acc, y, i) => acc + (y - at(xs[i])) ** 2, 0) / n);
+  return {
+    start,
+    end,
+    change: end - start,
+    perMonth: spanDays >= 14 ? slope * 30.4 : null,
+    spanDays,
+    resid,
+    mean: my,
+  };
+}
+
+// Frases do Cloba. {delta} = variação com sinal, {periodo} = "nas últimas 10",
+// {tempo} = "há 3 meses", {label} = nome da métrica.
+const TREND_LINES = {
+  fat: {
+    stable: ["Estável {tempo}, pai. Tá ótimo 👌", "A capa da gaita não mexe {tempo}. Constância de monge 🧘"],
+    good: ["{delta} {periodo}. A banha tá pedindo arrego, segue o baile 🚀", "{delta} {periodo}. O tanquinho tá mandando sinal de fumaça 💪"],
+    goodStrong: ["{delta} {periodo}?? Isso é cutting de filme, pai. Nunca foi sorte 🙏"],
+    bad: ["Subindo {delta} {periodo}. Fudeu, a gordura tá aí 💩 Larga o pão de queijo", "{delta} {periodo}. A capa da gaita tá ganhando forro de inverno 🧥"],
+    badStrong: ["{delta} {periodo}?? A gordura comprou apê e tá mobiliando 😂 Bora voltar pro básico"],
+  },
+  weight: {
+    stable: ["Peso cravado {tempo}. Balança de vidro, pai 👌", "Nem pra cima nem pra baixo {tempo}. Manutenção nível monge 🧘"],
+    good: ["{delta} {periodo}. Tá secando bonito 🔥", "{delta} {periodo}. A balança tá começando a gostar de você 😎"],
+    goodStrong: ["{delta} {periodo}?? Calma, Saitama 😂 Só não esquece de comer proteína"],
+    bad: ["{delta} {periodo}. A balança tá rindo da tua cara 😂 Segura a larica", "{delta} {periodo}. O bulk sujo mandou lembranças 🍕"],
+    badStrong: ["{delta} {periodo}?? Fudeu, pai. Fecha a geladeira e bora caminhar 🚶"],
+  },
+  up: {
+    stable: ["{label} parado {tempo}. Constância é o nome do jogo 👌"],
+    good: ["{label} {delta} {periodo}. O shape tá vindo 🚀", "{label} {delta} {periodo}. Tá construindo, pai 🧱"],
+    goodStrong: ["{label} {delta} {periodo}?? Monstro, saindo da jaula 🦍"],
+    bad: ["{label} {delta} {periodo}. Bora treino de força e proteína antes que vire pudim 🍮", "{label} {delta} {periodo}. Tá escorrendo, pai. Bora reagir 👊"],
+    badStrong: ["{label} {delta} {periodo}?? Alerta vermelho. Volta pro treino ontem 🚨"],
+  },
+  down: {
+    stable: ["{label} parado {tempo}. Constância é o nome do jogo 👌"],
+    good: ["{label} {delta} {periodo}. É isso, tá no caminho 🔥"],
+    goodStrong: ["{label} {delta} {periodo}?? Nunca foi sorte, Cloba 🙏"],
+    bad: ["{label} {delta} {periodo}. Fica de olho que o bicho tá subindo 👀"],
+    badStrong: ["{label} {delta} {periodo}?? Fudeu. Bora voltar pro básico 🚨"],
+  },
+};
+
+const TREND_TITLES = {
+  stable: "🧘 Estável",
+  noisy: "🎢 Sanfona",
+  good: { up: "💪 Subindo", down: "🔥 Derretendo" },
+  bad: { up: "🚨 Subindo", down: "😬 Escorrendo" },
+};
+
+function buildTrendVerdict(metricKey, meta, chrono, trend, period) {
+  const n = chrono.length;
+  if (n < 2 || !trend) return "";
+  if (n === 2) {
+    return trendCardHtml("is-neutral", "🤏", "Só 2 pesagens", "Com 2 pontos é chute, não tendência. Sobe na balança mais vezes que o Cloba crava o papo reto.", "");
+  }
+
+  const decType = meta.type === "dec2" ? "dec2" : "dec1";
+  const fmt = (v) => {
+    const abs = formatMetricValue(Math.abs(v), decType);
+    const zero = /^[0,]+$/.test(abs);
+    return `${zero ? "" : v > 0 ? "+" : "−"}${abs}${meta.unit}`;
+  };
+  const band = trendBand(metricKey, trend);
+  const upIsGood = METRIC_UP_IS_GOOD.includes(metricKey);
+  const family = metricKey === "fat" || metricKey === "weight" ? metricKey : upIsGood ? "up" : "down";
+  const lines = TREND_LINES[family];
+  const change = trend.change;
+  const pick = (arr) => arr[(n + Math.round(Math.abs(change) * 100)) % arr.length];
+
+  let tone = "is-neutral";
+  let title = TREND_TITLES.stable;
+  let text;
+  if (Math.abs(change) < band) {
+    if (trend.resid > band * 0.8) {
+      title = TREND_TITLES.noisy;
+      text = `Sobe e desce ${periodPhrase(period, n)}, mas no fim tá no mesmo lugar. Pesa sempre no mesmo horário que o gráfico para de dançar 🪗`;
+    } else {
+      tone = "is-calm";
+      text = pick(lines.stable);
+    }
+  } else {
+    const up = change > 0;
+    const good = up === upIsGood;
+    const strong = Math.abs(change) >= band * 3;
+    tone = good ? "is-good" : "is-bad";
+    title = good ? TREND_TITLES.good[up ? "up" : "down"] : TREND_TITLES.bad[up ? "up" : "down"];
+    if (strong && !good && family === "fat") title = "🚨 Alerta vermelho";
+    const set = good ? (strong ? lines.goodStrong : lines.good) : strong ? lines.badStrong : lines.bad;
+    text = pick(set);
+  }
+
+  text = text
+    .replace("{delta}", fmt(change))
+    .replace("{periodo}", periodPhrase(period, n))
+    .replace("{tempo}", spanPhrase(trend.spanDays))
+    .replace("{label}", meta.label);
+
+  const [emoji, ...rest] = title.split(" ");
+  const rateZero = trend.perMonth !== null && /^[0,]+$/.test(formatMetricValue(Math.abs(trend.perMonth), decType));
+  const rate = trend.perMonth === null ? `Tendência: ${fmt(change)} no período` : rateZero ? "Ritmo: parado, zero por mês" : `Ritmo: ${fmt(trend.perMonth)} por mês`;
+  return trendCardHtml(tone, emoji, rest.join(" "), text, rate);
+}
+
+function trendCardHtml(tone, emoji, title, text, foot) {
+  return `
+    <div class="card trend-card ${tone}">
+      <div class="trend-emoji" aria-hidden="true">${emoji}</div>
+      <div class="trend-copy">
+        <div class="trend-kicker">Papo reto do Cloba</div>
+        <div class="trend-title">${escapeHtml(title)}</div>
+        <div class="trend-text">${escapeHtml(text)}</div>
+        ${foot ? `<div class="trend-foot">${escapeHtml(foot)}</div>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function trendBand(metricKey, trend) {
+  return TREND_STABLE_BAND[metricKey] || Math.max(Math.abs(trend.mean) * 0.01, 0.1);
+}
+
+function trendToneColor(metricKey, trend) {
+  if (!trend) return "var(--blue)";
+  const band = trendBand(metricKey, trend);
+  if (Math.abs(trend.change) < band) return "var(--blue)";
+  const good = (trend.change > 0) === METRIC_UP_IS_GOOD.includes(metricKey);
+  return good ? "var(--text-2)" : "var(--red)";
+}
+
+function openMetricCompare(metricKey) {
+  const meta = getMetricMeta(metricKey);
+  if (!meta || healthDb.weighIns.length === 0) return;
+  if (collectMetricPoints(metricKey).length === 0) {
     const hint = metricKey === "bmi"
       ? "Pra calcular o IMC eu preciso da sua altura. Coloque em ⚙️ > Seu perfil."
       : "Ainda não há registros para essa métrica. Preencha esse campo numa pesagem e volte aqui.";
     showPageMessage(hint, { title: "Sem dados aqui", icon: "🤷" });
     return;
   }
+  compareState.key = metricKey;
+  renderMetricCompare();
+  switchPesagemView("compare", meta.label);
+}
 
-  // A janela de comparação usa no máximo os cinco registros mais recentes.
-  const sum = last5.reduce((acc, curr) => acc + curr.val, 0);
-  const avg = sum / last5.length;
-  const ultima = last5[0].val;
+function setComparePeriod(periodId) {
+  if (!COMPARE_PERIODS.some((p) => p.id === periodId) || periodId === compareState.period) return;
+  compareState.period = periodId;
+  storeComparePeriod(periodId);
+  renderMetricCompare();
+}
+
+function renderMetricCompare() {
+  const metricKey = compareState.key;
+  const meta = getMetricMeta(metricKey);
+  if (!meta) return;
+  const { type, unit } = meta;
   const decType = type === "dec2" ? "dec2" : "dec1";
+  const period = getComparePeriod();
+  const all = collectMetricPoints(metricKey);
+  const sel = filterPointsByPeriod(all, period);
 
-  document.getElementById("thMedia5").textContent = `${formatMetricValue(avg, decType)}${unit}`;
+  document.getElementById("comparePeriods").innerHTML = COMPARE_PERIODS.map((p) => `
+    <button type="button" class="compare-chip${p.id === period.id ? " is-on" : ""}" data-click="setComparePeriod" data-period="${p.id}" aria-pressed="${p.id === period.id}">${p.label}</button>
+  `).join("");
 
-  // Regra de cores Toba: o que é bom subir? (o resto, cair é bom)
-  const upIsGood = ["muscle", "water", "protein", "bone", "score"].includes(metricKey);
-
+  const upIsGood = METRIC_UP_IS_GOOD.includes(metricKey);
   const formataEvolucao = (valorBase, valorComp, idVal, idPct) => {
     const elVal = document.getElementById(idVal);
     const elPct = document.getElementById(idPct);
     elVal.className = "toba-stat-value";
     elPct.className = "toba-stat-sub";
 
-    if (valorComp === null || valorComp === undefined) {
+    if (valorBase === null || valorBase === undefined || valorComp === null || valorComp === undefined) {
       elVal.textContent = "--";
       elVal.classList.add("text-muted");
       elPct.textContent = "";
@@ -387,25 +637,46 @@ function openMetricCompare(metricKey) {
     elPct.classList.add(colorClass);
   };
 
-  formataEvolucao(ultima, avg, "thVsMediaVal", "thVsMediaPct");
-  formataEvolucao(ultima, last5.length >= 2 ? last5[1].val : null, "thVsAntVal", "thVsAntPct");
+  // Média e "vs Média" seguem o período; "vs Anterior" é sempre a pesagem de antes.
+  const ultima = all[0].val;
+  const avg = sel.length ? sel.reduce((acc, p) => acc + p.val, 0) / sel.length : null;
+  document.getElementById("thMediaLabel").textContent = `Média (${sel.length})`;
+  document.getElementById("thMedia5").textContent = avg === null ? "--" : `${formatMetricValue(avg, decType)}${unit}`;
+  formataEvolucao(sel.length ? ultima : null, avg, "thVsMediaVal", "thVsMediaPct");
+  formataEvolucao(ultima, all.length >= 2 ? all[1].val : null, "thVsAntVal", "thVsAntPct");
 
-  const chrono5 = [...last5].reverse();
-  document.getElementById("svgChartContainer").innerHTML = renderSvgChart(chrono5, type, unit);
+  const chrono = [...sel].reverse();
+  const trend = calcTrend(chrono);
+  document.getElementById("compareChartTitle").textContent = chartTitleFor(period, sel.length);
+  document.getElementById("svgChartContainer").innerHTML = sel.length === 0
+    ? tobaEmpty("🦗", "Nada nesse período", `A última foi em ${all[0].date.toLocaleDateString("pt-BR")}. Pega um período maior.`, { compact: true })
+    : renderSvgChart(chrono, type, unit, trend, trendToneColor(metricKey, trend), trend ? trendBand(metricKey, trend) * 4 : 0);
+  document.getElementById("trendVerdict").innerHTML = buildTrendVerdict(metricKey, meta, chrono, trend, period);
 
-  document.getElementById("metricExplanatoryBox").innerHTML =
-    buildRulerHTML(metricKey, ultima, type, unit);
+  document.getElementById("metricExplanatoryBox").innerHTML = buildRulerHTML(metricKey, ultima, type, unit);
 
-  document.getElementById("compHistoryList").innerHTML = last5
-    .map((item) => `
+  document.getElementById("compareListTitle").textContent = sel.length ? `🗓️ Registros do período (${sel.length})` : "🗓️ Registros do período";
+  document.getElementById("compHistoryList").innerHTML = sel
+    .map((item) => {
+      const prev = all[all.indexOf(item) + 1];
+      let delta = "";
+      if (prev) {
+        const d = item.val - prev.val;
+        if (Math.abs(d) >= 0.001) {
+          const cls = (d > 0) === upIsGood ? "text-green" : "text-red";
+          delta = `<small class="cmp-delta ${cls}">${d > 0 ? "▲" : "▼"} ${formatMetricValue(Math.abs(d), decType)}</small>`;
+        } else {
+          delta = `<small class="cmp-delta text-muted">=</small>`;
+        }
+      }
+      return `
       <div class="kv-row">
         <span>${item.date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
-        <b class="text-green">${formatMetricValue(item.val, type)}${unit}</b>
+        <b class="text-green">${delta}${formatMetricValue(item.val, type)}${unit}</b>
       </div>
-    `)
+    `;
+    })
     .join("");
-
-  switchPesagemView("compare", meta.label);
 }
 
 function closeMetricCompare() {
@@ -430,50 +701,113 @@ function openMetricAdvice(metricKey) {
   openTobaModal("metricAdviceModal");
 }
 
-/* GRÁFICO SVG */
-function renderSvgChart(points, type, unit) {
+/* GRÁFICO SVG (v1.64: eixo pelo tempo, área, tendência tracejada e datas) */
+// minSpan: altura mínima do eixo (na unidade da métrica), pra oscilação miúda não parecer montanha-russa.
+function renderSvgChart(points, type, unit, trend, trendColor = "var(--blue)", minSpan = 0) {
   if (points.length < 2)
-    return tobaEmpty("📉", "Gráfico precisa de 2 pesagens", "Registre mais uma e a linha aparece aqui.", { compact: true });
+    return tobaEmpty("📉", "Gráfico precisa de 2 pesagens", "Registre mais uma (ou pega um período maior) e a linha aparece aqui.", { compact: true });
 
-  const w = 320,
-    h = 100,
-    pad = 25;
+  const w = 340;
+  const h = 190;
+  const padX = 18;
+  const padTop = 28;
+  const padBottom = 30;
+  const n = points.length;
   const vals = points.map((p) => p.val);
-  let min = Math.min(...vals),
-    max = Math.max(...vals);
-
-  if (min === max) {
+  if (trend) vals.push(trend.start, trend.end);
+  let min = Math.min(...vals);
+  let max = Math.max(...vals);
+  if (max - min < 0.001) {
     min -= 1;
     max += 1;
   } else {
-    const margin = (max - min) * 0.25;
+    const margin = (max - min) * 0.18;
     min -= margin;
     max += margin;
   }
+  if (max - min < minSpan) {
+    const grow = (minSpan - (max - min)) / 2;
+    min -= grow;
+    max += grow;
+  }
 
-  // Converte os valores em coordenadas no viewBox; o SVG escala depois
-  // para a largura disponível sem precisar recalcular em pixels.
-  const coords = points.map((p, idx) => ({
-    x: pad + (idx / (points.length - 1)) * (w - 2 * pad),
-    y: h - pad - ((p.val - min) / (max - min)) * (h - 2 * pad),
-    val: p.val,
-  }));
+  // X pelo tempo (pesagens espaçadas como no calendário); tudo no mesmo instante = índice.
+  const t0 = points[0].t;
+  const tSpan = points[n - 1].t - t0;
+  const xAt = (p, idx) => padX + (tSpan > 0 ? (p.t - t0) / tSpan : idx / (n - 1)) * (w - 2 * padX);
+  const yAt = (v) => h - padBottom - ((v - min) / (max - min)) * (h - padTop - padBottom);
+  const coords = points.map((p, idx) => ({ x: xAt(p, idx), y: yAt(p.val), val: p.val, date: p.date }));
 
-  const pointsStr = coords.map((c) => `${c.x},${c.y}`).join(" ");
+  const r1 = (num) => Math.round(num * 10) / 10;
+  const lineStr = coords.map((c) => `${r1(c.x)},${r1(c.y)}`).join(" ");
+  const baseY = h - padBottom;
+  const areaStr = `M${r1(coords[0].x)},${baseY} L${coords.map((c) => `${r1(c.x)},${r1(c.y)}`).join(" L")} L${r1(coords[n - 1].x)},${baseY} Z`;
+  const decType = type === "dec2" ? "dec2" : "dec1";
 
-  let svg = `<svg class="weigh-chart" viewBox="0 0 ${w} ${h}">
-            <defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#3fb950" flood-opacity="0.5"/></filter></defs>
-            <polyline fill="none" stroke="#3fb950" stroke-width="3" points="${pointsStr}" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
-        `;
+  let svg = `<svg class="weigh-chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Gráfico da evolução">
+    <defs>
+      <filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#3fb950" flood-opacity="0.5"/></filter>
+      <linearGradient id="cmpArea" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#3fb950" stop-opacity="0.28"/>
+        <stop offset="100%" stop-color="#3fb950" stop-opacity="0"/>
+      </linearGradient>
+    </defs>`;
 
-  coords.forEach((c) => {
-    const valFormatted = formatMetricValue(c.val, type === "dec2" ? "dec2" : "dec1");
-    svg += `
-                <circle cx="${c.x}" cy="${c.y}" r="4" fill="#3fb950" stroke="#161b22" stroke-width="2"/>
-                <text x="${c.x}" y="${c.y - 8}" fill="#f0f6fc" font-size="10" font-weight="800" text-anchor="middle">${valFormatted}${unit}</text>
-            `;
+  // Grade leve (3 linhas)
+  [0, 0.5, 1].forEach((f) => {
+    const y = r1(padTop + f * (h - padTop - padBottom));
+    svg += `<line class="chart-grid" x1="${padX}" x2="${w - padX}" y1="${y}" y2="${y}"/>`;
   });
+
+  svg += `<path class="chart-area" d="${areaStr}" fill="url(#cmpArea)"/>`;
+  svg += `<polyline class="chart-line" pathLength="1" fill="none" stroke="#3fb950" stroke-width="3" points="${lineStr}" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>`;
+
+  if (trend && n >= 3) {
+    const x1 = coords[0].x;
+    const x2 = coords[n - 1].x;
+    svg += `<line class="chart-trend" x1="${r1(x1)}" y1="${r1(yAt(trend.start))}" x2="${r1(x2)}" y2="${r1(yAt(trend.end))}" style="stroke: ${trendColor}"/>`;
+  }
+
+  // Bolinhas: menores quando tem muita pesagem; a última sempre destacada.
+  const radius = n <= 12 ? 4 : n <= 30 ? 3 : 2;
+  coords.forEach((c, idx) => {
+    const isLast = idx === n - 1;
+    if (n > 40 && !isLast) return;
+    svg += `<circle cx="${r1(c.x)}" cy="${r1(c.y)}" r="${isLast ? radius + 1.5 : radius}" fill="${isLast ? "#f0f6fc" : "#3fb950"}" stroke="#161b22" stroke-width="2"/>`;
+  });
+
+  // Rótulos: todos com até 7 pontos; senão só primeiro, último, maior e menor.
+  const labelIdx = new Set();
+  if (n <= 7) coords.forEach((_, i) => labelIdx.add(i));
+  else {
+    labelIdx.add(0);
+    labelIdx.add(n - 1);
+    labelIdx.add(vals.indexOf(Math.max(...points.map((p) => p.val))));
+    labelIdx.add(vals.indexOf(Math.min(...points.map((p) => p.val))));
+  }
+  labelIdx.forEach((i) => {
+    const c = coords[i];
+    const anchor = c.x < 40 ? "start" : c.x > w - 40 ? "end" : "middle";
+    const dx = anchor === "start" ? -4 : anchor === "end" ? 4 : 0;
+    const y = Math.max(12, c.y - 10);
+    const cls = i === n - 1 ? "chart-label is-last" : "chart-label";
+    svg += `<text class="${cls}" x="${r1(c.x + dx)}" y="${r1(y)}" text-anchor="${anchor}">${formatMetricValue(c.val, decType)}${unit}</text>`;
+  });
+
+  // Datas no pé: primeira, do meio (se couber) e última.
+  const dateLabel = (d) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  const axisY = h - 8;
+  svg += `<text class="chart-axis" x="${padX - 4}" y="${axisY}" text-anchor="start">${dateLabel(coords[0].date)}</text>`;
+  svg += `<text class="chart-axis" x="${w - padX + 4}" y="${axisY}" text-anchor="end">${dateLabel(coords[n - 1].date)}</text>`;
+  if (n >= 5 && tSpan > 0) {
+    const mid = points[0].t + tSpan / 2;
+    svg += `<text class="chart-axis" x="${w / 2}" y="${axisY}" text-anchor="middle">${dateLabel(new Date(mid))}</text>`;
+  }
+
   svg += `</svg>`;
+  if (trend && n >= 3) {
+    svg += `<div class="chart-legend"><span class="chart-legend-line"></span>Pesagens <span class="chart-legend-dash" style="border-color: ${trendColor}"></span>Tendência</div>`;
+  }
   return svg;
 }
 
@@ -886,6 +1220,7 @@ tobaActions({
   saveWeighIn,
   deleteCurrentWeighIn,
   openMetric: (el) => openMetricCompare(el.dataset.key),
+  setComparePeriod: (el) => setComparePeriod(el.dataset.period),
   closeMetricCompare,
   openMetricAdvice: (el) => openMetricAdvice(el.dataset.key),
   openProfile,

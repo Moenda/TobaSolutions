@@ -151,18 +151,291 @@
   opacity: 0.75;
 }
 
-/* Temporadas (v1.63) */
-.pf-season {
-  margin-top: 8px;
-  padding: 6px 12px;
-  border: 1px solid rgba(227, 179, 65, 0.45);
-  border-radius: 999px;
-  background: rgba(227, 179, 65, 0.12);
-  color: var(--gold, #e3b341);
+/* 🎉 Botãozinho da Temporada (v1.64, espelho do lego no canto esquerdo) */
+.pf-season-btn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 58px;
+  padding: 5px 7px 5px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(13, 17, 23, 0.55);
+  color: var(--text-2);
   font: inherit;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.pf-season-btn.is-live {
+  border-color: rgba(227, 179, 65, 0.55);
+  color: var(--gold-2);
+}
+
+.pf-season-btn:active {
+  transform: scale(0.95);
+}
+
+.pf-season-btn-icon {
+  font-size: 1.15rem;
+  line-height: 21px;
+}
+
+.pf-season-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 0 2px var(--surface);
+  animation: pf-season-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pf-season-pulse {
+  50% { transform: scale(1.35); opacity: 0.6; }
+}
+
+/* 🎉 Telona da Temporada (v1.64) */
+.pf-ss-hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 1.6rem 1rem 1.1rem;
+  text-align: center;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(227, 179, 65, 0.16), transparent 60%),
+    var(--surface);
+}
+
+.pf-ss-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.pf-ss-hero > .pf-hero-glow {
+  position: absolute;
+  z-index: 0;
+  inset: -30% -10% 20%;
+  opacity: 0.4;
+  filter: blur(28px);
+  pointer-events: none;
+}
+
+.pf-ss-hero > .tp-fx {
+  position: absolute;
+  z-index: 0;
+}
+
+.pf-ss-icon {
+  font-size: 4rem;
+  line-height: 1.1;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.45));
+  animation: pf-ss-bob 3s ease-in-out infinite;
+}
+
+@keyframes pf-ss-bob {
+  50% { transform: translateY(-5px) rotate(-4deg); }
+}
+
+.pf-ss-name {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 900;
+}
+
+.pf-ss-dates {
+  font-weight: 800;
+  color: var(--text-2);
+}
+
+.pf-ss-status {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(13, 17, 23, 0.55);
   font-size: 0.8rem;
   font-weight: 800;
+}
+
+.pf-ss-status.is-live {
+  border-color: rgba(248, 81, 73, 0.55);
+  color: #ff7b72;
+}
+
+.pf-ss-status.is-soon {
+  border-color: rgba(227, 179, 65, 0.45);
+  color: var(--gold-2);
+}
+
+.pf-ss-status.is-done {
+  border-color: rgba(63, 185, 80, 0.5);
+  color: var(--green);
+}
+
+.pf-ss-how {
+  margin: 4px 0 0;
+  max-width: 320px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.pf-ss-trophy {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
+}
+
+.pf-ss-trophy.is-got {
+  border-color: rgba(63, 185, 80, 0.45);
+}
+
+.pf-ss-trophy-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pf-ss-trophy-text span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.pf-ss-kind {
+  margin: 0.9rem 0 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text-2);
+}
+
+.pf-ss-kind:first-child {
+  margin-top: 0;
+}
+
+.pf-ss-cal {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+}
+
+.pf-ss-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pf-ss-row.is-past {
+  opacity: 0.5;
+}
+
+.pf-ss-row.is-live {
+  background: rgba(248, 81, 73, 0.08);
+}
+
+.pf-ss-row.is-picked {
+  border-color: var(--gold-2);
+  background: rgba(227, 179, 65, 0.1);
+}
+
+.pf-ss-row-icon {
+  font-size: 1.3rem;
+  width: 28px;
+  text-align: center;
+}
+
+.pf-ss-row-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.pf-ss-row-text strong {
+  font-size: 0.85rem;
+}
+
+.pf-ss-row-text span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.pf-ss-row-badge {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--text-2);
+}
+
+.pf-ss-row.is-soon .pf-ss-row-badge {
+  color: var(--gold-2);
+}
+
+.pf-ss-row.is-live .pf-ss-row-badge {
+  color: #ff7b72;
+}
+
+/* 👆 Balãozinho "como pegou" (v1.64: segurar num item liberado) */
+.pf-how {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: min(280px, calc(100vw - 16px));
+  padding: 8px 12px;
+  border: 1px solid var(--gold-2);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  font-size: 0.8rem;
+  pointer-events: none;
+  animation: pf-how-in 0.15s ease-out;
+}
+
+.pf-how[hidden] {
+  display: none;
+}
+
+.pf-how span {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+@keyframes pf-how-in {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
+/* Segurar no item não seleciona texto nem abre menu do navegador */
+.pf-reward {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .pf-season-title {

@@ -412,3 +412,226 @@
   font-weight: 600;
   color: var(--muted);
 }
+
+/* v1.64: comparativo moderno (período, tendência e o papo reto do Cloba) */
+.compare-periods {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 0.9rem;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+}
+
+.compare-chip {
+  height: 34px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease, border-color 0.15s ease;
+}
+
+.compare-chip:hover,
+.compare-chip:focus-visible {
+  color: var(--text);
+  outline: none;
+}
+
+.compare-chip:active {
+  transform: scale(0.95);
+}
+
+.compare-chip.is-on {
+  background: rgba(63, 185, 80, 0.16);
+  border-color: rgba(63, 185, 80, 0.55);
+  color: var(--text);
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.18);
+}
+
+.weigh-chart .chart-grid {
+  stroke: var(--border-soft);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+}
+
+.weigh-chart .chart-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: chartDraw 0.7s ease-out forwards;
+}
+
+.weigh-chart .chart-area {
+  animation: chartFade 0.7s ease-out both;
+}
+
+.weigh-chart .chart-trend {
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+  stroke-linecap: round;
+  opacity: 0.9;
+  animation: chartFade 0.5s ease-out 0.5s both;
+}
+
+.weigh-chart .chart-label {
+  fill: var(--text-2);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.weigh-chart .chart-label.is-last {
+  fill: var(--text);
+  font-size: 11.5px;
+}
+
+.weigh-chart .chart-axis {
+  fill: var(--muted);
+  font-size: 9.5px;
+  font-weight: 600;
+}
+
+@keyframes chartDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes chartFade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weigh-chart .chart-line,
+  .weigh-chart .chart-area,
+  .weigh-chart .chart-trend {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+.chart-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.chart-legend-line,
+.chart-legend-dash {
+  display: inline-block;
+  width: 16px;
+  height: 0;
+  border-top: 3px solid var(--green);
+  border-radius: 2px;
+}
+
+.chart-legend-dash {
+  margin-left: 8px;
+  border-top: 2px dashed var(--blue);
+}
+
+/* Veredito da tendência */
+.trend-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 0.9rem;
+  border-left: 4px solid var(--blue);
+  background: linear-gradient(135deg, rgba(88, 166, 255, 0.1), transparent 60%), var(--surface);
+  animation: chartFade 0.4s ease-out both;
+}
+
+.trend-card.is-good {
+  border-left-color: var(--green);
+  background: linear-gradient(135deg, rgba(63, 185, 80, 0.14), transparent 60%), var(--surface);
+}
+
+.trend-card.is-bad {
+  border-left-color: var(--red);
+  background: linear-gradient(135deg, rgba(248, 81, 73, 0.14), transparent 60%), var(--surface);
+}
+
+.trend-card.is-calm {
+  border-left-color: var(--gold-2);
+  background: linear-gradient(135deg, rgba(227, 179, 65, 0.12), transparent 60%), var(--surface);
+}
+
+.trend-emoji {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+  border-radius: 12px;
+  background: var(--surface-3);
+}
+
+.trend-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.trend-kicker {
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.trend-title {
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 1px;
+}
+
+.trend-card.is-good .trend-title {
+  color: var(--green);
+}
+
+.trend-card.is-bad .trend-title {
+  color: var(--red);
+}
+
+.trend-card.is-calm .trend-title {
+  color: var(--gold-2);
+}
+
+.trend-text {
+  font-size: 0.84rem;
+  color: var(--text-2);
+  line-height: 1.4;
+  margin-top: 3px;
+}
+
+.trend-foot {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--surface-3);
+  border-radius: 999px;
+}
+
+.cmp-delta {
+  font-size: 0.68rem;
+  font-weight: 700;
+  margin-right: 8px;
+}

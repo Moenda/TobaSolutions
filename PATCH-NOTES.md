@@ -1358,3 +1358,35 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.63 - Temporadas do mundo (trofeus e itens sazonais com neve, morcego, fogos), duelo antes dos trofeus e trofeus com barrinha de %`
+
+---
+
+## v1.64 — 📈 Balança com período e tendência + 🎉 botão de Temporada no Perfil
+
+**Arquivos alterados:** `TobaHealth/TobaHealth-Pesagem.html`, `TobaHealth/js/pesagem.js`, `TobaHealth/css/pesagem.css`, `Toba-Perfil.html`, `assets/perfil.js`, `assets/perfil.css`, `CLAUDE.md`
+
+### 📈 Toba Health: evolução da balança
+1. **Escolhe o período:** em cima do gráfico agora tem os botões **Últimas 5, Últimas 10, 1 mês, 3 meses, 6 meses e Tudo**. Tocou, o gráfico, a média, o "vs Média" e a lista mudam na hora. O Toba lembra o último período escolhido (começa nas Últimas 10).
+2. **Gráfico novo:** linha com área degradê e animação, pesagens espaçadas pelo calendário de verdade, datas embaixo, a última pesagem destacada e, com muitos pontos, só os rótulos do começo, do fim, do maior e do menor (nada de número encavalado).
+3. **📏 Linha de tendência:** a reta tracejada mostra pra onde o bicho tá indo de verdade, sem o drama de uma pesagem só. Branca quando tá indo bem, vermelha quando tá indo mal, azul quando tá parado.
+4. **🗣️ Papo reto do Cloba:** um card embaixo do gráfico fala da tua tendência no período escolhido: "🧘 Estável há 3 meses, pai. Tá ótimo 👌", "🚨 Subindo +0,9% nas últimas 10. Fudeu, a gordura tá aí 💩", "🔥 Derretendo", "🎢 Sanfona" (sobe e desce mas fica no mesmo lugar) e o ritmo por mês. Vale pra toda métrica: peso, IMC, gordura, músculo, água, visceral etc. (pra músculo, subir é bom e o card fica verde).
+5. **Registros do período:** a lista embaixo mostra todas as pesagens do período, cada uma com a setinha ▲▼ de quanto mudou da anterior.
+
+### 🎉 Perfil: Temporada e como pegou
+6. **Chega de aviso fixo:** o aviso "Día de Muertos no Toba! Troféu na conta · ver itens" saiu de baixo do card do Perfil. No lugar tem um botãozinho **🎉 Temporada** no canto esquerdo do card (espelho do Personalizar), com o emoji da festa rolando ou da próxima. Tem troféu de festa pra pegar agora? Aparece um pontinho vermelho piscando.
+7. **Telona da Temporada:** o botão abre uma tela grande com a festa (rolando agora ou a próxima): emojizão, nome e ano, as datas, quanto falta pra acabar ou começar, o troféu (com a data em que tu pegou) e tudo que ela libera, separado em avatares, molduras, cores e fundos. Item liberado dá pra equipar ali mesmo. Embaixo, o **📅 Calendário do ano** com todas as festas e as datas: ✅ pegou, 🔴 agora, "em N dias", 💨 passou. Tocar numa festa do calendário mostra ela lá em cima. O ‹ e o voltar do celular fecham a tela.
+8. **Como pegou (sem poluir):** no 🧱 Personalizar (e na telona da Temporada), **segura o dedo** num item liberado e aparece um balãozinho com como ele foi ganho e a data: "⬆️ Chegou no nível 20 · 📅 12/09/2026", "🏅 Conquista: ..." ou "🎉 Participou do Halloween 2026". Tocar normal continua equipando; segurar não equipa. O texto de ajuda de cada aba ganhou o lembrete "Segura num liberado pra ver como pegou. 👆".
+
+**Dados:** Nenhuma mudança no banco. Só uma preferência nova deste aparelho, `toba_health_compare_prefs` (`{ period }`), com o período escolhido; ausente = Últimas 10. Tendência e frases são só cálculo. `sw.js` sem mudança (nenhum arquivo novo). A telona da Temporada e o balão do Perfil só leem o que o Perfil já calcula (a data do nível vem do XP acumulado dos treinos e tarefas).
+
+**Como testar:**
+- Toba Health › Pesagem › toca em Gordura: troca entre os 6 períodos e vê gráfico, média e lista mudando.
+- Período sem pesagem (ex.: 1 mês sem pesar): aparece "🦗 Nada nesse período" em vez de quebrar.
+- Com só 2 pesagens no período: card "🤏 Só 2 pesagens"; com 1, o aviso de que o gráfico precisa de 2.
+- Abre Peso, IMC e Músculo também; sai e volta: o período escolhido continua.
+- Perfil: o aviso embaixo do card sumiu e o botão 🎉 Temporada aparece no canto esquerdo. Abre: festa atual ou a próxima (hoje, 03/11, é o 🪔 Diwali, de 06/11 a 10/11), com datas, troféu e itens.
+- Toca no 🎃 Halloween no calendário: ✅ "Já passou, e tu pegou", com os itens liberados. Toca num item e ele é equipado.
+- Personalizar: segura num item liberado e vê o balão com o "como pegou" e a data; solta e o item NÃO é trocado. Segurar num bloqueado não faz nada (tocar continua mostrando como liberar).
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.64 - Balanca com periodo, linha de tendencia e papo reto do Cloba; botao de Temporada no Perfil com tela da festa e segurar no item pra ver como pegou`
