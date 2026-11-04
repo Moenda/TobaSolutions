@@ -1702,3 +1702,33 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.70 - Investimentos repaginados (resgatados em sanfona, rendimento por mes, previa do IR pela tabela regressiva, tela de aporte nova e graficos com evolucao real, por mes, ranking e futuro com aporte mensal) + Navegar com carango 3D na rua, troca de skin no meio da rota, transito ao vivo da cidade, velocimetros desbloqueaveis e mapa antigo aposentado`
+
+---
+
+## v1.71 — 📈 Investimentos mais enxuto + 🧭 Navegar sem carro do Godzilla, luz do mapa no 🎨 e farol aceso
+
+### 📈 Investimentos
+
+**Arquivos alterados:** `TobaBank/TobaBank-Investimento.html`, `TobaBank/js/investimento.js`, `TobaBank/css/investimento.css`
+
+1. **Sem botões rápidos:** saíram o +100 / +500 / +1 mil / +5 mil e o Hoje / Ontem do Saldo, Aporte, Retirar e do Novo investimento. Fica só o valor e a data (que já vem com hoje).
+2. **Resgatado mais limpo:** a frase dos pacotes de café no detalhe do investimento resgatado saiu. Fica só o "Lucro no bolso".
+
+**Dados:** Nenhuma mudança no banco.
+
+**Como testar:** abrir um investimento › abas Saldo / Aporte / Retirar: só o campo do valor e a data. + Investimento: idem. Já resgatados › tocar numa linha: sem a frase do café.
+
+### 🧭 Navegar (Toba Racing)
+
+**Arquivos alterados:** `TobaDrive/js/drive-map.js`, `TobaDrive/js/navegar.js`, `TobaDrive/TobaDrive-Navegar.html`, `sw.js` (versão `toba-v32`), `CLAUDE.md`
+
+1. **Adeus, carro do Godzilla 🦖:** o carango 3D (seta e Toba GT) agora tem sempre o mesmo tamanho na tela, em qualquer zoom. Antes, dando zoom pra fora, ele crescia até cobrir o bairro.
+2. **🌗 Luz do mapa no 🎨:** o Personalizar ganhou "Luz do mapa" (Auto, Amanhecer, Dia, Pôr do sol, Noite) no topo. Dá pra trocar no meio da rota, sem encerrar a navegação.
+3. **Carango aceso de noite + 💡 farol:** no pôr do sol, na noite e no amanhecer o Toba GT acende de vez (não fica mais quase preto) e joga um facho de farol amarelinho no chão na frente dele, girando junto. Os emojis de carro também ganham farol.
+4. **🚦 Trânsito que dá pra ver (estilo Google):** a rota virou um **risco fino** na cor do 🎨 e o trânsito vai **por baixo, numa faixa larga**: 🟢 verde livre, 🟡 amarelo lento, 🔴 vermelho pesado, vinho parado (o âmbar antigo, fino e quase da cor da rota, sumia). Os trechos parados que o TomTom manda também viram faixa larga por baixo do risco.
+
+**Dados:** Nenhuma mudança no banco (a luz escolhida continua no `toba_drive_prefs` deste aparelho, igual ao botão 🌗).
+
+**Como testar (Navegar):** 🚀 Partiu › 🎨 › Luz do mapa › 🌙 Noite: o GT fica claro e com farol no chão. Dá zoom pra fora e pra dentro com os dedos: o carango fica do mesmo tamanho. Troca pra ☀️ Dia: farol some. Com o 🚦 ligado: risco fino da rota com a faixa verde/amarela/vermelha larga por baixo, e as outras ruas coloridas também.
+
+**Commit sugerido:** `v1.71 - Investimentos sem botoes rapidos de valor/data e sem a frase do cafe no resgatado + Navegar com carango de tamanho fixo, luz do mapa no Personalizar, farol aceso de noite e transito verde/amarelo/vermelho largo por baixo do risco da rota`

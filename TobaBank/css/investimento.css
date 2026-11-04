@@ -530,43 +530,6 @@
   letter-spacing: -0.3px;
 }
 
-.inv-chips,
-.inv-date-row {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.inv-chips {
-  flex-wrap: nowrap;
-}
-
-.inv-chips .chip-btn {
-  flex: 1 1 0;
-  min-width: 0;
-  padding: 0 4px;
-  justify-content: center;
-  height: 34px;
-  font-size: 0.8rem;
-  color: var(--text-2);
-}
-
-.inv-chips .chip-btn[aria-label] {
-  flex: 0 0 34px;
-  color: var(--muted);
-}
-
-.inv-date-row .chip-btn {
-  height: 38px;
-  flex: 0 0 auto;
-}
-
-.inv-date-row .form-control {
-  flex: 1 1 120px;
-  min-width: 0;
-}
-
 .inv-panel .hint-box {
   font-size: 0.76rem;
   line-height: 1.45;

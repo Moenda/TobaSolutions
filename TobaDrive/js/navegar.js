@@ -362,7 +362,16 @@ function fitRoute() {
 // 🌗 roda as luzes do mapa (auto, amanhecer, dia, pôr do sol, noite)
 function toggleMapStyle() {
   const ids = DRIVE_LIGHTS.map((l) => l.id);
-  const next = ids[(ids.indexOf(readDrivePrefs().mapLight) + 1) % ids.length];
+  setMapLight(ids[(ids.indexOf(readDrivePrefs().mapLight) + 1) % ids.length]);
+}
+
+// v1.71: também escolhida direto no 🎨 (dá pra trocar navegando)
+function pickLight(el) {
+  setMapLight(el.dataset.id);
+  renderStyleSheet();
+}
+
+function setMapLight(next) {
   storeDrivePrefs({ mapLight: next });
   const at = nav.pos ? [nav.pos.lat, nav.pos.lng] : null;
   if (nav.map) nav.map.setLook(driveMapLook(at));
@@ -417,6 +426,9 @@ function renderStyleSheet() {
       <span class="dv-veh-pick-name">${escapeHtml(v.name)}</span>
     </button>`;
   }).join("");
+  const curLight = readDrivePrefs().mapLight;
+  document.getElementById("lightChips").innerHTML = DRIVE_LIGHTS.map((l) =>
+    chip(`${l.icon} ${escapeHtml(l.id === "auto" ? "Auto" : l.name)}`, "pickLight", { id: l.id }, l.id === curLight ? " is-on" : "")).join("");
   const curColor = readDrivePrefs().routeColor;
   document.getElementById("routeColorChips").innerHTML = DRIVE_ROUTE_COLORS.map((c) =>
     `<button type="button" class="dv-color${c.id === curColor ? " is-on" : ""}" data-click="pickRouteColor" data-id="${c.id}" style="--c: ${c.color}" aria-label="${escapeHtml(c.name)}"></button>`).join("");
@@ -1123,6 +1135,7 @@ tobaActions({
   pickVehicle,
   pickRouteColor,
   pickSpeedo,
+  pickLight,
   openOut,
   openGoogleMaps,
   openWaze,

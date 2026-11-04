@@ -25,8 +25,25 @@ const DRIVE_MAPBOX_TRAFFIC = "mapbox://mapbox.mapbox-traffic-v1";
 const DRIVE_MAPBOX_WAIT_MS = 15000;
 const DRIVE_TRAFFIC_RELOAD_MS = 3 * 60 * 1000;
 const DRIVE_CAR_GLIDE_MS = 850;
+// v1.71: tamanho do carango 3D NA TELA (px de LARGURA: no modo jogo ele é visto de
+// trás, então a largura é o que aparece), igual em qualquer zoom
+// (v1.70 crescia no zoom pra fora: o "carro do Godzilla")
+const DRIVE_CAR_PX = 34;
+const DRIVE_MODEL_WIDTH_M = { gt: 1.9, arrow: 3.8 }; // largura dos modelos do drive-models.js
+// v1.71: farol no chão (cone amarelinho na frente do carango) de noite / pôr do sol / amanhecer
+const DRIVE_BEAM_LOOKS = ["night", "dusk", "dawn"];
+
+// Brilho próprio do modelo 3D (model-emissive-strength): seta é marcador (sempre acesa);
+// o GT pega a luz do mapa de dia e acende de vez de noite (v1.71: antes ficava quase preto)
+function driveModelGlow(kind, look) {
+  if (kind === "arrow") return 0.9;
+  return { night: 1, dusk: 0.85, dawn: 0.6 }[look] ?? 0.3;
+}
 const DRIVE_GAME_PITCH = 60;
-const DRIVE_TRAFFIC_COLORS = { moderate: "#f59e0b", heavy: "#ef4444", severe: "#991b1b" };
+// v1.71: amarelo de verdade no lento (o âmbar da v1.70 se misturava com a rota laranja)
+const DRIVE_TRAFFIC_COLORS = { low: "#22c55e", moderate: "#facc15", heavy: "#ef4444", severe: "#b91c1c" };
+// v1.71: faixa do trânsito larga, por baixo do risco fino da rota
+const DRIVE_TRAFFIC_WIDTH = ["interpolate", ["linear"], ["zoom"], 10, 3, 13, 7, 15, 11, 16, 14, 18, 22, 19, 28];
 const DRIVE_LIGHTS = [
   { id: "auto", icon: "🌗", name: "Automático (pelo sol)" },
   { id: "dawn", icon: "🌅", name: "Amanhecer" },
@@ -148,8 +165,18 @@ async function driveMapboxMap(box, center, zoom) {
   });
 
   const empty = { type: "FeatureCollection", features: [] };
-  // Rota: uma fonte, linha escura por baixo e a cor (trechos parados do TomTom por cima)
+  // v1.71: a rota é um risco fino por cima; o trânsito (Mapbox e trechos parados do TomTom)
+  // vai POR BAIXO, mais largo, e aparece como faixa colorida em volta do risco.
   map.addSource("dv-route", { type: "geojson", data: empty });
+  map.addLayer({
+    id: "dv-route-jam",
+    type: "line",
+    source: "dv-route",
+    slot: "top",
+    filter: ["==", ["get", "k"], "jam"],
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": ["get", "color"], "line-width": DRIVE_TRAFFIC_WIDTH, "line-opacity": 0.95, "line-emissive-strength": 1 },
+  });
   map.addLayer({
     id: "dv-route-casing",
     type: "line",
@@ -157,39 +184,61 @@ async function driveMapboxMap(box, center, zoom) {
     slot: "top",
     filter: ["==", ["get", "k"], "base"],
     layout: { "line-cap": "round", "line-join": "round" },
-    paint: { "line-color": "#0d1117", "line-opacity": 0.6, "line-width": ["interpolate", ["linear"], ["zoom"], 12, 6, 16, 12, 19, 30], "line-emissive-strength": 1 },
+    paint: { "line-color": "#0d1117", "line-opacity": 0.75, "line-width": ["interpolate", ["linear"], ["zoom"], 12, 4.5, 16, 8, 19, 16], "line-emissive-strength": 1 },
   });
   map.addLayer({
     id: "dv-route-line",
     type: "line",
     source: "dv-route",
     slot: "top",
-    layout: { "line-cap": "round", "line-join": "round", "line-sort-key": ["get", "z"] },
-    paint: { "line-color": ["get", "color"], "line-width": ["interpolate", ["linear"], ["zoom"], 12, 3.5, 16, 8, 19, 20], "line-emissive-strength": 1 },
+    filter: ["==", ["get", "k"], "base"],
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": ["get", "color"], "line-width": ["interpolate", ["linear"], ["zoom"], 12, 2.5, 16, 5, 19, 11], "line-emissive-strength": 1 },
   });
 
-  // 🚦 Trânsito ao vivo (Mapbox Traffic): só o que tá lento/parado, mais fino que a rota
+  // 🚦 Trânsito ao vivo (Mapbox Traffic): verde livre, amarelo lento, vermelho pesado, vinho parado.
+  // Fica embaixo da rota (beforeId "dv-route-jam"), mais largo que ela.
   let trafficOk = true;
   let trafficTimer = null;
   try {
     map.addSource("dv-traffic", { type: "vector", url: DRIVE_MAPBOX_TRAFFIC });
+    const trafficFilter = ["match", ["get", "congestion"], ["low", "moderate", "heavy", "severe"], true, false];
+    const trafficOffset = ["interpolate", ["linear"], ["zoom"], 12, 0.5, 16, 2, 19, 5];
+    const vis = readDrivePrefs().traffic ? "visible" : "none";
+    // borda escura: separa o trânsito da rua clara
+    map.addLayer({
+      id: "dv-traffic-casing",
+      type: "line",
+      source: "dv-traffic",
+      "source-layer": "traffic",
+      slot: "top",
+      filter: trafficFilter,
+      layout: { "line-cap": "round", "line-join": "round", visibility: vis },
+      paint: {
+        "line-color": "#0d1117",
+        "line-width": ["interpolate", ["linear"], ["zoom"], 10, 4.5, 13, 9, 15, 13.5, 16, 16.5, 18, 25, 19, 31],
+        "line-offset": trafficOffset,
+        "line-opacity": 0.5,
+        "line-emissive-strength": 1,
+      },
+    }, "dv-route-jam");
     map.addLayer({
       id: "dv-traffic",
       type: "line",
       source: "dv-traffic",
       "source-layer": "traffic",
       slot: "top",
-      filter: ["match", ["get", "congestion"], ["moderate", "heavy", "severe"], true, false],
-      layout: { "line-cap": "round", "line-join": "round", visibility: readDrivePrefs().traffic ? "visible" : "none" },
+      filter: trafficFilter,
+      layout: { "line-cap": "round", "line-join": "round", "line-sort-key": ["match", ["get", "congestion"], "severe", 3, "heavy", 2, "moderate", 1, 0], visibility: vis },
       paint: {
-        "line-color": ["match", ["get", "congestion"], "severe", DRIVE_TRAFFIC_COLORS.severe, "heavy", DRIVE_TRAFFIC_COLORS.heavy, DRIVE_TRAFFIC_COLORS.moderate],
-        "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.2, 14, 2.5, 17, 5, 19, 10],
+        "line-color": ["match", ["get", "congestion"], "severe", DRIVE_TRAFFIC_COLORS.severe, "heavy", DRIVE_TRAFFIC_COLORS.heavy, "moderate", DRIVE_TRAFFIC_COLORS.moderate, DRIVE_TRAFFIC_COLORS.low],
+        "line-width": DRIVE_TRAFFIC_WIDTH,
         // mão e contramão lado a lado (cada sentido vem numa linha)
-        "line-offset": ["interpolate", ["linear"], ["zoom"], 12, 0.6, 16, 2.5, 19, 6],
-        "line-opacity": 0.92,
+        "line-offset": trafficOffset,
+        "line-opacity": ["match", ["get", "congestion"], "low", 0.75, 0.95],
         "line-emissive-strength": 1,
       },
-    });
+    }, "dv-route-jam");
   } catch (err) {
     trafficOk = false;
     console.warn("Trânsito do Mapbox não entrou:", err?.message || err);
@@ -203,6 +252,16 @@ async function driveMapboxMap(box, center, zoom) {
     }
   };
   if (trafficOk) trafficTimer = setInterval(trafficTick, DRIVE_TRAFFIC_RELOAD_MS);
+
+  // 💡 farol: dois cones no chão (de fora mais fraco, de dentro mais forte)
+  map.addSource("dv-car-beam", { type: "geojson", data: empty });
+  map.addLayer({
+    id: "dv-car-beam",
+    type: "fill",
+    source: "dv-car-beam",
+    slot: "top",
+    paint: { "fill-color": "#fff3b0", "fill-opacity": ["get", "a"], "fill-emissive-strength": 1, "fill-antialias": true },
+  });
 
   // 🚗 Carango: modelo 3D (seta / Toba GT) ou emoji em pé no chão com sombra
   map.addSource("dv-car", { type: "geojson", data: empty });
@@ -229,8 +288,8 @@ async function driveMapboxMap(box, center, zoom) {
     layout: { "model-id": ["get", "model"] },
     paint: {
       "model-type": "common-3d",
-      // exagerado de propósito (carro de 4 m some no zoom de rua): ~30-40 px na tela
-      "model-scale": ["interpolate", ["exponential", 2], ["zoom"], 13, ["literal", [88, 88, 88]], 17, ["literal", [11, 11, 11]], 19, ["literal", [4, 4, 4]]],
+      // tamanho certo na tela vem do carScale() (muda a cada zoom)
+      "model-scale": ["literal", [8, 8, 8]],
       // modelo nasce olhando pro sul: +180 = olhando pro rumo
       "model-rotation": ["literal", [0, 0, 180]],
       "model-cast-shadows": true,
@@ -274,13 +333,60 @@ async function driveMapboxMap(box, center, zoom) {
   box.classList.add("is-3d");
   box.classList.toggle("is-dark", look === "night" || look === "dusk");
 
+  // metros por pixel da tela no zoom de agora (mundo do Mapbox = 512 px no zoom 0)
+  const metersPerPx = (lat) => (40075016.686 * Math.cos((lat * Math.PI) / 180)) / (512 * 2 ** map.getZoom());
+  // escala do modelo pra ele ter sempre DRIVE_CAR_PX na tela (v1.71)
+  let lastScale = 0;
+  const carScale = () => {
+    if (!car.shown) return;
+    const w = DRIVE_MODEL_WIDTH_M[car.props?.mkind] || 1.9;
+    const s = Math.max(0.6, Math.min(900, (DRIVE_CAR_PX * metersPerPx(car.shown.lat)) / w));
+    if (Math.abs(s - lastScale) / (lastScale || 1) < 0.02) return;
+    lastScale = s;
+    try {
+      map.setPaintProperty("dv-car-model", "model-scale", ["literal", [s, s, s]]);
+    } catch (err) {
+      /* camada fora */
+    }
+  };
+  // cone do farol: sai da frente do carango pro rumo (em px da tela convertidos pra metros)
+  const offset = (lat, lng, h, m) => {
+    const r = (h * Math.PI) / 180;
+    return [lng + (Math.sin(r) * m) / (111320 * Math.cos((lat * Math.PI) / 180)), lat + (Math.cos(r) * m) / 110540];
+  };
+  const beamFeatures = () => {
+    const p = car.props;
+    if (!car.shown || !p?.beam || !DRIVE_BEAM_LOOKS.includes(api.look)) return [];
+    const { lat, lng, h } = car.shown;
+    const mpp = metersPerPx(lat);
+    const cone = (len, spread, a) => {
+      // sai de baixo do carango (o modelo cobre o começo do cone)
+      const nose = offset(lat, lng, h, p.kind === "model" && lastScale ? 0.6 * lastScale : 8 * mpp);
+      const tip = offset(nose[1], nose[0], h, len * mpp);
+      const side = (base, w) => [offset(base[1], base[0], h + 90, w * mpp), offset(base[1], base[0], h - 90, w * mpp)];
+      const [nl, nr] = side(nose, 9);
+      const [tl, tr] = side(tip, spread);
+      return { type: "Feature", properties: { a }, geometry: { type: "Polygon", coordinates: [[nl, tl, tr, nr, nl]] } };
+    };
+    const strong = api.look === "night" ? 1 : 0.7;
+    return [cone(120, 46, 0.16 * strong), cone(85, 26, 0.26 * strong)];
+  };
   const carRender = () => {
     if (!car.shown || !car.props) return;
     const p = car.props;
     const props = { ...p, rot: p.rot ?? 0 };
     map.getSource("dv-car")?.setData({ type: "Feature", properties: props, geometry: { type: "Point", coordinates: [car.shown.lng, car.shown.lat] } });
-    if (p.kind === "model") map.setPaintProperty("dv-car-model", "model-rotation", ["literal", [0, 0, (car.shown.h + 180) % 360]]);
+    if (p.kind === "model") {
+      map.setPaintProperty("dv-car-model", "model-rotation", ["literal", [0, 0, (car.shown.h + 180) % 360]]);
+      carScale();
+    }
+    map.getSource("dv-car-beam")?.setData({ type: "FeatureCollection", features: beamFeatures() });
   };
+  // zoom mudou: carango no mesmo tamanho na tela e farol acompanhando
+  map.on("zoom", () => {
+    if (car.props?.kind === "model") carScale();
+    if (car.props?.beam) map.getSource("dv-car-beam")?.setData({ type: "FeatureCollection", features: beamFeatures() });
+  });
   // desliza do ponto mostrado até o novo em DRIVE_CAR_GLIDE_MS (giro pelo lado mais curto)
   const carStep = () => {
     car.raf = 0;
@@ -375,8 +481,7 @@ async function driveMapboxMap(box, center, zoom) {
         const kind = veh.face === "model" ? "gt" : "arrow";
         const id = `dv-${kind}-${color.replace("#", "")}`;
         ensureModel(id, kind, color);
-        const dark = api.look === "night" || api.look === "dusk";
-        props = { kind: "model", model: id, em: kind === "arrow" ? 0.85 : dark ? 0.7 : 0.3, glow: color, glowA: isNav ? 0.55 : 0.4 };
+        props = { kind: "model", model: id, mkind: kind, em: driveModelGlow(kind, api.look), beam: kind === "gt", glow: color, glowA: isNav ? 0.55 : 0.4 };
       } else {
         const base = ensureEmoji(veh);
         // na tela: rumo menos o giro do mapa (o emoji de lado vira pro lado que anda)
@@ -385,7 +490,7 @@ async function driveMapboxMap(box, center, zoom) {
         let rot = 0;
         if (veh.face === "left" && screen > 0 && screen < 180) img = `${base}-r`;
         if (veh.face === "up") rot = Math.round(screen - 45); // 🚀 já nasce apontando pra 45°
-        props = { kind: "emoji", img, rot, glow: "#000000", glowA: 0.5 };
+        props = { kind: "emoji", img, rot, beam: veh.face === "left", glow: "#000000", glowA: 0.5 };
       }
       car.props = props;
       // pulo grande (1ª vez, GPS doido) = aparece direto; senão desliza
@@ -415,11 +520,14 @@ async function driveMapboxMap(box, center, zoom) {
         /* estilo sem luz: ignora */
       }
       box.classList.toggle("is-dark", next === "night" || next === "dusk");
+      // carango e farol na luz nova (brilho do GT, farol liga/desliga)
+      if (car.props?.kind === "model") car.props.em = driveModelGlow(car.props.mkind, next);
+      carRender();
     },
     setTraffic(on) {
       if (trafficOk) {
         try {
-          map.setLayoutProperty("dv-traffic", "visibility", on ? "visible" : "none");
+          ["dv-traffic-casing", "dv-traffic"].forEach((id) => map.setLayoutProperty(id, "visibility", on ? "visible" : "none"));
           if (on) trafficTick();
         } catch (err) {
           /* camada fora */

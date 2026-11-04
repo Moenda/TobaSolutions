@@ -237,11 +237,7 @@
       <div class="inv-panel" id="invPanelBal" hidden>
         <label class="inv-big-label" for="popupBalAmount">Quanto tem lá hoje?</label>
         <input type="text" inputmode="numeric" id="popupBalAmount" class="form-control smart-money inv-big-input" placeholder="0,00" data-input="updateInvPreview" />
-        <div class="inv-date-row">
-          <button type="button" class="chip-btn" data-click="setInvDate" data-target="popupBalDate" data-ago="0">Hoje</button>
-          <button type="button" class="chip-btn" data-click="setInvDate" data-target="popupBalDate" data-ago="1">Ontem</button>
-          <input type="date" id="popupBalDate" class="form-control" data-change="updateInvPreview" />
-        </div>
+        <input type="date" id="popupBalDate" class="form-control" data-change="updateInvPreview" />
         <div class="hint-box" id="invBalPreview"></div>
         <button type="button" class="btn btn-outline btn-blue" data-click="submitPopupBalance">🔄 Atualizar saldo</button>
       </div>
@@ -250,18 +246,7 @@
       <div class="inv-panel" id="invPanelDep" hidden>
         <label class="inv-big-label" for="popupDepAmount" id="invDepLabel">Quanto você colocou?</label>
         <input type="text" inputmode="numeric" id="popupDepAmount" class="form-control smart-money inv-big-input" placeholder="0,00" data-input="updateInvPreview" />
-        <div class="inv-chips">
-          <button type="button" class="chip-btn" data-click="addQuickMoney" data-target="popupDepAmount" data-add="100">+100</button>
-          <button type="button" class="chip-btn" data-click="addQuickMoney" data-target="popupDepAmount" data-add="500">+500</button>
-          <button type="button" class="chip-btn" data-click="addQuickMoney" data-target="popupDepAmount" data-add="1000">+1 mil</button>
-          <button type="button" class="chip-btn" data-click="addQuickMoney" data-target="popupDepAmount" data-add="5000">+5 mil</button>
-          <button type="button" class="chip-btn" data-click="clearQuickMoney" data-target="popupDepAmount" aria-label="Limpar">✕</button>
-        </div>
-        <div class="inv-date-row">
-          <button type="button" class="chip-btn" data-click="setInvDate" data-target="popupDepDate" data-ago="0">Hoje</button>
-          <button type="button" class="chip-btn" data-click="setInvDate" data-target="popupDepDate" data-ago="1">Ontem</button>
-          <input type="date" id="popupDepDate" class="form-control" />
-        </div>
+        <input type="date" id="popupDepDate" class="form-control" />
         <div class="hint-box is-green" id="invDepPreview"></div>
         <button type="button" class="btn btn-primary" data-click="submitPopupDeposit">✅ Confirmar aporte</button>
       </div>
@@ -270,11 +255,7 @@
       <div class="inv-panel" id="invPanelWd" hidden>
         <label class="inv-big-label" for="popupWithdrawAmount" id="invWdLabel">Quanto saiu?</label>
         <input type="text" inputmode="numeric" id="popupWithdrawAmount" class="form-control smart-money inv-big-input" placeholder="0,00" data-input="updateInvPreview" />
-        <div class="inv-date-row">
-          <button type="button" class="chip-btn" data-click="setInvDate" data-target="popupWithdrawDate" data-ago="0">Hoje</button>
-          <button type="button" class="chip-btn" data-click="setInvDate" data-target="popupWithdrawDate" data-ago="1">Ontem</button>
-          <input type="date" id="popupWithdrawDate" class="form-control" />
-        </div>
+        <input type="date" id="popupWithdrawDate" class="form-control" />
         <div class="hint-box" id="invWdPreview"></div>
         <button type="button" class="btn btn-outline btn-gold" id="popupWithdrawBtn" data-click="submitPopupWithdraw">Efetuar retirada</button>
       </div>
@@ -475,21 +456,10 @@
         <div class="form-group">
           <label for="fundInitialAmountInput">Aporte inicial (R$)</label>
           <input type="text" inputmode="numeric" id="fundInitialAmountInput" class="form-control smart-money inv-big-input" placeholder="0,00" required />
-          <div class="inv-chips" style="margin-top: 8px">
-            <button type="button" class="chip-btn" data-click="addQuickMoney" data-target="fundInitialAmountInput" data-add="100">+100</button>
-            <button type="button" class="chip-btn" data-click="addQuickMoney" data-target="fundInitialAmountInput" data-add="1000">+1 mil</button>
-            <button type="button" class="chip-btn" data-click="addQuickMoney" data-target="fundInitialAmountInput" data-add="5000">+5 mil</button>
-            <button type="button" class="chip-btn" data-click="addQuickMoney" data-target="fundInitialAmountInput" data-add="10000">+10 mil</button>
-            <button type="button" class="chip-btn" data-click="clearQuickMoney" data-target="fundInitialAmountInput" aria-label="Limpar">✕</button>
-          </div>
         </div>
         <div class="form-group">
           <label for="fundInitialDateInput">Data</label>
-          <div class="inv-date-row">
-            <button type="button" class="chip-btn" data-click="setInvDate" data-target="fundInitialDateInput" data-ago="0">Hoje</button>
-            <button type="button" class="chip-btn" data-click="setInvDate" data-target="fundInitialDateInput" data-ago="1">Ontem</button>
-            <input type="date" id="fundInitialDateInput" class="form-control" required />
-          </div>
+          <input type="date" id="fundInitialDateInput" class="form-control" required />
         </div>
         <div class="form-group" id="fundExemptGroup">
           <label>Imposto de renda</label>

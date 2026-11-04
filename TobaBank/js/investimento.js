@@ -155,12 +155,6 @@ function daysBetween(a, b) {
   return Math.round((parseIsoLocal(b) - parseIsoLocal(a)) / DAY_MS);
 }
 
-function isoDaysAgo(n) {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return toIsoDate(d);
-}
-
 // "05/08/26"
 function shortBrDate(iso) {
   if (!iso) return "N/A";
@@ -617,16 +611,9 @@ function openFinishedActionPopup(id) {
 
   document.getElementById("popupFinishedHero").innerHTML = `
     <div class="inv-hero-label">Lucro no bolso</div>
-    <div class="inv-hero-value ${n.profit >= 0 ? "text-green" : "text-red"}">${signedMoney(n.profit)}</div>
-    <div class="inv-hero-tip">${n.profit > 0 ? finishedJoke(n) : "Nem todo investimento é um Opala. Bola pra frente! 🙏"}</div>`;
+    <div class="inv-hero-value ${n.profit >= 0 ? "text-green" : "text-red"}">${signedMoney(n.profit)}</div>`;
 
   openTobaModal("finishedActionPopup");
-}
-
-function finishedJoke(n) {
-  const coffees = Math.floor(n.profit / 12);
-  if (coffees >= 2) return `Deu pra ${coffees.toLocaleString("pt-BR")} pacotes de café pra V60 ☕ (R$ 12 cada)`;
-  return "Pouquinho, mas é lucro. Nunca foi sorte! 🙏";
 }
 
 // Números de um investimento resgatado (mesma conta de antes + prazo e IR).
@@ -1161,28 +1148,6 @@ function updateInvPreview() {
       box.innerHTML = `Saldo fica em <b>${formatCurrency(stats.balance - amount)}</b>.<br><small>Pra encerrar de vez, use 🏁 Finalizar.</small>`;
     }
   }
-}
-
-function addQuickMoney(el) {
-  const input = document.getElementById(el.dataset.target);
-  if (!input) return;
-  const next = getMoney(el.dataset.target) + (Number(el.dataset.add) || 0);
-  input.value = formatMoneyInput(next);
-  input.dispatchEvent(new Event("input", { bubbles: true }));
-}
-
-function clearQuickMoney(el) {
-  const input = document.getElementById(el.dataset.target);
-  if (!input) return;
-  input.value = "";
-  input.dispatchEvent(new Event("input", { bubbles: true }));
-}
-
-function setInvDate(el) {
-  const input = document.getElementById(el.dataset.target);
-  if (!input) return;
-  input.value = isoDaysAgo(Number(el.dataset.ago) || 0);
-  input.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
 function toggleFundExempt(el) {
@@ -1947,9 +1912,6 @@ tobaActions({
   toggleChartAsset: (el) => toggleChartAsset(el.dataset.id),
   switchInvAction: (el) => switchInvAction(el.dataset.tab),
   updateInvPreview,
-  addQuickMoney,
-  clearQuickMoney,
-  setInvDate,
   toggleFundExempt,
   setNewFundExempt: (el) => setNewFundExempt(el.dataset.exempt),
   openEditFundNameModalFromPopup,
