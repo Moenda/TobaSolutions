@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v1.75: o Toba no Android Auto usa os modelos da Car App Library (app de navegação). -->
+<automotiveApp>
+    <uses name="template" />
+</automotiveApp>

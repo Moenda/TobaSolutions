@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v1.75: ícone de manobra do Android Auto (desenhado em código, sem imagem de fora) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:pathData="M32,42 L32,20 A8,8 0 0 0 16,20 L16,31"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M16.0,39.0 L7.0,27.0 L25.0,27.0 Z"
+        android:fillColor="#FFFFFFFF" />
+</vector>

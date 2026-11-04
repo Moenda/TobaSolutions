@@ -1778,3 +1778,24 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 **Como testar:** Sai da conta (ou abre no APK) › ☁️ Conta › Entrar: não tem mais botão do Google. Digita o Gmail › 🔑 Esqueci / criar senha › abre o e-mail, cria a senha › Entrar com e-mail + senha: aparecem teus dados de sempre. Teste extra: Criar conta com esse mesmo Gmail cai no Entrar com o aviso do 🔑.
 
 **Commit sugerido:** `v1.74 - Conta sem login com Google (so e-mail e senha), botao Esqueci/criar senha pra conta antiga do Google e aviso quando o e-mail ja tem conta`
+
+---
+
+## v1.75 — 🚘 Toba no Android Auto: o 🧭 Navegar foi pro painel do carango (APK 1.4)
+
+**Arquivos novos/alterados:** `TobaAndroid/app/build.gradle` (versionCode 5 / versionName 1.4, Car App Library, pasta `auto`), `TobaAndroid/build.gradle`, `TobaAndroid/app/src/main/AndroidManifest.xml`, `TobaAndroid/app/auto/br/com/toba/auto/` (NOVO: `TobaCarAppService.java`, `TobaCarSession.java`, `HomeScreen.java`, `SearchScreen.java`, `RecentScreen.java`, `PreviewScreen.java`, `NavEngine.java`, `MapRenderer.java`, `Maneuvers.java`, `Voice.java`, `NavService.java`, `TobaApi.java`, `Route.java`, `Place.java`, `Geo.java`, `AutoStore.java`), `TobaAndroid/app/src/main/res/xml/automotive_app_desc.xml` (NOVO), `TobaAndroid/app/src/main/res/drawable/ic_turn_*.xml` (NOVOS, 10 ícones de manobra), `TobaAndroid/README.md` (seção 6), `CLAUDE.md` (seções 1, 2, 3.14 e 4.1), `PATCH-NOTES.md`.
+
+1. **O Toba aparece no Android Auto:** na tela do carro, ícone de apps → **Toba**. Abre o mapa com o carango no meio, seguindo o rumo, de dia claro e de noite escuro (vai junto com o farol do carro).
+2. **Buscar e Recentes:** busca pelo TomTom (o mesmo do Navegar do site), já perto de onde você está, com a distância de cada resultado. O teclado só abre com o carro parado (regra do Android Auto); andando, use os **Recentes** (os últimos 12 destinos).
+3. **Prévia da rota:** antes de sair, o mapa mostra a rota inteira, o tempo, os km e quanto o trânsito tá comendo ("🚦 +8 min de trânsito" ou "✅ caminho livre"). **Bora!** começa.
+4. **Navegando:** cartão da próxima manobra com seta, nome da rua e distância, a manobra seguinte embaixo, chegada prevista colorida pelo trânsito (verde, amarelo, vermelho) e a voz do Toba em pt-BR que abaixa a música ("Em 400 metros, vire à direita na Rua Augusta"). Saiu da rota? "Recalculando. Calma que o Cloba acha outro caminho." Chegou: **🏁 Chegou! Nunca foi sorte, Cloba. Nunca foi sorte.** Botões **Parar** e **Mudo/Som**.
+5. **🧪 Simular:** na prévia, o botão **Simular** dirige sozinho a 50 km/h pela rota. Dá pra testar tudo no PC (DHU) ou parado na garagem.
+6. **Funciona com a tela do celular apagada:** enquanto tem rota, aparece a notificação "🧭 Navegar no Android Auto" e o GPS segue firme.
+7. **"Ok Google, navegar até ... com o Toba":** o Android Auto pode mandar o destino pelo Assistente (em app de fora da loja às vezes o Google não oferece; aí é pelo Buscar).
+8. **Sem chave nova no APK:** o carro lê as chaves do TomTom e do Mapbox do próprio site. Trocou a chave lá? O carro pega sozinho.
+
+**Dados:** Nenhuma mudança nos bancos do site (`TOBA_DRIVE_DB` e o resto continuam iguais, nada é apagado). O que é do carro fica numa gaveta nova do próprio app no celular (`toba_auto`: recentes, mudo e um diário das viagens do carro). Os ⭐ favoritos, os km navegados e as conquistas do Navegar do site ainda não conversam com o carro (fica pra um próximo patch, pela ponte do app). APK novo: **1.4** (versionCode 5), instala **por cima** do 1.3 com a mesma chave `.jks`, sem perder nada.
+
+**Como testar:** gerar o APK 1.4 assinado (README do TobaAndroid, seção 1) e instalar por cima. No celular: Android Auto → tocar 10× em "Versão" → ⋮ → Configurações do desenvolvedor → **Fontes desconhecidas**. **No PC:** SDK Manager → SDK Tools → "Android Auto Desktop Head Unit Emulator"; Android Auto → ⋮ → Iniciar servidor da unidade principal; `adb forward tcp:5277 tcp:5277` e abrir o `desktop-head-unit.exe` (passo a passo na seção 6.2 do README). No DHU: Toba → libera a localização no celular → Buscar "padaria" → escolher → Simular: o carango anda, a voz fala as manobras e no fim chega com o 🏁. **No Peugeot:** plugar o celular, Toba no menu de apps, Buscar parado → Bora!.
+
+**Commit sugerido:** `v1.75 - Android Auto no APK 1.4: Navegar na tela do carro com busca TomTom, recentes, previa da rota com transito, manobra com voz, recalculo, chegada, simulador e mapa Mapbox dia/noite`

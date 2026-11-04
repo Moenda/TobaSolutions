@@ -1,4 +1,4 @@
-// Toba Android: só o "envelope" do site. Nenhuma biblioteca extra.
+// Toba Android: o "envelope" do site + Android Auto (desde v1.75: só a Car App Library).
 plugins {
     id 'com.android.application' version '8.7.3' apply false
 }

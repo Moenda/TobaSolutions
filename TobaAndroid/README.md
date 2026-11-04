@@ -6,8 +6,9 @@ App Android que abre o site do Toba (`https://moenda.github.io/TobaSolutions/`) 
 - **Lembretes de verdade:** 08:00 / 14:00 / 22:00 (gastos), pesagem e treino, avisados pelo próprio Toba, mesmo com o app fechado.
 - **Fim do descanso** no treino ao vivo na hora certa, mesmo com a tela apagada.
 - Backup salvo direto em `Downloads/Toba`.
+- **🚘 Android Auto (APK 1.4, desde v1.75):** o 🧭 Navegar na tela do carro, com mapa, voz, trânsito do TomTom e recálculo. Ver a seção 6.
 
-Projeto Java puro, sem bibliotecas. Não entra no site (o `sw.js` não precisa dele).
+Projeto Java puro. Única biblioteca (desde o APK 1.4): a **Car App Library** do Android Auto. Não entra no site (o `sw.js` não precisa dele).
 
 ---
 
@@ -67,6 +68,41 @@ Gastos / Pesagem / Treinos → ⚙️ → 🔔 Lembretes. No app, o botão vira 
 
 **Toba Routine (APK 1.2+):** toda tarefa com horário avisa na hora e, se continuar sem fazer, cobra de novo depois de 30 min e de 2 h (canal "Cobranças da rotina"). A notificação tem o botão **✅ Feito**: marca a tarefa sem abrir o app e cancela as cobranças do dia; o XP entra quando você abrir o Toba. Os avisos dos próximos 3 dias são refeitos cada vez que você abre o portal ou o Routine.
 
+## 6. 🚘 Android Auto (APK 1.4+)
+
+O Toba aparece no Android Auto como app de **navegação**: tela do carro com mapa, botões **Buscar** e **Recentes**, prévia da rota (tempo, km e trânsito) e **Bora!**. Navegando: cartão da próxima manobra, chegada prevista, voz em pt-BR que abaixa a música, recálculo quando sai da rota e "🏁 Chegou! Nunca foi sorte, Cloba." no fim.
+
+- **Rota e busca:** TomTom (a mesma chave do Navegar do site). **Mapa:** Mapbox (estilos de navegação dia/noite, seguindo o farol do carro). As chaves **não ficam no APK**: o app lê do próprio site (`assets/toba-maps.js`) e guarda no celular. Trocou a chave no site? O carro pega sozinho.
+- **Teclado só com o carro parado** (regra do Android Auto). Andando, use **Recentes**.
+- **Simular:** na prévia da rota, o botão **Simular** dirige sozinho a 50 km/h pela rota. Serve pra testar no PC ou parado na garagem.
+- O que é do carro fica no celular (`toba_auto`: recentes, mudo e um diário das viagens). Os ⭐ favoritos, os km e as conquistas do Navegar do site **ainda não** conversam com o carro.
+
+### 6.1 Liberar o Android Auto pra app de fora da Play Store (1 vez)
+
+1. No celular: **Configurações → Dispositivos conectados → Preferências de conexão → Android Auto** (na Samsung: Configurações → Conexões → Android Auto). Ou abra o app **Android Auto**.
+2. Role até o fim e toque **10 vezes em "Versão"** → aceite o modo desenvolvedor.
+3. **⋮ (canto de cima) → Configurações do desenvolvedor → marque "Fontes desconhecidas"** (*Unknown sources*). Sem isso o Toba não aparece no carro.
+4. Instale o APK 1.4 (seção 2) e abra o Toba uma vez no celular.
+5. Configurações → Apps → Toba → **Permissões → Localização → Permitir durante o uso** (o carro também pede na 1ª vez). Samsung: **Bateria → Sem restrições**.
+
+### 6.2 Testar no PC (DHU, sem carro)
+
+1. Android Studio → **Tools → SDK Manager → SDK Tools** → marque **Android Auto Desktop Head Unit Emulator** → Apply.
+2. No celular (com o 6.1 feito): app Android Auto → **⋮ → Iniciar servidor da unidade principal** (*Start head unit server*).
+3. Cabo USB + depuração USB ligada. No PowerShell:
+   ```powershell
+   & "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" forward tcp:5277 tcp:5277
+   & "$env:LOCALAPPDATA\Android\Sdk\extras\google\auto\desktop-head-unit.exe"
+   ```
+4. Na janela do DHU: toque no ícone de apps → **Toba**. Buscar → escolha um destino → **Simular**.
+
+### 6.3 No carro (Peugeot)
+
+1. Com o 6.1 feito, plugue o celular no cabo do carro (ou sem fio, se o Peugeot tiver).
+2. Na tela do carro: ícone de apps → **Toba**. Não apareceu? No celular: Android Auto → **Personalizar o acesso rápido/Iniciador** e marque o Toba.
+3. Parado: **Buscar** → destino → **Bora!**. Andando, só **Recentes** e os botões grandes.
+4. Deu ruim? O aviso aparece na própria tela do carro (sem internet, chave recusada, cota do dia). A rota tem trava de 300 por dia.
+
 ---
 
 ## Para quem for mexer no código
@@ -75,4 +111,5 @@ Gastos / Pesagem / Treinos → ⚙️ → 🔔 Lembretes. No app, o botão vira 
 - `TobaBridge.java`: vira `window.TobaNative` no site. O site testa `TOBA_NATIVE` / `tobaIsApp()` (toba-common.js); no navegador é `null`.
 - `PurchaseListener.java` + `PurchaseParser.java`: leem as notificações e guardam a fila em SharedPreferences (`TobaStore.java`). Nada é gravado no banco do site por aqui: o `gastos.js` (`importNativePurchases`) é quem lança, e só tira da fila (`ackPurchases`) depois que o `saveDatabase()` gravou.
 - `Alarms.java` + `AlarmReceiver.java` + `BootReceiver.java`: lembretes, descanso e os avisos de uma vez só do Toba Routine (`setTaskAlerts` recebe a lista inteira; o "✅ Feito" vai para a fila `task_done`, lida pelo `routine.js` com `getDoneTasks`/`ackDoneTasks`).
+- **Android Auto** mora em `app/auto/br/com/toba/auto/` (pacote `br.com.toba.auto`; a pasta fica fora de `src/main/java` de propósito, ligada pelo `sourceSets` do `app/build.gradle`). `TobaCarAppService` → `TobaCarSession` (dona do mapa e do motor) → telas `HomeScreen` (NavigationTemplate), `SearchScreen`, `RecentScreen`, `PreviewScreen`. `NavEngine` = GPS, posição na rota, manobra, voz (`Voice`), recálculo, chegada e simulador; `NavService` = serviço em primeiro plano (tipo location) só enquanto tem rota. `MapRenderer` desenha na superfície do carro: pede ao **Mapbox Static Images** uma imagem já girada pro rumo e com a rota pintada e só desliza/gira entre uma e outra (imagem nova a cada ~15% de tela andada ou 28° de curva). `TobaApi` = chaves lidas do site + TomTom Search/Routing + Mapbox, sempre com `Referer` do site (chave limitada ao domínio continua valendo). Ícones de manobra em `res/drawable/ic_turn_*.xml`.
 - `targetSdk 34` de propósito (no 35 o site fica embaixo da barra de status). Não vai para a Play Store: usa `USE_EXACT_ALARM` e leitura de notificações.
