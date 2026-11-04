@@ -1211,7 +1211,20 @@ window.addEventListener("pageshow", (event) => {
   const params = new URLSearchParams(window.location.search);
   const listParam = params.get("lista");
   if (listParam && turismFindList(listParam)) placesState.listId = listParam;
+  // v1.68: chegou pelo 🧭 Navegar (Toba Racing) -> ?fui=<id> abre o "✅ Fui" desse lugar
+  const fuiParam = params.get("fui");
+  const fuiPlace = fuiParam ? turismFindPlace(fuiParam) : null;
+  if (fuiPlace && turismFindList(fuiPlace.listId)) placesState.listId = String(fuiPlace.listId);
   renderAll();
+  if (fuiPlace) {
+    try {
+      history.replaceState(null, "", window.location.pathname + (placesState.listId ? `?lista=${encodeURIComponent(placesState.listId)}` : ""));
+    } catch (err) {
+      /* segue */
+    }
+    if (fuiPlace.status !== "been") openRate({ dataset: { id: fuiPlace.id } });
+    else tobaToast("✅ Esse lugar já tava marcado como visitado");
+  }
   // Compartilhar do Google Maps direto pro Toba (app instalado pelo Chrome: share_target do manifest)
   const shared = [params.get("title"), params.get("text"), params.get("url")].filter(Boolean).join("\n");
   if (shared.trim()) {

@@ -157,6 +157,7 @@ body.is-driving {
   inset: 0;
   z-index: 50;
   background: var(--bg);
+  overflow: hidden; /* v1.68: o mapa de jogo é maior que a tela */
 }
 
 .dv-route[hidden] {
@@ -675,3 +676,304 @@ body.is-driving .dv-route .leaflet-bottom {
   font-size: 0.76rem;
   color: var(--text);
 }
+
+/* =====================================================================
+ * v1.68 · modo dirigir ULTRA (CLOBA MODERN UI)
+ * ===================================================================== */
+
+/* 🎮 mapa de jogo: maior que a tela, inclinado e girando com o carro */
+.dv-map.is-game {
+  /* quadradão centrado no carango (a 70% da tela): girando pra qualquer lado
+     o chão deitado ainda cobre a tela até a névoa do horizonte */
+  --game-size: max(1400px, 190vmax);
+  inset: auto;
+  width: var(--game-size);
+  height: var(--game-size);
+  left: calc(50% - var(--game-size) / 2);
+  top: calc(70% - var(--game-size) / 2);
+  transform-origin: 50% 50%;
+  transition: transform 0.7s linear;
+  will-change: transform;
+}
+
+body.is-game .dv-route::before {
+  /* céu/névoa no horizonte do mapa deitado */
+  content: "";
+  position: absolute;
+  z-index: 400;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 34%;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(13, 17, 23, 1) 0%, rgba(13, 17, 23, 0.85) 40%, rgba(13, 17, 23, 0) 100%);
+}
+
+/* faixa da manobra: vidro escuro com neon laranja */
+body.is-nav .dv-banner {
+  background: linear-gradient(135deg, rgba(17, 24, 39, 0.94), rgba(30, 20, 10, 0.94));
+  border: 1px solid rgba(251, 146, 60, 0.55);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0 18px rgba(251, 146, 60, 0.18);
+  backdrop-filter: blur(8px);
+}
+
+body.is-nav .dv-banner-dist {
+  color: #fdba74;
+  letter-spacing: 0.3px;
+}
+
+body.is-nav .dv-then {
+  background: rgba(17, 24, 39, 0.92);
+  color: #fed7aa;
+  border: 1px solid rgba(251, 146, 60, 0.35);
+  border-top: 0;
+}
+
+body.is-nav .dv-panel {
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(13, 17, 23, 0.98));
+  border-color: rgba(251, 146, 60, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+/* 🏎️ velocímetro estilo Forza + placa do limite */
+.dv-speedo {
+  position: absolute;
+  z-index: 510;
+  left: 12px;
+  bottom: calc(env(safe-area-inset-bottom) + 142px);
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  pointer-events: none;
+}
+
+body:not(.is-nav) .dv-speedo,
+body:not(.is-nav) .dv-ghost,
+body:not(.is-nav) .dv-bubble,
+.dv-speedo[hidden] {
+  display: none;
+}
+
+.dv-speedo-dial {
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 40%, rgba(30, 41, 59, 0.97), rgba(13, 17, 23, 0.97));
+  border: 3px solid #fb923c;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), 0 0 16px rgba(251, 146, 60, 0.35), inset 0 0 12px rgba(251, 146, 60, 0.18);
+}
+
+.dv-speedo-dial b {
+  font-size: 2.1rem;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  font-style: italic;
+}
+
+.dv-speedo-dial small {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #fdba74;
+  text-transform: uppercase;
+}
+
+.dv-speedo-limit {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 6px solid #dc2626;
+  color: #111;
+  font-size: 1.05rem;
+  font-weight: 900;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.dv-speedo-limit[hidden] {
+  display: none;
+}
+
+.dv-speedo.is-over .dv-speedo-dial {
+  border-color: #ef4444;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), 0 0 22px rgba(239, 68, 68, 0.75);
+  animation: dv-over 0.8s ease-in-out infinite alternate;
+}
+
+.dv-speedo.is-over .dv-speedo-dial b {
+  color: #fca5a5;
+}
+
+/* passou do limite: borda da tela vermelha */
+body.is-over .dv-route::after {
+  content: "";
+  position: absolute;
+  z-index: 505;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 4px rgba(239, 68, 68, 0.85), inset 0 0 60px rgba(239, 68, 68, 0.55);
+  animation: dv-over 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes dv-over {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dv-map.is-game { transition: none; }
+  .dv-speedo.is-over .dv-speedo-dial,
+  body.is-over .dv-route::after { animation: none; }
+}
+
+/* 👻 fantasma */
+.dv-ghost {
+  position: absolute;
+  z-index: 510;
+  right: 12px;
+  top: calc(env(safe-area-inset-top) + 118px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--radius);
+  background: rgba(17, 24, 39, 0.94);
+  border: 1px solid rgba(239, 68, 68, 0.6);
+  color: #fca5a5;
+  font-size: 1rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.dv-ghost small {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.dv-ghost.is-ahead {
+  border-color: rgba(34, 197, 94, 0.7);
+  color: #86efac;
+}
+
+.dv-ghost[hidden] {
+  display: none;
+}
+
+/* 🤡 balão do Cloba */
+.dv-bubble {
+  position: absolute;
+  z-index: 510;
+  left: 12px;
+  right: 80px;
+  bottom: calc(env(safe-area-inset-bottom) + 240px);
+  padding: 0.55rem 0.8rem;
+  border-radius: 16px 16px 16px 4px;
+  background: rgba(250, 204, 21, 0.96);
+  color: #1c1917;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.3;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  animation: dv-pop 0.25s ease-out;
+}
+
+.dv-bubble[hidden] {
+  display: none;
+}
+
+@keyframes dv-pop {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.dv-radar {
+  font-size: 1.2rem;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
+}
+
+/* ⛽ aviso de tanque e atalhos */
+.dv-fuel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0.7rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius);
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
+.dv-fuel[hidden] {
+  display: none;
+}
+
+.dv-fuel-icon {
+  font-size: 1.5rem;
+}
+
+.dv-fuel-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+}
+
+.dv-fuel-text small {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.dv-quick {
+  margin-top: 1rem;
+}
+
+/* fim da viagem */
+.dv-ghost-line {
+  font-size: 0.82rem;
+  text-align: center;
+  color: #fca5a5;
+  font-weight: 700;
+}
+
+.dv-ghost-line.is-win {
+  color: #86efac;
+}
+
+.dv-unlocked {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+
+.dv-unlocked-chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(250, 204, 21, 0.15);
+  border: 1px solid rgba(250, 204, 21, 0.55);
+  color: #fde68a;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.dv-places-btn {
+  margin-top: 0;
+}
+
+.dv-card {
+  max-height: calc(100% - 90px);
+  overflow-y: auto;
+}
+

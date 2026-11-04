@@ -16,6 +16,8 @@
  * - Tela acesa: Wake Lock (navegador) ou TOBA_NATIVE.keepScreenOn (APK).
  * ===================================================================== */
 const DRIVE_TOMTOM_ROUTE_URL = "https://api.tomtom.com/routing/1/calculateRoute/";
+const DRIVE_NO_SPEED_KEY = "toba_tomtom_nospeed";
+const DRIVE_OVERPASS_URL = "https://overpass-api.de/api/interpreter?data=";
 const DRIVE_VALHALLA_URL = "https://valhalla1.openstreetmap.de/route?json=";
 const DRIVE_OSRM_URL = "https://router.project-osrm.org/route/v1/driving/";
 const DRIVE_SEARCH_URL = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=1&accept-language=pt-BR&countrycodes=br&q=";
@@ -42,6 +44,9 @@ function readDrivePrefs() {
     avoidTolls: Boolean(p.avoidTolls),
     traffic: p.traffic !== false, // 🚦 camada de trânsito no mapa (v1.66)
     vehicle: typeof p.vehicle === "string" ? p.vehicle : "seta", // 🎨 carango no mapa (v1.67, DRIVE_VEHICLES)
+    autoNight: p.autoNight !== false, // v1.68: navegando, mapa escuro sozinho do pôr ao nascer do sol
+    gameView: p.gameView !== false, // v1.68: mapa inclinado girando com o carro (visual de jogo)
+    copilot: p.copilot !== false, // v1.68: 🤡 Cloba copiloto (piadinhas na voz)
     routeColor: typeof p.routeColor === "string" ? p.routeColor : "laranja", // 🎨 cor da rota (v1.67, DRIVE_ROUTE_COLORS)
   };
 }
@@ -89,11 +94,28 @@ async function driveFetchTomTom(from, to, options = {}) {
   if (prefs.avoidTolls) params.set("avoid", "tollRoads");
   if (Number.isFinite(options.heading) && options.speed > 3) params.set("vehicleHeading", String(Math.round(options.heading) % 360));
   const locs = `${from.lat.toFixed(6)},${from.lng.toFixed(6)}:${to.lat.toFixed(6)},${to.lng.toFixed(6)}`;
+  // v1.68: limite de velocidade da via (velocímetro). Se o TomTom recusar esse pedaço
+  // (400), tenta de novo sem ele e lembra neste aparelho (toba_tomtom_nospeed).
+  let withSpeed = true;
+  try {
+    withSpeed = localStorage.getItem(DRIVE_NO_SPEED_KEY) !== "1";
+  } catch (err) {
+    withSpeed = true;
+  }
+  if (withSpeed) params.append("sectionType", "speedLimit");
   tobaTomTomCountRoute();
   try {
     const route = driveRouteFromTomTom(await driveFetchJson(`${DRIVE_TOMTOM_ROUTE_URL}${locs}/json?${params}`));
     if (route) return route;
   } catch (err) {
+    if (err.status === 400 && withSpeed) {
+      try {
+        localStorage.setItem(DRIVE_NO_SPEED_KEY, "1");
+      } catch (e) {
+        /* sem storage */
+      }
+      return driveFetchTomTom(from, to, options);
+    }
     // 400 = TomTom não achou caminho (ex.: destino no meio do mato): não é culpa da chave
     if (err.status && err.status !== 400 && err.status < 500) tobaTomTomOff(`rota HTTP ${err.status}`);
     console.warn("TomTom falhou, tentando Valhalla", err);
@@ -272,3 +294,50 @@ async function driveKeepAwake(on) {
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden && driveWantAwake) driveKeepAwake(true);
 });
+
+/* ---------- OpenStreetMap: radares e postos (v1.68, Overpass, sem chave) ----------
+ * Uma pergunta por rota (radares numa caixa em volta da rota) e uma por toque no
+ * ⛽ Posto perto. Falhou = segue sem (nada trava a navegação).
+ */
+async function driveOverpass(query) {
+  return driveFetchJson(DRIVE_OVERPASS_URL + encodeURIComponent(`[out:json][timeout:15];${query}`));
+}
+
+// Radares (highway=speed_camera) a até 35 m da linha da rota: [{ lat, lng, along }]
+async function driveFetchRadars(route) {
+  if (!route?.coords?.length || route.distance > 150000) return [];
+  let s = 90;
+  let w = 180;
+  let n = -90;
+  let e = -180;
+  route.coords.forEach(([lat, lng]) => {
+    s = Math.min(s, lat);
+    n = Math.max(n, lat);
+    w = Math.min(w, lng);
+    e = Math.max(e, lng);
+  });
+  const pad = 0.003;
+  const json = await driveOverpass(`node[highway=speed_camera](${s - pad},${w - pad},${n + pad},${e + pad});out 200;`);
+  const out = [];
+  (json?.elements || []).forEach((el) => {
+    const p = [Number(el.lat), Number(el.lon)];
+    if (!Number.isFinite(p[0])) return;
+    const loc = driveLocateOnRoute(route, p, 0);
+    if (loc && loc.dist <= 35) out.push({ lat: p[0], lng: p[1], along: loc.along });
+  });
+  return out.sort((a, b) => a.along - b.along);
+}
+
+// ⛽ Postos (amenity=fuel) num raio de até 4 km, mais perto primeiro
+async function driveFetchFuel(near) {
+  const json = await driveOverpass(`(node[amenity=fuel](around:4000,${near.lat},${near.lng});way[amenity=fuel](around:4000,${near.lat},${near.lng}););out center 30;`);
+  return (json?.elements || []).map((el) => {
+    const lat = Number(el.lat ?? el.center?.lat);
+    const lng = Number(el.lon ?? el.center?.lon);
+    const t = el.tags || {};
+    const brand = t.brand || t.name || "Posto";
+    const street = [t["addr:street"], t["addr:housenumber"]].filter(Boolean).join(", ");
+    return { name: t.name && t.brand && !t.name.includes(t.brand) ? `${t.brand} · ${t.name}` : `⛽ ${brand}`, address: street, lat, lng, kind: "fuel", km: driveDist([near.lat, near.lng], [lat, lng]) / 1000 };
+  }).filter(driveValidPoint).sort((a, b) => a.km - b.km).slice(0, 12);
+}
+

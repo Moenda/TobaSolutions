@@ -313,17 +313,18 @@ function formatWeighDate(dateStr) {
 
 /* TELA DE COMPARATIVO (abre como "página" dentro do app) */
 // v1.64: período escolhível (chips), linha de tendência e o veredito do Cloba.
+// v1.68: períodos viraram só por tempo (2 semanas até 1 ano + Tudo).
 // Tudo aqui só LÊ o healthDb; o período escolhido fica em toba_health_compare_prefs.
 const COMPARE_PERIODS = [
-  { id: "5", label: "Últimas 5", count: 5 },
-  { id: "10", label: "Últimas 10", count: 10 },
-  { id: "1m", label: "1 mês", days: 30, phrase: "no último mês" },
-  { id: "3m", label: "3 meses", days: 91, phrase: "nos últimos 3 meses" },
-  { id: "6m", label: "6 meses", days: 182, phrase: "nos últimos 6 meses" },
-  { id: "all", label: "Tudo", phrase: "desde o começo" },
+  { id: "2w", label: "2 semanas", days: 14, phrase: "nas últimas 2 semanas", title: "Últimas 2 semanas" },
+  { id: "1m", label: "1 mês", days: 30, phrase: "no último mês", title: "Último mês" },
+  { id: "3m", label: "3 meses", days: 91, phrase: "nos últimos 3 meses", title: "Últimos 3 meses" },
+  { id: "6m", label: "6 meses", days: 182, phrase: "nos últimos 6 meses", title: "Últimos 6 meses" },
+  { id: "1y", label: "1 ano", days: 365, phrase: "no último ano", title: "Último ano" },
+  { id: "all", label: "Tudo", phrase: "desde o começo", title: "Desde o começo" },
 ];
 const COMPARE_PREFS_KEY = "toba_health_compare_prefs";
-const COMPARE_DEFAULT_PERIOD = "10";
+const COMPARE_DEFAULT_PERIOD = "3m";
 const DAY_MS = 86400000;
 
 // "Estável" = a linha de tendência mexeu menos que isso no período inteiro
@@ -384,7 +385,7 @@ function storeComparePeriod(period) {
 }
 
 function getComparePeriod() {
-  return COMPARE_PERIODS.find((p) => p.id === compareState.period) || COMPARE_PERIODS[1];
+  return COMPARE_PERIODS.find((p) => p.id === compareState.period) || COMPARE_PERIODS.find((p) => p.id === COMPARE_DEFAULT_PERIOD);
 }
 
 // Todos os valores da métrica, do mais novo pro mais velho (cópia, não reordena o banco).
@@ -403,7 +404,6 @@ function collectMetricPoints(metricKey) {
 }
 
 function filterPointsByPeriod(points, period) {
-  if (period.count) return points.slice(0, period.count);
   if (period.days) {
     const cutoff = Date.now() - period.days * DAY_MS;
     return points.filter((p) => p.t >= cutoff);
@@ -411,17 +411,25 @@ function filterPointsByPeriod(points, period) {
   return points.slice();
 }
 
-function periodPhrase(period, n) {
-  if (period.count) return n === 1 ? "na última" : `nas últimas ${n}`;
+function periodPhrase(period) {
   return period.phrase;
 }
 
 function chartTitleFor(period, n) {
   const label = n === 1 ? "1 pesagem" : `${n} pesagens`;
-  if (period.count) return n === 1 ? "📈 Última pesagem" : `📈 Últimas ${n} pesagens`;
-  if (period.days === 30) return `📈 Último mês · ${label}`;
-  if (period.days) return `📈 ${period.label} · ${label}`;
-  return `📈 Desde o começo · ${label}`;
+  return `📈 ${period.title} · ${label}`;
+}
+
+// Tamanho do buraco entre duas pesagens, curtinho pro gráfico: "18 dias", "3 sem", "2 meses", "1 ano".
+function gapLabel(days) {
+  if (days < 21) return `${Math.round(days)} dias`;
+  if (days < 56) return `${Math.round(days / 7)} sem`;
+  if (days < 365) {
+    const m = Math.round(days / 30.4);
+    return m <= 1 ? "1 mês" : `${m} meses`;
+  }
+  const y = Math.round((days / 365) * 10) / 10;
+  return `${String(y).replace(".", ",")} ${y === 1 ? "ano" : "anos"}`;
 }
 
 function spanPhrase(days) {
@@ -457,6 +465,8 @@ function calcTrend(chrono) {
   return {
     start,
     end,
+    // Valor da reta num instante qualquer (usado pelo gráfico, que é por pesagem).
+    at: (t) => (spanDays > 0 ? at((t - t0) / DAY_MS) : my),
     change: end - start,
     perMonth: spanDays >= 14 ? slope * 30.4 : null,
     spanDays,
@@ -607,7 +617,7 @@ function buildTrendVerdict(metricKey, meta, chrono, trend, period) {
   if (Math.abs(change) < band) {
     if (trend.resid > band * 0.8) {
       title = TREND_TITLES.noisy;
-      text = `Sobe e desce ${periodPhrase(period, n)}, mas no fim tá no mesmo lugar. Pesa sempre no mesmo horário que o gráfico para de dançar 🪗`;
+      text = `Sobe e desce ${periodPhrase(period)}, mas no fim tá no mesmo lugar. Pesa sempre no mesmo horário que o gráfico para de dançar 🪗`;
     } else {
       tone = "is-calm";
       text = pick(lines.stable);
@@ -625,7 +635,7 @@ function buildTrendVerdict(metricKey, meta, chrono, trend, period) {
 
   text = text
     .replace("{delta}", fmt(change))
-    .replace("{periodo}", periodPhrase(period, n))
+    .replace("{periodo}", periodPhrase(period))
     .replace("{tempo}", spanPhrase(trend.spanDays))
     .replace("{label}", meta.label);
 
@@ -788,6 +798,24 @@ function switchPesagemView(viewName, label = "") {
   window.scrollTo(0, 0);
 }
 
+// v1.68: ❔ do gráfico, o Cloba explicando como ler. Muda a regra do gráfico, muda o texto junto.
+function openChartHelp() {
+  const text = [
+    "📅 Os botões lá em cima escolhem o período: 2 semanas até 1 ano, ou Tudo. A média, o vs Média e a lista embaixo vão junto.",
+    "",
+    "📏 Cada bolinha é uma pesagem e todas ganham o mesmo espaço. Pesou 30 vezes no mês? 30 colunas certinhas, pai. Nada de 5 bolinhas espremidas num canto.",
+    "",
+    "🟠 Ficou um tempão sem subir na balança? O buraco fica laranjinha, com o tamanho dele escrito (tipo \"↔ 2 meses\"). Não dá pra esconder do Cloba 👀",
+    "",
+    "〰️ A linha tracejada é a tendência: pra onde o bicho tá indo de verdade, sem o drama de uma pesagem só. Ela conta o tempo real, então no buraco do calendário ela dá um degrauzinho.",
+    "",
+    "🎨 Cada número da balança tem o lado bom dele: basal, músculo, água, proteína, massa óssea e pontuação SUBINDO é bom; peso, IMC, gordura, visceral e idade corporal DESCENDO é toperson. Verde = indo pro lado bom, vermelho = lado ruim. Na tendência: branco = indo bem, vermelho = indo mal, azul = parado.",
+    "",
+    "🗣️ Embaixo, o Papo reto do Cloba resume tudo e mostra o ritmo por mês. Nunca foi sorte 🙏",
+  ].join("\n");
+  showPageMessage(text, { title: "Como ler o gráfico", icon: "📈", okLabel: "Saquei 👊" });
+}
+
 function openMetricAdvice(metricKey) {
   const advice = metricAdvice[metricKey];
   if (!advice) return;
@@ -796,8 +824,12 @@ function openMetricAdvice(metricKey) {
   openTobaModal("metricAdviceModal");
 }
 
-/* GRÁFICO SVG (v1.64: eixo pelo tempo, área, tendência tracejada e datas) */
+/* GRÁFICO SVG (v1.64: área, tendência tracejada e datas; v1.68: eixo por pesagem) */
 // minSpan: altura mínima do eixo (na unidade da métrica), pra oscilação miúda não parecer montanha-russa.
+// v1.68: cada pesagem ganha a mesma largura (30 pesagens = 30 colunas certinhas), mesmo com
+// pesagem colada ou com meses de buraco. O buraco grande vira uma divisória "↔ 2 meses".
+// A tendência continua calculada pelo tempo de verdade (calcTrend) e é desenhada no valor
+// dela em cada pesagem, então os números do Cloba não mudam.
 function renderSvgChart(points, type, unit, trend, trendColor = "var(--blue)", minSpan = 0) {
   if (points.length < 2)
     return tobaEmpty("📉", "Gráfico precisa de 2 pesagens", "Registre mais uma (ou pega um período maior) e a linha aparece aqui.", { compact: true });
@@ -826,12 +858,12 @@ function renderSvgChart(points, type, unit, trend, trendColor = "var(--blue)", m
     max += grow;
   }
 
-  // X pelo tempo (pesagens espaçadas como no calendário); tudo no mesmo instante = índice.
+  // X por pesagem: espaçamento igual, uma "coluna" por pesagem.
   const t0 = points[0].t;
   const tSpan = points[n - 1].t - t0;
-  const xAt = (p, idx) => padX + (tSpan > 0 ? (p.t - t0) / tSpan : idx / (n - 1)) * (w - 2 * padX);
+  const xAt = (idx) => padX + (idx / (n - 1)) * (w - 2 * padX);
   const yAt = (v) => h - padBottom - ((v - min) / (max - min)) * (h - padTop - padBottom);
-  const coords = points.map((p, idx) => ({ x: xAt(p, idx), y: yAt(p.val), val: p.val, date: p.date }));
+  const coords = points.map((p, idx) => ({ x: xAt(idx), y: yAt(p.val), val: p.val, date: p.date }));
 
   const r1 = (num) => Math.round(num * 10) / 10;
   const lineStr = coords.map((c) => `${r1(c.x)},${r1(c.y)}`).join(" ");
@@ -854,13 +886,49 @@ function renderSvgChart(points, type, unit, trend, trendColor = "var(--blue)", m
     svg += `<line class="chart-grid" x1="${padX}" x2="${w - padX}" y1="${y}" y2="${y}"/>`;
   });
 
+  // Risquinho no pé de cada pesagem (até 60; mais que isso vira borrão).
+  if (n <= 60) {
+    coords.forEach((c) => {
+      svg += `<line class="chart-tick" x1="${r1(c.x)}" x2="${r1(c.x)}" y1="${baseY}" y2="${baseY + 4}"/>`;
+    });
+  }
+
+  // Buraco no calendário: entre duas pesagens com muito mais tempo que o normal,
+  // faixa laranjinha + divisória tracejada com o tamanho do buraco ("↔ 2 meses"). Só os 2 maiores, pra não poluir.
+  const gaps = [];
+  for (let i = 1; i < n; i += 1) gaps.push({ i, days: (points[i].t - points[i - 1].t) / DAY_MS });
+  const sortedDays = gaps.map((g) => g.days).sort((a, b) => a - b);
+  const medianGap = sortedDays[Math.floor(sortedDays.length / 2)];
+  const placed = [];
+  gaps
+    .filter((g) => g.days >= 14 && g.days >= medianGap * 3)
+    .sort((a, b) => b.days - a.days)
+    .slice(0, 2)
+    .forEach((g) => {
+      const gx = (coords[g.i - 1].x + coords[g.i].x) / 2;
+      const text = `↔ ${gapLabel(g.days)}`;
+      const tw = text.length * 8.5 * 0.62;
+      const ly = baseY - 4;
+      const lx = Math.min(Math.max(gx, padX + tw / 2), w - padX - tw / 2);
+      const box = { x1: lx - tw / 2, x2: lx + tw / 2, y1: ly - 9, y2: ly + 2, text };
+      const bx = coords[g.i - 1].x;
+      svg += `<rect class="chart-gap-zone" x="${r1(bx)}" y="${padTop - 6}" width="${r1(coords[g.i].x - bx)}" height="${r1(baseY - padTop + 6)}"/>`;
+      svg += `<line class="chart-gap" x1="${r1(gx)}" x2="${r1(gx)}" y1="${padTop - 6}" y2="${baseY}"/>`;
+      // Rótulo só se não bater no do outro buraco (o maior ganha).
+      if (!placed.some((o) => box.x1 < o.x2 + 4 && box.x2 > o.x1 - 4)) {
+        svg += `<text class="chart-gap-label" x="${r1(lx)}" y="${ly}" text-anchor="middle">${text}</text>`;
+        placed.push(box);
+      }
+    });
+
   svg += `<path class="chart-area" d="${areaStr}" fill="url(#cmpArea)"/>`;
   svg += `<polyline class="chart-line" pathLength="1" fill="none" stroke="#3fb950" stroke-width="3" points="${lineStr}" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>`;
 
+  // Tendência: valor da reta (pelo tempo) em cada pesagem. Onde teve buraco no
+  // calendário ela dá o "degrau" do tempo que passou; no resto fica lisinha.
   if (trend && n >= 3) {
-    const x1 = coords[0].x;
-    const x2 = coords[n - 1].x;
-    svg += `<line class="chart-trend" x1="${r1(x1)}" y1="${r1(yAt(trend.start))}" x2="${r1(x2)}" y2="${r1(yAt(trend.end))}" style="stroke: ${trendColor}"/>`;
+    const trendStr = coords.map((c, idx) => `${r1(c.x)},${r1(yAt(trend.at(points[idx].t)))}`).join(" ");
+    svg += `<polyline class="chart-trend" fill="none" points="${trendStr}" style="stroke: ${trendColor}"/>`;
   }
 
   // Bolinhas: menores quando tem muita pesagem; a última sempre destacada.
@@ -880,7 +948,6 @@ function renderSvgChart(points, type, unit, trend, trendColor = "var(--blue)", m
   const minIdx = ptVals.indexOf(Math.min(...ptVals));
   const order = [n - 1, 0, maxIdx, minIdx];
   if (n <= 7) coords.forEach((_, i) => order.push(i));
-  const placed = [];
   const seen = new Set();
   const clash = (box) => placed.filter((o) => box.x1 < o.x2 + 3 && box.x2 > o.x1 - 3 && box.y1 < o.y2 + 1 && box.y2 > o.y1 - 1);
   order.forEach((i) => {
@@ -910,15 +977,24 @@ function renderSvgChart(points, type, unit, trend, trendColor = "var(--blue)", m
     svg += `<text class="${cls}" x="${r1(lx)}" y="${r1(y)}" text-anchor="${anchor}">${text}</text>`;
   });
 
-  // Datas no pé: primeira, do meio (se couber) e última.
-  const dateLabel = (d) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  // Datas no pé: até 4 pesagens espalhadas por igual (primeira, última e as do meio),
+  // cada uma embaixo da própria bolinha. Período que vira o ano mostra "jun/26".
+  const crossesYear = points[0].date.getFullYear() !== points[n - 1].date.getFullYear();
+  const dateLabel = (d) => crossesYear && tSpan > 120 * DAY_MS
+    ? d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }).replace(".", "").replace(" de ", "/")
+    : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
   const axisY = h - 8;
-  svg += `<text class="chart-axis" x="${padX - 4}" y="${axisY}" text-anchor="start">${dateLabel(coords[0].date)}</text>`;
-  svg += `<text class="chart-axis" x="${w - padX + 4}" y="${axisY}" text-anchor="end">${dateLabel(coords[n - 1].date)}</text>`;
-  if (n >= 5 && tSpan > 0) {
-    const mid = points[0].t + tSpan / 2;
-    svg += `<text class="chart-axis" x="${w / 2}" y="${axisY}" text-anchor="middle">${dateLabel(new Date(mid))}</text>`;
-  }
+  const slots = n >= 10 ? 4 : n >= 5 ? 3 : 2;
+  const axisIdx = [...new Set(Array.from({ length: slots }, (_, k) => Math.round((k * (n - 1)) / (slots - 1))))];
+  let lastText = "";
+  axisIdx.forEach((i, k) => {
+    const text = dateLabel(coords[i].date);
+    if (text === lastText && k !== axisIdx.length - 1) return;
+    lastText = text;
+    const anchor = k === 0 ? "start" : k === axisIdx.length - 1 ? "end" : "middle";
+    const x = anchor === "start" ? padX - 4 : anchor === "end" ? w - padX + 4 : coords[i].x;
+    svg += `<text class="chart-axis" x="${r1(x)}" y="${axisY}" text-anchor="${anchor}">${text}</text>`;
+  });
 
   svg += `</svg>`;
   if (trend && n >= 3) {
@@ -1339,6 +1415,7 @@ tobaActions({
   setComparePeriod: (el) => setComparePeriod(el.dataset.period),
   closeMetricCompare,
   openMetricAdvice: (el) => openMetricAdvice(el.dataset.key),
+  openChartHelp,
   openProfile,
   saveProfile,
   openScaleConfig,

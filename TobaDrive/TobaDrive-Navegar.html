@@ -36,6 +36,7 @@
 
     <div class="dv-notice" id="apkNotice" hidden></div>
     <div class="dv-gps" id="gpsStatus"></div>
+    <div class="dv-fuel" id="fuelBanner" hidden></div>
 
     <form class="dv-search" data-submit="searchSubmit" autocomplete="off">
       <input type="search" id="driveQuery" class="form-control" placeholder="Pra onde, piloto? Endereço ou lugar" enterkeyhint="search" />
@@ -53,7 +54,10 @@
     <div class="section-title dv-title-row"><span>🕘 Recentes</span><button type="button" class="chip-btn dv-mini" id="clearRecentBtn" data-click="clearRecent" hidden>🧹 Limpar</button></div>
     <div class="toba-list" id="recentList"></div>
 
-    <button type="button" class="btn btn-outline dv-full" data-click="chooseOnMap">🗺️ Escolher no mapa</button>
+    <div class="btn-row dv-quick">
+      <button type="button" class="btn btn-outline btn-grow-1" data-click="chooseOnMap">🗺️ No mapa</button>
+      <button type="button" class="btn btn-outline btn-grow-1" data-click="findFuel">⛽ Posto perto</button>
+    </div>
     <button type="button" class="btn btn-outline dv-full dv-style-open" id="styleOpenBtn" data-click="openStyleSheet">🎨 Personalizar</button>
   </div>
 
@@ -67,6 +71,14 @@
       <button type="button" class="dv-round" data-click="toggleTraffic" aria-label="Trânsito no mapa">🚦</button>
       <button type="button" class="dv-round" id="styleBtn" data-click="toggleMapStyle" aria-label="Mapa claro/escuro">🌙</button>
     </div>
+
+    <!-- v1.68: velocímetro, fantasma e balão do Cloba (navegando) -->
+    <div class="dv-speedo" id="speedo" hidden>
+      <span class="dv-speedo-dial"><b id="speedoValue">0</b><small>km/h</small></span>
+      <span class="dv-speedo-limit" id="speedoLimit" hidden>--</span>
+    </div>
+    <div class="dv-ghost" id="ghostChip" hidden></div>
+    <div class="dv-bubble" id="clobaBubble" hidden></div>
 
     <!-- Faixa da próxima manobra (navegando) -->
     <div class="dv-banner" id="navBanner" hidden>
@@ -105,6 +117,9 @@
       <label class="check-row"><input type="checkbox" id="prefVoice" data-change="prefChange" /> 🔊 Voz falando as manobras</label>
       <label class="check-row"><input type="checkbox" id="prefAwake" data-change="prefChange" /> 🔆 Tela acesa navegando</label>
       <label class="check-row"><input type="checkbox" id="prefTolls" data-change="prefChange" /> 💸 Fugir de pedágio</label>
+      <label class="check-row"><input type="checkbox" id="prefCopilot" data-change="prefChange" /> 🤡 Cloba copiloto (piadinhas na voz)</label>
+      <label class="check-row"><input type="checkbox" id="prefGame" data-change="prefChange" /> 🎮 Mapa de jogo (inclinado, gira com o carro)</label>
+      <label class="check-row"><input type="checkbox" id="prefNight" data-change="prefChange" /> 🌙 Mapa escuro sozinho à noite</label>
       <button type="button" class="btn btn-outline btn-sm" data-click="testVoice">🗣️ Testar a voz</button>
     </div>
   </div>
@@ -175,6 +190,7 @@
   <script src="../assets/toba-maps.js"></script>
   <script src="js/drive-route.js"></script>
   <script src="js/navegar.js"></script>
+  <script src="js/drive-game.js"></script>
   <script src="../assets/pwa-register.js"></script>
 </body>
 

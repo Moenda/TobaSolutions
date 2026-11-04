@@ -314,6 +314,20 @@ function driveTomTomJams(route) {
     }));
 }
 
+// Limite de velocidade por trecho (v1.68): [{ from, to (índices em coords), kmh }]
+function driveTomTomLimits(route) {
+  return (route?.sections || [])
+    .filter((s) => s && /SPEED_?LIMIT/i.test(String(s.sectionType || "")) && Number.isFinite(s.startPointIndex) && Number.isFinite(s.endPointIndex))
+    .map((s) => ({ from: s.startPointIndex, to: s.endPointIndex, kmh: Number(s.maxSpeedLimitInKmh || s.speedLimitInKmh || s.maxSpeedInKmh) || 0 }))
+    .filter((s) => s.kmh > 0);
+}
+
+// Limite no ponto "seg" da rota (índice do segmento onde o carro está) ou null
+function driveLimitAt(route, seg) {
+  const hit = (route?.limits || []).find((l) => seg >= l.from && seg < l.to);
+  return hit ? hit.kmh : null;
+}
+
 function driveRouteFromTomTom(json) {
   const r = json?.routes?.[0];
   const points = (r?.legs || []).flatMap((leg) => leg?.points || []);
@@ -344,6 +358,7 @@ function driveRouteFromTomTom(json) {
     duration: Number(sum.travelTimeInSeconds) || 0,
     trafficDelay: Number(sum.trafficDelayInSeconds) || 0,
     jams: driveTomTomJams(r),
+    limits: driveTomTomLimits(r),
     steps,
   };
 }
@@ -410,6 +425,128 @@ function driveNextStep(route, along) {
 const DRIVE_TOBASTEN_MIN_ETA_S = 600;
 const DRIVE_TOBASTEN_RATIO = 0.9;
 const DRIVE_SWISS_MARGIN = 0.03;
+const DRIVE_ZEN_MIN_S = 20 * 60;
+
+/* ---------- 👻 Ghost race (v1.68) ----------
+ * Fantasma = a viagem mais rápida que CHEGOU no mesmo destino (até 150 m)
+ * saindo do mesmo lugar (até 400 m). Precisa de startLat/startLng (viagens
+ * desde v1.68). Devolve { s (segundos), km, date } ou null.
+ */
+function driveFindGhost(db, start, dest) {
+  const d = driveSafeDb(db);
+  let best = null;
+  d.trips.forEach((t) => {
+    if (!t || !t.arrived || !Number.isFinite(Number(t.startLat)) || !Number.isFinite(Number(t.lat))) return;
+    if (driveDist([Number(t.startLat), Number(t.startLng)], [start.lat, start.lng]) > 400) return;
+    if (driveDist([Number(t.lat), Number(t.lng)], [dest.lat, dest.lng]) > 150) return;
+    const s = ((Number(t.endedAt) || 0) - (Number(t.startedAt) || 0)) / 1000;
+    if (s < 60) return;
+    if (!best || s < best.s) best = { s, km: Number(t.km) || 0, date: t.date };
+  });
+  return best;
+}
+
+/* ---------- ⛽ Combustível (v1.68): autonomia estimada pro Navegar ----------
+ * Só com tanque cadastrado e média de km/l no Toba Racing, e se o último
+ * abastecimento foi de tanque cheio. Desconta os km navegados DEPOIS do dia
+ * do abastecimento (o que rodou sem o Navegar não entra: é um chute pra baixo).
+ * Devolve { range, used, left, low } ou null. Só LÊ os dois bancos.
+ */
+function driveFuelEstimate(racingDb, driveData, summaryFn) {
+  if (typeof summaryFn !== "function") return null;
+  const s = summaryFn(racingDb);
+  if (!s || !s.rangeKm || !s.lastFill || !s.lastFill.full) return null;
+  const used = driveSafeDb(driveData).trips
+    .filter((t) => t && typeof t.date === "string" && t.date > s.lastFill.date)
+    .reduce((sum, t) => sum + (Number(t.km) || 0), 0);
+  const left = Math.max(0, s.rangeKm - used);
+  return { range: s.rangeKm, used, left, low: left <= Math.max(60, s.rangeKm * 0.2) };
+}
+
+/* ---------- 🌙 Noite automática (v1.68): pôr e nascer do sol (conta da NOAA, aproximada) ---------- */
+function driveSunTimes(lat, lng, date = new Date()) {
+  const rad = Math.PI / 180;
+  const start = Date.UTC(date.getFullYear(), 0, 0);
+  const day = Math.floor((Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - start) / 86400000);
+  const gamma = (2 * Math.PI / 365) * (day - 1);
+  const eqt = 229.18 * (0.000075 + 0.001868 * Math.cos(gamma) - 0.032077 * Math.sin(gamma) - 0.014615 * Math.cos(2 * gamma) - 0.040849 * Math.sin(2 * gamma));
+  const decl = 0.006918 - 0.399912 * Math.cos(gamma) + 0.070257 * Math.sin(gamma) - 0.006758 * Math.cos(2 * gamma) + 0.000907 * Math.sin(2 * gamma);
+  const cosH = (Math.cos(90.833 * rad) / (Math.cos(lat * rad) * Math.cos(decl))) - Math.tan(lat * rad) * Math.tan(decl);
+  if (cosH > 1 || cosH < -1) return null; // sol da meia-noite / noite polar
+  const ha = Math.acos(cosH) / rad;
+  const base = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  const rise = base + (720 - 4 * (lng + ha) - eqt) * 60000;
+  const set = base + (720 - 4 * (lng - ha) - eqt) * 60000;
+  return { rise, set };
+}
+
+function driveIsDark(lat, lng, now = Date.now()) {
+  const t = driveSunTimes(lat, lng, new Date(now));
+  if (!t) return false;
+  return now < t.rise - 15 * 60000 || now > t.set + 15 * 60000;
+}
+
+/* ---------- 🤡 Cloba copiloto (v1.68): piadinha quinta série faz parte do DNA ----------
+ * {limit}, {dist}, {min}, {pct} são trocados na hora. Nunca fala em cima de manobra
+ * (navegar.js só chama com a próxima manobra longe).
+ */
+const DRIVE_COPILOT_LINES = {
+  start: [
+    "Partiu! Cinto no peito e fé no Cloba.",
+    "Bora que bora, piloto. Hoje tem MAX TOBASTEN?",
+    "Segura o volante que o copiloto aqui nem tem carta.",
+    "Motor ligado, playlist no talo e o Cloba no comando. Quer dizer, tu no comando. Eu só falo.",
+  ],
+  traffic: [
+    "Trânsito na frente, pai. Respira e coloca um pagodinho.",
+    "Vai ter fila. Mais parado que fila de banco no quinto dia útil.",
+    "Lentidão de {min} minutos. Dá tempo de pensar na vida. Ou não.",
+  ],
+  ahead: [
+    "Tá voando baixo! Ritmo de MAX TOBASTEN, DANDANDAN!",
+    "{pct} por cento antes do previsto. O Waze tá com inveja.",
+    "Se continuar assim, a previsão vai pedir desculpa.",
+  ],
+  ghostAhead: [
+    "Deixou o fantasma comendo poeira. Buuu pra ele!",
+    "O fantasma ficou pra trás. Nem assombração te alcança.",
+  ],
+  ghostBehind: [
+    "O fantasma tá na frente, pai. E ele nem paga IPVA!",
+    "Tem um fantasma te passando. Esse aí não respeita nem o além.",
+  ],
+  speeding: [
+    "Ô Toretto, aqui é {limit}! Multa não dá XP.",
+    "Calma, Velozes e Furiosos 47. O limite é {limit}.",
+    "Pé no freio, piloto! {limit} aqui, não é Interlagos.",
+  ],
+  radar: [
+    "Radar em {dist}. Sorria... ou melhor, não!",
+    "Olha o radar ali na frente. Pé leve que o bolso agradece.",
+    "Radar chegando. Hoje não, prefeitura!",
+  ],
+  reroute: [
+    "Errou o caminho? Relaxa, eu também erraria. Mentira.",
+    "O Cloba nunca se perde. Só faz turismo.",
+  ],
+  idle: [
+    "Pergunta séria: pavê ou pá comê?",
+    "Já bebeu água hoje? O motor agradece, o piloto também.",
+    "Sabia que o Gon e o Killua dirigem melhor que muito motorista por aí?",
+    "Esse silêncio aí... é concentração ou tá pensando no RuneScape?",
+    "Fato: carro com adesivo de família no vidro anda vinte por cento mais devagar. Fonte: o Cloba.",
+  ],
+  fuel: [
+    "Tanque na reserva, hein. Bora num posto antes de empurrar o carango?",
+  ],
+};
+
+function driveCopilotLine(kind, vars = {}) {
+  const list = DRIVE_COPILOT_LINES[kind] || [];
+  if (!list.length) return "";
+  const line = list[Math.floor(Math.random() * list.length)];
+  return line.replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined ? String(vars[k]) : m));
+}
 
 // Quanto a viagem foi mais rápida que o previsto (0.12 = 12% antes). null = sem previsão.
 function driveTripAhead(trip) {
@@ -429,7 +566,8 @@ function calcDrivePlayer(data, today) {
   const trips = d.trips
     .filter((t) => t && t.arrived && typeof t.date === "string" && t.date <= today)
     .sort((a, b) => a.date.localeCompare(b.date) || (Number(a.endedAt) || 0) - (Number(b.endedAt) || 0));
-  const stats = { driveArrived: 0, driveKm: 0, driveNight: 0, driveLongest: 0, driveTobasten: 0, driveSwiss: 0 };
+  const stats = { driveArrived: 0, driveKm: 0, driveNight: 0, driveLongest: 0, driveTobasten: 0, driveSwiss: 0,
+    driveGhost: 0, driveRadars: 0, driveZen: 0, driveFuel: 0, drivePlaces: 0, driveShared: 0 };
   const timeline = trips.map((t) => {
     const km = Number(t.km) || 0;
     stats.driveArrived += 1;
@@ -439,6 +577,13 @@ function calcDrivePlayer(data, today) {
     const ahead = driveTripAhead(t);
     if (ahead !== null && ahead >= 1 - DRIVE_TOBASTEN_RATIO) stats.driveTobasten += 1;
     if (ahead !== null && Math.abs(ahead) <= DRIVE_SWISS_MARGIN) stats.driveSwiss += 1;
+    // v1.68
+    if (t.ghostWin === true) stats.driveGhost += 1;
+    stats.driveRadars += Math.max(0, Number(t.radars) || 0);
+    if (t.cleanSpeed === true && ((Number(t.endedAt) || 0) - (Number(t.startedAt) || 0)) >= DRIVE_ZEN_MIN_S * 1000) stats.driveZen += 1;
+    if (t.fuelStop === true) stats.driveFuel += 1;
+    if (t.placeId) stats.drivePlaces += 1;
+    if (t.shared === true) stats.driveShared += 1;
     return { date: t.date, stats: { ...stats } };
   });
   return { stats, timeline };
@@ -462,6 +607,7 @@ const DRIVE_VEHICLES = [
   { id: "f1", icon: "🏎️", name: "Max Tobasten", face: "left", achievement: "dv-tobasten", need: (s) => s.driveTobasten >= 1 },
   { id: "foguete", icon: "🚀", name: "Foguete", face: "up", achievement: "dv-km1000", need: (s) => s.driveKm >= 1000 },
   { id: "ovni", icon: "🛸", name: "OVNI", face: "none", achievement: "dv-50", need: (s) => s.driveArrived >= 50 },
+  { id: "fantasma", icon: "👻", name: "Fantasma", face: "none", achievement: "dv-ghost", need: (s) => s.driveGhost >= 1 },
 ];
 
 // Cores da linha da rota (v1.67)

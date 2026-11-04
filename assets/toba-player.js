@@ -406,6 +406,14 @@ function buildPlayerAchievements() {
     { id: "dv-tobasten5", cat: "pista", tier: "lenda", icon: "🏆", name: "Tobasten pentacampeão", desc: "5 vezes Max Tobasten. Interlagos tá ligando.", hint: "Faça o Max Tobasten 5 vezes.", metric: (s) => s.driveTobasten, goal: 5 },
     { id: "dv-pontual", cat: "pista", tier: "prata", icon: "⏱️", name: "Relógio suíço", desc: "Chegou certinho no horário previsto (3% pra mais ou pra menos).", hint: "Numa rota de 10 min+, chegue dentro de 3% do previsto.", metric: (s) => s.driveSwiss, goal: 1 },
     { id: "dv-noite", cat: "pista", tier: "bronze", icon: "🌙", name: "Corujão do asfalto", desc: "Navegou saindo entre 22h e 5h. Só você e os gatos na rua.", hint: "Chegue a um destino saindo entre 22h e 5h.", metric: (s) => s.driveNight, goal: 1 },
+    // v1.68: modo dirigir ULTRA (ghost race, radar, velocímetro, posto, Places, resumo)
+    { id: "dv-ghost", cat: "pista", tier: "prata", icon: "👻", name: "Exorcista", desc: "Bateu o próprio fantasma numa rota repetida. Buuu pra ele!", hint: "Faça uma rota que você já fez (mesma saída e destino) mais rápido que o seu recorde.", metric: (s) => s.driveGhost, goal: 1 },
+    { id: "dv-ghost10", cat: "pista", tier: "ouro", icon: "🔦", name: "Caça-fantasmas", desc: "10 fantasmas derrotados. Who you gonna call? Toba!", hint: "Bata o fantasma 10 vezes.", metric: (s) => s.driveGhost, goal: 10, title: "🔦 Caça-fantasmas" },
+    { id: "dv-radar10", cat: "pista", tier: "prata", icon: "📸", name: "Sorria, você NÃO foi filmado", desc: "Passou por 10 radares dentro do limite. A prefeitura chorou.", hint: "Passe por 10 radares navegando, sem estourar o limite.", metric: (s) => s.driveRadars, goal: 10 },
+    { id: "dv-zen", cat: "pista", tier: "prata", icon: "😇", name: "Pé de anjo", desc: "Viagem de 20 min+ sem passar do limite nenhuma vez.", hint: "Navegue 20 min ou mais sem o velocímetro ficar vermelho.", metric: (s) => s.driveZen, goal: 1 },
+    { id: "dv-posto", cat: "pista", tier: "bronze", icon: "⛽", name: "Pit stop guiado", desc: "Foi até um posto pelo ⛽ do Navegar. Box, box, box!", hint: "Toque em ⛽ Posto perto no Navegar e chegue lá.", metric: (s) => s.driveFuel, goal: 1 },
+    { id: "dv-places", cat: "pista", tier: "bronze", icon: "📍", name: "Do mapa pro rolê", desc: "Chegou num lugar do Toba Places navegando pelo Toba.", hint: "Escolha um lugar do Places no Navegar e chegue lá.", metric: (s) => s.drivePlaces, goal: 1 },
+    { id: "dv-share", cat: "pista", tier: "bronze", icon: "📤", name: "Influencer do asfalto", desc: "Mandou o resumo da viagem pra tropa. Like, compartilha e ativa o sininho.", hint: "No fim de uma viagem, toque em 📤 Tropa.", metric: (s) => s.driveShared, goal: 1 },
     { id: "dv-longa", cat: "pista", tier: "prata", icon: "🏖️", name: "Destino: praia", desc: "Uma viagem só com 80 km ou mais. Desceu a serra!", hint: "Chegue a um destino rodando 80 km+ numa viagem só.", metric: (s) => s.driveLongest, goal: 80 },
     // Toba Turism · Places (desde v1.56; números de calcTurismPlayer em turism-metrics.js)
     { id: "tu-1", cat: "roles", tier: "bronze", icon: "📍", name: "Caderninho aberto", desc: "Primeiro lugar na lista. O rolê começa no papel.", hint: "Ponha um lugar numa lista do Toba Places.", metric: (s) => s.turismAdded, goal: 1 },
@@ -1164,6 +1172,8 @@ function computePlayer(options = {}) {
   const driveSource = readPlayerSource("TOBA_DRIVE_DB");
   const hasDriveRules = typeof calcDrivePlayer === "function";
   if (hasDriveRules) {
+    // v1.68: começa os números do Navegar em zero (sem viagem nenhuma eles nem existiam e a barrinha enchia)
+    Object.assign(stats, calcDrivePlayer({}, today).stats);
     calcDrivePlayer(driveSource.data, today).timeline.forEach((step) => {
       Object.assign(stats, step.stats);
       checkAchievements(step.date);
@@ -1206,7 +1216,7 @@ function computePlayer(options = {}) {
 
   /* ---------- Conquistas ---------- */
   const achievements = PLAYER_ACHIEVEMENTS.map((a) => {
-    const value = a.metric(stats);
+    const value = Number(a.metric(stats)) || 0; // número que não existe = 0 (v1.68: barrinha cheia em conquista trancada)
     const date = unlockedAt[a.id] || "";
     return { ...a, value, date, unlocked: Boolean(date), progress: Math.min(1, a.goal ? value / a.goal : 0), xp: a.xp ?? PLAYER_TIERS[a.tier].xp };
   }).filter((a) => isPlayerSeasonShown(a, today, a.unlocked)); // festa perdida some do álbum

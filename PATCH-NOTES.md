@@ -1525,3 +1525,94 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.67 - Navegar com carango e cor da rota personalizaveis, conquistas do Navegar (DANDANDAN MAX TOBASTEN) e Navegar primeiro no Racing`
+
+## v1.68 — 🏎️ Navegar MODO JOGO (PATCH ULTRA FODA) + 📈 Gráfico da balança equalizado
+
+> 🚨🚨🚨 **PATCH ULTRA FODA NOTES** 🚨🚨🚨
+> O Navegar do Toba Racing deixou de ser GPS e virou **JOGO DE CORRIDA**. Mapa deitado girando com o carango, velocímetro estilo Forza com a placa da via, o Cloba no banco do carona falando besteira, fantasma pra bater, card pra esfregar na cara da tropa e 7 conquistas novas. Nunca foi sorte, Cloba. Nunca foi sorte. 🙏
+
+**Arquivos alterados (Navegar):** `TobaDrive/TobaDrive-Navegar.html`, `TobaDrive/js/drive-game.js` (**novo**), `TobaDrive/js/navegar.js`, `TobaDrive/js/drive-metrics.js`, `TobaDrive/js/drive-route.js`, `TobaDrive/css/navegar.css`, `assets/toba-player.js`, `TobaTurism/js/places.js`, `sw.js`, `CLAUDE.md`
+
+### 🎮 CLOBA MODERN UI UX STYLE
+1. **Mapa de jogo:** no 🚀 Partiu o mapa **deita em 3D**, **gira junto com o carango** (pra frente é sempre pra cima, igual jogo) e o carango fica lá embaixo vendo a estrada vir. Névoa no horizonte, faixa da manobra de vidro escuro com neon laranja.
+2. **Zoom sozinho:** devagar chega pertinho (rua por rua), acelerou e ele abre pra tu ver mais estrada.
+3. **🌙 Noite automática:** o Toba sabe a hora que o sol nasce e se põe **onde tu tá** e troca o mapa claro/escuro sozinho no meio da viagem. Saiu do Navegar, volta o estilo que tu escolheu.
+4. Mexeu no mapa com o dedo? Ele endireita pra ver de cima. Toca no ↗️ pra voltar pro modo jogo.
+5. Tudo dá pra desligar em ⚙️: **🎮 Mapa de jogo** e **🌙 Mapa escuro sozinho à noite**.
+
+### 🏎️ Velocímetro estilo Forza
+1. **Dialzão** no canto com a velocidade do carro em km/h, e do lado a **placa redonda com o limite da via** (vem do TomTom junto com a rota).
+2. **Passou do limite?** O dial fica **vermelho pulsando** e as bordas da tela ficam vermelhas. Ficou passando um tempinho, o Cloba reclama na voz (só quando a próxima manobra tá longe, nunca em cima de uma curva).
+3. **📸 Radares** aparecem no mapa e o Cloba avisa **400 m antes**.
+4. Via sem limite conhecido: some a placa, fica só o dial.
+
+### 🤡 Cloba copiloto (DNA quinta série)
+1. Piadinha na voz e num balão amarelo na tela: na largada, no trânsito ("Mais parado que fila de banco no quinto dia útil"), no radar ("Sorria... ou melhor, não!"), no limite ("Ô Toretto, aqui é 50! Multa não dá XP."), quando recalcula ("O Cloba nunca se perde. Só faz turismo."), quando tá voando antes do previsto (**"Ritmo de MAX TOBASTEN, DANDANDAN!"**) e de vez em quando nas retas longas ("Pavê ou pá comê?").
+2. **Educado:** no máximo uma piada a cada 4 minutos, nunca em cima de manobra. Instrução de caminho sempre vem primeiro.
+3. Cansou? ⚙️ › **🤡 Cloba copiloto** desliga (as instruções continuam).
+
+### 👻 Ghost race
+1. Fez uma rota que **já fez antes** (mesma saída e mesmo destino)? O teu **melhor tempo vira um fantasma** e aparece um chip no canto: **👻 −1:30 na frente** (verde) ou **+0:45 atrás** (vermelho), atualizando a viagem inteira.
+2. O Cloba narra: passou o fantasma, ficou pra trás...
+3. Chegou mais rápido que o recorde = **👻 Fantasma derrotado!** no fim da viagem.
+4. Só conta pra viagens daqui pra frente (as antigas não guardavam de onde saíram).
+
+### 📸 Resumo da viagem (pra tropa)
+1. O fim da viagem ganhou **média e máxima**, a linha do fantasma e as **conquistas que tu destravou nessa viagem**, em chip.
+2. Botão **📤 Tropa:** monta um **card bonitão** (1080×1350, formato de story) com o desenho do caminho, distância, tempo, média, máxima e o selo MAX TOBASTEN / fantasma. No celular abre o compartilhar (WhatsApp, Insta...); no PC baixa a imagem.
+
+### 🔗 Integração Toba
+1. **⛽ Posto perto:** botão novo do lado do "🗺️ No mapa". Lista os postos num raio de 4 km, toca e navega.
+2. **Tanque na reserva?** Se tu usa o ⛽ Combustível com tanque cheio + litros do tanque, o Navegar faz a conta (autonomia − km navegados desde o último tanque cheio) e mostra um aviso com botão de posto quando tá acabando. É chute: só conta o que tu andou pelo Navegar.
+3. **📍 Toba Places:** chegou num lugar da lista que ainda tava "Quero ir"? O fim da viagem mostra **✅ Marcar "Fui" no Toba Places**, que abre o Places já na avaliação do lugar.
+
+### 🏆 Conquistas novas (🏁 Pista)
+1. **👻 Exorcista** (Prata): bateu o próprio fantasma. Destrava o carango **👻 Fantasma** no 🎨.
+2. **🔦 Caça-fantasmas** (Ouro, título "🔦 Caça-fantasmas"): 10 fantasmas.
+3. **📸 Sorria, você NÃO foi filmado** (Prata): 10 radares dentro do limite.
+4. **😇 Pé de anjo** (Prata): 20 min+ de viagem sem ficar vermelho nenhuma vez.
+5. **⛽ Pit stop guiado** (Bronze): foi num posto pelo ⛽ Posto perto.
+6. **📍 Do mapa pro rolê** (Bronze): chegou num lugar do Places navegando.
+7. **📤 Influencer do asfalto** (Bronze): mandou o resumo pra tropa.
+
+### 🐛 Corrigido
+1. **Barrinha cheia em conquista trancada:** as conquistas do Navegar apareciam com a barrinha de progresso **lotada** pra quem ainda não tinha viagem (a conta dava "não-número" e virava 100%). Agora começa zerada e enche certinho.
+
+**Dados (Navegar):** `TOBA_DRIVE_DB` ganha campos novos **opcionais** em cada viagem: `startLat`/`startLng` (de onde saiu, pro fantasma), `maxKmh`, `radars`, `cleanSpeed`, `fuelStop`, `placeId`, `ghostWin` e `shared`. Viagens e backups antigos abrem normal (sem esses campos = fora das conquistas novas). Preferências novas `copilot`, `gameView` e `autoNight` no `toba_drive_prefs` (só deste aparelho, tudo ligado por padrão). `toba_tomtom_nospeed` (deste aparelho) desliga o pedido de limite de velocidade se o TomTom recusar. Radares e postos vêm do OpenStreetMap (Overpass, sem chave). O "Fui" do Places continua gravado **pelo próprio Places** (o Navegar só abre ele com `?fui=`). Conquistas calculadas, nada novo no `TOBA_PLAYER_DB`. `sw.js` → **toba-v29** (arquivo novo `drive-game.js` no cache).
+
+**Como testar (Navegar):**
+- ⚠️ Limite de velocidade, radar e posto foram testados com dados de mentira (o TomTom e o Overpass não abrem daqui). Se a placa do limite nunca aparecer, me manda print do console.
+- Navegar › escolhe um destino › 🚀 Partiu: o mapa deita e gira com o carango, dial do velocímetro embaixo à esquerda com a placa do limite.
+- No PC (DevTools › Sensors › Location), muda a localização rápido pra simular velocidade alta: dial e bordas vermelhas, balão "Ô Toretto...".
+- Faz a mesma rota 2 vezes: na segunda aparece o 👻 com o tempo do recorde.
+- Chega no destino: fim da viagem com média/máxima e chips das conquistas; 📤 Tropa abre o compartilhar (ou baixa a imagem no PC).
+- ⛽ Combustível com litros do tanque e tanque cheio: se a conta der reserva, aparece o aviso no Navegar. ⛽ Posto perto lista postos.
+- Escolhe um lugar "Quero ir" do Places no Navegar e chega: "✅ Marcar Fui" abre o Places na avaliação.
+- Perfil › Conquistas › 🏁 Pista: as 7 novas trancadas com a **barrinha zerada**.
+- ⚙️ desliga 🤡, 🎮 e 🌙: volta o Navegar da v1.67.
+- Testar em 360px e 384px.
+
+---
+
+### 📈 Toba Health: gráfico da balança
+
+**Arquivos alterados (balança):** `TobaHealth/js/pesagem.js`, `TobaHealth/css/pesagem.css`, `TobaHealth/TobaHealth-Pesagem.html`, `CLAUDE.md`
+
+1. **Períodos novos:** em cima do gráfico agora é **2 semanas, 1 mês, 3 meses, 6 meses, 1 ano e Tudo** (saíram o Últimas 5 e Últimas 10). Começa em 3 meses; quem tinha Últimas 5/10 salvo cai nos 3 meses.
+2. **Gráfico equalizado:** cada pesagem ganha o mesmo espaço, não importa se foi ontem ou há 2 meses. 30 pesagens no mês = 30 colunas certinhas, com um risquinho no pé de cada uma. Acabou o gráfico torto com 5 bolinhas espremidas num canto e uma reta gigante no outro.
+3. **🟠 Buraco no calendário:** onde ficou muito tempo sem pesar, o trecho fica laranjinha, com divisória tracejada e o tamanho do buraco ("↔ 2 meses", "↔ 3 sem"). No máximo 2 por gráfico, só os maiores.
+4. **Datas embaixo das bolinhas:** até 4 datas espalhadas, cada uma embaixo da própria pesagem. Se o período vira o ano, mostra "jun/26".
+5. **Tendência honesta:** a linha tracejada e o 🗣️ Papo reto do Cloba continuam calculados pelo tempo de verdade (ritmo por mês igualzinho). No gráfico ela aparece no valor dela em cada pesagem, então no buraco do calendário ela dá o degrauzinho do tempo que passou. Cores por métrica da v1.65 (basal subir = bom etc.) sem mudança.
+6. **❔ Como ler o gráfico:** botãozinho no canto do card do gráfico. O Cloba explica do jeito dele: períodos, uma bolinha por pesagem, o "↔ buraco", a linha de tendência e que cada número da balança tem o lado bom dele (basal subir é bom, gordura descer é toperson).
+
+**Dados:** Nenhuma mudança no `TOBA_HEALTH_DB`. A preferência `toba_health_compare_prefs` agora aceita `"2w"`, `"1m"`, `"3m"`, `"6m"`, `"1y"` e `"all"`; valor antigo (`"5"`/`"10"`) vira `"3m"` sozinho. `sw.js` sem mudança por causa da balança (a subida pra toba-v29 é do Navegar).
+
+**Como testar (balança):**
+- Toba Health › Pesagem › toca em Metabolismo Basal › Tudo: as pesagens ficam espaçadas por igual e aparece o trecho laranja "↔ 2 meses" entre junho e agosto.
+- Passa por 2 semanas, 1 mês, 3 meses, 6 meses e 1 ano: título "📈 Último mês · N pesagens" etc., média e lista mudando junto.
+- O card do Cloba e o "Ritmo: +X por mês" batem com antes (mesma conta).
+- Toca no ❔ do gráfico: abre o "📈 Como ler o gráfico"; explica o laranja do buraco e o lado bom de cada número.
+- Período sem pesagem: "🦗 Nada nesse período" continua.
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.68 - Navegar modo jogo (mapa 3D girando, velocimetro com limite da via, Cloba copiloto, fantasma, resumo pra tropa, posto e Places, 7 conquistas, barrinha zerada) + grafico da balanca equalizado com periodos 2 semanas a 1 ano`

@@ -18,6 +18,9 @@
  * especiais destravam com as conquistas dv-* do Perfil) e viagem guarda etaS
  * (previsão no Partiu) pras conquistas de tempo. toba-player.js carregado aqui:
  * chegou, o Perfil confere as conquistas na hora.
+ * v1.68: modo dirigir ULTRA em js/drive-game.js (visual de jogo, velocímetro,
+ * copiloto, radar, fantasma, resumo, posto, Places). Aqui só os ganchos:
+ * gameStart (Partiu), gameTick (navTick), gameTripExtras (finishTrip), gameStop.
  * ===================================================================== */
 const DRIVE_FAV_EMOJIS = ["🏠", "💼", "❤️", "☕", "🏋️", "🛒", "🍻", "🐾", "⭐"];
 const DRIVE_GPS_TIMEOUT_MS = 20000;
@@ -160,6 +163,7 @@ function kmFromHere(p) {
 }
 
 function renderPick() {
+  if (typeof renderFuelBanner === "function") renderFuelBanner();
   // ⭐ Favoritos
   const favs = driveDb.favorites;
   document.getElementById("favChips").innerHTML = favs.length
@@ -294,6 +298,7 @@ async function ensureMap() {
     if (nav.mode !== "nav") return;
     nav.follow = false;
     document.getElementById("recenterBtn").hidden = false;
+    if (typeof gameApplyView === "function") gameApplyView();
   });
   box.classList.toggle("is-dark", readDrivePrefs().mapStyle === "dark");
   return nav.map;
@@ -303,7 +308,7 @@ function drawCar() {
   if (!nav.map || !nav.pos) return;
   const ll = [nav.pos.lat, nav.pos.lng];
   const veh = currentVehicle();
-  const tf = driveVehicleTransform(veh, nav.pos.heading);
+  const tf = (typeof gameVehicleTransform === "function" && gameVehicleTransform(veh)) || driveVehicleTransform(veh, nav.pos.heading);
   const isNav = nav.mode === "nav";
   if (nav.layers.car && nav.layers.car.tobaVehicle !== veh.id) {
     nav.layers.car.remove();
@@ -486,7 +491,9 @@ async function onMapClick(ev) {
  * Troca de tela
  * ------------------------------------------------------------------- */
 async function setMode(mode) {
+  const wasNav = nav.mode === "nav";
   nav.mode = mode;
+  if (wasNav && mode !== "nav" && typeof gameStop === "function") gameStop();
   const inRoute = mode !== "pick";
   document.getElementById("pickView").hidden = inRoute;
   document.getElementById("routeView").hidden = !inRoute;
@@ -612,9 +619,11 @@ function renderRoute() {
         <div class="toba-stat"><span class="toba-stat-label">⏱️ Tempo</span><span class="toba-stat-value">${driveFormatDuration(r.s || 0)}</span></div>
       </div>
       ${doneTimeLine(r)}
+      ${gameDoneExtra(r)}
       ${r.arrived ? `<div class="dv-quote">Nunca foi sorte, Cloba. Nunca foi sorte. 🙏</div>` : ""}
       <div class="btn-row">
         <button type="button" class="btn btn-outline btn-grow-1" data-click="favOpen">${isFavorite(nav.dest) ? "⭐ Favorito" : "☆ Favoritar"}</button>
+        <button type="button" class="btn btn-outline btn-grow-1" data-click="shareTrip">📤 Tropa</button>
         <button type="button" class="btn btn-primary btn-grow-2" data-click="routeBack">Novo destino</button>
       </div>`;
     return;
@@ -676,6 +685,7 @@ function startNav() {
   nav.trip.etaS = Math.round(nav.route.duration || 0); // previsão no Partiu (conquistas de tempo)
   driveKeepAwake(true);
   setMode("nav").then(() => {
+    gameStart();
     if (nav.map) nav.map.setView([nav.pos.lat, nav.pos.lng], 17);
     const first = nav.route.steps.find((s) => s.type === "depart");
     const eta = driveFormatClock(Date.now() + nav.route.duration * 1000);
@@ -729,6 +739,7 @@ function navTick() {
   const next = driveNextStep(r, nav.along);
   renderNav(next, left, total);
   speakNext(next);
+  gameTick(next, left, total);
 
   if (nav.follow && nav.map) {
     const z = pos.speed > 22 ? 15 : pos.speed > 12 ? 16 : 17;
@@ -809,6 +820,8 @@ async function reroute() {
     nav.offCount = 0;
     nav.spoken = {};
     drawRoute();
+    gameLoadRadars(route);
+    setTimeout(() => gameJoke("reroute"), 2500);
   } catch (err) {
     tobaToast(navigator.onLine === false ? "📡 Sem internet pra recalcular" : "😵 Rota não respondeu, tento de novo já já");
   } finally {
@@ -843,6 +856,7 @@ async function checkTraffic(total) {
     nav.offCount = 0;
     nav.spoken = {};
     drawRoute();
+    gameLoadRadars(fresh);
     const min = Math.round(save / 60);
     tobaToast(`🚦 Caminho ${min} min mais rápido!`);
     driveSpeak(`Trânsito mudou. Achei um caminho ${min} minutos mais rápido.`);
@@ -861,6 +875,10 @@ function finishTrip(arrived) {
   driveKeepAwake(false);
   if (!trip) return { arrived, m: 0, s: 0 };
   const s = (Date.now() - trip.startedAt) / 1000;
+  nav.trip = trip; // gameTripExtras lê daqui
+  const extras = gameTripExtras(arrived, s);
+  nav.trip = null;
+  let tripId = "";
   // Viagem de mentirinha (abriu e fechou parado) não entra no histórico
   if (arrived || trip.m >= 300) {
     driveAddTrip({
@@ -873,12 +891,24 @@ function finishTrip(arrived) {
       km: Math.round(trip.m / 100) / 10,
       arrived: Boolean(arrived),
       etaS: trip.etaS || 0,
+      ...extras,
     });
+    tripId = driveDb.trips[driveDb.trips.length - 1]?.id || "";
     // Perfil confere as conquistas dv-* na hora (toba-player.js nesta página)
     if (typeof tobaPlayerCheck === "function") tobaPlayerCheck({ reason: "drive" });
   }
   const ahead = arrived ? driveTripAhead({ etaS: trip.etaS, startedAt: trip.startedAt, endedAt: Date.now() }) : null;
-  return { arrived, m: trip.m, s, etaS: trip.etaS || 0, ahead };
+  const placeId = extras.placeId || "";
+  return {
+    arrived, m: trip.m, s, etaS: trip.etaS || 0, ahead, tripId,
+    avgKmh: s > 60 ? Math.round((trip.m / 1000) / (s / 3600)) : 0,
+    maxKmh: extras.maxKmh || 0,
+    path: trip.path || [],
+    ghost: arrived ? game.ghost : null,
+    placeId,
+    placeWant: Boolean(placeId) && readPlaceStatus(placeId) !== "been",
+    unlocked: tripId ? gameNewAchievements() : [],
+  };
 }
 
 function arrive() {
@@ -902,6 +932,7 @@ function recenter() {
   nav.follow = true;
   document.getElementById("recenterBtn").hidden = true;
   if (nav.map && nav.pos) nav.map.setView([nav.pos.lat, nav.pos.lng], 17);
+  if (typeof gameApplyView === "function") gameApplyView();
 }
 
 function toggleVoice() {
@@ -991,6 +1022,9 @@ function syncPrefInputs() {
   document.getElementById("prefVoice").checked = p.voice;
   document.getElementById("prefAwake").checked = p.keepAwake;
   document.getElementById("prefTolls").checked = p.avoidTolls;
+  document.getElementById("prefCopilot").checked = p.copilot;
+  document.getElementById("prefGame").checked = p.gameView;
+  document.getElementById("prefNight").checked = p.autoNight;
 }
 
 function prefChange() {
@@ -998,6 +1032,9 @@ function prefChange() {
     voice: document.getElementById("prefVoice").checked,
     keepAwake: document.getElementById("prefAwake").checked,
     avoidTolls: document.getElementById("prefTolls").checked,
+    copilot: document.getElementById("prefCopilot").checked,
+    gameView: document.getElementById("prefGame").checked,
+    autoNight: document.getElementById("prefNight").checked,
   });
   if (nav.mode === "nav") driveKeepAwake(true);
   if (!readDrivePrefs().voice) driveShutUp();
