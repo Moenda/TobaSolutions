@@ -41,7 +41,8 @@ function driveModelGlow(kind, look) {
 }
 const DRIVE_GAME_PITCH = 60;
 // v1.71: amarelo de verdade no lento (o âmbar da v1.70 se misturava com a rota laranja)
-const DRIVE_TRAFFIC_COLORS = { low: "#22c55e", moderate: "#facc15", heavy: "#ef4444", severe: "#b91c1c" };
+// v1.72: verde (low) saiu de novo, a cidade toda ficava verde
+const DRIVE_TRAFFIC_COLORS = { moderate: "#facc15", heavy: "#ef4444", severe: "#b91c1c" };
 // v1.71: faixa do trânsito larga, por baixo do risco fino da rota
 const DRIVE_TRAFFIC_WIDTH = ["interpolate", ["linear"], ["zoom"], 10, 3, 13, 7, 15, 11, 16, 14, 18, 22, 19, 28];
 const DRIVE_LIGHTS = [
@@ -202,7 +203,7 @@ async function driveMapboxMap(box, center, zoom) {
   let trafficTimer = null;
   try {
     map.addSource("dv-traffic", { type: "vector", url: DRIVE_MAPBOX_TRAFFIC });
-    const trafficFilter = ["match", ["get", "congestion"], ["low", "moderate", "heavy", "severe"], true, false];
+    const trafficFilter = ["match", ["get", "congestion"], ["moderate", "heavy", "severe"], true, false];
     const trafficOffset = ["interpolate", ["linear"], ["zoom"], 12, 0.5, 16, 2, 19, 5];
     const vis = readDrivePrefs().traffic ? "visible" : "none";
     // borda escura: separa o trânsito da rua clara
@@ -231,11 +232,11 @@ async function driveMapboxMap(box, center, zoom) {
       filter: trafficFilter,
       layout: { "line-cap": "round", "line-join": "round", "line-sort-key": ["match", ["get", "congestion"], "severe", 3, "heavy", 2, "moderate", 1, 0], visibility: vis },
       paint: {
-        "line-color": ["match", ["get", "congestion"], "severe", DRIVE_TRAFFIC_COLORS.severe, "heavy", DRIVE_TRAFFIC_COLORS.heavy, "moderate", DRIVE_TRAFFIC_COLORS.moderate, DRIVE_TRAFFIC_COLORS.low],
+        "line-color": ["match", ["get", "congestion"], "severe", DRIVE_TRAFFIC_COLORS.severe, "heavy", DRIVE_TRAFFIC_COLORS.heavy, DRIVE_TRAFFIC_COLORS.moderate],
         "line-width": DRIVE_TRAFFIC_WIDTH,
         // mão e contramão lado a lado (cada sentido vem numa linha)
         "line-offset": trafficOffset,
-        "line-opacity": ["match", ["get", "congestion"], "low", 0.75, 0.95],
+        "line-opacity": 0.95,
         "line-emissive-strength": 1,
       },
     }, "dv-route-jam");

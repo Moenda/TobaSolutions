@@ -23,6 +23,8 @@ const DRIVE_OVERPASS_URL = "https://overpass-api.de/api/interpreter?data=";
 const DRIVE_VALHALLA_URL = "https://valhalla1.openstreetmap.de/route?json=";
 const DRIVE_OSRM_URL = "https://router.project-osrm.org/route/v1/driving/";
 const DRIVE_SEARCH_URL = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=1&accept-language=pt-BR&countrycodes=br&q=";
+const DRIVE_TOMTOM_GEOCODE_URL = "https://api.tomtom.com/search/2/geocode/";
+const DRIVE_MAPBOX_GEOCODE_URL = "https://api.mapbox.com/search/geocode/v6/forward";
 const DRIVE_REVERSE_URL = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&addressdetails=1&accept-language=pt-BR";
 const DRIVE_FETCH_TIMEOUT_MS = 12000;
 const DRIVE_REROUTE_GAP_MS = 12000;
@@ -173,8 +175,74 @@ function driveAddressLine(addr, fallback = "") {
   return [street, area, city].filter(Boolean).join(" · ") || fallback;
 }
 
+/* v1.72: rua + número. O Nominatim (OSM) quase não tem número de casa no Brasil
+ * ("Rua X 570" só achava a rua). Se a busca tem número, tenta o geocode do TomTom
+ * e depois o do Mapbox, e só aceita resultado com o número da casa. Nada achado
+ * (ou sem rede/cota): cai no Nominatim de sempre. */
+function driveNumberInQuery(q) {
+  // o último número é o da casa ("Rua 25 de Março 300" → 300)
+  const all = [...String(q).matchAll(/(?:^|[\s,])(?:n[º°o]?\.?\s*)?(\d{1,5})(?=\b|[a-z])/gi)];
+  return all.length ? all[all.length - 1][1] : "";
+}
+
+async function driveGeocodeTomTom(q, near) {
+  if (typeof tobaTomTomOn !== "function" || !tobaTomTomOn()) return [];
+  const params = new URLSearchParams({ key: TOBA_TOMTOM_KEY, countrySet: "BR", language: "pt-BR", limit: "6" });
+  if (near) {
+    params.set("lat", near.lat.toFixed(5));
+    params.set("lon", near.lng.toFixed(5));
+  }
+  const json = await driveFetchJson(`${DRIVE_TOMTOM_GEOCODE_URL}${encodeURIComponent(q)}.json?${params}`);
+  return (json?.results || [])
+    .filter((r) => /point address|address range/i.test(r.type || "") && r.address?.streetNumber)
+    .map((r) => ({
+      name: [r.address.streetName, r.address.streetNumber].filter(Boolean).join(", "),
+      address: [r.address.municipalitySubdivision, r.address.municipality].filter(Boolean).join(" · "),
+      lat: Number(r.position?.lat),
+      lng: Number(r.position?.lon),
+    }));
+}
+
+async function driveGeocodeMapbox(q, near) {
+  if (typeof TOBA_MAPBOX_TOKEN !== "string" || !TOBA_MAPBOX_TOKEN) return [];
+  const params = new URLSearchParams({ q, country: "br", language: "pt", limit: "5", types: "address", access_token: TOBA_MAPBOX_TOKEN });
+  if (near) params.set("proximity", `${near.lng.toFixed(5)},${near.lat.toFixed(5)}`);
+  const json = await driveFetchJson(`${DRIVE_MAPBOX_GEOCODE_URL}?${params}`);
+  return (json?.features || [])
+    .map((f) => f.properties || {})
+    .filter((p) => p.context?.address?.address_number)
+    .map((p) => ({
+      name: [p.context.address.street_name || p.name, p.context.address.address_number].filter(Boolean).join(", "),
+      address: [p.context.neighborhood?.name || p.context.locality?.name, p.context.place?.name].filter(Boolean).join(" · "),
+      lat: Number(p.coordinates?.latitude),
+      lng: Number(p.coordinates?.longitude),
+    }));
+}
+
+async function driveSearchAddress(q, near) {
+  const num = driveNumberInQuery(q);
+  if (!num) return [];
+  for (const fn of [driveGeocodeTomTom, driveGeocodeMapbox]) {
+    try {
+      const rows = (await fn(q, near)).filter(driveValidPoint);
+      // o número que a pessoa digitou tem que estar no resultado (senão é outro endereço)
+      const exact = rows.filter((r) => new RegExp(`\\b${num}\\b`).test(r.name));
+      if (exact.length) return exact;
+    } catch (err) {
+      if (fn === driveGeocodeTomTom && err.status && err.status !== 400 && err.status < 500) tobaTomTomOff(`busca HTTP ${err.status}`);
+      console.warn("busca de endereço com número falhou", err);
+    }
+  }
+  return [];
+}
+
 // near = { lat, lng } (opcional): resultados perto de onde a pessoa está vêm primeiro
 async function driveSearchPlaces(q, near) {
+  const exact = await driveSearchAddress(q, near);
+  if (exact.length) {
+    if (near) exact.forEach((r) => (r.km = driveDist([near.lat, near.lng], [r.lat, r.lng]) / 1000));
+    return exact;
+  }
   let url = DRIVE_SEARCH_URL + encodeURIComponent(q);
   if (near) {
     const d = 0.5;

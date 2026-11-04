@@ -1732,3 +1732,16 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 **Como testar (Navegar):** 🚀 Partiu › 🎨 › Luz do mapa › 🌙 Noite: o GT fica claro e com farol no chão. Dá zoom pra fora e pra dentro com os dedos: o carango fica do mesmo tamanho. Troca pra ☀️ Dia: farol some. Com o 🚦 ligado: risco fino da rota com a faixa verde/amarela/vermelha larga por baixo, e as outras ruas coloridas também.
 
 **Commit sugerido:** `v1.71 - Investimentos sem botoes rapidos de valor/data e sem a frase do cafe no resgatado + Navegar com carango de tamanho fixo, luz do mapa no Personalizar, farol aceso de noite e transito verde/amarelo/vermelho largo por baixo do risco da rota`
+
+## v1.72 — 🧭 Navegar: trânsito sem o verde e busca que acha o número da casa
+
+**Arquivos alterados:** `TobaDrive/js/drive-map.js`, `TobaDrive/js/drive-route.js`, `sw.js` (versão `toba-v33`), `CLAUDE.md`
+
+1. **🚦 Tchau, verde:** o trânsito livre (verde) saiu de novo, porque a cidade inteira ficava verde. Continua só 🟡 amarelo lento, 🔴 vermelho pesado e vinho parado, largo por baixo do risco fino da rota.
+2. **🔎 Rua + número:** "Rua dos Otonis 570" agora acha a casa certa, e não só a rua. Quando a busca tem número, o Navegar procura primeiro no TomTom e depois no Mapbox e só aceita o resultado que tem aquele número. Se nenhum dos dois achar (ou estiver sem cota), cai na busca de sempre.
+
+**Dados:** Nenhuma mudança no banco.
+
+**Como testar:** Navegar › buscar "Rua dos Otonis 570": aparece "Rua dos Otonis, 570 · Vila Clementino · São Paulo" e o pino cai na porta. Buscar só o nome de um lugar (ex.: um café): continua igual. 🚀 Partiu com o 🚦 ligado: rua livre sem cor, só amarelo/vermelho.
+
+**Commit sugerido:** `v1.72 - Navegar sem o verde do transito e busca de endereco com numero da casa (TomTom e Mapbox antes do Nominatim)`
