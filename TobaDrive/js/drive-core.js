@@ -19,7 +19,7 @@ function createEmptyDriveDb() {
     version: 1,
     favorites: [], // [{ id: "fv-..", name, emoji, lat, lng, address, createdAt }]
     recent: [], // [{ name, address, lat, lng, at (ms), placeId? }] (mais novo primeiro)
-    trips: [], // [{ id: "t-..", date, startedAt, endedAt, name, lat, lng, km, arrived }]
+    trips: [], // [{ id: "t-..", date, startedAt, endedAt, name, lat, lng, km, arrived, etaS? }]
   };
 }
 
@@ -57,6 +57,7 @@ function normalizeDriveDb(db) {
   out.trips.forEach((t) => {
     t.km = Number(t.km) || 0;
     t.arrived = Boolean(t.arrived);
+    if (t.etaS !== undefined) t.etaS = Math.max(0, Math.round(Number(t.etaS) || 0)); // v1.67: previsão no Partiu
   });
   return out;
 }

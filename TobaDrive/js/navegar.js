@@ -14,6 +14,10 @@
  * do TomTom (assets/toba-maps.js + drive-route.js), 🚦 camada de trânsito e,
  * navegando com rota TomTom, confere o trânsito a cada DRIVE_TRAFFIC_CHECK_MS:
  * atualiza a chegada e troca de caminho se o novo poupar DRIVE_SWAP_SAVE_S+.
+ * v1.67: 🎨 Personalizar (carango no lugar da seta + cor da rota; carangos
+ * especiais destravam com as conquistas dv-* do Perfil) e viagem guarda etaS
+ * (previsão no Partiu) pras conquistas de tempo. toba-player.js carregado aqui:
+ * chegou, o Perfil confere as conquistas na hora.
  * ===================================================================== */
 const DRIVE_FAV_EMOJIS = ["🏠", "💼", "❤️", "☕", "🏋️", "🛒", "🍻", "🐾", "⭐"];
 const DRIVE_GPS_TIMEOUT_MS = 20000;
@@ -298,17 +302,25 @@ async function ensureMap() {
 function drawCar() {
   if (!nav.map || !nav.pos) return;
   const ll = [nav.pos.lat, nav.pos.lng];
-  const rot = Number.isFinite(nav.pos.heading) ? nav.pos.heading : 0;
-  const html = `<span class="dv-car${nav.mode === "nav" ? " is-nav" : ""}" style="transform: rotate(${Math.round(rot)}deg)"></span>`;
+  const veh = currentVehicle();
+  const tf = driveVehicleTransform(veh, nav.pos.heading);
+  const isNav = nav.mode === "nav";
+  if (nav.layers.car && nav.layers.car.tobaVehicle !== veh.id) {
+    nav.layers.car.remove();
+    nav.layers.car = null;
+  }
   if (!nav.layers.car) {
-    nav.layers.car = L.marker(ll, { icon: L.divIcon({ className: "dv-car-wrap", html, iconSize: [34, 34], iconAnchor: [17, 17] }), interactive: false, zIndexOffset: 1000 }).addTo(nav.map);
+    const html = veh.face === "arrow"
+      ? `<span class="dv-car dv-veh-el${isNav ? " is-nav" : ""}" style="transform: ${tf}"></span>`
+      : `<span class="dv-veh${isNav ? " is-nav" : ""}"><span class="dv-veh-el" style="transform: ${tf}">${veh.icon}</span></span>`;
+    nav.layers.car = L.marker(ll, { icon: L.divIcon({ className: "dv-car-wrap", html, iconSize: [40, 40], iconAnchor: [20, 20] }), interactive: false, zIndexOffset: 1000 }).addTo(nav.map);
+    nav.layers.car.tobaVehicle = veh.id;
   } else {
     nav.layers.car.setLatLng(ll);
-    const el = nav.layers.car.getElement()?.querySelector(".dv-car");
-    if (el) {
-      el.style.transform = `rotate(${Math.round(rot)}deg)`;
-      el.classList.toggle("is-nav", nav.mode === "nav");
-    }
+    const root = nav.layers.car.getElement();
+    const el = root?.querySelector(".dv-veh-el");
+    if (el) el.style.transform = tf;
+    root?.querySelector(".dv-car, .dv-veh")?.classList.toggle("is-nav", isNav);
   }
 }
 
@@ -318,7 +330,7 @@ function drawRoute() {
   nav.layers.marks.clearLayers();
   if (nav.route) {
     L.polyline(nav.route.coords, { color: "#0d1117", weight: 10, opacity: 0.55 }).addTo(nav.layers.route);
-    L.polyline(nav.route.coords, { color: "#fb923c", weight: 6, opacity: 0.95 }).addTo(nav.layers.route);
+    L.polyline(nav.route.coords, { color: currentRouteColor(), weight: 6, opacity: 0.95 }).addTo(nav.layers.route);
     // Trechos parados da rota TomTom por cima (amarelo = lento, vermelho = parado)
     (nav.route.jams || []).forEach((j) => {
       const part = nav.route.coords.slice(j.from, j.to + 1);
@@ -349,6 +361,74 @@ function toggleMapStyle() {
   if (nav.traffic) nav.traffic.tobaSetStyle(next);
   document.getElementById("driveMap").classList.toggle("is-dark", next === "dark");
   document.getElementById("styleBtn").textContent = next === "dark" ? "☀️" : "🌙";
+}
+
+/* ---------------------------------------------------------------------
+ * 🎨 Personalizar (v1.67): carango e cor da rota
+ * ------------------------------------------------------------------- */
+function driveStatsNow() {
+  return calcDrivePlayer(driveDb, toIsoDate(new Date())).stats;
+}
+
+function currentVehicle() {
+  const v = driveVehicle(readDrivePrefs().vehicle);
+  return driveVehicleUnlocked(v, driveStatsNow()) ? v : DRIVE_VEHICLES[0];
+}
+
+function currentRouteColor() {
+  const id = readDrivePrefs().routeColor;
+  return (DRIVE_ROUTE_COLORS.find((c) => c.id === id) || DRIVE_ROUTE_COLORS[0]).color;
+}
+
+function driveAchievementInfo(id) {
+  const a = typeof PLAYER_ACHIEVEMENTS !== "undefined" ? PLAYER_ACHIEVEMENTS.find((x) => x.id === id) : null;
+  return a ? `${a.icon} ${a.name}: ${a.hint}` : "uma conquista do Navegar";
+}
+
+function renderStyleSheet() {
+  const stats = driveStatsNow();
+  const cur = currentVehicle().id;
+  document.getElementById("vehicleChips").innerHTML = DRIVE_VEHICLES.map((v) => {
+    const open = driveVehicleUnlocked(v, stats);
+    return `<button type="button" class="dv-veh-pick${v.id === cur ? " is-on" : ""}${open ? "" : " is-locked"}" data-click="pickVehicle" data-id="${v.id}" aria-label="${escapeHtml(v.name)}">
+      <span class="dv-veh-pick-icon">${open ? v.icon : "🔒"}</span>
+      <span class="dv-veh-pick-name">${escapeHtml(v.name)}</span>
+    </button>`;
+  }).join("");
+  const curColor = readDrivePrefs().routeColor;
+  document.getElementById("routeColorChips").innerHTML = DRIVE_ROUTE_COLORS.map((c) =>
+    `<button type="button" class="dv-color${c.id === curColor ? " is-on" : ""}" data-click="pickRouteColor" data-id="${c.id}" style="--c: ${c.color}" aria-label="${escapeHtml(c.name)}"></button>`).join("");
+  const got = DRIVE_VEHICLES.filter((v) => driveVehicleUnlocked(v, stats)).length;
+  document.getElementById("vehicleCount").textContent = `${got}/${DRIVE_VEHICLES.length}`;
+}
+
+function openStyleSheet() {
+  renderStyleSheet();
+  openTobaModal("styleSheet");
+}
+
+function pickVehicle(el) {
+  const v = driveVehicle(el.dataset.id);
+  if (!driveVehicleUnlocked(v, driveStatsNow())) {
+    showPageMessage(`O ${v.icon} ${v.name} destrava com a conquista ${driveAchievementInfo(v.achievement)}`, { title: "Ainda trancado", icon: "🔒" });
+    return;
+  }
+  storeDrivePrefs({ vehicle: v.id });
+  renderStyleSheet();
+  drawCar();
+  renderPickVehicle();
+  tobaToast(`${v.icon} ${v.name} na pista!`);
+}
+
+function pickRouteColor(el) {
+  storeDrivePrefs({ routeColor: el.dataset.id });
+  renderStyleSheet();
+  drawRoute();
+}
+
+function renderPickVehicle() {
+  const btn = document.getElementById("styleOpenBtn");
+  if (btn) btn.textContent = `🎨 Personalizar · ${currentVehicle().icon}`;
 }
 
 // 🚦 camada de trânsito do TomTom (some sozinha se o TomTom estiver fora)
@@ -481,6 +561,16 @@ async function setDestination(dest) {
   renderRoute();
 }
 
+// Linha do "fim da viagem": previsto x feito (DANDANDAN MAX TOBASTEN = 10%+ antes)
+function doneTimeLine(r) {
+  if (!r.arrived || r.ahead === null || r.ahead === undefined) return "";
+  const pct = Math.round(Math.abs(r.ahead) * 100);
+  const plan = `previsto ${driveFormatDuration(r.etaS)}, fez em ${driveFormatDuration(r.s)}`;
+  if (r.ahead >= 1 - DRIVE_TOBASTEN_RATIO) return `<div class="dv-tobasten"><b>⚡ DANDANDAN MAX TOBASTEN!</b><span>${pct}% antes do previsto · ${plan}</span></div>`;
+  if (Math.abs(r.ahead) <= DRIVE_SWISS_MARGIN) return `<div class="dv-timeline">⏱️ Relógio suíço: ${plan}</div>`;
+  return `<div class="dv-timeline">${r.ahead > 0 ? `🏁 ${pct}% antes` : `🐢 ${pct}% depois`} do previsto · ${plan}</div>`;
+}
+
 function retryRoute() {
   if (nav.dest) setDestination(nav.dest);
 }
@@ -521,6 +611,7 @@ function renderRoute() {
         <div class="toba-stat"><span class="toba-stat-label">🛣️ Rodou</span><span class="toba-stat-value">${driveFormatKm(r.m || 0)} km</span></div>
         <div class="toba-stat"><span class="toba-stat-label">⏱️ Tempo</span><span class="toba-stat-value">${driveFormatDuration(r.s || 0)}</span></div>
       </div>
+      ${doneTimeLine(r)}
       ${r.arrived ? `<div class="dv-quote">Nunca foi sorte, Cloba. Nunca foi sorte. 🙏</div>` : ""}
       <div class="btn-row">
         <button type="button" class="btn btn-outline btn-grow-1" data-click="favOpen">${isFavorite(nav.dest) ? "⭐ Favorito" : "☆ Favoritar"}</button>
@@ -582,6 +673,7 @@ function startNav() {
   nav.follow = true;
   nav.trip = { startedAt: Date.now(), m: 0, last: [nav.pos.lat, nav.pos.lng] };
   nav.lastTrafficCheck = Date.now();
+  nav.trip.etaS = Math.round(nav.route.duration || 0); // previsão no Partiu (conquistas de tempo)
   driveKeepAwake(true);
   setMode("nav").then(() => {
     if (nav.map) nav.map.setView([nav.pos.lat, nav.pos.lng], 17);
@@ -780,9 +872,13 @@ function finishTrip(arrived) {
       lng: nav.dest?.lng ?? null,
       km: Math.round(trip.m / 100) / 10,
       arrived: Boolean(arrived),
+      etaS: trip.etaS || 0,
     });
+    // Perfil confere as conquistas dv-* na hora (toba-player.js nesta página)
+    if (typeof tobaPlayerCheck === "function") tobaPlayerCheck({ reason: "drive" });
   }
-  return { arrived, m: trip.m, s };
+  const ahead = arrived ? driveTripAhead({ etaS: trip.etaS, startedAt: trip.startedAt, endedAt: Date.now() }) : null;
+  return { arrived, m: trip.m, s, etaS: trip.etaS || 0, ahead };
 }
 
 function arrive() {
@@ -943,6 +1039,9 @@ tobaActions({
   toggleVoice,
   toggleMapStyle,
   toggleTraffic,
+  openStyleSheet,
+  pickVehicle,
+  pickRouteColor,
   openOut,
   openGoogleMaps,
   openWaze,
@@ -961,6 +1060,7 @@ window.addEventListener("pagehide", () => {
 
 (function initNavegar() {
   syncPrefInputs();
+  renderPickVehicle();
   if (tobaIsApp()) {
     const notice = document.getElementById("apkNotice");
     notice.hidden = false;

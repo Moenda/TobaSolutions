@@ -1490,3 +1490,38 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.66 - TomTom com transito ao vivo no Navegar e no Places, Toba Drive dentro do Toba Racing e fundo do Perfil sem pisca-pisca`
+
+---
+
+## v1.67 — 🎨 Carango no mapa + ⚡ conquistas do Navegar (DANDANDAN MAX TOBASTEN)
+
+**Arquivos alterados:** `TobaDrive/TobaDrive-Navegar.html`, `TobaDrive/js/navegar.js`, `TobaDrive/js/drive-metrics.js`, `TobaDrive/js/drive-route.js`, `TobaDrive/js/drive-core.js`, `TobaDrive/css/navegar.css`, `assets/toba-player.js`, `TobaRacing/TobaRacing-Index.html`, `TobaRacing/css/racing-base.css`, `Toba-Perfil.html`, `Toba-Amigos.html`, `TobaHealth/TobaHealth-Treinos.html`, `TobaRoutine/TobaRoutine-Rotina.html`, `TobaRoutine/TobaRoutine-Task.html`, `TobaRoutine/TobaRoutine-Agenda.html`, `TobaKitchen/TobaKitchen-Receitas.html`, `TobaKitchen/TobaKitchen-Semana.html`, `TobaRacing/TobaRacing-Combustivel.html`, `TobaTurism/TobaTurism-Places.html`, `CLAUDE.md`
+
+### 🎨 Navegar do teu jeito
+1. **Botão 🎨 Personalizar** na tela do Navegar (embaixo do "Escolher no mapa"): escolhe o **carango** que anda no mapa no lugar da seta e a **cor da linha da rota** (Cone, Azul, Verde, Rosa, Roxo, Neon).
+2. **11 carangos:** ➤ Seta clássica, 🚗 Carrinho e 🐢 Modo Marginal já vêm liberados. Os outros saem nas conquistas novas: 🏍️ Motoca, 🚕 Táxi, 🚓 Viatura, 🚌 Busão, 🛻 Picape, 🏎️ Max Tobasten, 🚀 Foguete e 🛸 OVNI. Tocar num 🔒 mostra qual conquista libera.
+3. **O carango vira pro lado que tu anda** (indo pro leste ele olha pra direita, pro oeste pra esquerda). A seta clássica continua girando com o rumo.
+
+### ⚡ Conquistas do Navegar (🏁 Pista, no Perfil)
+1. **⚡ DANDANDAN MAX TOBASTEN** (Ouro, título "⚡ Max Tobasten"): chegar **10% antes do previsto** numa rota de 10 min ou mais. **🏆 Tobasten pentacampeão** (Lendária): 5 vezes.
+2. **⏱️ Relógio suíço:** chegar certinho no previsto (3% pra mais ou pra menos).
+3. **🧭 Largada no GPS** (1ª chegada), **🗺️ GPS de carne e osso** (10), **🛰️ Satélite particular** (50).
+4. **🛣️ Cem conto de asfalto** (100 km navegados) e **🌎 Mil e uma rotas** (1.000 km).
+5. **🌙 Corujão do asfalto** (saiu entre 22h e 5h) e **🏖️ Destino: praia** (uma viagem de 80 km+).
+6. **Avatares novos:** ⚡ (Max Tobasten) e 🛸 (Satélite particular).
+7. **Na hora:** chegou, o Perfil confere e comemora ali mesmo no Navegar. O fim da viagem mostra "previsto X, fez em Y" e o selo **⚡ DANDANDAN MAX TOBASTEN!** quando rolar.
+8. Só viagem que **chegou** conta (encerrar no meio não vale). As de tempo só valem pras viagens daqui pra frente, porque as antigas não guardavam a previsão.
+
+### 🏁 Hub do Racing
+1. **🧭 Navegar primeiro**, depois o ⛽ Combustível. O resumo "🧭 Na estrada" também subiu pra cima do "🏆 Seu pit stop".
+
+**Dados:** Campo novo opcional `etaS` em cada viagem do `TOBA_DRIVE_DB` (previsão da rota em segundos na hora do 🚀 Partiu). Viagens e backups antigos abrem normal (sem `etaS` = fora das conquistas de tempo). Preferências novas `vehicle` e `routeColor` no `toba_drive_prefs` (só deste aparelho). Conquistas são calculadas, nada gravado no `TOBA_PLAYER_DB` além do que já era. Toda página com o Perfil agora carrega `TobaDrive/js/drive-metrics.js` (sem ele o XP não fecha e nada é comemorado).
+
+**Como testar:**
+- 🏁 Toba Racing: Navegar em cima, Combustível embaixo.
+- Navegar › 🎨 Personalizar › escolhe 🐢 e cor Rosa › escolhe um destino: a tartaruga aparece no lugar da seta e a rota fica rosa. Toca num 🔒 pra ver a conquista.
+- No PC (DevTools › Sensors › Location), faz uma navegação curta até chegar: aparece a 🧭 Largada no GPS e a 🏍️ Motoca destrava no 🎨.
+- Perfil › Conquistas › 🏁 Pista: as 10 novas aparecem (trancadas com a dica).
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.67 - Navegar com carango e cor da rota personalizaveis, conquistas do Navegar (DANDANDAN MAX TOBASTEN) e Navegar primeiro no Racing`

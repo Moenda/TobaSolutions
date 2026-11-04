@@ -400,6 +400,97 @@ function driveNextStep(route, along) {
   return last ? { index: steps.length - 1, step: last, dist: Math.max(0, route.distance - along) } : null;
 }
 
+/* ---------- conquistas do Perfil (v1.67) ----------
+ * Números em ordem de data pro computePlayer() (toba-player.js) conferir as
+ * conquistas "dv-*". Só viagem que CHEGOU conta (encerrar no meio não vale).
+ * etaS = previsão da rota na hora do 🚀 Partiu (viagem antiga não tem: não
+ * entra nas de tempo). "Max Tobasten" = rota de 10 min+ feita em 90% do
+ * previsto ou menos; "Relógio suíço" = dentro de 3% do previsto.
+ */
+const DRIVE_TOBASTEN_MIN_ETA_S = 600;
+const DRIVE_TOBASTEN_RATIO = 0.9;
+const DRIVE_SWISS_MARGIN = 0.03;
+
+// Quanto a viagem foi mais rápida que o previsto (0.12 = 12% antes). null = sem previsão.
+function driveTripAhead(trip) {
+  const eta = Number(trip?.etaS) || 0;
+  const took = ((Number(trip?.endedAt) || 0) - (Number(trip?.startedAt) || 0)) / 1000;
+  if (eta < DRIVE_TOBASTEN_MIN_ETA_S || took <= 0) return null;
+  return 1 - took / eta;
+}
+
+function driveTripIsNight(trip) {
+  const h = new Date(Number(trip?.startedAt) || 0).getHours();
+  return h >= 22 || h < 5;
+}
+
+function calcDrivePlayer(data, today) {
+  const d = driveSafeDb(data);
+  const trips = d.trips
+    .filter((t) => t && t.arrived && typeof t.date === "string" && t.date <= today)
+    .sort((a, b) => a.date.localeCompare(b.date) || (Number(a.endedAt) || 0) - (Number(b.endedAt) || 0));
+  const stats = { driveArrived: 0, driveKm: 0, driveNight: 0, driveLongest: 0, driveTobasten: 0, driveSwiss: 0 };
+  const timeline = trips.map((t) => {
+    const km = Number(t.km) || 0;
+    stats.driveArrived += 1;
+    stats.driveKm = Math.round((stats.driveKm + km) * 10) / 10;
+    stats.driveLongest = Math.max(stats.driveLongest, km);
+    if (driveTripIsNight(t)) stats.driveNight += 1;
+    const ahead = driveTripAhead(t);
+    if (ahead !== null && ahead >= 1 - DRIVE_TOBASTEN_RATIO) stats.driveTobasten += 1;
+    if (ahead !== null && Math.abs(ahead) <= DRIVE_SWISS_MARGIN) stats.driveSwiss += 1;
+    return { date: t.date, stats: { ...stats } };
+  });
+  return { stats, timeline };
+}
+
+/* ---------- carango no mapa (v1.67) ----------
+ * O que aparece no lugar da bolinha com seta. "need" usa os mesmos números do
+ * calcDrivePlayer (e a mesma meta da conquista "achievement" do Perfil), então
+ * destrava junto. face: "left" = emoji de lado olhando pra esquerda (vira pro
+ * lado que o carro anda); "up" = gira com o rumo; "none" = não gira.
+ */
+const DRIVE_VEHICLES = [
+  { id: "seta", icon: "➤", name: "Seta clássica", face: "arrow" },
+  { id: "carro", icon: "🚗", name: "Carrinho", face: "left" },
+  { id: "tartaruga", icon: "🐢", name: "Modo Marginal", face: "left" },
+  { id: "moto", icon: "🏍️", name: "Motoca", face: "left", achievement: "dv-1", need: (s) => s.driveArrived >= 1 },
+  { id: "taxi", icon: "🚕", name: "Táxi", face: "left", achievement: "dv-10", need: (s) => s.driveArrived >= 10 },
+  { id: "corujao", icon: "🚓", name: "Viatura", face: "left", achievement: "dv-noite", need: (s) => s.driveNight >= 1 },
+  { id: "busao", icon: "🚌", name: "Busão", face: "left", achievement: "dv-km100", need: (s) => s.driveKm >= 100 },
+  { id: "picape", icon: "🛻", name: "Picape", face: "left", achievement: "dv-longa", need: (s) => s.driveLongest >= 80 },
+  { id: "f1", icon: "🏎️", name: "Max Tobasten", face: "left", achievement: "dv-tobasten", need: (s) => s.driveTobasten >= 1 },
+  { id: "foguete", icon: "🚀", name: "Foguete", face: "up", achievement: "dv-km1000", need: (s) => s.driveKm >= 1000 },
+  { id: "ovni", icon: "🛸", name: "OVNI", face: "none", achievement: "dv-50", need: (s) => s.driveArrived >= 50 },
+];
+
+// Cores da linha da rota (v1.67)
+const DRIVE_ROUTE_COLORS = [
+  { id: "laranja", color: "#fb923c", name: "Cone" },
+  { id: "azul", color: "#3b82f6", name: "Azul" },
+  { id: "verde", color: "#22c55e", name: "Verde" },
+  { id: "rosa", color: "#ec4899", name: "Rosa" },
+  { id: "roxo", color: "#a855f7", name: "Roxo" },
+  { id: "ciano", color: "#22d3ee", name: "Neon" },
+];
+
+function driveVehicle(id) {
+  return DRIVE_VEHICLES.find((v) => v.id === id) || DRIVE_VEHICLES[0];
+}
+
+function driveVehicleUnlocked(vehicle, stats) {
+  return !vehicle.need || Boolean(stats && vehicle.need(stats));
+}
+
+// transform CSS do carango pro rumo (graus, 0 = norte)
+function driveVehicleTransform(vehicle, heading) {
+  const h = Number.isFinite(heading) ? heading : 0;
+  if (vehicle.face === "arrow") return `rotate(${Math.round(h)}deg)`;
+  if (vehicle.face === "up") return `rotate(${Math.round(h - 45)}deg)`; // 🚀 já nasce apontando pra 45°
+  if (vehicle.face === "left") return h > 0 && h < 180 ? "scaleX(-1)" : "none";
+  return "none";
+}
+
 // Links de fuga: Google Maps e Waze já navegando até o ponto
 function driveGoogleMapsUrl(dest) {
   return `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}&travelmode=driving&dir_action=navigate`;

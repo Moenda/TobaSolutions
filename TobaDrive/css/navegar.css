@@ -542,3 +542,136 @@ body.is-driving .dv-route .leaflet-bottom {
   color: #f97316;
   font-weight: 700;
 }
+
+/* v1.67: 🎨 carango no mapa (emoji no lugar da seta) */
+.dv-car-wrap .dv-car {
+  margin: 3px;
+}
+
+.dv-veh {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.92) 0 52%, rgba(255, 255, 255, 0) 70%);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+.dv-veh.is-nav {
+  background: radial-gradient(circle, rgba(251, 146, 60, 0.95) 0 52%, rgba(251, 146, 60, 0) 70%);
+}
+
+.dv-veh-el {
+  display: inline-block;
+  font-size: 1.55rem;
+  line-height: 1;
+  transition: transform 0.4s ease;
+}
+
+.dv-style-open {
+  margin-top: 0.6rem;
+}
+
+.dv-count {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--drive);
+}
+
+.dv-veh-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.dv-veh-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 2px 6px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  color: var(--text);
+  cursor: pointer;
+}
+
+.dv-veh-pick.is-on {
+  border-color: var(--drive);
+  background: rgba(251, 146, 60, 0.16);
+}
+
+.dv-veh-pick.is-locked {
+  opacity: 0.45;
+}
+
+.dv-veh-pick-icon {
+  font-size: 1.6rem;
+  line-height: 1.1;
+}
+
+.dv-veh-pick-name {
+  max-width: 100%;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dv-colors {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+}
+
+.dv-color {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  background: var(--c);
+  cursor: pointer;
+}
+
+.dv-color.is-on {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--c);
+}
+
+/* v1.67: previsto x feito no fim da viagem */
+.dv-timeline {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.dv-tobasten {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0.6rem;
+  border-radius: var(--radius);
+  background: linear-gradient(90deg, rgba(250, 204, 21, 0.18), rgba(251, 146, 60, 0.22));
+  border: 1px solid rgba(250, 204, 21, 0.6);
+  text-align: center;
+}
+
+.dv-tobasten b {
+  font-size: 1rem;
+  letter-spacing: 0.5px;
+  color: #facc15;
+}
+
+.dv-tobasten span {
+  font-size: 0.76rem;
+  color: var(--text);
+}

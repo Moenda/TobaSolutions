@@ -414,3 +414,7 @@
   color: var(--muted);
   line-height: 1.4;
 }
+
+.rc-hint-top {
+  margin: 0.6rem 0 0.2rem;
+}

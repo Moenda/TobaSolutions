@@ -41,6 +41,8 @@ function readDrivePrefs() {
     mapStyle: p.mapStyle === "dark" ? "dark" : "light",
     avoidTolls: Boolean(p.avoidTolls),
     traffic: p.traffic !== false, // 🚦 camada de trânsito no mapa (v1.66)
+    vehicle: typeof p.vehicle === "string" ? p.vehicle : "seta", // 🎨 carango no mapa (v1.67, DRIVE_VEHICLES)
+    routeColor: typeof p.routeColor === "string" ? p.routeColor : "laranja", // 🎨 cor da rota (v1.67, DRIVE_ROUTE_COLORS)
   };
 }
 

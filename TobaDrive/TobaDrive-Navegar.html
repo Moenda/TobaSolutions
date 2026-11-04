@@ -15,6 +15,7 @@
   <meta name="apple-mobile-web-app-title" content="Toba" />
   <link rel="stylesheet" href="../assets/toba-common.css" />
   <link rel="stylesheet" href="css/drive-base.css" />
+  <link rel="stylesheet" href="../assets/toba-player.css" />
   <link rel="stylesheet" href="css/navegar.css" />
   <title>Toba Racing | Navegar</title>
 </head>
@@ -53,6 +54,7 @@
     <div class="toba-list" id="recentList"></div>
 
     <button type="button" class="btn btn-outline dv-full" data-click="chooseOnMap">🗺️ Escolher no mapa</button>
+    <button type="button" class="btn btn-outline dv-full dv-style-open" id="styleOpenBtn" data-click="openStyleSheet">🎨 Personalizar</button>
   </div>
 
   <!-- 2. Mapa: escolher tocando / prévia da rota / navegando -->
@@ -107,6 +109,21 @@
     </div>
   </div>
 
+  <!-- 🎨 Personalizar (v1.67) -->
+  <div class="toba-modal" id="styleSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🎨 Personalizar</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div class="section-title dv-title-row"><span>🚗 Teu carango no mapa</span><span class="dv-count" id="vehicleCount"></span></div>
+      <div class="dv-veh-grid" id="vehicleChips"></div>
+      <p class="dv-hint">🔒 Os trancados saem nas conquistas do Navegar (🏁 Pista, no Perfil).</p>
+      <div class="section-title">🛣️ Cor da rota</div>
+      <div class="dv-colors" id="routeColorChips"></div>
+    </div>
+  </div>
+
   <!-- Favoritar -->
   <div class="toba-modal" id="favSheet">
     <div class="toba-sheet">
@@ -148,7 +165,12 @@
   <script src="../assets/toba-common.js"></script>
   <script src="../assets/toba-cloud.js"></script>
   <script src="js/drive-metrics.js"></script>
+  <script src="../TobaHealth/js/health-metrics.js"></script>
+  <script src="../TobaRoutine/js/routine-metrics.js"></script>
+  <script src="../TobaKitchen/js/kitchen-recipes.js"></script>
+  <script src="../TobaRacing/js/racing-metrics.js"></script>
   <script src="../TobaTurism/js/turism-metrics.js"></script>
+  <script src="../assets/toba-player.js"></script>
   <script src="js/drive-core.js"></script>
   <script src="../assets/toba-maps.js"></script>
   <script src="js/drive-route.js"></script>
