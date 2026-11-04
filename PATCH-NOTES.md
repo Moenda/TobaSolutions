@@ -1745,3 +1745,19 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 **Como testar:** Navegar › buscar "Rua dos Otonis 570": aparece "Rua dos Otonis, 570 · Vila Clementino · São Paulo" e o pino cai na porta. Buscar só o nome de um lugar (ex.: um café): continua igual. 🚀 Partiu com o 🚦 ligado: rua livre sem cor, só amarelo/vermelho.
 
 **Commit sugerido:** `v1.72 - Navegar sem o verde do transito e busca de endereco com numero da casa (TomTom e Mapbox antes do Nominatim)`
+
+## v1.73 — 🧭 Navegar: trânsito colado na rota, botão 3D/2D, Cloba lá em cima, 🏁 Cheguei e radares com limite
+
+**Arquivos alterados:** `TobaDrive/TobaDrive-Navegar.html`, `TobaDrive/css/navegar.css`, `TobaDrive/js/drive-map.js`, `TobaDrive/js/drive-route.js`, `TobaDrive/js/drive-game.js`, `TobaDrive/js/navegar.js`, `sw.js` (versão `toba-v34`), `CLAUDE.md`
+
+1. **🚦 Trânsito de verdade na rota:** antes a faixa larga era a rua inteira do mapa, então a pista do lado (tipo a expressa da 23 de Maio) ficava amarelona e parecia a rota, enquanto a rota de verdade ficava sem cor. Agora o Navegar confere, de 8 em 8 metros da rota, qual rua do trânsito está colada nela e indo no **mesmo sentido**, e pinta a faixa larga só embaixo do risco da rota. As outras ruas continuam com trânsito, mas numa **linha fininha e meio apagada**. Continua sem o verde (v1.72): só 🟡 lento, 🔴 pesado e vinho parado.
+2. **3D / 2D no mapa:** botão redondo à direita, acima do velocímetro. **3D** = câmera de jogo inclinada; **2D** = vista de cima, ainda girando com o carro. É a mesma opção do 🎮 Mapa de jogo das configurações.
+3. **🤡 Cloba lá em cima:** o balão do copiloto saiu de baixo (onde o olho fica no mapa) e foi pra logo embaixo da manobra. Se tiver o "Depois:", ele desce um tiquinho.
+4. **🏁 Cheguei:** faltando até 1,5 km, aparece o botão verde **Cheguei** do lado do Encerrar (que vira só ✕). Conta como chegada de verdade: histórico, conquistas, fantasma e o "Já fui" do Places. Bom pra quando estaciona na rua do lado.
+5. **📸 Radares do OpenStreetMap:** já existiam desde v1.68, mas eram bolinhas que sumiam quando a rota era redesenhada (trocar cor no 🎨, trânsito, desvio). Agora são **plaquinhas com o limite** (ou 📸 quando o OSM não diz o limite) numa camada própria do mapa, que não some. A busca pega também os radares mapeados como `enforcement=maxspeed` (com o limite da relação), tenta 2 espelhos do Overpass se o principal estiver lotado e **guarda no celular por 7 dias** (a volta pra casa nem pergunta de novo). O aviso diz o limite ("Radar em 300 metros... Limite de 50.") e, no começo, um toast conta quantos radares tem no caminho.
+
+**Dados:** Nenhuma mudança no banco. Novo `localStorage["toba_drive_radar_cache"]` (radares por caixa, só deste aparelho, até 15 caixas, 7 dias): conveniência, pode apagar.
+
+**Como testar:** 🚀 Partiu com o 🚦 ligado num horário de pico: a rota (risco fino) ganha a faixa amarela/vermelha larga só onde ELA está lenta, e as ruas do lado ficam com linha fina. Toca no **2D** e no **3D** no mapa. Espera uma piada do Cloba: aparece embaixo da manobra. Perto do destino: 🏁 Cheguei, e o resumo da viagem aparece como chegada. Rota que passa por radar conhecido: plaquinha com o limite e o aviso a 400 m.
+
+**Commit sugerido:** `v1.73 - Navegar com transito casado na rota (faixa larga so na rota, fino nas outras ruas), botao 3D/2D no mapa, Cloba la em cima, botao Cheguei e radares do OSM com limite e cache`

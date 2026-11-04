@@ -28,6 +28,7 @@
 const DRIVE_FAV_EMOJIS = ["🏠", "💼", "❤️", "☕", "🏋️", "🛒", "🍻", "🐾", "⭐"];
 const DRIVE_GPS_TIMEOUT_MS = 20000;
 const DRIVE_ARRIVE_M = 35;
+const DRIVE_ARRIVE_BTN_M = 1500; // v1.73: 🏁 Cheguei aparece faltando 1,5 km
 const DRIVE_TRAFFIC_CHECK_MS = 5 * 60 * 1000;
 const DRIVE_SWAP_SAVE_S = 180;
 
@@ -653,6 +654,7 @@ function renderRoute() {
   const isNav = nav.mode === "nav";
   banner.hidden = !isNav;
   panel.hidden = !isNav;
+  if (!isNav) renderArriveBtn(Infinity);
   if (!isNav) then.hidden = true;
   document.getElementById("routeTop").hidden = isNav;
   document.getElementById("recenterBtn").hidden = !isNav || nav.follow;
@@ -824,6 +826,27 @@ function renderNav(next, left, total) {
   document.getElementById("navLeft").textContent = left >= 1000 ? `${driveFormatKm(left)} km` : driveFormatDist(left);
   document.getElementById("navLeftSub").textContent = `faltam · ${driveFormatDuration(secs)}`;
   document.getElementById("navSpeed").textContent = String(Math.round((nav.pos?.speed || 0) * 3.6));
+  renderArriveBtn(left);
+}
+
+// v1.73: 🏁 Cheguei (estacionou na rua do lado) aparece faltando até DRIVE_ARRIVE_BTN_M;
+// aí o Encerrar encolhe pra "✕"
+function renderArriveBtn(left) {
+  const near = nav.mode === "nav" && Number.isFinite(left) && left <= DRIVE_ARRIVE_BTN_M;
+  const btn = document.getElementById("arriveBtn");
+  const end = document.getElementById("endBtn");
+  if (!btn || !end || btn.hidden === !near) return;
+  btn.hidden = !near;
+  end.classList.toggle("is-compact", near);
+  end.textContent = near ? "✕" : "✕ Encerrar";
+  end.setAttribute("aria-label", "Encerrar sem chegar");
+}
+
+// conta igual a chegada de verdade (histórico, conquistas, "Já fui" do Places)
+function arriveHere() {
+  if (nav.mode !== "nav") return;
+  driveShutUp();
+  arrive();
 }
 
 // Fala de longe ("Em 300 metros, vire à direita...") e na hora ("Vire à direita...")
@@ -1127,6 +1150,7 @@ tobaActions({
   retryRoute,
   startNav,
   endNav,
+  arriveHere,
   recenter,
   toggleVoice,
   toggleMapStyle,

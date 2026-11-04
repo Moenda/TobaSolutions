@@ -53,16 +53,36 @@ function gameFollowHeading() {
   game.heading += diff;
 }
 
+// v1.73: botão 3D/2D no mapa. 3D = câmera de jogo (inclina 60° e gira com o rumo,
+// carango a 70% da tela); 2D = vista de cima, girando com o rumo, carango a 62%.
 function gameApplyView() {
   const box = document.getElementById("driveMap");
   if (!box || !nav.map) return;
+  const follow = nav.mode === "nav" && nav.follow;
   const want = gameViewWanted();
-  // câmera de verdade (inclina 60° e gira com o rumo), carango a 70% da tela
-  const was = Boolean(nav.map.cam);
-  if (want) gameFollowHeading();
-  nav.map.cam = want ? { bearing: ((game.heading % 360) + 360) % 360, pitch: DRIVE_GAME_PITCH, padTop: 0.4 } : null;
+  const was = nav.map.cam ? nav.map.cam.pitch : null;
+  if (follow) gameFollowHeading();
+  nav.map.cam = follow ? { bearing: ((game.heading % 360) + 360) % 360, pitch: want ? DRIVE_GAME_PITCH : 0, padTop: want ? 0.4 : 0.25 } : null;
   document.body.classList.toggle("is-game3d", want);
-  if (want && !was && nav.pos) nav.map.setView(nav.carView ? [nav.carView.lat, nav.carView.lng] : [nav.pos.lat, nav.pos.lng], nav.map.getZoom(), { animate: true });
+  render3dBtn();
+  if (follow && was !== nav.map.cam.pitch && nav.pos) nav.map.setView(nav.carView ? [nav.carView.lat, nav.carView.lng] : [nav.pos.lat, nav.pos.lng], nav.map.getZoom(), { animate: true });
+}
+
+function render3dBtn() {
+  const btn = document.getElementById("view3dBtn");
+  if (!btn) return;
+  const on = readDrivePrefs().gameView;
+  btn.textContent = on ? "2D" : "3D"; // mostra pra onde vai
+  btn.setAttribute("aria-label", on ? "Ver de cima (2D)" : "Ver inclinado (3D)");
+}
+
+function toggle3d() {
+  storeDrivePrefs({ gameView: !readDrivePrefs().gameView });
+  const box = document.getElementById("prefGame");
+  if (box) box.checked = readDrivePrefs().gameView;
+  if (!nav.follow && typeof recenter === "function") recenter();
+  else gameApplyView();
+  render3dBtn();
 }
 
 /* ---------- 🌗 luz do mapa ---------- */
@@ -105,6 +125,7 @@ function gameBubble(text) {
 /* ---------- começo / fim ---------- */
 function gameStart() {
   game.on = true;
+  game.radarToast = false;
   game.radars = [];
   game.radarIdx = 0;
   game.ghostSaid = "";
@@ -155,24 +176,32 @@ function gameStop() {
   gameApplyView();
   game.dark = null;
   gameSyncStyle(); // fora do modo nav: volta pro estilo escolhido
+  nav.map?.setRadars?.([]);
   ["clobaBubble", "speedo", "ghostChip"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.hidden = true;
   });
 }
 
+// v1.73: radares numa camada própria do mapa (nav.map.setRadars), com a plaquinha do
+// limite; não somem mais quando a rota é redesenhada (🎨 cor, trânsito, desvio)
 async function gameLoadRadars(route) {
   game.radars = [];
   game.radarIdx = 0;
+  nav.map?.setRadars?.([]);
   if (!route) return;
   try {
     const list = await driveFetchRadars(route);
-    if (nav.route === route) {
+    if (nav.route === route && game.on) {
       game.radars = list;
-      if (nav.map) list.forEach((r) => nav.map.addMark([r.lat, r.lng], `<span class="dv-radar">📸</span>`, { className: "dv-flag-wrap", size: [24, 24], anchor: [12, 12] }));
+      nav.map?.setRadars?.(list);
+      if (list.length && !game.radarToast) {
+        game.radarToast = true;
+        tobaToast(`📸 ${list.length} ${list.length === 1 ? "radar" : "radares"} no caminho`);
+      }
     }
   } catch (err) {
-    /* sem radar hoje: segue */
+    /* Overpass fora: segue sem radar */
   }
 }
 
@@ -221,12 +250,13 @@ function gameTick(next, left, total) {
     if (dist < 60 && over) radar.over = true;
     if (dist <= DRIVE_RADAR_WARN_M && !radar.warned) {
       radar.warned = true;
-      const line = driveCopilotLine("radar", { dist: driveSpokenDist(dist) });
+      const lim = radar.limit ? ` Limite de ${radar.limit}.` : "";
+      const line = driveCopilotLine("radar", { dist: driveSpokenDist(dist) }) + lim;
       if (readDrivePrefs().copilot) {
         driveSpeak(line, { interrupt: false });
-        gameBubble(line);
+        gameBubble(`📸 ${line}`);
       } else {
-        driveSpeak(`Radar em ${driveSpokenDist(dist)}.`, { interrupt: false });
+        driveSpeak(`Radar em ${driveSpokenDist(dist)}.${lim}`, { interrupt: false });
       }
     }
   }
@@ -538,7 +568,7 @@ async function findFuel() {
   }
 }
 
-tobaActions({ shareTrip, findFuel, markPlaceVisited });
+tobaActions({ shareTrip, findFuel, markPlaceVisited, toggle3d });
 
 // navegar.js abre antes deste arquivo: a primeira tela não viu o banner, mostra agora
 if (typeof nav !== "undefined" && nav.mode === "pick") renderFuelBanner();

@@ -20,6 +20,12 @@
 const DRIVE_TOMTOM_ROUTE_URL = "https://api.tomtom.com/routing/1/calculateRoute/";
 const DRIVE_NO_SPEED_KEY = "toba_tomtom_nospeed";
 const DRIVE_OVERPASS_URL = "https://overpass-api.de/api/interpreter?data=";
+// v1.73: o servidor principal do Overpass vive lotado; tenta os espelhos na ordem
+const DRIVE_OVERPASS_MIRRORS = [DRIVE_OVERPASS_URL, "https://overpass.private.coffee/api/interpreter?data=", "https://overpass.kumi.systems/api/interpreter?data="];
+const DRIVE_RADAR_CACHE_KEY = "toba_drive_radar_cache";
+const DRIVE_RADAR_CACHE_DAYS = 7;
+const DRIVE_RADAR_CACHE_MAX = 15;
+const DRIVE_RADAR_NEAR_M = 40;
 const DRIVE_VALHALLA_URL = "https://valhalla1.openstreetmap.de/route?json=";
 const DRIVE_OSRM_URL = "https://router.project-osrm.org/route/v1/driving/";
 const DRIVE_SEARCH_URL = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=1&accept-language=pt-BR&countrycodes=br&q=";
@@ -343,10 +349,76 @@ document.addEventListener("visibilitychange", () => {
  * ⛽ Posto perto. Falhou = segue sem (nada trava a navegação).
  */
 async function driveOverpass(query) {
-  return driveFetchJson(DRIVE_OVERPASS_URL + encodeURIComponent(`[out:json][timeout:15];${query}`));
+  const q = encodeURIComponent(`[out:json][timeout:20];${query}`);
+  let last = null;
+  for (const base of DRIVE_OVERPASS_MIRRORS) {
+    try {
+      return await driveFetchJson(base + q);
+    } catch (err) {
+      last = err; // 429/504/timeout: próximo espelho
+    }
+  }
+  throw last || new Error("Overpass fora");
 }
 
-// Radares (highway=speed_camera) a até 35 m da linha da rota: [{ lat, lng, along }]
+// Cache dos radares por caixa (só deste aparelho, conveniência): { "<caixa>": { t, r: [[lat,lng,limite]] } }
+function driveRadarCacheRead() {
+  try {
+    return JSON.parse(localStorage.getItem(DRIVE_RADAR_CACHE_KEY) || "{}") || {};
+  } catch (err) {
+    return {};
+  }
+}
+
+function driveRadarCacheWrite(key, rows) {
+  try {
+    const all = driveRadarCacheRead();
+    all[key] = { t: Date.now(), r: rows };
+    const keys = Object.keys(all).sort((a, b) => all[b].t - all[a].t);
+    keys.slice(DRIVE_RADAR_CACHE_MAX).forEach((k) => delete all[k]);
+    localStorage.setItem(DRIVE_RADAR_CACHE_KEY, JSON.stringify(all));
+  } catch (err) {
+    /* sem storage: só não guarda */
+  }
+}
+
+function driveRadarLimit(v) {
+  const n = parseInt(String(v || ""), 10);
+  return Number.isFinite(n) && n >= 10 && n <= 150 ? n : 0;
+}
+
+// OSM: radar solto (highway=speed_camera), nó marcado enforcement=maxspeed e o
+// "device" das relações enforcement=maxspeed (que trazem o limite). [[lat,lng,limite]]
+async function driveRadarsInBox(s, w, n, e) {
+  const key = [s, w, n, e].map((v) => v.toFixed(2)).join(",");
+  const hit = driveRadarCacheRead()[key];
+  if (hit && Date.now() - hit.t < DRIVE_RADAR_CACHE_DAYS * 86400000 && Array.isArray(hit.r)) return hit.r;
+  const b = `(${s},${w},${n},${e})`;
+  const json = await driveOverpass(`(node[highway=speed_camera]${b};node[enforcement=maxspeed]${b};)->.a;relation[enforcement=maxspeed]${b}->.r;node(r.r:"device")->.d;(.a;.d;);out body 500;.r out body;`);
+  const relLimit = new Map();
+  const nodes = [];
+  (json?.elements || []).forEach((el) => {
+    if (el.type === "relation") {
+      const lim = driveRadarLimit(el.tags?.maxspeed);
+      (el.members || []).forEach((m) => {
+        if (m.type === "node" && m.role === "device" && lim) relLimit.set(m.ref, lim);
+      });
+    } else if (el.type === "node") nodes.push(el);
+  });
+  const seen = new Set();
+  const rows = [];
+  nodes.forEach((el) => {
+    const lat = Number(el.lat);
+    const lng = Number(el.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || seen.has(el.id)) return;
+    seen.add(el.id);
+    rows.push([Math.round(lat * 1e6) / 1e6, Math.round(lng * 1e6) / 1e6, driveRadarLimit(el.tags?.maxspeed) || relLimit.get(el.id) || 0]);
+  });
+  driveRadarCacheWrite(key, rows);
+  return rows;
+}
+
+// Radares a até 40 m da linha da rota: [{ lat, lng, along, limit }]
 async function driveFetchRadars(route) {
   if (!route?.coords?.length || route.distance > 150000) return [];
   let s = 90;
@@ -359,16 +431,25 @@ async function driveFetchRadars(route) {
     w = Math.min(w, lng);
     e = Math.max(e, lng);
   });
-  const pad = 0.003;
-  const json = await driveOverpass(`node[highway=speed_camera](${s - pad},${w - pad},${n + pad},${e + pad});out 200;`);
+  // caixa arredondada pra fora (0,01° ≈ 1 km): a mesma volta pra casa reaproveita o cache
+  const fl = (v) => Math.floor(v * 100) / 100;
+  const ce = (v) => Math.ceil(v * 100) / 100;
+  const rows = await driveRadarsInBox(fl(s - 0.003), fl(w - 0.003), ce(n + 0.003), ce(e + 0.003));
   const out = [];
-  (json?.elements || []).forEach((el) => {
-    const p = [Number(el.lat), Number(el.lon)];
-    if (!Number.isFinite(p[0])) return;
-    const loc = driveLocateOnRoute(route, p, 0);
-    if (loc && loc.dist <= 35) out.push({ lat: p[0], lng: p[1], along: loc.along });
+  rows.forEach(([lat, lng, limit]) => {
+    const loc = driveLocateOnRoute(route, [lat, lng], 0);
+    if (loc && loc.dist <= DRIVE_RADAR_NEAR_M) out.push({ lat, lng, along: loc.along, limit: limit || 0 });
   });
-  return out.sort((a, b) => a.along - b.along);
+  out.sort((a, b) => a.along - b.along);
+  // dois nós do mesmo radar (ou um de cada lado) a menos de 30 m: fica um, com o limite que tiver
+  return out.filter((r, i) => {
+    const prev = out[i - 1];
+    if (prev && r.along - prev.along < 30) {
+      prev.limit = prev.limit || r.limit;
+      return false;
+    }
+    return true;
+  });
 }
 
 // ⛽ Postos (amenity=fuel) num raio de até 4 km, mais perto primeiro

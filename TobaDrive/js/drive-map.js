@@ -14,6 +14,9 @@
  * - v1.70: 🚦 trânsito ao vivo da cidade inteira = tileset mapbox-traffic-v1
  *   (moderado/pesado/parado, atualiza a cada DRIVE_TRAFFIC_RELOAD_MS) por cima
  *   das ruas e da linha da rota. Os trechos parados do TomTom continuam na rota.
+ * - v1.73: trânsito da rota casado pelo sentido e distância (driveRouteTrafficRuns)
+ *   e pintado largo embaixo do risco; nas outras ruas fica fininho. 📸 radares em
+ *   camada própria (setRadars), não somem quando a rota é redesenhada.
  * - navegar.js e drive-game.js só falam com o objeto de driveCreateMap (nav.map).
  *   Nada aqui grava no TOBA_DRIVE_DB.
  * ===================================================================== */
@@ -44,6 +47,7 @@ const DRIVE_GAME_PITCH = 60;
 // v1.72: verde (low) saiu de novo, a cidade toda ficava verde
 const DRIVE_TRAFFIC_COLORS = { moderate: "#facc15", heavy: "#ef4444", severe: "#b91c1c" };
 // v1.71: faixa do trânsito larga, por baixo do risco fino da rota
+const DRIVE_TRAFFIC_CITY_WIDTH = ["interpolate", ["linear"], ["zoom"], 10, 1.2, 13, 2, 15, 3, 16, 3.5, 18, 5.5, 19, 7];
 const DRIVE_TRAFFIC_WIDTH = ["interpolate", ["linear"], ["zoom"], 10, 3, 13, 7, 15, 11, 16, 14, 18, 22, 19, 28];
 const DRIVE_LIGHTS = [
   { id: "auto", icon: "🌗", name: "Automático (pelo sol)" },
@@ -115,6 +119,177 @@ function driveEmojiImage(icon, mirror) {
   return g.getImageData(0, 0, size, size);
 }
 
+/* v1.73: trânsito NA rota. O tileset do Mapbox desenha cada rua (e cada pista) do
+ * jeito dele, então a faixa larga da rua do lado (ex.: expressa da 23 de Maio)
+ * parecia a rota e a rota de verdade ficava sem cor. Agora: a cada ~8 m da rota,
+ * acha o trecho do tileset MAIS PERTO (até 12 m) que vai no MESMO sentido (até 35°)
+ * e pinta aquele pedaço da própria rota com a cor dele. Livre (low) também conta
+ * como "mais perto", pra rua vizinha parada não pintar a rota que está livre. */
+const DRIVE_RT_STEP_M = 8;
+const DRIVE_RT_NEAR_M = 12;
+const DRIVE_RT_ANGLE = 35;
+const DRIVE_RT_TIE_M = 4;
+const DRIVE_RT_CELL_M = 40;
+const DRIVE_RT_LEVEL = { low: 0, moderate: 1, heavy: 2, severe: 3 };
+const DRIVE_RT_NAME = ["", "moderate", "heavy", "severe"];
+
+// route = [[lng,lat]...]; lines = [{ level 0..3, coords [[lng,lat]...] }] (no sentido do tráfego)
+// devolve [{ c: "moderate"|"heavy"|"severe", coords: [[lng,lat]...] }]
+function driveRouteTrafficRuns(route, lines) {
+  if (!route || route.length < 2 || !lines?.length) return [];
+  const lat0 = route[0][1];
+  const kx = 111320 * Math.cos((lat0 * Math.PI) / 180);
+  const ky = 110540;
+  const P = route.map(([x, y]) => [x * kx, y * ky]);
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  P.forEach(([x, y]) => {
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
+  });
+  const near = DRIVE_RT_NEAR_M;
+  // grade com os trechos do trânsito perto da rota
+  const grid = new Map();
+  const segs = [];
+  const key = (cx, cy) => `${cx}|${cy}`;
+  lines.forEach((ln) => {
+    const c = ln.coords || [];
+    for (let i = 0; i + 1 < c.length; i++) {
+      const ax = c[i][0] * kx;
+      const ay = c[i][1] * ky;
+      const bx = c[i + 1][0] * kx;
+      const by = c[i + 1][1] * ky;
+      if (Math.max(ax, bx) < minX - near || Math.min(ax, bx) > maxX + near || Math.max(ay, by) < minY - near || Math.min(ay, by) > maxY + near) continue;
+      const len = Math.hypot(bx - ax, by - ay);
+      if (len < 0.5) continue;
+      const s = { ax, ay, bx, by, len, h: (Math.atan2(bx - ax, by - ay) * 180) / Math.PI, level: ln.level };
+      const idx = segs.push(s) - 1;
+      const x0 = Math.floor((Math.min(ax, bx) - near) / DRIVE_RT_CELL_M);
+      const x1 = Math.floor((Math.max(ax, bx) + near) / DRIVE_RT_CELL_M);
+      const y0 = Math.floor((Math.min(ay, by) - near) / DRIVE_RT_CELL_M);
+      const y1 = Math.floor((Math.max(ay, by) + near) / DRIVE_RT_CELL_M);
+      for (let cx = x0; cx <= x1; cx++) {
+        for (let cy = y0; cy <= y1; cy++) {
+          const k = key(cx, cy);
+          if (!grid.has(k)) grid.set(k, []);
+          grid.get(k).push(idx);
+        }
+      }
+    }
+  });
+  if (!segs.length) return [];
+  // anda pela rota de 8 em 8 m
+  const bins = [];
+  const binAt = []; // along (m) de cada amostra
+  let along = 0;
+  for (let i = 0; i + 1 < P.length; i++) {
+    const [ax, ay] = P[i];
+    const [bx, by] = P[i + 1];
+    const len = Math.hypot(bx - ax, by - ay);
+    if (len < 0.01) continue;
+    const h = (Math.atan2(bx - ax, by - ay) * 180) / Math.PI;
+    for (let d = bins.length * DRIVE_RT_STEP_M - along; d < len; d += DRIVE_RT_STEP_M) {
+      const qx = ax + ((bx - ax) * d) / len;
+      const qy = ay + ((by - ay) * d) / len;
+      // candidatos no mesmo sentido; o mais perto manda, mas o que estiver até
+      // DRIVE_RT_TIE_M mais longe também vale (GPS/desenho de mapas diferentes) e pega o pior
+      const cands = [];
+      let bestD = near;
+      (grid.get(key(Math.floor(qx / DRIVE_RT_CELL_M), Math.floor(qy / DRIVE_RT_CELL_M))) || []).forEach((si) => {
+        const s = segs[si];
+        const dh = Math.abs(((s.h - h + 540) % 360) - 180);
+        if (dh > DRIVE_RT_ANGLE) return;
+        const t = Math.max(0, Math.min(1, ((qx - s.ax) * (s.bx - s.ax) + (qy - s.ay) * (s.by - s.ay)) / (s.len * s.len)));
+        const dist = Math.hypot(qx - (s.ax + (s.bx - s.ax) * t), qy - (s.ay + (s.by - s.ay) * t));
+        if (dist > near) return;
+        cands.push([dist, s.level]);
+        bestD = Math.min(bestD, dist);
+      });
+      let lv = -1;
+      cands.forEach(([dist, level]) => {
+        if (dist <= bestD + DRIVE_RT_TIE_M) lv = Math.max(lv, level);
+      });
+      bins.push(lv);
+      binAt.push(along + d);
+    }
+    along += len;
+  }
+  // buraquinho de até 3 amostras (cruzamento, tile cortado) entre dois trechos lentos: emenda
+  for (let i = 0; i < bins.length; i++) {
+    if (bins[i] > 0) continue;
+    let j = i;
+    while (j < bins.length && bins[j] <= 0) j++;
+    if (i > 0 && j < bins.length && j - i <= 3 && bins[i - 1] > 0) {
+      const lv = Math.min(bins[i - 1], bins[j]);
+      for (let k = i; k < j; k++) bins[k] = lv;
+    }
+    i = j - 1;
+  }
+  // pedaços seguidos com a mesma cor (mínimo 2 amostras = ~16 m)
+  const cum = [0];
+  for (let i = 1; i < P.length; i++) cum.push(cum[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
+  const cut = (a, b) => {
+    const out = [];
+    const at = (m) => {
+      let i = 0;
+      while (i + 2 < cum.length && cum[i + 1] < m) i++;
+      const seg = cum[i + 1] - cum[i] || 1;
+      const t = Math.max(0, Math.min(1, (m - cum[i]) / seg));
+      return { i, p: [route[i][0] + (route[i + 1][0] - route[i][0]) * t, route[i][1] + (route[i + 1][1] - route[i][1]) * t] };
+    };
+    const s = at(a);
+    const e = at(b);
+    out.push(s.p);
+    for (let i = s.i + 1; i <= e.i; i++) out.push(route[i]);
+    out.push(e.p);
+    return out;
+  };
+  const runs = [];
+  for (let i = 0; i < bins.length; i++) {
+    if (bins[i] <= 0) continue;
+    let j = i;
+    while (j + 1 < bins.length && bins[j + 1] === bins[i]) j++;
+    if (j > i) {
+      const a = Math.max(0, binAt[i] - DRIVE_RT_STEP_M / 2);
+      const b = Math.min(cum[cum.length - 1], binAt[j] + DRIVE_RT_STEP_M / 2);
+      runs.push({ c: DRIVE_RT_NAME[bins[i]], coords: cut(a, b) });
+    }
+    i = j;
+  }
+  return runs;
+}
+
+/* ---------- 📸 radar: plaquinha de limite (ou 📸 sem limite) ---------- */
+function driveRadarImage(limit) {
+  const size = 96;
+  const c = document.createElement("canvas");
+  c.width = size;
+  c.height = size;
+  const g = c.getContext("2d");
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.beginPath();
+  g.arc(size / 2, size / 2, size * 0.44, 0, Math.PI * 2);
+  g.fillStyle = "#ffffff";
+  g.fill();
+  g.lineWidth = size * 0.11;
+  g.strokeStyle = "#dc2626";
+  g.stroke();
+  if (limit) {
+    g.fillStyle = "#111111";
+    g.font = `900 ${Math.round(size * (String(limit).length > 2 ? 0.34 : 0.42))}px system-ui,"Segoe UI",Roboto,sans-serif`;
+    g.fillText(String(limit), size / 2, size * 0.53);
+  } else {
+    g.font = `${Math.round(size * 0.46)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+    g.fillText("📸", size / 2, size * 0.54);
+  }
+  return g.getImageData(0, 0, size, size);
+}
+
 /* ---------- criar o mapa ---------- */
 async function driveCreateMap(box, center, zoom) {
   if (typeof TOBA_MAPBOX_TOKEN !== "string" || !TOBA_MAPBOX_TOKEN.startsWith("pk.")) throw Object.assign(new Error("Sem token do Mapbox"), { why: "token" });
@@ -178,6 +353,21 @@ async function driveMapboxMap(box, center, zoom) {
     layout: { "line-cap": "round", "line-join": "round" },
     paint: { "line-color": ["get", "color"], "line-width": DRIVE_TRAFFIC_WIDTH, "line-opacity": 0.95, "line-emissive-strength": 1 },
   });
+  // v1.73: trânsito casado com a rota (driveRouteTrafficRuns), faixa larga embaixo do risco
+  map.addSource("dv-route-traffic", { type: "geojson", data: empty });
+  map.addLayer({
+    id: "dv-route-traffic",
+    type: "line",
+    source: "dv-route-traffic",
+    slot: "top",
+    layout: { "line-cap": "round", "line-join": "round", "line-sort-key": ["match", ["get", "c"], "severe", 3, "heavy", 2, 1] },
+    paint: {
+      "line-color": ["match", ["get", "c"], "severe", DRIVE_TRAFFIC_COLORS.severe, "heavy", DRIVE_TRAFFIC_COLORS.heavy, DRIVE_TRAFFIC_COLORS.moderate],
+      "line-width": DRIVE_TRAFFIC_WIDTH,
+      "line-opacity": 0.95,
+      "line-emissive-strength": 1,
+    },
+  }, "dv-route-jam");
   map.addLayer({
     id: "dv-route-casing",
     type: "line",
@@ -204,25 +394,9 @@ async function driveMapboxMap(box, center, zoom) {
   try {
     map.addSource("dv-traffic", { type: "vector", url: DRIVE_MAPBOX_TRAFFIC });
     const trafficFilter = ["match", ["get", "congestion"], ["moderate", "heavy", "severe"], true, false];
-    const trafficOffset = ["interpolate", ["linear"], ["zoom"], 12, 0.5, 16, 2, 19, 5];
+    const trafficOffset = ["interpolate", ["linear"], ["zoom"], 12, 1, 16, 3, 19, 6];
     const vis = readDrivePrefs().traffic ? "visible" : "none";
-    // borda escura: separa o trânsito da rua clara
-    map.addLayer({
-      id: "dv-traffic-casing",
-      type: "line",
-      source: "dv-traffic",
-      "source-layer": "traffic",
-      slot: "top",
-      filter: trafficFilter,
-      layout: { "line-cap": "round", "line-join": "round", visibility: vis },
-      paint: {
-        "line-color": "#0d1117",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 10, 4.5, 13, 9, 15, 13.5, 16, 16.5, 18, 25, 19, 31],
-        "line-offset": trafficOffset,
-        "line-opacity": 0.5,
-        "line-emissive-strength": 1,
-      },
-    }, "dv-route-jam");
+    // v1.73: rua que NÃO é a rota = linha fininha e meio apagada (não confunde com a rota)
     map.addLayer({
       id: "dv-traffic",
       type: "line",
@@ -233,13 +407,13 @@ async function driveMapboxMap(box, center, zoom) {
       layout: { "line-cap": "round", "line-join": "round", "line-sort-key": ["match", ["get", "congestion"], "severe", 3, "heavy", 2, "moderate", 1, 0], visibility: vis },
       paint: {
         "line-color": ["match", ["get", "congestion"], "severe", DRIVE_TRAFFIC_COLORS.severe, "heavy", DRIVE_TRAFFIC_COLORS.heavy, DRIVE_TRAFFIC_COLORS.moderate],
-        "line-width": DRIVE_TRAFFIC_WIDTH,
+        "line-width": DRIVE_TRAFFIC_CITY_WIDTH,
         // mão e contramão lado a lado (cada sentido vem numa linha)
         "line-offset": trafficOffset,
-        "line-opacity": 0.95,
+        "line-opacity": 0.7,
         "line-emissive-strength": 1,
       },
-    }, "dv-route-jam");
+    }, "dv-route-traffic");
   } catch (err) {
     trafficOk = false;
     console.warn("Trânsito do Mapbox não entrou:", err?.message || err);
@@ -253,6 +427,62 @@ async function driveMapboxMap(box, center, zoom) {
     }
   };
   if (trafficOk) trafficTimer = setInterval(trafficTick, DRIVE_TRAFFIC_RELOAD_MS);
+
+  // casa o trânsito com a rota (no máximo 1 vez a cada 1,5 s; tiles novos ou mapa mexeu)
+  let rtTimer = null;
+  let rtLast = 0;
+  const routeTrafficNow = () => {
+    rtTimer = null;
+    rtLast = Date.now();
+    let runs = [];
+    if (trafficOk && lastRoute && readDrivePrefs().traffic) {
+      const lines = [];
+      try {
+        map.querySourceFeatures("dv-traffic", { sourceLayer: "traffic" }).forEach((f) => {
+          const lv = DRIVE_RT_LEVEL[f.properties?.congestion];
+          if (lv === undefined) return;
+          const g = f.geometry;
+          if (g?.type === "LineString") lines.push({ level: lv, coords: g.coordinates });
+          else if (g?.type === "MultiLineString") g.coordinates.forEach((c) => lines.push({ level: lv, coords: c }));
+        });
+        runs = driveRouteTrafficRuns(lastRoute.coords.map(toLngLat), lines);
+      } catch (err) {
+        runs = [];
+      }
+    }
+    map.getSource("dv-route-traffic")?.setData({
+      type: "FeatureCollection",
+      features: runs.map((r) => ({ type: "Feature", properties: { c: r.c }, geometry: { type: "LineString", coordinates: r.coords } })),
+    });
+  };
+  const routeTrafficSoon = () => {
+    if (rtTimer) return;
+    rtTimer = setTimeout(routeTrafficNow, Math.max(300, 1500 - (Date.now() - rtLast)));
+  };
+  if (trafficOk) {
+    map.on("sourcedata", (ev) => {
+      if (ev.sourceId === "dv-traffic" && ev.tile) routeTrafficSoon();
+    });
+    map.on("moveend", routeTrafficSoon);
+  }
+
+  // 📸 radares (drive-game.js manda a lista): plaquinha com o limite, em pé
+  map.addSource("dv-radar", { type: "geojson", data: empty });
+  map.addLayer({
+    id: "dv-radar",
+    type: "symbol",
+    source: "dv-radar",
+    slot: "top",
+    layout: {
+      "icon-image": ["get", "img"],
+      "icon-size": ["interpolate", ["linear"], ["zoom"], 12, 0.32, 15, 0.48, 17, 0.62, 19, 0.8],
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+      "icon-pitch-alignment": "viewport",
+      "icon-rotation-alignment": "viewport",
+    },
+    paint: { "icon-emissive-strength": 1 },
+  });
 
   // 💡 farol: dois cones no chão (de fora mais fraco, de dentro mais forte)
   map.addSource("dv-car-beam", { type: "geojson", data: empty });
@@ -458,6 +688,16 @@ async function driveMapboxMap(box, center, zoom) {
         if (readDrivePrefs().traffic) (jams || []).forEach((j) => feats.push(line(j.coords, { k: "jam", color: j.color, z: 1 })));
       }
       map.getSource("dv-route")?.setData({ type: "FeatureCollection", features: feats });
+      routeTrafficNow();
+    },
+    // list = [{ lat, lng, limit }] (limit em km/h ou 0)
+    setRadars(list) {
+      const feats = (list || []).map((r) => {
+        const img = `dv-radar-${r.limit || 0}`;
+        if (!map.hasImage(img)) map.addImage(img, driveRadarImage(r.limit), { pixelRatio: 2 });
+        return { type: "Feature", properties: { img }, geometry: { type: "Point", coordinates: [r.lng, r.lat] } };
+      });
+      map.getSource("dv-radar")?.setData({ type: "FeatureCollection", features: feats });
     },
     clearMarks() {
       marks.forEach((m) => m.remove());
@@ -528,7 +768,7 @@ async function driveMapboxMap(box, center, zoom) {
     setTraffic(on) {
       if (trafficOk) {
         try {
-          ["dv-traffic-casing", "dv-traffic"].forEach((id) => map.setLayoutProperty(id, "visibility", on ? "visible" : "none"));
+          ["dv-traffic"].forEach((id) => map.setLayoutProperty(id, "visibility", on ? "visible" : "none"));
           if (on) trafficTick();
         } catch (err) {
           /* camada fora */
@@ -540,6 +780,7 @@ async function driveMapboxMap(box, center, zoom) {
     trafficReady: () => true,
     destroy() {
       if (trafficTimer) clearInterval(trafficTimer);
+      if (rtTimer) clearTimeout(rtTimer);
       if (car.raf) cancelAnimationFrame(car.raf);
       map.remove();
     },

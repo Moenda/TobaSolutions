@@ -78,7 +78,6 @@
       <span class="dv-speedo-limit" id="speedoLimit" hidden>--</span>
     </div>
     <div class="dv-ghost" id="ghostChip" hidden></div>
-    <div class="dv-bubble" id="clobaBubble" hidden></div>
 
     <!-- Faixa da próxima manobra (navegando) -->
     <div class="dv-banner" id="navBanner" hidden>
@@ -89,6 +88,10 @@
       </span>
     </div>
     <div class="dv-then" id="navThen" hidden></div>
+    <!-- 🤡 balão do Cloba: lá em cima, embaixo da manobra (v1.73; depois do navThen pro CSS saber se ele está aberto) -->
+    <div class="dv-bubble" id="clobaBubble" hidden></div>
+    <!-- 3D (inclinado) ⇄ 2D (de cima), v1.73 -->
+    <button type="button" class="dv-round dv-view3d" id="view3dBtn" data-click="toggle3d" aria-label="Trocar 3D e 2D">2D</button>
 
     <button type="button" class="dv-round dv-recenter" id="recenterBtn" data-click="recenter" hidden>🎯</button>
 
@@ -107,7 +110,8 @@
         <button type="button" class="dv-round" data-click="toggleTraffic" aria-label="Trânsito no mapa">🚦</button>
         <button type="button" class="dv-round" data-click="openStyleSheet" aria-label="Personalizar carango e velocímetro">🎨</button>
         <button type="button" class="dv-round" data-click="openOut" aria-label="Abrir no Maps ou Waze">↗️</button>
-        <button type="button" class="btn btn-danger dv-end" data-click="endNav">✕ Encerrar</button>
+        <button type="button" class="btn dv-arrive" id="arriveBtn" data-click="arriveHere" hidden>🏁 Cheguei</button>
+        <button type="button" class="btn btn-danger dv-end" id="endBtn" data-click="endNav">✕ Encerrar</button>
       </div>
     </div>
   </div>
