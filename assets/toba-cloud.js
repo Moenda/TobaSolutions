@@ -242,10 +242,6 @@ function tobaCloudBoot() {
     TOBA_CLOUD.auth = app.auth();
     TOBA_CLOUD.auth.languageCode = "pt-BR";
     TOBA_CLOUD.db = app.firestore();
-    TOBA_CLOUD.auth.getRedirectResult().catch((err) => {
-      TOBA_CLOUD.error = tobaCloudErrorText(err);
-      tobaCloudRender();
-    });
     await new Promise((resolve) => {
       let first = true;
       TOBA_CLOUD.auth.onAuthStateChanged((user) => {
@@ -291,11 +287,11 @@ function tobaCloudOnUser(user) {
 function tobaCloudErrorText(err) {
   const code = (err && err.code) || "";
   const map = {
-    "auth/invalid-credential": "E-mail ou senha não batem. Confere aí, campeão. 🤡",
+    "auth/invalid-credential": "E-mail ou senha não batem. Confere aí, campeão. 🤡 Conta antiga do Google ou senha nunca criada? Toca em 🔑 Esqueci / criar senha.",
     "auth/wrong-password": "Senha errada. Confere aí, campeão. 🤡",
     "auth/user-not-found": "Não achei conta com esse e-mail. Bora criar uma?",
-    "auth/invalid-login-credentials": "E-mail ou senha não batem. Confere aí, campeão. 🤡",
-    "auth/email-already-in-use": "Esse e-mail já tem conta. Toca em Entrar.",
+    "auth/invalid-login-credentials": "E-mail ou senha não batem. Confere aí, campeão. 🤡 Conta antiga do Google ou senha nunca criada? Toca em 🔑 Esqueci / criar senha.",
+    "auth/email-already-in-use": "Esse e-mail já tem conta (se entrou com Google antes, é ela, com teus dados). Não cria outra: toca em 🔑 Esqueci / criar senha aqui embaixo que chega o link pra pôr senha.",
     "auth/credential-already-in-use": "Esse e-mail já está ligado a outra conta.",
     "auth/provider-already-linked": "Essa conta já tem senha.",
     "auth/weak-password": "Senha fraca: usa pelo menos 6 caracteres.",
@@ -303,11 +299,9 @@ function tobaCloudErrorText(err) {
     "auth/missing-password": "Faltou a senha.",
     "auth/too-many-requests": "Muitas tentativas. Respira, toma um café e tenta daqui a pouco. ☕",
     "auth/network-request-failed": "Sem internet agora. Tenta de novo quando voltar.",
-    "auth/popup-closed-by-user": "A janela do Google fechou antes de terminar.",
-    "auth/cancelled-popup-request": "A janela do Google fechou antes de terminar.",
     "auth/unauthorized-domain": "Este endereço não está liberado no Firebase (Domínios autorizados).",
     "auth/operation-not-allowed": "Esse jeito de entrar não está ligado no Firebase.",
-    "auth/requires-recent-login": "Por segurança, sai e entra de novo antes disso.",
+    "auth/requires-recent-login": "Por segurança, o Firebase quer um login fresquinho. Sai da conta e usa o 🔑 Esqueci / criar senha na tela de entrar.",
     "permission-denied": "A nuvem recusou (regras do Firestore). Sai e entra de novo.",
     unavailable: "Sem internet pra falar com a nuvem agora.",
   };
@@ -748,31 +742,12 @@ async function tobaCloudSubmit() {
     }
   } catch (err) {
     TOBA_CLOUD.error = tobaCloudErrorText(err);
+    // v1.74: "já tem conta" no Criar conta = volta pro Entrar (o e-mail digitado fica), onde mora o 🔑
+    if (err && err.code === "auth/email-already-in-use") TOBA_CLOUD.mode = "login";
   } finally {
     if (btn) btn.disabled = false;
     tobaCloudRender();
   }
-}
-
-async function tobaCloudGoogle() {
-  TOBA_CLOUD.error = "";
-  try {
-    await tobaCloudBoot();
-    const provider = new firebase.auth.GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: "select_account" });
-    try {
-      await TOBA_CLOUD.auth.signInWithPopup(provider);
-    } catch (err) {
-      if (err && (err.code === "auth/popup-blocked" || err.code === "auth/operation-not-supported-in-this-environment")) {
-        await TOBA_CLOUD.auth.signInWithRedirect(provider);
-        return;
-      }
-      throw err;
-    }
-  } catch (err) {
-    TOBA_CLOUD.error = tobaCloudErrorText(err);
-  }
-  tobaCloudRender();
 }
 
 async function tobaCloudForgot() {
@@ -785,7 +760,7 @@ async function tobaCloudForgot() {
     await tobaCloudBoot();
     await TOBA_CLOUD.auth.sendPasswordResetEmail(email);
     TOBA_CLOUD.error = "";
-    showPageMessage(`Se existir conta com ${email}, o link pra criar senha nova chegou lá. Olha o spam também.`, { title: "📨 Mandei!", icon: "📨" });
+    showPageMessage(`Se existir conta com ${email}, o link pra criar a senha chegou lá (vale também pra conta que entrava com Google: ela ganha senha e continua com os mesmos dados). Olha o spam, escolhe a senha e volta aqui pra Entrar.`, { title: "📨 Mandei!", icon: "📨" });
   } catch (err) {
     TOBA_CLOUD.error = tobaCloudErrorText(err);
   }
@@ -805,7 +780,7 @@ async function tobaCloudAddPassword() {
     TOBA_CLOUD.user = TOBA_CLOUD.auth.currentUser;
     TOBA_CLOUD.error = "";
     TOBA_CLOUD.view = "main";
-    showPageMessage(`Pronto! No app Android, entra com ${user.email} e essa senha.`, { title: "🔑 Senha criada", icon: "🔑" });
+    showPageMessage(`Pronto! Agora entra com ${user.email} e essa senha (no app Android também).`, { title: "🔑 Senha criada", icon: "🔑" });
   } catch (err) {
     TOBA_CLOUD.error = tobaCloudErrorText(err);
   }
@@ -895,7 +870,6 @@ async function tobaCloudDownloadAll() {
 tobaActions({
   tobaCloudOpen,
   tobaCloudSubmit,
-  tobaCloudGoogle,
   tobaCloudForgot,
   tobaCloudAddPassword,
   tobaCloudSignOut,
@@ -1065,9 +1039,6 @@ function tobaCloudRender() {
       if (el) typed[id] = el.value;
     });
     const signup = TOBA_CLOUD.mode === "signup";
-    const google = typeof tobaIsApp === "function" && tobaIsApp()
-      ? `<p class="tc-hint">No app Android, o Google não deixa entrar com ele aqui dentro. Entrou com Google no Chrome? Lá em ☁️ Conta tem "Criar senha pro app".</p>`
-      : `<button type="button" class="btn btn-secondary tc-google" data-click="tobaCloudGoogle">Entrar com Google</button>`;
     body.innerHTML = `
       <p class="toba-sheet-text">Com conta, teu Toba fica salvo na nuvem e aparece em qualquer celular ou PC. Sem conta, continua tudo só neste aparelho, igual sempre. 😎</p>
       <div class="tc-chips tc-mode">
@@ -1078,9 +1049,8 @@ function tobaCloudRender() {
       <div class="form-group"><label for="tcEmail">E-mail</label><input class="form-control" id="tcEmail" type="email" inputmode="email" autocomplete="email" placeholder="voce@gmail.com" /></div>
       <div class="form-group"><label for="tcPassword">Senha</label><input class="form-control" id="tcPassword" type="password" autocomplete="${signup ? "new-password" : "current-password"}" placeholder="${signup ? "pelo menos 6 caracteres" : "tua senha"}" /></div>
       ${err}
-      ${signup ? "" : `<button type="button" class="chip-btn tc-forgot" data-click="tobaCloudForgot">🤡 Esqueci a senha</button>`}
-      <div class="tc-or">ou</div>
-      ${google}`;
+      ${signup ? "" : `<button type="button" class="chip-btn tc-forgot" data-click="tobaCloudForgot">🔑 Esqueci / criar senha</button>`}
+      ${signup ? "" : `<p class="tc-hint">Entrava com Google? Agora é só e-mail + senha (o Google saiu na v1.74). Tua conta continua lá: digita o Gmail e toca em 🔑 Esqueci / criar senha.</p>`}`;
     footer.innerHTML = `<button type="button" class="btn btn-primary" id="tcSubmit" data-click="tobaCloudSubmit">${signup ? "🎉 Criar conta" : "👊 Entrar"}</button>`;
     Object.keys(typed).forEach((id) => {
       const el = document.getElementById(id);
@@ -1095,7 +1065,7 @@ function tobaCloudRender() {
   if (TOBA_CLOUD.view === "password") {
     body.innerHTML = `
       <button type="button" class="back-nav-btn" data-click="tobaCloudView" data-view="main">‹ Conta</button>
-      <p class="toba-sheet-text">Cria uma senha pra entrar com <b>${tobaCloudEsc(user.email)}</b> no app Android (lá dentro o Google não deixa). É a mesma conta, com os mesmos dados.</p>
+      <p class="toba-sheet-text">Cria uma senha pra entrar com <b>${tobaCloudEsc(user.email)}</b> em qualquer lugar (o login com Google saiu na v1.74). É a mesma conta, com os mesmos dados.</p>
       <div class="form-group"><label for="tcNewPassword">Senha nova</label><input class="form-control" id="tcNewPassword" type="password" autocomplete="new-password" placeholder="pelo menos 6 caracteres" /></div>
       ${err}`;
     footer.innerHTML = `<button type="button" class="btn btn-primary" data-click="tobaCloudAddPassword">🔑 Criar senha</button>`;
@@ -1211,7 +1181,7 @@ function tobaCloudRender() {
       </button>
       ${hasPassword ? "" : `<button type="button" class="toba-menu-btn" data-click="tobaCloudView" data-view="password">
         <span class="toba-menu-icon">🔑</span>
-        <span class="toba-menu-text"><span class="toba-menu-title">Criar senha pro app</span><span class="toba-menu-desc">Pra entrar com essa conta no app Android</span></span>
+        <span class="toba-menu-text"><span class="toba-menu-title">Criar senha</span><span class="toba-menu-desc">Tua conta é do Google: põe uma senha pra entrar (o Google saiu)</span></span>
         <span class="toba-hub-chevron">›</span>
       </button>`}
     </div>

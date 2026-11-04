@@ -1761,3 +1761,20 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 **Como testar:** 🚀 Partiu com o 🚦 ligado num horário de pico: a rota (risco fino) ganha a faixa amarela/vermelha larga só onde ELA está lenta, e as ruas do lado ficam com linha fina. Toca no **2D** e no **3D** no mapa. Espera uma piada do Cloba: aparece embaixo da manobra. Perto do destino: 🏁 Cheguei, e o resumo da viagem aparece como chegada. Rota que passa por radar conhecido: plaquinha com o limite e o aviso a 400 m.
 
 **Commit sugerido:** `v1.73 - Navegar com transito casado na rota (faixa larga so na rota, fino nas outras ruas), botao 3D/2D no mapa, Cloba la em cima, botao Cheguei e radares do OSM com limite e cache`
+
+---
+
+## v1.74 — ☁️ Conta: tchau botão do Google, olá 🔑 criar senha
+
+**Arquivos que mudaram:** `assets/toba-cloud.js`, `sw.js` (cache `toba-v35`), `CLAUDE.md` (seção 4.2), `PATCH-NOTES.md`.
+
+1. **Sem login com Google:** o Rafa desligou o Google no Firebase (no APK o Google não deixa entrar de dentro do app, e quem tentava "Criar conta" com o mesmo Gmail levava "esse e-mail já tem conta"). O botão saiu da tela de entrar, em todo lugar. Agora é só e-mail + senha.
+2. **🔑 Esqueci / criar senha:** o antigo "🤡 Esqueci a senha" ganhou nome novo e um aviso embaixo: quem entrava com Google digita o Gmail e toca nele. Chega o link do Firebase, escolhe a senha e entra. **É a mesma conta, com os mesmos dados** (mesmo uid na nuvem).
+3. **"Esse e-mail já tem conta" no Criar conta:** em vez de travar, a tela volta sozinha pro **Entrar** (com o e-mail já digitado) e explica pra tocar no 🔑. Senha errada também lembra do 🔑.
+4. **☁️ Conta logada com Google:** o item virou **🔑 Criar senha** (some quando a conta já tem senha).
+
+**Dados:** Nenhuma mudança no banco nem nas chaves. Conta e dados na nuvem continuam onde estavam.
+
+**Como testar:** Sai da conta (ou abre no APK) › ☁️ Conta › Entrar: não tem mais botão do Google. Digita o Gmail › 🔑 Esqueci / criar senha › abre o e-mail, cria a senha › Entrar com e-mail + senha: aparecem teus dados de sempre. Teste extra: Criar conta com esse mesmo Gmail cai no Entrar com o aviso do 🔑.
+
+**Commit sugerido:** `v1.74 - Conta sem login com Google (so e-mail e senha), botao Esqueci/criar senha pra conta antiga do Google e aviso quando o e-mail ja tem conta`
