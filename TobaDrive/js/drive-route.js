@@ -47,6 +47,8 @@ function readDrivePrefs() {
     autoNight: p.autoNight !== false, // v1.68: navegando, mapa escuro sozinho do pôr ao nascer do sol
     gameView: p.gameView !== false, // v1.68: mapa inclinado girando com o carro (visual de jogo)
     copilot: p.copilot !== false, // v1.68: 🤡 Cloba copiloto (piadinhas na voz)
+    map3d: p.map3d !== false, // v1.69: 🏙️ mapa 3D do Mapbox (desligado = mapa clássico Leaflet)
+    mapLight: ["auto", "dawn", "day", "dusk", "night"].includes(p.mapLight) ? p.mapLight : "auto", // v1.69: luz do mapa 3D
     routeColor: typeof p.routeColor === "string" ? p.routeColor : "laranja", // 🎨 cor da rota (v1.67, DRIVE_ROUTE_COLORS)
   };
 }

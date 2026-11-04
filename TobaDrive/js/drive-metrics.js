@@ -480,6 +480,16 @@ function driveSunTimes(lat, lng, date = new Date()) {
   return { rise, set };
 }
 
+// 🏙️ Luz do mapa 3D (v1.69, Mapbox lightPreset): amanhecer/pôr do sol numa janela em volta do sol
+function driveLightPreset(lat, lng, now = Date.now()) {
+  const t = driveSunTimes(lat, lng, new Date(now));
+  if (!t) return "day";
+  const min = 60000;
+  if (now >= t.rise - 45 * min && now <= t.rise + 40 * min) return "dawn";
+  if (now >= t.set - 40 * min && now <= t.set + 45 * min) return "dusk";
+  return now > t.rise && now < t.set ? "day" : "night";
+}
+
 function driveIsDark(lat, lng, now = Date.now()) {
   const t = driveSunTimes(lat, lng, new Date(now));
   if (!t) return false;

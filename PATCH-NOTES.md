@@ -1616,3 +1616,41 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.68 - Navegar modo jogo (mapa 3D girando, velocimetro com limite da via, Cloba copiloto, fantasma, resumo pra tropa, posto e Places, 7 conquistas, barrinha zerada) + grafico da balanca equalizado com periodos 2 semanas a 1 ano`
+
+---
+
+## v1.69 — 🏙️ MAAAAPBOX: Navegar com mapa 3D de verdade, prédios e luz de dia, amanhecer, pôr do sol e noite
+
+> 🚨 O Navegar trocou de motor. Saiu o mapa em foto deitada na marra, entrou o **Mapbox**: prédios em 3D, nome de rua em pé, câmera de jogo de verdade e o céu mudando com a hora. A rota, o trânsito e a placa do limite continuam vindo do TomTom.
+
+**Arquivos alterados:** `TobaDrive/js/drive-map.js` (**novo**), `TobaDrive/js/navegar.js`, `TobaDrive/js/drive-game.js`, `TobaDrive/js/drive-route.js`, `TobaDrive/js/drive-metrics.js`, `TobaDrive/css/navegar.css`, `TobaDrive/TobaDrive-Navegar.html`, `assets/toba-maps.js`, `sw.js`, `CLAUDE.md`
+
+### 🏙️ Mapa 3D (Mapbox)
+1. **Prédios em 3D** e nomes de rua sempre em pé (antes eles deitavam junto com o mapa).
+2. **Modo jogo de verdade:** navegando, a câmera inclina 60° e gira com o carango, que fica lá embaixo vendo a rua vir. Acabou a borda do mapa aparecendo no horizonte.
+3. **🚦 Trânsito só na rota:** no mapa 3D a cidade não fica mais pintada de verde. O trânsito aparece **só na linha da rota** (amarelo lento, vermelho parado, vinho travado), com o trânsito ao vivo do TomTom. O 🚦 liga e desliga essas cores.
+4. **Mexeu no mapa com o dedo** (arrastar, girar ou inclinar)? Ele para de seguir. O 🎯 volta pro modo jogo.
+
+### 🌅 Luz do mapa
+1. O botão do canto (onde era o 🌙) agora roda as luzes: **🌗 Automático → 🌅 Amanhecer → ☀️ Dia → 🌇 Pôr do sol → 🌙 Noite**.
+2. **🌗 Automático** (o padrão) olha a hora do sol **onde tu tá**: amanhecer perto do nascer do sol, pôr do sol perto do pôr, noite depois disso. Muda sozinho no meio da viagem.
+
+### 🗺️ Plano B: mapa clássico
+1. Se o celular não tiver WebGL, se o Mapbox recusar o token ou se não abrir em 12 s, o Navegar volta sozinho pro **mapa clássico** (o da v1.68, TomTom em imagem). Recusa do token desliga o Mapbox por 6 h neste aparelho.
+2. ⚙️ › **🏙️ Mapa 3D com prédios (Mapbox)** desligado = mapa clássico sempre. Na tela de escolher destino a troca vale na hora.
+3. O mapa clássico continua igualzinho: 🌙/☀️, camada 🚦 da cidade e o truque do mapa deitado.
+
+**Dados:** Nada muda no `TOBA_DRIVE_DB`. Preferências novas no `toba_drive_prefs` (só deste aparelho): `map3d` (ligado por padrão) e `mapLight` (`auto`, `dawn`, `day`, `dusk` ou `night`; padrão `auto`). `toba_mapbox_state` (deste aparelho) guarda até quando o Mapbox fica desligado depois de uma recusa. Token **público** do Mapbox em `TOBA_MAPBOX_TOKEN` (`assets/toba-maps.js`). O Mapbox GL JS 3.7.0 vem do jsdelivr só quando o mapa 3D abre (fica no cache do celular). `sw.js` → **toba-v30** (arquivo novo `drive-map.js`).
+
+**Grátis do Mapbox (nov/2026):** 50 mil aberturas de mapa por mês na web. Uma abertura = cada vez que o mapa do Navegar abre. Sugestão: no painel do Mapbox (account.mapbox.com › Tokens › o token › URL restrictions), limitar a `moenda.github.io`.
+
+**Como testar:**
+- ⚠️ O Mapbox de verdade não abre daqui: testei com um mapa de mentira no lugar do estilo deles (e com o token recusado, pra ver o plano B). Se o mapa ficar preto ou cair no clássico, me manda print do console.
+- Navegar › escolhe um destino: mapa do Mapbox com o logo dele no canto, acima do card.
+- 🚀 Partiu: mapa inclina, prédios em pé, rota com amarelo/vermelho só onde tem trânsito.
+- Toca no botão da luz 5 vezes: 🌗 → 🌅 → ☀️ → 🌇 → 🌙, com o aviso do nome.
+- Arrasta o mapa navegando: para de seguir; 🎯 volta.
+- ⚙️ desliga 🏙️ Mapa 3D: volta o mapa da v1.68.
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.69 - Navegar com Mapbox 3D (predios, camera de jogo, transito so na rota, luz amanhecer/dia/por do sol/noite automatica) e mapa classico de plano B`

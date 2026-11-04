@@ -1,7 +1,8 @@
 /* =====================================================================
  * Toba Drive · modo dirigir ULTRA (desde v1.68) — carregado depois do navegar.js
- * - 🎮 Visual de jogo: navegando, o mapa inclina e gira com o carro (CSS em
- *   cima do Leaflet: o #driveMap fica maior que a tela, gira e deita). Zoom
+ * - 🎮 Visual de jogo: navegando, o mapa inclina e gira com o carro. Mapa 3D
+ *   (v1.69, drive-map.js): câmera do Mapbox (nav.map.cam). Mapa clássico: CSS em
+ *   cima do Leaflet (o #driveMap fica maior que a tela, gira e deita). Zoom
  *   pela velocidade já vinha do navTick. Arrastou o mapa = volta pro plano até
  *   o 🎯. Noite automática: navegando, mapa escuro entre o pôr e o nascer do sol.
  * - 🏎️ Velocímetro estilo Forza: velocidade do GPS + placa do limite da via
@@ -41,28 +42,39 @@ function gameViewWanted() {
   return nav.mode === "nav" && nav.follow && readDrivePrefs().gameView;
 }
 
+// gira pelo caminho mais curto (359° -> 1° não dá a volta inteira)
+function gameFollowHeading() {
+  const h = Number.isFinite(nav.pos?.heading) ? nav.pos.heading : game.heading;
+  let diff = ((h - game.heading + 540) % 360) - 180;
+  if (Math.abs(diff) > 120 && (nav.pos?.speed || 0) < 2) diff = 0; // parado, a bússola pula: ignora
+  game.heading += diff;
+}
+
 function gameApplyView() {
   const box = document.getElementById("driveMap");
-  if (!box) return;
+  if (!box || !nav.map) return;
   const want = gameViewWanted();
+  // 🏙️ Mapa 3D (v1.69): câmera de verdade (inclina 60° e gira com o rumo), carango a 70% da tela
+  if (nav.map.kind === "mapbox") {
+    const was = Boolean(nav.map.cam);
+    if (want) gameFollowHeading();
+    nav.map.cam = want ? { bearing: ((game.heading % 360) + 360) % 360, pitch: DRIVE_GAME_PITCH, padTop: 0.4 } : null;
+    document.body.classList.toggle("is-game3d", want);
+    if (want && !was && nav.pos) nav.map.setView([nav.pos.lat, nav.pos.lng], nav.map.getZoom(), { animate: true });
+    return;
+  }
+  // 🗺️ Mapa clássico: truque de CSS em cima do Leaflet (v1.68)
   const was = box.classList.contains("is-game");
   if (want !== was) {
     box.classList.toggle("is-game", want);
     document.body.classList.toggle("is-game", want);
     if (!want) box.style.transform = "";
-    if (nav.map) setTimeout(() => nav.map.invalidateSize(), 30);
-    if (nav.layers.car) {
-      nav.layers.car.remove();
-      nav.layers.car = null;
-      drawCar();
-    }
+    setTimeout(() => nav.map && nav.map.resize(), 30);
+    nav.map.dropCar();
+    drawCar();
   }
   if (!want) return;
-  const h = Number.isFinite(nav.pos?.heading) ? nav.pos.heading : game.heading;
-  // gira pelo caminho mais curto (359° -> 1° não dá a volta inteira)
-  let diff = ((h - game.heading + 540) % 360) - 180;
-  if (Math.abs(diff) > 120 && (nav.pos?.speed || 0) < 2) diff = 0; // parado, a bússola pula: ignora
-  game.heading += diff;
+  gameFollowHeading();
   box.style.transform = `perspective(1100px) rotateX(42deg) rotate(${-game.heading}deg)`;
 }
 
@@ -75,19 +87,17 @@ function gameVehicleTransform(vehicle) {
 }
 
 /* ---------- 🌙 noite automática ---------- */
+// Clássico: escuro do pôr ao nascer do sol (só navegando). 3D: luz do 🌗 (auto = pelo sol)
 function gameEffectiveStyle() {
-  const p = readDrivePrefs();
-  if (nav.mode === "nav" && p.autoNight && nav.pos) return driveIsDark(nav.pos.lat, nav.pos.lng) ? "dark" : "light";
-  return p.mapStyle;
+  return driveMapLook(nav.map?.kind || "leaflet", nav.pos ? [nav.pos.lat, nav.pos.lng] : null);
 }
 
 function gameSyncStyle() {
+  if (!nav.map) return;
   const style = gameEffectiveStyle();
   if (style === game.dark) return;
   game.dark = style;
-  if (nav.tiles) nav.tiles.tobaSetStyle(style);
-  if (nav.traffic) nav.traffic.tobaSetStyle(style);
-  document.getElementById("driveMap")?.classList.toggle("is-dark", style === "dark");
+  nav.map.setLook(style);
 }
 
 /* ---------- 🤡 copiloto ---------- */
@@ -164,10 +174,7 @@ function gameStop() {
   document.body.classList.remove("is-over");
   gameApplyView();
   game.dark = null;
-  const p = readDrivePrefs().mapStyle;
-  if (nav.tiles) nav.tiles.tobaSetStyle(p);
-  if (nav.traffic) nav.traffic.tobaSetStyle(p);
-  document.getElementById("driveMap")?.classList.toggle("is-dark", p === "dark");
+  gameSyncStyle(); // fora do modo nav: volta pro estilo escolhido
   ["clobaBubble", "speedo", "ghostChip"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.hidden = true;
@@ -182,9 +189,7 @@ async function gameLoadRadars(route) {
     const list = await driveFetchRadars(route);
     if (nav.route === route) {
       game.radars = list;
-      if (nav.layers.marks && window.L) {
-        list.forEach((r) => L.marker([r.lat, r.lng], { icon: L.divIcon({ className: "dv-flag-wrap", html: `<span class="dv-radar">📸</span>`, iconSize: [24, 24], iconAnchor: [12, 12] }), interactive: false }).addTo(nav.layers.marks));
-      }
+      if (nav.map) list.forEach((r) => nav.map.addMark([r.lat, r.lng], `<span class="dv-radar">📸</span>`, { className: "dv-flag-wrap", size: [24, 24], anchor: [12, 12] }));
     }
   } catch (err) {
     /* sem radar hoje: segue */

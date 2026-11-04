@@ -43,11 +43,9 @@ const nav = {
   rerouting: false,
   spoken: {},
   follow: true,
-  map: null,
-  tiles: null,
-  traffic: null, // camada 🚦 (tobaTrafficTiles)
+  map: null, // v1.69: objeto do drive-map.js (Mapbox 3D ou Leaflet), nunca L.* direto
+  mapPromise: null,
   lastTrafficCheck: 0,
-  layers: {},
   trip: null, // { startedAt, km, last: [lat, lng] }
   result: null, // resumo do "done"
   placesListId: "",
@@ -281,71 +279,61 @@ async function clearRecent() {
  * Mapa (uma instância só, que mora no #routeView)
  * ------------------------------------------------------------------- */
 async function ensureMap() {
-  await loadDriveLeaflet();
   if (nav.map) return nav.map;
-  const box = document.getElementById("driveMap");
-  box.innerHTML = "";
-  const start = nav.pos ? [nav.pos.lat, nav.pos.lng] : [-23.5505, -46.6333];
-  nav.map = L.map(box, { zoomControl: false, attributionControl: true }).setView(start, nav.pos ? 15 : 12);
-  const style = readDrivePrefs().mapStyle;
-  nav.tiles = tobaBaseTiles(nav.map, style, { cartoKey: DRIVE_CARTO_KEY, onFallback: renderTrafficBtn });
-  nav.traffic = tobaTrafficTiles(nav.map, style);
-  nav.traffic.tobaSetOn(readDrivePrefs().traffic);
-  nav.layers.route = L.layerGroup().addTo(nav.map);
-  nav.layers.marks = L.layerGroup().addTo(nav.map);
-  nav.map.on("click", onMapClick);
-  nav.map.on("dragstart", () => {
-    if (nav.mode !== "nav") return;
-    nav.follow = false;
-    document.getElementById("recenterBtn").hidden = false;
-    if (typeof gameApplyView === "function") gameApplyView();
-  });
-  box.classList.toggle("is-dark", readDrivePrefs().mapStyle === "dark");
-  return nav.map;
+  if (!nav.mapPromise) {
+    nav.mapPromise = (async () => {
+      const box = document.getElementById("driveMap");
+      box.innerHTML = "";
+      const start = nav.pos ? [nav.pos.lat, nav.pos.lng] : [-23.5505, -46.6333];
+      const map = await driveCreateMap(box, start, nav.pos ? 15 : 12);
+      map.onClick(onMapClick);
+      map.onDragStart(() => {
+        if (nav.mode !== "nav") return;
+        nav.follow = false;
+        document.getElementById("recenterBtn").hidden = false;
+        if (typeof gameApplyView === "function") gameApplyView();
+      });
+      nav.map = map;
+      renderStyleBtn();
+      renderTrafficBtn();
+      return map;
+    })().catch((err) => {
+      nav.mapPromise = null;
+      throw err;
+    });
+  }
+  return nav.mapPromise;
 }
 
 function drawCar() {
   if (!nav.map || !nav.pos) return;
   const ll = [nav.pos.lat, nav.pos.lng];
   const veh = currentVehicle();
-  const tf = (typeof gameVehicleTransform === "function" && gameVehicleTransform(veh)) || driveVehicleTransform(veh, nav.pos.heading);
+  const tf = (typeof gameVehicleTransform === "function" && gameVehicleTransform(veh)) || driveVehicleTransform(veh, nav.map.screenHeading(nav.pos.heading));
   const isNav = nav.mode === "nav";
-  if (nav.layers.car && nav.layers.car.tobaVehicle !== veh.id) {
-    nav.layers.car.remove();
-    nav.layers.car = null;
-  }
-  if (!nav.layers.car) {
-    const html = veh.face === "arrow"
-      ? `<span class="dv-car dv-veh-el${isNav ? " is-nav" : ""}" style="transform: ${tf}"></span>`
-      : `<span class="dv-veh${isNav ? " is-nav" : ""}"><span class="dv-veh-el" style="transform: ${tf}">${veh.icon}</span></span>`;
-    nav.layers.car = L.marker(ll, { icon: L.divIcon({ className: "dv-car-wrap", html, iconSize: [40, 40], iconAnchor: [20, 20] }), interactive: false, zIndexOffset: 1000 }).addTo(nav.map);
-    nav.layers.car.tobaVehicle = veh.id;
-  } else {
-    nav.layers.car.setLatLng(ll);
-    const root = nav.layers.car.getElement();
-    const el = root?.querySelector(".dv-veh-el");
-    if (el) el.style.transform = tf;
-    root?.querySelector(".dv-car, .dv-veh")?.classList.toggle("is-nav", isNav);
-  }
+  const html = veh.face === "arrow"
+    ? `<span class="dv-car dv-veh-el${isNav ? " is-nav" : ""}" style="transform: ${tf}"></span>`
+    : `<span class="dv-veh${isNav ? " is-nav" : ""}"><span class="dv-veh-el" style="transform: ${tf}">${veh.icon}</span></span>`;
+  const root = nav.map.car(ll, html, veh.id);
+  const el = root?.querySelector(".dv-veh-el");
+  if (el) el.style.transform = tf;
+  root?.querySelector(".dv-car, .dv-veh")?.classList.toggle("is-nav", isNav);
+}
+
+// Trechos lentos/parados da rota TomTom (amarelo = lento, vermelho = parado)
+function routeJamParts(route) {
+  return (route.jams || []).map((j) => ({
+    coords: route.coords.slice(j.from, j.to + 1),
+    color: j.level >= 4 ? "#7f1d1d" : j.level >= 3 ? "#ef4444" : j.level >= 2 ? "#f97316" : "#facc15",
+  })).filter((j) => j.coords.length > 1);
 }
 
 function drawRoute() {
   if (!nav.map) return;
-  nav.layers.route.clearLayers();
-  nav.layers.marks.clearLayers();
-  if (nav.route) {
-    L.polyline(nav.route.coords, { color: "#0d1117", weight: 10, opacity: 0.55 }).addTo(nav.layers.route);
-    L.polyline(nav.route.coords, { color: currentRouteColor(), weight: 6, opacity: 0.95 }).addTo(nav.layers.route);
-    // Trechos parados da rota TomTom por cima (amarelo = lento, vermelho = parado)
-    (nav.route.jams || []).forEach((j) => {
-      const part = nav.route.coords.slice(j.from, j.to + 1);
-      if (part.length < 2) return;
-      const color = j.level >= 4 ? "#7f1d1d" : j.level >= 3 ? "#ef4444" : j.level >= 2 ? "#f97316" : "#facc15";
-      L.polyline(part, { color, weight: 6, opacity: 0.95 }).addTo(nav.layers.route);
-    });
-  }
+  nav.map.clearMarks();
+  nav.map.setRoute(nav.route ? nav.route.coords : null, currentRouteColor(), nav.route ? routeJamParts(nav.route) : []);
   if (nav.dest) {
-    L.marker([nav.dest.lat, nav.dest.lng], { icon: L.divIcon({ className: "dv-flag-wrap", html: `<span class="dv-flag">🏁</span>`, iconSize: [32, 32], iconAnchor: [8, 30] }) }).addTo(nav.layers.marks);
+    nav.map.addMark([nav.dest.lat, nav.dest.lng], `<span class="dv-flag">🏁</span>`, { className: "dv-flag-wrap", size: [32, 32], anchor: [8, 30] });
   }
 }
 
@@ -353,19 +341,42 @@ function fitRoute() {
   if (!nav.map) return;
   const pts = nav.route ? nav.route.coords : [];
   if (pts.length > 1) {
-    nav.map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [30, 80], paddingBottomRight: [30, 230] });
+    nav.map.fit(pts, { top: 80, left: 30, right: 30, bottom: 230 });
   } else if (nav.dest) {
     nav.map.setView([nav.dest.lat, nav.dest.lng], 16);
   }
 }
 
+// 🌙 Mapa clássico: claro/escuro. 🏙️ Mapa 3D: roda as luzes (auto, amanhecer, dia, pôr do sol, noite)
 function toggleMapStyle() {
-  const next = readDrivePrefs().mapStyle === "dark" ? "light" : "dark";
-  storeDrivePrefs({ mapStyle: next });
-  if (nav.tiles) nav.tiles.tobaSetStyle(next);
-  if (nav.traffic) nav.traffic.tobaSetStyle(next);
-  document.getElementById("driveMap").classList.toggle("is-dark", next === "dark");
-  document.getElementById("styleBtn").textContent = next === "dark" ? "☀️" : "🌙";
+  if (nav.map?.kind === "mapbox") {
+    const ids = DRIVE_LIGHTS.map((l) => l.id);
+    const next = ids[(ids.indexOf(readDrivePrefs().mapLight) + 1) % ids.length];
+    storeDrivePrefs({ mapLight: next });
+    const at = nav.pos ? [nav.pos.lat, nav.pos.lng] : null;
+    nav.map.setLook(driveMapLook("mapbox", at));
+    const info = driveLightInfo(next);
+    tobaToast(`${info.icon} ${info.name}`);
+  } else {
+    const next = readDrivePrefs().mapStyle === "dark" ? "light" : "dark";
+    storeDrivePrefs({ mapStyle: next });
+    if (nav.map) nav.map.setLook(next);
+  }
+  if (typeof game !== "undefined") game.dark = null; // o modo jogo recalcula a luz
+  renderStyleBtn();
+}
+
+function renderStyleBtn() {
+  const btn = document.getElementById("styleBtn");
+  if (!btn) return;
+  if (nav.map?.kind === "mapbox") {
+    const info = driveLightInfo(readDrivePrefs().mapLight);
+    btn.textContent = info.icon;
+    btn.setAttribute("aria-label", `Luz do mapa: ${info.name}`);
+  } else {
+    btn.textContent = readDrivePrefs().mapStyle === "dark" ? "☀️" : "🌙";
+    btn.setAttribute("aria-label", "Mapa claro/escuro");
+  }
 }
 
 /* ---------------------------------------------------------------------
@@ -436,22 +447,23 @@ function renderPickVehicle() {
   if (btn) btn.textContent = `🎨 Personalizar · ${currentVehicle().icon}`;
 }
 
-// 🚦 camada de trânsito do TomTom (some sozinha se o TomTom estiver fora)
+// 🚦 Mapa clássico: camada de trânsito do TomTom (some se o TomTom estiver fora).
+// 🏙️ Mapa 3D: trânsito só na linha da rota (v1.69)
 function toggleTraffic() {
-  if (!tobaTomTomOn()) {
+  if (nav.map?.kind !== "mapbox" && !tobaTomTomOn()) {
     const s = tobaTomTomState();
     tobaToast(`🚦 TomTom fora agora (${s.offWhy || "sem resposta"}). Volta sozinho em algumas horas.`);
     return;
   }
   const on = !readDrivePrefs().traffic;
   storeDrivePrefs({ traffic: on });
-  if (nav.traffic) nav.traffic.tobaSetOn(on);
+  if (nav.map) nav.map.setTraffic(on);
   renderTrafficBtn();
   tobaToast(on ? "🚦 Trânsito ligado" : "🚦 Trânsito desligado");
 }
 
 function renderTrafficBtn() {
-  const on = readDrivePrefs().traffic && tobaTomTomOn();
+  const on = readDrivePrefs().traffic && (nav.map ? nav.map.trafficReady() : tobaTomTomOn());
   document.querySelectorAll("[data-click='toggleTraffic']").forEach((btn) => {
     btn.classList.toggle("is-off", !on);
     btn.setAttribute("aria-pressed", on ? "true" : "false");
@@ -469,7 +481,7 @@ function routeSourceLine(r) {
 
 async function onMapClick(ev) {
   if (nav.mode !== "choose") return;
-  const { lat, lng } = ev.latlng;
+  const { lat, lng } = ev;
   const dest = { name: "Ponto no mapa", address: "", lat, lng };
   setDestination(dest);
   // nome da rua chega depois, sem segurar a rota
@@ -508,7 +520,7 @@ async function setMode(mode) {
   } catch (err) {
     document.getElementById("driveMap").innerHTML = tobaEmpty("📡", "Mapa sem internet", "O mapa precisa de internet. Dá pra ir pelo Google Maps/Waze no ↗️.", { compact: true });
   }
-  setTimeout(() => nav.map && nav.map.invalidateSize(), 60);
+  setTimeout(() => nav.map && nav.map.resize(), 60);
   renderRoute();
 }
 
@@ -592,9 +604,10 @@ function renderRoute() {
   const banner = document.getElementById("navBanner");
   const panel = document.getElementById("navPanel");
   const then = document.getElementById("navThen");
-  document.getElementById("styleBtn").textContent = readDrivePrefs().mapStyle === "dark" ? "☀️" : "🌙";
+  renderStyleBtn();
   document.getElementById("voiceBtn").textContent = readDrivePrefs().voice ? "🔊" : "🔇";
   renderTrafficBtn();
+  requestAnimationFrame(driveMapLiftControls); // logo do Mapbox sempre à vista, acima do card
   const isNav = nav.mode === "nav";
   banner.hidden = !isNav;
   panel.hidden = !isNav;
@@ -1025,6 +1038,7 @@ function syncPrefInputs() {
   document.getElementById("prefCopilot").checked = p.copilot;
   document.getElementById("prefGame").checked = p.gameView;
   document.getElementById("prefNight").checked = p.autoNight;
+  document.getElementById("prefMap3d").checked = p.map3d;
 }
 
 function prefChange() {
@@ -1035,7 +1049,19 @@ function prefChange() {
     copilot: document.getElementById("prefCopilot").checked,
     gameView: document.getElementById("prefGame").checked,
     autoNight: document.getElementById("prefNight").checked,
+    map3d: document.getElementById("prefMap3d").checked,
   });
+  // 🏙️ trocou o tipo de mapa: na tela de escolher dá pra refazer o mapa já
+  if (nav.map && (nav.map.kind === "mapbox") !== readDrivePrefs().map3d) {
+    if (nav.mode === "pick") {
+      nav.map.destroy();
+      nav.map = null;
+      nav.mapPromise = null;
+      document.getElementById("driveMap").className = "dv-map";
+    } else {
+      tobaToast("🏙️ A troca de mapa vale quando tu voltar pra tela de destino.");
+    }
+  }
   if (nav.mode === "nav") driveKeepAwake(true);
   if (!readDrivePrefs().voice) driveShutUp();
   tobaSaved();

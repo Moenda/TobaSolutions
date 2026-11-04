@@ -16,6 +16,10 @@
  *   { offUntil: ms, offWhy: "texto", day: "AAAA-MM-DD", routes: n }.
  * ===================================================================== */
 const TOBA_TOMTOM_KEY = "mnpRs1e2YdS0T2slli7OvjuscJGpoc38";
+// v1.69: token PÚBLICO do Mapbox do Rafa (mapa 3D do Navegar, TobaDrive/js/drive-map.js).
+// Grátis: 50 mil aberturas de mapa por mês na web. Limitar ao domínio no painel do Mapbox
+// (account.mapbox.com › Tokens › URL restrictions: moenda.github.io). Nunca pôr em memória/IA.
+const TOBA_MAPBOX_TOKEN = "pk.eyJ1IjoiYmVydG9iYSIsImEiOiJjbXcxZ3RhcnkwOW9lMnlwcWVzdGxseWxuIn0.rmugMx_OhYYiqvafVKalSQ";
 const TOBA_TOMTOM_STATE_KEY = "toba_tomtom_state";
 const TOBA_TOMTOM_OFF_HOURS = 6;
 const TOBA_TOMTOM_ROUTES_PER_DAY = 400;

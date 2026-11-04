@@ -977,3 +977,32 @@ body.is-over .dv-route::after {
   overflow-y: auto;
 }
 
+
+/* 🏙️ Mapa 3D (v1.69, Mapbox GL) */
+/* o CSS do Mapbox põe position: relative no container: aqui ele continua cobrindo a tela */
+.dv-map.mapboxgl-map {
+  position: absolute;
+}
+
+.dv-map.is-3d {
+  background: #0b1018;
+}
+
+.dv-map .mapboxgl-ctrl-bottom-right,
+.dv-map .mapboxgl-ctrl-bottom-left {
+  bottom: var(--dv-map-lift, 0px);
+  transition: bottom 0.2s ease;
+}
+
+.dv-map .mapboxgl-ctrl-attrib {
+  font-size: 9px;
+}
+
+.dv-map .mapboxgl-marker.dv-car-wrap {
+  z-index: 3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dv-map .mapboxgl-ctrl-bottom-right,
+  .dv-map .mapboxgl-ctrl-bottom-left { transition: none; }
+}
