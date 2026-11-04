@@ -69,11 +69,11 @@
       <button type="button" class="dv-round" id="routeBackBtn" data-click="routeBack" aria-label="Voltar">‹</button>
       <div class="dv-top-text" id="routeTopText"></div>
       <button type="button" class="dv-round" data-click="toggleTraffic" aria-label="Trânsito no mapa">🚦</button>
-      <button type="button" class="dv-round" id="styleBtn" data-click="toggleMapStyle" aria-label="Mapa claro/escuro">🌙</button>
+      <button type="button" class="dv-round" id="styleBtn" data-click="toggleMapStyle" aria-label="Luz do mapa">🌗</button>
     </div>
 
-    <!-- v1.68: velocímetro, fantasma e balão do Cloba (navegando) -->
-    <div class="dv-speedo" id="speedo" hidden>
+    <!-- v1.68: velocímetro, fantasma e balão do Cloba (navegando); v1.70: skins (DRIVE_SPEEDOS) -->
+    <div class="dv-speedo dv-sp-toba" id="speedo" hidden>
       <span class="dv-speedo-dial"><b id="speedoValue">0</b><small>km/h</small></span>
       <span class="dv-speedo-limit" id="speedoLimit" hidden>--</span>
     </div>
@@ -105,6 +105,7 @@
       <div class="dv-panel-btns">
         <button type="button" class="dv-round" id="voiceBtn" data-click="toggleVoice" aria-label="Voz">🔊</button>
         <button type="button" class="dv-round" data-click="toggleTraffic" aria-label="Trânsito no mapa">🚦</button>
+        <button type="button" class="dv-round" data-click="openStyleSheet" aria-label="Personalizar carango e velocímetro">🎨</button>
         <button type="button" class="dv-round" data-click="openOut" aria-label="Abrir no Maps ou Waze">↗️</button>
         <button type="button" class="btn btn-danger dv-end" data-click="endNav">✕ Encerrar</button>
       </div>
@@ -119,8 +120,6 @@
       <label class="check-row"><input type="checkbox" id="prefTolls" data-change="prefChange" /> 💸 Fugir de pedágio</label>
       <label class="check-row"><input type="checkbox" id="prefCopilot" data-change="prefChange" /> 🤡 Cloba copiloto (piadinhas na voz)</label>
       <label class="check-row"><input type="checkbox" id="prefGame" data-change="prefChange" /> 🎮 Mapa de jogo (inclinado, gira com o carro)</label>
-      <label class="check-row"><input type="checkbox" id="prefNight" data-change="prefChange" /> 🌙 Mapa escuro sozinho à noite (mapa clássico)</label>
-      <label class="check-row"><input type="checkbox" id="prefMap3d" data-change="prefChange" /> 🏙️ Mapa 3D com prédios (Mapbox). Desligado = mapa clássico</label>
       <button type="button" class="btn btn-outline btn-sm" data-click="testVoice">🗣️ Testar a voz</button>
     </div>
   </div>
@@ -134,9 +133,11 @@
       </div>
       <div class="section-title dv-title-row"><span>🚗 Teu carango no mapa</span><span class="dv-count" id="vehicleCount"></span></div>
       <div class="dv-veh-grid" id="vehicleChips"></div>
-      <p class="dv-hint">🔒 Os trancados saem nas conquistas do Navegar (🏁 Pista, no Perfil).</p>
-      <div class="section-title">🛣️ Cor da rota</div>
+      <div class="section-title dv-title-row"><span>🏁 Velocímetro</span><span class="dv-count" id="speedoCount"></span></div>
+      <div class="dv-sp-grid" id="speedoChips"></div>
+      <div class="section-title">🛣️ Cor da rota (pinta a seta e o Toba GT)</div>
       <div class="dv-colors" id="routeColorChips"></div>
+      <p class="dv-hint">🔒 Os trancados saem nas conquistas do Navegar (🏁 Pista, no Perfil). Dá pra trocar até no meio da rota pelo 🎨 do painel.</p>
     </div>
   </div>
 
@@ -190,6 +191,7 @@
   <script src="js/drive-core.js"></script>
   <script src="../assets/toba-maps.js"></script>
   <script src="js/drive-route.js"></script>
+  <script src="js/drive-models.js"></script>
   <script src="js/drive-map.js"></script>
   <script src="js/navegar.js"></script>
   <script src="js/drive-game.js"></script>

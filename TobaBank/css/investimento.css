@@ -47,10 +47,30 @@
   padding-top: 0.65rem;
   border-top: 1px solid var(--border-soft);
   font-size: 0.78rem;
+  gap: 6px;
 }
 
-.invest-projection-row > :last-child {
+.invest-projection-row .kv-row > :last-child {
   white-space: nowrap;
+  font-weight: 700;
+}
+
+.invest-projection-row .kv-row[role="button"] {
+  cursor: pointer;
+}
+
+.inv-q {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  vertical-align: 1px;
 }
 
 /* Cofrinhos */
@@ -239,4 +259,566 @@
   height: 12px;
   border-radius: 50%;
   flex: 0 0 12px;
+}
+
+/* =====================================================================
+ * v1.70 · cara nova
+ * ===================================================================== */
+
+/* Cards: linha de 3 números pequenos (por mês, 12 meses, IR hoje) */
+.inv-card-mini {
+  margin-top: 8px;
+  gap: 6px;
+}
+
+.inv-card-mini .toba-stat {
+  padding: 0.45rem 0.5rem;
+  min-width: 0;
+}
+
+.inv-card-mini .toba-stat-label {
+  font-size: 0.6rem;
+  white-space: nowrap;
+}
+
+.inv-card-mini .toba-stat-value {
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inv-card-mini .toba-stat-sub {
+  font-size: 0.62rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inv-tag {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--surface-3);
+  border-radius: 999px;
+  padding: 1px 7px;
+  vertical-align: 2px;
+  white-space: nowrap;
+}
+
+/* Já resgatados: sanfona com lista compacta */
+.inv-done-acc {
+  margin-top: 1.1rem;
+}
+
+.inv-done-head {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 0.8rem 0.9rem;
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.inv-done-head-text,
+.inv-done-head-side {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.inv-done-head-side {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.inv-done-head-title {
+  font-weight: 800;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.inv-done-head-sub {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.inv-done-head-value {
+  font-weight: 800;
+  font-size: 0.98rem;
+  white-space: nowrap;
+}
+
+.inv-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: 0.7rem;
+  margin-left: 4px;
+}
+
+.inv-done-acc .acc-arrow {
+  font-size: 0.7rem;
+  color: var(--muted);
+  transition: transform 0.2s ease;
+}
+
+.inv-done-acc.expanded .acc-arrow {
+  transform: rotate(180deg);
+}
+
+.inv-done-body {
+  padding: 0 0.75rem 0.75rem;
+}
+
+.inv-done-body .form-control {
+  margin-bottom: 0.4rem;
+}
+
+.inv-year-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 0.7rem 0.15rem 0.35rem;
+}
+
+.inv-year-head b {
+  text-transform: none;
+}
+
+.inv-done-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  margin-bottom: 5px;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.inv-done-row:hover {
+  border-color: var(--border);
+}
+
+.inv-done-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+.inv-done-name {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inv-done-meta {
+  font-size: 0.66rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inv-done-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex: 0 0 auto;
+  font-size: 0.84rem;
+  white-space: nowrap;
+}
+
+.inv-done-side small {
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+/* Folha do investimento */
+.inv-hero {
+  background: linear-gradient(135deg, rgba(88, 166, 255, 0.12), rgba(63, 185, 80, 0.08));
+  border: 1px solid rgba(88, 166, 255, 0.25);
+  border-radius: var(--radius-lg);
+  padding: 0.85rem 0.9rem;
+  margin-bottom: 0.8rem;
+}
+
+.inv-hero-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.inv-hero-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.inv-hero-tip {
+  margin-top: 0.55rem;
+  font-size: 0.74rem;
+  color: var(--text-2);
+  line-height: 1.35;
+}
+
+.inv-action-tabs {
+  margin-bottom: 0.8rem;
+}
+
+.inv-action-tabs .tab-btn,
+.inv-chart-tabs .tab-btn {
+  font-size: 0.74rem;
+  padding: 8px 2px;
+}
+
+.inv-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.inv-panel[hidden] {
+  display: none;
+}
+
+.inv-big-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.inv-big-input {
+  font-size: 1.45rem !important;
+  font-weight: 800;
+  text-align: center;
+  height: 54px;
+  letter-spacing: -0.3px;
+}
+
+.inv-chips,
+.inv-date-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.inv-chips {
+  flex-wrap: nowrap;
+}
+
+.inv-chips .chip-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 4px;
+  justify-content: center;
+  height: 34px;
+  font-size: 0.8rem;
+  color: var(--text-2);
+}
+
+.inv-chips .chip-btn[aria-label] {
+  flex: 0 0 34px;
+  color: var(--muted);
+}
+
+.inv-date-row .chip-btn {
+  height: 38px;
+  flex: 0 0 auto;
+}
+
+.inv-date-row .form-control {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+.inv-panel .hint-box {
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.inv-exempt-row {
+  margin-top: 0.6rem;
+  padding: 0.65rem 0.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+}
+
+.inv-ir-hint {
+  margin-bottom: 0.8rem;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+.inv-ir-table {
+  margin: 0.4rem 0 0.8rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.75rem;
+}
+
+/* Gráficos */
+.chart-card[hidden] {
+  display: none;
+}
+
+.chart-card.is-tall {
+  height: auto;
+  min-height: 180px;
+}
+
+.inv-chart-pane[hidden] {
+  display: none;
+}
+
+.inv-chart-note {
+  margin-top: 0.7rem;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.inv-mini-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin: -0.4rem 0 0.35rem;
+}
+
+.inv-month-stats {
+  margin-bottom: 0.9rem;
+  gap: 6px;
+}
+
+.inv-month-stats .toba-stat {
+  min-width: 0;
+  padding: 0.55rem 0.55rem;
+}
+
+.inv-month-stats .toba-stat-value {
+  font-size: 0.86rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inv-month-stats .toba-stat-sub {
+  font-size: 0.62rem;
+  white-space: nowrap;
+}
+
+.inv-month {
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+
+.inv-month summary {
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 0.65rem 0.8rem;
+  cursor: pointer;
+}
+
+.inv-month summary::-webkit-details-marker {
+  display: none;
+}
+
+.inv-month-name {
+  font-size: 0.86rem;
+  font-weight: 700;
+  min-width: 0;
+}
+
+.inv-month-val {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  white-space: nowrap;
+  font-size: 0.86rem;
+}
+
+.inv-month-val small {
+  font-size: 0.66rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.inv-month .kv-list {
+  padding: 0 0.8rem 0.7rem;
+  font-size: 0.78rem;
+  border-top: 1px solid var(--border-soft);
+  padding-top: 0.55rem;
+}
+
+.inv-month .kv-row.is-sub {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.inv-rank-list {
+  gap: 0;
+  padding: 0.3rem 0.75rem;
+}
+
+.inv-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.inv-rank-row:last-child {
+  border-bottom: none;
+}
+
+.inv-rank-pos {
+  flex: 0 0 26px;
+  font-size: 1rem;
+  text-align: center;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.inv-rank-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.inv-rank-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inv-rank-meta {
+  font-size: 0.66rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inv-rank-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex: 0 0 auto;
+  font-size: 0.88rem;
+}
+
+.inv-rank-side small {
+  font-size: 0.62rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+#projectionSummaryBox {
+  gap: 6px;
+  font-size: 0.82rem;
+}
+
+#projectionSummaryBox .finished-summary-value {
+  margin-bottom: 0.3rem;
+}
+
+.inv-hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.inv-hero-top > div:first-child {
+  min-width: 0;
+}
+
+.inv-hero-side {
+  text-align: right;
+  flex: 0 0 auto;
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
+.inv-hero-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 0.6rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid rgba(139, 148, 158, 0.18);
+}
+
+.inv-hero-cell {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+.inv-hero-cell > span:first-child {
+  color: var(--muted);
+}
+
+.inv-hero-cell > span:last-child {
+  white-space: nowrap;
+}
+
+.inv-hero-cell small {
+  font-size: 0.68rem;
+  color: var(--muted);
+  font-weight: 700;
 }

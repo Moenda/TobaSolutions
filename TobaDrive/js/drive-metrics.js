@@ -328,6 +328,16 @@ function driveLimitAt(route, seg) {
   return hit ? hit.kmh : null;
 }
 
+// Lentidão do caminho em segundos (v1.70): tempo com o trânsito de agora menos o
+// tempo de rua vazia (computeTravelTimeFor=all). O trafficDelayInSeconds sozinho
+// só conta acidente/bloqueio, por isso antes quase sempre dava "caminho livre".
+function driveTomTomDelay(sum) {
+  const incidents = Number(sum?.trafficDelayInSeconds) || 0;
+  const travel = Number(sum?.travelTimeInSeconds) || 0;
+  const free = Number(sum?.noTrafficTravelTimeInSeconds) || 0;
+  return Math.max(incidents, free > 0 && travel > free ? Math.round(travel - free) : 0);
+}
+
 function driveRouteFromTomTom(json) {
   const r = json?.routes?.[0];
   const points = (r?.legs || []).flatMap((leg) => leg?.points || []);
@@ -356,7 +366,7 @@ function driveRouteFromTomTom(json) {
     cum,
     distance: Number(sum.lengthInMeters) || cum[cum.length - 1],
     duration: Number(sum.travelTimeInSeconds) || 0,
-    trafficDelay: Number(sum.trafficDelayInSeconds) || 0,
+    trafficDelay: driveTomTomDelay(sum),
     jams: driveTomTomJams(r),
     limits: driveTomTomLimits(r),
     steps,
@@ -602,11 +612,14 @@ function calcDrivePlayer(data, today) {
 /* ---------- carango no mapa (v1.67) ----------
  * O que aparece no lugar da bolinha com seta. "need" usa os mesmos números do
  * calcDrivePlayer (e a mesma meta da conquista "achievement" do Perfil), então
- * destrava junto. face: "left" = emoji de lado olhando pra esquerda (vira pro
- * lado que o carro anda); "up" = gira com o rumo; "none" = não gira.
+ * destrava junto. face: "arrow" = seta 3D, "model" = carro 3D de verdade (v1.70,
+ * drive-models.js, pintados na cor da rota); "left" = emoji de lado olhando pra
+ * esquerda (vira pro lado que o carro anda); "up" = gira com o rumo; "none" = não gira.
+ * O id nunca muda (fica no toba_drive_prefs); item novo = linha nova.
  */
 const DRIVE_VEHICLES = [
   { id: "seta", icon: "➤", name: "Seta clássica", face: "arrow" },
+  { id: "gt", icon: "🏎️", name: "Toba GT 3D", face: "model", tag: "3D" },
   { id: "carro", icon: "🚗", name: "Carrinho", face: "left" },
   { id: "tartaruga", icon: "🐢", name: "Modo Marginal", face: "left" },
   { id: "moto", icon: "🏍️", name: "Motoca", face: "left", achievement: "dv-1", need: (s) => s.driveArrived >= 1 },
@@ -618,6 +631,23 @@ const DRIVE_VEHICLES = [
   { id: "foguete", icon: "🚀", name: "Foguete", face: "up", achievement: "dv-km1000", need: (s) => s.driveKm >= 1000 },
   { id: "ovni", icon: "🛸", name: "OVNI", face: "none", achievement: "dv-50", need: (s) => s.driveArrived >= 50 },
   { id: "fantasma", icon: "👻", name: "Fantasma", face: "none", achievement: "dv-ghost", need: (s) => s.driveGhost >= 1 },
+];
+
+/* ---------- 🏁 velocímetros (v1.70, estilo Need for Speed) ----------
+ * Skin do velocímetro navegando (classe .dv-sp-<id> no navegar.css). Destravam
+ * igual aos carangos: meta da conquista "achievement" calculada na hora, nunca
+ * gravada. max = fundo da escala do ponteiro (km/h). O id nunca muda.
+ */
+const DRIVE_SPEEDOS = [
+  { id: "toba", icon: "🟠", name: "Toba", max: 160 },
+  { id: "hud", icon: "⚪", name: "HUD limpo", max: 160 },
+  { id: "lcd", icon: "📟", name: "Painel do Uno", max: 160, achievement: "dv-1", need: (s) => s.driveArrived >= 1 },
+  { id: "drift", icon: "🇯🇵", name: "Drift Tóquio", max: 180, achievement: "dv-ghost", need: (s) => s.driveGhost >= 1 },
+  { id: "neon", icon: "💜", name: "Underground", max: 200, achievement: "dv-noite5", need: (s) => s.driveNight >= 5 },
+  { id: "nitro", icon: "🔵", name: "Nitro", max: 220, achievement: "dv-km500", need: (s) => s.driveKm >= 500 },
+  { id: "carbono", icon: "⬛", name: "Fibra de carbono", max: 200, achievement: "dv-zen5", need: (s) => s.driveZen >= 5 },
+  { id: "ouro", icon: "🥇", name: "Max Tobasten", max: 240, achievement: "dv-tobasten", need: (s) => s.driveTobasten >= 1 },
+  { id: "lenda", icon: "🌈", name: "Lendário", max: 300, achievement: "dv-50", need: (s) => s.driveArrived >= 50 },
 ];
 
 // Cores da linha da rota (v1.67)
@@ -638,13 +668,20 @@ function driveVehicleUnlocked(vehicle, stats) {
   return !vehicle.need || Boolean(stats && vehicle.need(stats));
 }
 
-// transform CSS do carango pro rumo (graus, 0 = norte)
-function driveVehicleTransform(vehicle, heading) {
-  const h = Number.isFinite(heading) ? heading : 0;
-  if (vehicle.face === "arrow") return `rotate(${Math.round(h)}deg)`;
-  if (vehicle.face === "up") return `rotate(${Math.round(h - 45)}deg)`; // 🚀 já nasce apontando pra 45°
-  if (vehicle.face === "left") return h > 0 && h < 180 ? "scaleX(-1)" : "none";
-  return "none";
+function driveSpeedo(id) {
+  return DRIVE_SPEEDOS.find((v) => v.id === id) || DRIVE_SPEEDOS[0];
+}
+
+// Ponto da rota a "along" metros do começo (pra grudar o carango na linha): [lat, lng]
+function drivePointAlong(route, seg, along) {
+  const { coords, cum } = route || {};
+  if (!coords || coords.length < 2) return null;
+  const i = Math.max(0, Math.min(coords.length - 2, seg));
+  const len = (cum[i + 1] - cum[i]) || 1;
+  const t = Math.max(0, Math.min(1, (along - cum[i]) / len));
+  const a = coords[i];
+  const b = coords[i + 1];
+  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
 }
 
 // Links de fuga: Google Maps e Waze já navegando até o ponto

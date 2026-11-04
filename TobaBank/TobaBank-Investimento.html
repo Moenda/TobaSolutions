@@ -37,7 +37,7 @@
         <span>💼 Sua carteira</span>
         <span class="btn-row" style="align-items: center">
           <button type="button" class="round-btn" data-open="mathHelpModal" aria-label="Como o cálculo funciona?">?</button>
-          <button type="button" class="history-mini-btn" data-click="openInvestmentsHistoryModal">📜 Histórico</button>
+          <button type="button" class="history-mini-btn" data-click="openMonthlyChart">📅 Mês a mês</button>
         </span>
       </div>
 
@@ -47,7 +47,7 @@
             <div class="card-title">Patrimônio investido</div>
             <div class="invest-total text-green" id="invTotalBalance">R$ 0,00</div>
           </div>
-          <button type="button" class="btn-open-chart" data-click="openPatrimonyChart" aria-label="Abrir gráficos">📈</button>
+          <button type="button" class="btn-open-chart" data-click="openPatrimonyChart" aria-label="Abrir gráficos">📊</button>
         </div>
 
         <div class="toba-stats">
@@ -70,9 +70,10 @@
           </div>
         </div>
 
-        <div class="kv-row invest-projection-row">
-          <span>🚀 Em 12 meses</span>
-          <span id="invGlobalProjection" class="text-green">+R$ 0,00 (+0,00%)</span>
+        <div class="kv-list invest-projection-row">
+          <div class="kv-row"><span>📅 Ritmo por mês</span><span id="invMonthlyPace" class="text-green">+R$ 0,00</span></div>
+          <div class="kv-row"><span>🚀 Em 12 meses</span><span id="invGlobalProjection" class="text-green">+R$ 0,00 (+0,00%)</span></div>
+          <div class="kv-row" role="button" tabindex="0" data-open="irHelpModal"><span>🧾 IR se sacar tudo hoje <span class="inv-q">?</span></span><span id="invIrToday" class="text-coral">-R$ 0,00</span></div>
         </div>
       </div>
 
@@ -102,34 +103,46 @@
       <div class="section-title">📈 Longo prazo</div>
       <div id="investmentsContainer"></div>
 
-      <div class="section-title">🏁 Já resgatados</div>
-      <input type="search" id="finishedSearchInput" class="form-control" placeholder="🔍 Buscar por nome..." style="margin-bottom: 0.75rem" data-input="renderInvestmentsScreen" />
-
-      <div class="finished-summary">
-        <div class="card-title">Lucro líquido acumulado</div>
-        <div class="finished-summary-value" id="finishedTotalProfitVal">R$ 0,00</div>
+      <!-- Já resgatados: sanfona fechada, lista compacta por ano -->
+      <div class="acc-card inv-done-acc" id="finishedAcc">
+        <button type="button" class="inv-done-head" data-click="toggleFinishedList" aria-expanded="false">
+          <span class="inv-done-head-text">
+            <span class="inv-done-head-title">🏁 Já resgatados <span class="inv-count" id="finishedCount">0</span></span>
+            <span class="inv-done-head-sub">Lucro líquido acumulado</span>
+          </span>
+          <span class="inv-done-head-side">
+            <span class="inv-done-head-value text-green" id="finishedTotalProfitVal">R$ 0,00</span>
+            <span class="acc-arrow">▼</span>
+          </span>
+        </button>
+        <div class="inv-done-body" id="finishedBody" hidden>
+          <input type="search" id="finishedSearchInput" class="form-control" placeholder="🔍 Buscar por nome..." data-input="renderInvestmentsScreen" />
+          <div id="finishedInvestmentsContainer"></div>
+        </div>
       </div>
-
-      <div id="finishedInvestmentsContainer"></div>
     </div>
 
     <div class="app-view" id="viewPatrimonyChart">
-      <nav class="tab-nav">
-        <button type="button" class="tab-btn active" id="tabChartPastBtn" data-click="switchChartTab" data-tab="past">⏪ Retrovisor</button>
-        <button type="button" class="tab-btn" id="tabChartFutureBtn" data-click="switchChartTab" data-tab="future">🔮 Bola de cristal</button>
+      <nav class="tab-nav inv-chart-tabs">
+        <button type="button" class="tab-btn active" data-click="switchChartTab" data-tab="past">⏪ Evolução</button>
+        <button type="button" class="tab-btn" data-click="switchChartTab" data-tab="monthly">📅 Por mês</button>
+        <button type="button" class="tab-btn" data-click="switchChartTab" data-tab="rank">🏆 Ranking</button>
+        <button type="button" class="tab-btn" data-click="switchChartTab" data-tab="future">🔮 Futuro</button>
       </nav>
 
-      <div id="chartPastContainer">
-        <div class="btn-row" style="margin-bottom: 8px">
-          <button type="button" class="btn btn-secondary btn-sm active" id="chartModeBrl" data-click="changeChartMode" data-mode="brl">R$ Valor</button>
-          <button type="button" class="btn btn-secondary btn-sm" id="chartModePct" data-click="changeChartMode" data-mode="pct">% Crescimento</button>
-          <button type="button" class="btn btn-secondary btn-sm" id="chartModeAlign" data-click="toggleAlignMode" aria-pressed="false">🏁 Alinhar</button>
+      <!-- ⏪ Evolução: saldo de verdade no fim de cada mês -->
+      <div class="inv-chart-pane" id="chartPastContainer">
+        <div class="period-selector">
+          <button type="button" class="period-btn active" id="chartModeBrl" data-click="changeChartMode" data-mode="brl">R$ Valor</button>
+          <button type="button" class="period-btn" id="chartModePct" data-click="changeChartMode" data-mode="pct">% Rendeu</button>
+          <button type="button" class="period-btn" id="chartModeAlign" data-click="toggleAlignMode" aria-pressed="false">🏁 Alinhar</button>
         </div>
 
         <div class="period-selector">
           <button type="button" class="period-btn active" data-period="3m" data-click="changeChartPeriod">3 meses</button>
           <button type="button" class="period-btn" data-period="6m" data-click="changeChartPeriod">6 meses</button>
           <button type="button" class="period-btn" data-period="1y" data-click="changeChartPeriod">1 ano</button>
+          <button type="button" class="period-btn" data-period="all" data-click="changeChartPeriod">Tudo</button>
         </div>
 
         <div class="chart-card">
@@ -139,23 +152,61 @@
         <div class="card">
           <div class="card-title" style="margin-bottom: 0.6rem">Seus ativos atuais</div>
           <ul id="assetColorList"></ul>
+          <p class="inv-chart-note" id="pastChartNote">Os pontos vêm dos saldos que você lançou. Entre um lançamento e outro o Toba divide o rendimento por dia.</p>
         </div>
       </div>
 
-      <div id="chartFutureContainer" hidden>
+      <!-- 📅 Por mês: quanto a carteira rendeu em cada mês -->
+      <div class="inv-chart-pane" id="chartMonthlyContainer" hidden>
+        <div class="period-selector">
+          <button type="button" class="period-btn" data-period="6m" data-click="changeMonthlyPeriod">6 meses</button>
+          <button type="button" class="period-btn active" data-period="1y" data-click="changeMonthlyPeriod">1 ano</button>
+          <button type="button" class="period-btn" data-period="all" data-click="changeMonthlyPeriod">Tudo</button>
+        </div>
+
+        <div class="toba-stats is-3 inv-month-stats" id="monthlyStatsBox"></div>
+
+        <div class="chart-card">
+          <canvas id="monthlyChartCanvas"></canvas>
+        </div>
+
+        <div class="section-title">🗓️ Mês por mês</div>
+        <div id="investmentsHistoryContent"></div>
+      </div>
+
+      <!-- 🏆 Ranking: quem rende mais por mês, bruto e depois do IR -->
+      <div class="inv-chart-pane" id="chartRankContainer" hidden>
+        <div class="chart-card is-tall" id="rankChartCard">
+          <canvas id="rankChartCanvas"></canvas>
+        </div>
+        <div id="rankList"></div>
+        <p class="inv-chart-note">Taxa por mês = o ritmo de cada um desde o começo (pro-rata). "Depois do IR" usa a faixa da tabela regressiva de hoje; isento não paga.</p>
+      </div>
+
+      <!-- 🔮 Futuro -->
+      <div class="inv-chart-pane" id="chartFutureContainer" hidden>
         <div class="period-selector">
           <button type="button" class="period-btn active" data-period="6m" data-click="changeProjPeriod">6 meses</button>
           <button type="button" class="period-btn" data-period="1y" data-click="changeProjPeriod">1 ano</button>
           <button type="button" class="period-btn" data-period="5y" data-click="changeProjPeriod">5 anos</button>
         </div>
 
+        <div class="inv-mini-label">💸 Colocando todo mês</div>
+        <div class="period-selector">
+          <button type="button" class="period-btn active" data-amount="0" data-click="changeProjMonthly">Nada</button>
+          <button type="button" class="period-btn" data-amount="500" data-click="changeProjMonthly">500</button>
+          <button type="button" class="period-btn" data-amount="1000" data-click="changeProjMonthly">1 mil</button>
+          <button type="button" class="period-btn" data-amount="2000" data-click="changeProjMonthly">2 mil</button>
+          <button type="button" class="period-btn" data-amount="5000" data-click="changeProjMonthly">5 mil</button>
+        </div>
+
         <div class="chart-card">
           <canvas id="projectionChartCanvas"></canvas>
         </div>
 
-        <div class="finished-summary" id="projectionSummaryBox"></div>
+        <div class="card kv-list" id="projectionSummaryBox"></div>
 
-        <p class="text-muted" style="font-size: 0.75rem; text-align: center; line-height: 1.4">
+        <p class="inv-chart-note" style="text-align: center">
           * Projeção pela taxa média (pro-rata) atual de toda a carteira, com os juros compostos rasgando pra cima.
         </p>
       </div>
@@ -173,80 +224,68 @@
       </div>
       <input type="hidden" id="popupFundIdInput" />
 
-      <div class="toba-stats popup-stats" id="popupHeaderInvest">
-        <div class="toba-stat">
-          <span class="toba-stat-label">Total aportado</span>
-          <span class="toba-stat-value" id="popupHeaderDeposited">R$ 0,00</span>
+      <div class="inv-hero" id="popupHero"></div>
+
+      <nav class="tab-nav inv-action-tabs" id="popupActionTabs">
+        <button type="button" class="tab-btn" data-click="switchInvAction" data-tab="bal" id="invTabBal">🔄 Saldo</button>
+        <button type="button" class="tab-btn" data-click="switchInvAction" data-tab="dep" id="invTabDep">➕ Aporte</button>
+        <button type="button" class="tab-btn" data-click="switchInvAction" data-tab="wd" id="invTabWd">🪙 Retirar</button>
+        <button type="button" class="tab-btn" data-click="switchInvAction" data-tab="log" id="invTabLog">📜 Extrato</button>
+      </nav>
+
+      <!-- 🔄 Atualizar saldo -->
+      <div class="inv-panel" id="invPanelBal" hidden>
+        <label class="inv-big-label" for="popupBalAmount">Quanto tem lá hoje?</label>
+        <input type="text" inputmode="numeric" id="popupBalAmount" class="form-control smart-money inv-big-input" placeholder="0,00" data-input="updateInvPreview" />
+        <div class="inv-date-row">
+          <button type="button" class="chip-btn" data-click="setInvDate" data-target="popupBalDate" data-ago="0">Hoje</button>
+          <button type="button" class="chip-btn" data-click="setInvDate" data-target="popupBalDate" data-ago="1">Ontem</button>
+          <input type="date" id="popupBalDate" class="form-control" data-change="updateInvPreview" />
         </div>
-        <div class="toba-stat">
-          <span class="toba-stat-label">Começou em</span>
-          <span class="toba-stat-value" id="popupHeaderStartDate">--/--/----</span>
-        </div>
+        <div class="hint-box" id="invBalPreview"></div>
+        <button type="button" class="btn btn-outline btn-blue" data-click="submitPopupBalance">🔄 Atualizar saldo</button>
       </div>
 
-      <div class="toba-stats popup-stats" id="popupHeaderCofrinho" hidden>
-        <div class="toba-stat">
-          <span class="toba-stat-label">Saldo base</span>
-          <span class="toba-stat-value" id="popupHeaderCofrinhoBase">R$ 0,00</span>
+      <!-- ➕ Novo aporte -->
+      <div class="inv-panel" id="invPanelDep" hidden>
+        <label class="inv-big-label" for="popupDepAmount" id="invDepLabel">Quanto você colocou?</label>
+        <input type="text" inputmode="numeric" id="popupDepAmount" class="form-control smart-money inv-big-input" placeholder="0,00" data-input="updateInvPreview" />
+        <div class="inv-chips">
+          <button type="button" class="chip-btn" data-click="addQuickMoney" data-target="popupDepAmount" data-add="100">+100</button>
+          <button type="button" class="chip-btn" data-click="addQuickMoney" data-target="popupDepAmount" data-add="500">+500</button>
+          <button type="button" class="chip-btn" data-click="addQuickMoney" data-target="popupDepAmount" data-add="1000">+1 mil</button>
+          <button type="button" class="chip-btn" data-click="addQuickMoney" data-target="popupDepAmount" data-add="5000">+5 mil</button>
+          <button type="button" class="chip-btn" data-click="clearQuickMoney" data-target="popupDepAmount" aria-label="Limpar">✕</button>
         </div>
-        <div class="toba-stat">
-          <span class="toba-stat-label">Saques feitos</span>
-          <span class="toba-stat-value text-green" id="popupHeaderCofrinhoWithdrawn">R$ 0,00</span>
+        <div class="inv-date-row">
+          <button type="button" class="chip-btn" data-click="setInvDate" data-target="popupDepDate" data-ago="0">Hoje</button>
+          <button type="button" class="chip-btn" data-click="setInvDate" data-target="popupDepDate" data-ago="1">Ontem</button>
+          <input type="date" id="popupDepDate" class="form-control" />
         </div>
+        <div class="hint-box is-green" id="invDepPreview"></div>
+        <button type="button" class="btn btn-primary" data-click="submitPopupDeposit">✅ Confirmar aporte</button>
       </div>
 
-      <div id="popupNormalInvestActions">
-        <div class="invest-action-accordion" id="accUpdateBal">
-          <button type="button" class="invest-action-header" data-click="toggleInvestActionAcc" data-target="accUpdateBal">
-            <span>🔄 Atualizar saldo</span>
-            <span class="invest-action-arrow">▼</span>
-          </button>
-          <div class="invest-action-body">
-            <div class="form-row">
-              <input type="date" id="popupBalDate" class="form-control" />
-              <input type="text" inputmode="numeric" id="popupBalAmount" class="form-control smart-money" placeholder="Saldo atual" />
-            </div>
-            <button type="button" class="btn btn-outline btn-blue" data-click="submitPopupBalance">Atualizar saldo</button>
-          </div>
+      <!-- 🪙 Retirar / sacar -->
+      <div class="inv-panel" id="invPanelWd" hidden>
+        <label class="inv-big-label" for="popupWithdrawAmount" id="invWdLabel">Quanto saiu?</label>
+        <input type="text" inputmode="numeric" id="popupWithdrawAmount" class="form-control smart-money inv-big-input" placeholder="0,00" data-input="updateInvPreview" />
+        <div class="inv-date-row">
+          <button type="button" class="chip-btn" data-click="setInvDate" data-target="popupWithdrawDate" data-ago="0">Hoje</button>
+          <button type="button" class="chip-btn" data-click="setInvDate" data-target="popupWithdrawDate" data-ago="1">Ontem</button>
+          <input type="date" id="popupWithdrawDate" class="form-control" />
         </div>
-
-        <div class="invest-action-accordion" id="accNewDep">
-          <button type="button" class="invest-action-header" data-click="toggleInvestActionAcc" data-target="accNewDep">
-            <span>➕ Novo aporte</span>
-            <span class="invest-action-arrow">▼</span>
-          </button>
-          <div class="invest-action-body">
-            <div class="form-row">
-              <input type="date" id="popupDepDate" class="form-control" />
-              <input type="text" inputmode="numeric" id="popupDepAmount" class="form-control smart-money" placeholder="R$ 0,00" />
-            </div>
-            <button type="button" class="btn btn-primary" data-click="submitPopupDeposit">Confirmar aporte</button>
-          </div>
-        </div>
+        <div class="hint-box" id="invWdPreview"></div>
+        <button type="button" class="btn btn-outline btn-gold" id="popupWithdrawBtn" data-click="submitPopupWithdraw">Efetuar retirada</button>
       </div>
 
-      <div class="invest-action-accordion" id="accWithdraw">
-        <button type="button" class="invest-action-header" data-click="toggleInvestActionAcc" data-target="accWithdraw">
-          <span id="accWithdrawLabel">🪙 Retirar saldo</span>
-          <span class="invest-action-arrow">▼</span>
-        </button>
-        <div class="invest-action-body">
-          <div class="form-row">
-            <input type="date" id="popupWithdrawDate" class="form-control" />
-            <input type="text" inputmode="numeric" id="popupWithdrawAmount" class="form-control smart-money" placeholder="R$ 0,00" />
-          </div>
-          <button type="button" class="btn btn-outline btn-gold" id="popupWithdrawBtn" data-click="submitPopupWithdraw">Efetuar retirada</button>
-        </div>
-      </div>
-
-      <div class="invest-action-accordion" id="accHistory">
-        <button type="button" class="invest-action-header" data-click="toggleInvestActionAcc" data-target="accHistory">
-          <span id="accHistoryLabel">📜 Histórico de lançamentos</span>
-          <span class="invest-action-arrow">▼</span>
-        </button>
-        <div class="invest-action-body">
-          <div class="log-list" id="popupHistoryLogsList"></div>
-        </div>
+      <!-- 📜 Extrato -->
+      <div class="inv-panel" id="invPanelLog" hidden>
+        <div class="log-list" id="popupHistoryLogsList"></div>
+        <label class="check-row inv-exempt-row" id="popupExemptRow">
+          <input type="checkbox" id="popupExemptCheck" data-change="toggleFundExempt" />
+          <span>🛡️ Isento de IR <small class="text-muted">(LCI, LCA, poupança...)</small></span>
+        </label>
       </div>
 
       <div class="toba-sheet-footer">
@@ -267,12 +306,16 @@
       </div>
       <input type="hidden" id="popupFinishedIdInput" />
 
+      <div class="inv-hero" id="popupFinishedHero"></div>
+
       <div class="card kv-list">
         <div class="kv-row"><span>Período</span><span id="popupFinishedPeriod">--</span></div>
         <div class="kv-row"><span>Aporte total</span><span id="popupFinishedDep">--</span></div>
         <div class="kv-row"><span>Saque total</span><span id="popupFinishedWd">--</span></div>
         <div class="kv-row is-total"><span>Lucro líquido</span><span id="popupFinishedProfit">--</span></div>
+        <div class="kv-row"><span>Por mês</span><span id="popupFinishedMonthly">--</span></div>
         <div class="kv-row"><span>IR retido</span><span id="popupFinishedIr" style="color: var(--coral)">--</span></div>
+        <div class="kv-row"><span>Tabela pra esse prazo</span><span id="popupFinishedIrTable">--</span></div>
       </div>
 
       <div class="toba-sheet-footer">
@@ -284,13 +327,27 @@
     </div>
   </div>
 
-  <div class="toba-modal" id="investmentsHistoryModal">
+  <div class="toba-modal" id="irHelpModal">
     <div class="toba-sheet">
       <div class="toba-sheet-header">
-        <h3>📜 Rendimento por mês</h3>
+        <h3>🧾 A mordida do Leão</h3>
         <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
       </div>
-      <div id="investmentsHistoryContent" class="toba-list"></div>
+      <div class="toba-sheet-text">
+        <p>CDB, Tesouro, caixinha e companhia pagam IR <b>só no lucro</b> e só quando você saca. Quanto mais tempo o dinheiro fica, menor a mordida:</p>
+        <div class="kv-list inv-ir-table">
+          <div class="kv-row"><span>Até 180 dias</span><b>22,5%</b></div>
+          <div class="kv-row"><span>181 a 360 dias</span><b>20%</b></div>
+          <div class="kv-row"><span>361 a 720 dias</span><b>17,5%</b></div>
+          <div class="kv-row"><span>Mais de 720 dias</span><b class="text-green">15%</b></div>
+        </div>
+        <p>Cada aporte conta o prazo dele (o mais antigo sai primeiro). Sacou antes de 30 dias? Ainda tem o <b>IOF</b> comendo parte do lucro.</p>
+        <p>LCI, LCA, poupança e afins são <b>isentos</b>: marque "🛡️ Isento de IR" no 📜 Extrato do investimento.</p>
+        <p class="hint-box">É uma <b>prévia</b> pra você se planejar. O valor de verdade é o que o banco mostra no extrato do resgate. 🦁</p>
+      </div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-primary" data-close>Bora fugir do Leão! 😎</button>
+      </div>
     </div>
   </div>
 
@@ -353,7 +410,7 @@
 
         <div class="form-group">
           <label for="finishDateInput">Data do resgate</label>
-          <input type="date" id="finishDateInput" class="form-control" required />
+          <input type="date" id="finishDateInput" class="form-control" required data-change="updateFinishNetPreview" />
         </div>
 
         <div id="partialRescueSection">
@@ -371,8 +428,9 @@
           </div>
           <div class="form-group">
             <label for="finishIrAmount">IR retido (R$)</label>
-            <input type="text" inputmode="numeric" id="finishIrAmount" class="form-control smart-money" placeholder="0,00" data-input="updateFinishNetPreview" />
+            <input type="text" inputmode="numeric" id="finishIrAmount" class="form-control smart-money" placeholder="0,00" data-input="onFinishIrInput" />
           </div>
+          <div class="hint-box inv-ir-hint" id="finishIrHint" role="button" tabindex="0" data-click="useFinishIrPreview"></div>
           <div class="hint-box is-green" id="finishNetPreview">Valor líquido no bolso: R$ 0,00</div>
         </div>
 
@@ -414,15 +472,32 @@
           <label for="fundNameInput">Nome do fundo / ativo</label>
           <input type="text" id="fundNameInput" class="form-control" placeholder="Ex: CDB 110% Sofisa, Tesouro Selic..." required />
         </div>
-        <div class="grid-2">
-          <div class="form-group">
-            <label for="fundInitialAmountInput">Aporte inicial (R$)</label>
-            <input type="text" inputmode="numeric" id="fundInitialAmountInput" class="form-control smart-money" placeholder="0,00" required />
+        <div class="form-group">
+          <label for="fundInitialAmountInput">Aporte inicial (R$)</label>
+          <input type="text" inputmode="numeric" id="fundInitialAmountInput" class="form-control smart-money inv-big-input" placeholder="0,00" required />
+          <div class="inv-chips" style="margin-top: 8px">
+            <button type="button" class="chip-btn" data-click="addQuickMoney" data-target="fundInitialAmountInput" data-add="100">+100</button>
+            <button type="button" class="chip-btn" data-click="addQuickMoney" data-target="fundInitialAmountInput" data-add="1000">+1 mil</button>
+            <button type="button" class="chip-btn" data-click="addQuickMoney" data-target="fundInitialAmountInput" data-add="5000">+5 mil</button>
+            <button type="button" class="chip-btn" data-click="addQuickMoney" data-target="fundInitialAmountInput" data-add="10000">+10 mil</button>
+            <button type="button" class="chip-btn" data-click="clearQuickMoney" data-target="fundInitialAmountInput" aria-label="Limpar">✕</button>
           </div>
-          <div class="form-group">
-            <label for="fundInitialDateInput">Data</label>
+        </div>
+        <div class="form-group">
+          <label for="fundInitialDateInput">Data</label>
+          <div class="inv-date-row">
+            <button type="button" class="chip-btn" data-click="setInvDate" data-target="fundInitialDateInput" data-ago="0">Hoje</button>
+            <button type="button" class="chip-btn" data-click="setInvDate" data-target="fundInitialDateInput" data-ago="1">Ontem</button>
             <input type="date" id="fundInitialDateInput" class="form-control" required />
           </div>
+        </div>
+        <div class="form-group" id="fundExemptGroup">
+          <label>Imposto de renda</label>
+          <div class="period-selector" style="margin-bottom: 0">
+            <button type="button" class="period-btn active" data-click="setNewFundExempt" data-exempt="false">🧾 Paga IR</button>
+            <button type="button" class="period-btn" data-click="setNewFundExempt" data-exempt="true">🛡️ Isento</button>
+          </div>
+          <input type="hidden" id="fundExemptValue" value="false" />
         </div>
         <div class="toba-sheet-footer">
           <button type="submit" class="btn btn-primary">Criar investimento</button>

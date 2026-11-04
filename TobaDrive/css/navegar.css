@@ -157,7 +157,7 @@ body.is-driving {
   inset: 0;
   z-index: 50;
   background: var(--bg);
-  overflow: hidden; /* v1.68: o mapa de jogo é maior que a tela */
+  overflow: hidden;
 }
 
 .dv-route[hidden] {
@@ -167,7 +167,7 @@ body.is-driving {
 .dv-map {
   position: absolute;
   inset: 0;
-  background: #e8e4dc;
+  background: #0b1018; /* v1.70: só mapa 3D (escuro até o Mapbox abrir) */
 }
 
 .dv-map.is-dark {
@@ -460,38 +460,10 @@ body.is-driving {
   height: 44px;
 }
 
-/* Carro e bandeira no mapa */
-.dv-car-wrap,
+/* Bandeira no mapa (o carango mora dentro do mapa desde v1.70: drive-map.js) */
 .dv-flag-wrap {
   background: none;
   border: 0;
-}
-
-.dv-car {
-  display: block;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: #2563eb;
-  border: 3px solid #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
-  position: relative;
-  transition: transform 0.4s ease;
-}
-
-.dv-car::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 4px;
-  transform: translateX(-50%);
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
-  border-bottom: 13px solid #fff;
-}
-
-.dv-car.is-nav {
-  background: var(--drive);
 }
 
 .dv-flag {
@@ -505,16 +477,6 @@ body.is-driving {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 0.8rem;
-}
-
-/* Leaflet: atribuição discreta acima do card */
-.dv-route .leaflet-control-attribution {
-  font-size: 9px;
-  margin-bottom: 0 !important;
-}
-
-body.is-driving .dv-route .leaflet-bottom {
-  bottom: 0;
 }
 
 .dv-stats.toba-stats {
@@ -542,33 +504,6 @@ body.is-driving .dv-route .leaflet-bottom {
 .dv-source.is-late {
   color: #f97316;
   font-weight: 700;
-}
-
-/* v1.67: 🎨 carango no mapa (emoji no lugar da seta) */
-.dv-car-wrap .dv-car {
-  margin: 3px;
-}
-
-.dv-veh {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.92) 0 52%, rgba(255, 255, 255, 0) 70%);
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
-}
-
-.dv-veh.is-nav {
-  background: radial-gradient(circle, rgba(251, 146, 60, 0.95) 0 52%, rgba(251, 146, 60, 0) 70%);
-}
-
-.dv-veh-el {
-  display: inline-block;
-  font-size: 1.55rem;
-  line-height: 1;
-  transition: transform 0.4s ease;
 }
 
 .dv-style-open {
@@ -680,34 +615,6 @@ body.is-driving .dv-route .leaflet-bottom {
 /* =====================================================================
  * v1.68 · modo dirigir ULTRA (CLOBA MODERN UI)
  * ===================================================================== */
-
-/* 🎮 mapa de jogo: maior que a tela, inclinado e girando com o carro */
-.dv-map.is-game {
-  /* quadradão centrado no carango (a 70% da tela): girando pra qualquer lado
-     o chão deitado ainda cobre a tela até a névoa do horizonte */
-  --game-size: max(1400px, 190vmax);
-  inset: auto;
-  width: var(--game-size);
-  height: var(--game-size);
-  left: calc(50% - var(--game-size) / 2);
-  top: calc(70% - var(--game-size) / 2);
-  transform-origin: 50% 50%;
-  transition: transform 0.7s linear;
-  will-change: transform;
-}
-
-body.is-game .dv-route::before {
-  /* céu/névoa no horizonte do mapa deitado */
-  content: "";
-  position: absolute;
-  z-index: 400;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 34%;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgba(13, 17, 23, 1) 0%, rgba(13, 17, 23, 0.85) 40%, rgba(13, 17, 23, 0) 100%);
-}
 
 /* faixa da manobra: vidro escuro com neon laranja */
 body.is-nav .dv-banner {
@@ -830,7 +737,6 @@ body.is-over .dv-route::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dv-map.is-game { transition: none; }
   .dv-speedo.is-over .dv-speedo-dial,
   body.is-over .dv-route::after { animation: none; }
 }
@@ -998,11 +904,315 @@ body.is-over .dv-route::after {
   font-size: 9px;
 }
 
-.dv-map .mapboxgl-marker.dv-car-wrap {
-  z-index: 3;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .dv-map .mapboxgl-ctrl-bottom-right,
   .dv-map .mapboxgl-ctrl-bottom-left { transition: none; }
+}
+
+/* =====================================================================
+ * v1.70 · 🏁 velocímetros estilo Need for Speed (DRIVE_SPEEDOS em drive-metrics.js)
+ * Cada skin só troca as variáveis. --p (0 a 1) = velocidade na escala da skin
+ * (renderSpeedo em drive-game.js): enche o arco e gira o ponteiro.
+ * ===================================================================== */
+.dv-speedo {
+  --sp-bg: radial-gradient(circle at 50% 40%, rgba(30, 41, 59, 0.97), rgba(13, 17, 23, 0.97));
+  --sp-border: #fb923c;
+  --sp-arc: #fb923c;
+  --sp-track: rgba(251, 146, 60, 0.18);
+  --sp-num: #fff;
+  --sp-unit: #fdba74;
+  --sp-glow: rgba(251, 146, 60, 0.35);
+  --sp-needle: transparent;
+  --sp-font: inherit;
+}
+
+.dv-speedo .dv-speedo-dial {
+  position: relative;
+  background: var(--sp-bg);
+  border-color: var(--sp-border);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), 0 0 16px var(--sp-glow), inset 0 0 12px var(--sp-glow);
+}
+
+/* arco de 270° que enche com a velocidade */
+.dv-speedo .dv-speedo-dial::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: conic-gradient(from 225deg, var(--sp-arc) calc(var(--p, 0) * 270deg), var(--sp-track) 0 270deg, transparent 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+  transition: background 0.3s linear;
+  pointer-events: none;
+}
+
+/* ponteiro (só nas skins analógicas: --sp-needle com cor) */
+.dv-speedo .dv-speedo-dial::after {
+  content: "";
+  position: absolute;
+  left: calc(50% - 1.5px);
+  bottom: 50%;
+  width: 3px;
+  height: 40%;
+  border-radius: 2px;
+  background: var(--sp-needle);
+  transform-origin: 50% 100%;
+  transform: rotate(calc(-135deg + var(--p, 0) * 270deg));
+  transition: transform 0.6s cubic-bezier(0.3, 1.4, 0.6, 1);
+  box-shadow: 0 0 6px var(--sp-needle);
+  pointer-events: none;
+}
+
+.dv-speedo .dv-speedo-dial b,
+.dv-speedo .dv-speedo-dial small {
+  position: relative;
+  z-index: 1;
+  font-family: var(--sp-font);
+}
+
+.dv-speedo .dv-speedo-dial b {
+  color: var(--sp-num);
+}
+
+.dv-speedo .dv-speedo-dial small {
+  color: var(--sp-unit);
+}
+
+/* com ponteiro, o número desce pro pé do mostrador */
+.dv-sp-drift .dv-speedo-dial,
+.dv-sp-nitro .dv-speedo-dial,
+.dv-sp-carbono .dv-speedo-dial {
+  justify-content: flex-end;
+  padding-bottom: 12px;
+}
+
+.dv-sp-drift .dv-speedo-dial b,
+.dv-sp-nitro .dv-speedo-dial b,
+.dv-sp-carbono .dv-speedo-dial b {
+  font-size: 1.35rem;
+}
+
+/* ⚪ HUD limpo: só o número grandão, sem mostrador */
+.dv-sp-hud {
+  --sp-bg: transparent;
+  --sp-border: transparent;
+  --sp-arc: transparent;
+  --sp-track: transparent;
+  --sp-glow: transparent;
+  --sp-unit: #e5e7eb;
+}
+
+.dv-sp-hud .dv-speedo-dial {
+  box-shadow: none;
+}
+
+.dv-sp-hud .dv-speedo-dial b {
+  font-size: 2.6rem;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 2px #000;
+}
+
+.dv-sp-hud .dv-speedo-dial small {
+  text-shadow: 0 1px 4px #000;
+}
+
+/* 📟 Painel do Uno: LCD verdinho com barra embaixo */
+.dv-sp-lcd {
+  --sp-bg: linear-gradient(180deg, #0f2410, #071407);
+  --sp-border: #3f6212;
+  --sp-num: #a3e635;
+  --sp-unit: #65a30d;
+  --sp-glow: rgba(163, 230, 53, 0.18);
+  --sp-font: "Courier New", ui-monospace, monospace;
+}
+
+.dv-sp-lcd .dv-speedo-dial {
+  border-radius: 14px;
+}
+
+.dv-sp-lcd .dv-speedo-dial b {
+  font-style: normal;
+  text-shadow: 0 0 8px rgba(163, 230, 53, 0.7);
+  letter-spacing: 1px;
+}
+
+.dv-sp-lcd .dv-speedo-dial::before {
+  inset: auto 10px 8px;
+  height: 6px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #a3e635 calc(var(--p, 0) * 100%), rgba(163, 230, 53, 0.15) 0);
+  -webkit-mask: repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 7px);
+  mask: repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 7px);
+}
+
+/* 🇯🇵 Drift Tóquio: mostrador branco, ponteiro vermelho (relógio de JDM) */
+.dv-sp-drift {
+  --sp-bg: radial-gradient(circle, #ffffff 0 55%, #e5e7eb);
+  --sp-border: #111827;
+  --sp-arc: #dc2626;
+  --sp-track: rgba(17, 24, 39, 0.15);
+  --sp-num: #111827;
+  --sp-unit: #dc2626;
+  --sp-glow: rgba(255, 255, 255, 0.25);
+  --sp-needle: #dc2626;
+}
+
+.dv-sp-drift .dv-speedo-dial b {
+  font-style: normal;
+}
+
+/* 💜 Underground: neon roxo e ciano */
+.dv-sp-neon {
+  --sp-bg: radial-gradient(circle at 50% 40%, #2a0a4a, #0d0221);
+  --sp-border: #e879f9;
+  --sp-arc: #22d3ee;
+  --sp-track: rgba(232, 121, 249, 0.2);
+  --sp-num: #f5d0fe;
+  --sp-unit: #22d3ee;
+  --sp-glow: rgba(232, 121, 249, 0.55);
+}
+
+.dv-sp-neon .dv-speedo-dial b {
+  text-shadow: 0 0 6px #e879f9, 0 0 14px #c026d3;
+}
+
+/* 🔵 Nitro: azul NOS com ponteiro ciano */
+.dv-sp-nitro {
+  --sp-bg: radial-gradient(circle at 50% 35%, #0c2a5a, #020617);
+  --sp-border: #3b82f6;
+  --sp-arc: #38bdf8;
+  --sp-track: rgba(59, 130, 246, 0.2);
+  --sp-num: #e0f2fe;
+  --sp-unit: #38bdf8;
+  --sp-glow: rgba(56, 189, 248, 0.5);
+  --sp-needle: #67e8f9;
+}
+
+/* ⬛ Fibra de carbono: trama escura e vermelho */
+.dv-sp-carbono {
+  --sp-bg: repeating-linear-gradient(45deg, #1f2937 0 3px, #0b0f14 3px 6px), #111;
+  --sp-border: #4b5563;
+  --sp-arc: #ef4444;
+  --sp-track: rgba(239, 68, 68, 0.15);
+  --sp-num: #f9fafb;
+  --sp-unit: #ef4444;
+  --sp-glow: rgba(239, 68, 68, 0.25);
+  --sp-needle: #ef4444;
+}
+
+/* 🥇 Max Tobasten: ouro */
+.dv-sp-ouro {
+  --sp-bg: radial-gradient(circle at 50% 35%, #3b2a05, #120c01);
+  --sp-border: #facc15;
+  --sp-arc: #fde047;
+  --sp-track: rgba(250, 204, 21, 0.18);
+  --sp-num: #fef08a;
+  --sp-unit: #facc15;
+  --sp-glow: rgba(250, 204, 21, 0.5);
+}
+
+.dv-sp-ouro .dv-speedo-dial b {
+  background: linear-gradient(180deg, #fef9c3, #facc15 60%, #a16207);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* 🌈 Lendário: arco arco-íris girando a cor */
+.dv-sp-lenda {
+  --sp-bg: radial-gradient(circle at 50% 40%, #1e1b4b, #020617);
+  --sp-border: #a78bfa;
+  --sp-glow: rgba(167, 139, 250, 0.55);
+  --sp-unit: #c4b5fd;
+}
+
+.dv-sp-lenda .dv-speedo-dial::before {
+  background: conic-gradient(from 225deg, #ef4444, #f59e0b, #facc15, #22c55e, #22d3ee, #6366f1, #ec4899 calc(var(--p, 0) * 270deg), rgba(255, 255, 255, 0.08) 0 270deg, transparent 0);
+}
+
+.dv-sp-lenda .dv-speedo-dial {
+  animation: dv-sp-hue 6s linear infinite;
+}
+
+@keyframes dv-sp-hue {
+  from { filter: hue-rotate(0deg); }
+  to { filter: hue-rotate(360deg); }
+}
+
+/* passou do limite: vale pra todas as skins */
+.dv-speedo.is-over {
+  --sp-border: #ef4444;
+  --sp-arc: #ef4444;
+}
+
+/* 🎨 escolher velocímetro */
+.dv-sp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 0.4rem;
+}
+
+.dv-sp-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px 6px;
+  border-radius: var(--radius);
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  border: 2px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.dv-sp-pick.is-on {
+  border-color: var(--drive);
+  box-shadow: 0 0 0 1px var(--drive);
+}
+
+.dv-sp-pick.is-locked {
+  opacity: 0.5;
+}
+
+.dv-sp-pick .dv-speedo.dv-sp-mini {
+  display: flex;
+  position: relative;
+  left: auto;
+  bottom: auto;
+  z-index: auto;
+}
+
+.dv-sp-mini .dv-speedo-dial {
+  width: 58px;
+  height: 58px;
+  border-width: 2px;
+}
+
+.dv-sp-mini .dv-speedo-dial b {
+  font-size: 1.25rem;
+}
+
+.dv-sp-mini.dv-sp-hud .dv-speedo-dial b {
+  font-size: 1.5rem;
+}
+
+.dv-sp-mini.dv-sp-drift .dv-speedo-dial b,
+.dv-sp-mini.dv-sp-nitro .dv-speedo-dial b,
+.dv-sp-mini.dv-sp-carbono .dv-speedo-dial b {
+  font-size: 0.9rem;
+}
+
+.dv-sp-mini.dv-sp-drift .dv-speedo-dial,
+.dv-sp-mini.dv-sp-nitro .dv-speedo-dial,
+.dv-sp-mini.dv-sp-carbono .dv-speedo-dial {
+  padding-bottom: 7px;
+}
+
+.dv-sp-mini .dv-speedo-dial small {
+  font-size: 0.48rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dv-sp-lenda .dv-speedo-dial { animation: none; }
+  .dv-speedo .dv-speedo-dial::after { transition: none; }
 }

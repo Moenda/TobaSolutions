@@ -21,6 +21,9 @@
  * v1.68: modo dirigir ULTRA em js/drive-game.js (visual de jogo, velocímetro,
  * copiloto, radar, fantasma, resumo, posto, Places). Aqui só os ganchos:
  * gameStart (Partiu), gameTick (navTick), gameTripExtras (finishTrip), gameStop.
+ * v1.70: só Mapbox 3D; carango 3D/no chão grudado na linha da rota (nav.carView);
+ * 🎨 abre até navegando (troca carango, cor e velocímetro no meio da rota);
+ * 🚦 trânsito ao vivo da cidade (Mapbox Traffic) + lentidão real do TomTom.
  * ===================================================================== */
 const DRIVE_FAV_EMOJIS = ["🏠", "💼", "❤️", "☕", "🏋️", "🛒", "🍻", "🐾", "⭐"];
 const DRIVE_GPS_TIMEOUT_MS = 20000;
@@ -43,7 +46,8 @@ const nav = {
   rerouting: false,
   spoken: {},
   follow: true,
-  map: null, // v1.69: objeto do drive-map.js (Mapbox 3D ou Leaflet), nunca L.* direto
+  map: null, // v1.69: objeto do drive-map.js (Mapbox 3D), nunca mapboxgl.* direto
+  carView: null, // v1.70: onde o carango aparece { lat, lng, heading } (grudado na rota navegando)
   mapPromise: null,
   lastTrafficCheck: 0,
   trip: null, // { startedAt, km, last: [lat, lng] }
@@ -305,19 +309,27 @@ async function ensureMap() {
   return nav.mapPromise;
 }
 
+// v1.70: o carango mora dentro do mapa (modelo 3D ou emoji no chão). Navegando e
+// perto da linha (até 25 m ou a precisão do GPS), ele anda EM CIMA da rota, virado
+// pro sentido dela: some aquele carango flutuando no meio do quarteirão.
 function drawCar() {
-  if (!nav.map || !nav.pos) return;
-  const ll = [nav.pos.lat, nav.pos.lng];
-  const veh = currentVehicle();
-  const tf = (typeof gameVehicleTransform === "function" && gameVehicleTransform(veh)) || driveVehicleTransform(veh, nav.map.screenHeading(nav.pos.heading));
-  const isNav = nav.mode === "nav";
-  const html = veh.face === "arrow"
-    ? `<span class="dv-car dv-veh-el${isNav ? " is-nav" : ""}" style="transform: ${tf}"></span>`
-    : `<span class="dv-veh${isNav ? " is-nav" : ""}"><span class="dv-veh-el" style="transform: ${tf}">${veh.icon}</span></span>`;
-  const root = nav.map.car(ll, html, veh.id);
-  const el = root?.querySelector(".dv-veh-el");
-  if (el) el.style.transform = tf;
-  root?.querySelector(".dv-car, .dv-veh")?.classList.toggle("is-nav", isNav);
+  if (!nav.pos) return;
+  let ll = [nav.pos.lat, nav.pos.lng];
+  let heading = nav.pos.heading;
+  const r = nav.route;
+  if (nav.mode === "nav" && r && !nav.rerouting) {
+    const loc = driveLocateOnRoute(r, ll, nav.seg);
+    if (loc && loc.dist <= Math.max(25, Math.min(nav.pos.acc, 45))) {
+      const p = drivePointAlong(r, loc.seg, loc.along);
+      if (p) {
+        ll = p;
+        // parado a bússola pula: usa o sentido da rota; andando também (é o que o motorista vê)
+        heading = driveBearing(r.coords[loc.seg], r.coords[loc.seg + 1]);
+      }
+    }
+  }
+  nav.carView = { lat: ll[0], lng: ll[1], heading };
+  if (nav.map) nav.map.car(ll, heading, currentVehicle(), currentRouteColor(), nav.mode === "nav");
 }
 
 // Trechos lentos/parados da rota TomTom (amarelo = lento, vermelho = parado)
@@ -347,21 +359,15 @@ function fitRoute() {
   }
 }
 
-// 🌙 Mapa clássico: claro/escuro. 🏙️ Mapa 3D: roda as luzes (auto, amanhecer, dia, pôr do sol, noite)
+// 🌗 roda as luzes do mapa (auto, amanhecer, dia, pôr do sol, noite)
 function toggleMapStyle() {
-  if (nav.map?.kind === "mapbox") {
-    const ids = DRIVE_LIGHTS.map((l) => l.id);
-    const next = ids[(ids.indexOf(readDrivePrefs().mapLight) + 1) % ids.length];
-    storeDrivePrefs({ mapLight: next });
-    const at = nav.pos ? [nav.pos.lat, nav.pos.lng] : null;
-    nav.map.setLook(driveMapLook("mapbox", at));
-    const info = driveLightInfo(next);
-    tobaToast(`${info.icon} ${info.name}`);
-  } else {
-    const next = readDrivePrefs().mapStyle === "dark" ? "light" : "dark";
-    storeDrivePrefs({ mapStyle: next });
-    if (nav.map) nav.map.setLook(next);
-  }
+  const ids = DRIVE_LIGHTS.map((l) => l.id);
+  const next = ids[(ids.indexOf(readDrivePrefs().mapLight) + 1) % ids.length];
+  storeDrivePrefs({ mapLight: next });
+  const at = nav.pos ? [nav.pos.lat, nav.pos.lng] : null;
+  if (nav.map) nav.map.setLook(driveMapLook(at));
+  const info = driveLightInfo(next);
+  tobaToast(`${info.icon} ${info.name}`);
   if (typeof game !== "undefined") game.dark = null; // o modo jogo recalcula a luz
   renderStyleBtn();
 }
@@ -369,14 +375,9 @@ function toggleMapStyle() {
 function renderStyleBtn() {
   const btn = document.getElementById("styleBtn");
   if (!btn) return;
-  if (nav.map?.kind === "mapbox") {
-    const info = driveLightInfo(readDrivePrefs().mapLight);
-    btn.textContent = info.icon;
-    btn.setAttribute("aria-label", `Luz do mapa: ${info.name}`);
-  } else {
-    btn.textContent = readDrivePrefs().mapStyle === "dark" ? "☀️" : "🌙";
-    btn.setAttribute("aria-label", "Mapa claro/escuro");
-  }
+  const info = driveLightInfo(readDrivePrefs().mapLight);
+  btn.textContent = info.icon;
+  btn.setAttribute("aria-label", `Luz do mapa: ${info.name}`);
 }
 
 /* ---------------------------------------------------------------------
@@ -389,6 +390,11 @@ function driveStatsNow() {
 function currentVehicle() {
   const v = driveVehicle(readDrivePrefs().vehicle);
   return driveVehicleUnlocked(v, driveStatsNow()) ? v : DRIVE_VEHICLES[0];
+}
+
+function currentSpeedo() {
+  const v = driveSpeedo(readDrivePrefs().speedo);
+  return driveVehicleUnlocked(v, driveStatsNow()) ? v : DRIVE_SPEEDOS[0];
 }
 
 function currentRouteColor() {
@@ -416,6 +422,17 @@ function renderStyleSheet() {
     `<button type="button" class="dv-color${c.id === curColor ? " is-on" : ""}" data-click="pickRouteColor" data-id="${c.id}" style="--c: ${c.color}" aria-label="${escapeHtml(c.name)}"></button>`).join("");
   const got = DRIVE_VEHICLES.filter((v) => driveVehicleUnlocked(v, stats)).length;
   document.getElementById("vehicleCount").textContent = `${got}/${DRIVE_VEHICLES.length}`;
+  // 🏁 velocímetros (v1.70): miniatura com a própria skin
+  const curSp = currentSpeedo().id;
+  document.getElementById("speedoChips").innerHTML = DRIVE_SPEEDOS.map((v) => {
+    const open = driveVehicleUnlocked(v, stats);
+    return `<button type="button" class="dv-sp-pick${v.id === curSp ? " is-on" : ""}${open ? "" : " is-locked"}" data-click="pickSpeedo" data-id="${v.id}" aria-label="${escapeHtml(v.name)}">
+      <span class="dv-speedo dv-sp-mini dv-sp-${v.id}" style="--p: 0.62"><span class="dv-speedo-dial"><b>${open ? "88" : "🔒"}</b><small>km/h</small></span></span>
+      <span class="dv-veh-pick-name">${escapeHtml(v.name)}</span>
+    </button>`;
+  }).join("");
+  const gotSp = DRIVE_SPEEDOS.filter((v) => driveVehicleUnlocked(v, stats)).length;
+  document.getElementById("speedoCount").textContent = `${gotSp}/${DRIVE_SPEEDOS.length}`;
 }
 
 function openStyleSheet() {
@@ -440,6 +457,19 @@ function pickRouteColor(el) {
   storeDrivePrefs({ routeColor: el.dataset.id });
   renderStyleSheet();
   drawRoute();
+  drawCar(); // seta e GT 3D são pintados na cor da rota
+}
+
+function pickSpeedo(el) {
+  const v = driveSpeedo(el.dataset.id);
+  if (!driveVehicleUnlocked(v, driveStatsNow())) {
+    showPageMessage(`O velocímetro ${v.icon} ${v.name} destrava com a conquista ${driveAchievementInfo(v.achievement)}`, { title: "Ainda trancado", icon: "🔒" });
+    return;
+  }
+  storeDrivePrefs({ speedo: v.id });
+  renderStyleSheet();
+  if (typeof renderSpeedo === "function" && nav.mode === "nav") renderSpeedo(...(game.speedoArgs || []));
+  tobaToast(`${v.icon} Velocímetro ${v.name}!`);
 }
 
 function renderPickVehicle() {
@@ -447,23 +477,17 @@ function renderPickVehicle() {
   if (btn) btn.textContent = `🎨 Personalizar · ${currentVehicle().icon}`;
 }
 
-// 🚦 Mapa clássico: camada de trânsito do TomTom (some se o TomTom estiver fora).
-// 🏙️ Mapa 3D: trânsito só na linha da rota (v1.69)
+// 🚦 trânsito ao vivo: ruas lentas/paradas da cidade (Mapbox Traffic) + trechos parados da rota (TomTom)
 function toggleTraffic() {
-  if (nav.map?.kind !== "mapbox" && !tobaTomTomOn()) {
-    const s = tobaTomTomState();
-    tobaToast(`🚦 TomTom fora agora (${s.offWhy || "sem resposta"}). Volta sozinho em algumas horas.`);
-    return;
-  }
   const on = !readDrivePrefs().traffic;
   storeDrivePrefs({ traffic: on });
   if (nav.map) nav.map.setTraffic(on);
   renderTrafficBtn();
-  tobaToast(on ? "🚦 Trânsito ligado" : "🚦 Trânsito desligado");
+  tobaToast(on ? "🚦 Trânsito ao vivo ligado" : "🚦 Trânsito desligado");
 }
 
 function renderTrafficBtn() {
-  const on = readDrivePrefs().traffic && (nav.map ? nav.map.trafficReady() : tobaTomTomOn());
+  const on = readDrivePrefs().traffic;
   document.querySelectorAll("[data-click='toggleTraffic']").forEach((btn) => {
     btn.classList.toggle("is-off", !on);
     btn.setAttribute("aria-pressed", on ? "true" : "false");
@@ -474,7 +498,8 @@ function renderTrafficBtn() {
 function routeSourceLine(r) {
   if (r.provider === "tomtom") {
     const late = Math.round((r.trafficDelay || 0) / 60);
-    return late >= 1 ? `🚦 Trânsito ao vivo: +${late} min de lentidão no caminho` : "🚦 Trânsito ao vivo: caminho livre";
+    if (late >= 2) return `🚦 Trânsito ao vivo: +${late} min de lentidão no caminho`;
+    return late >= 1 ? "🚦 Trânsito ao vivo: quase livre (+1 min)" : "🚦 Trânsito ao vivo: caminho livre";
   }
   return "🗺️ Rota do OpenStreetMap (sem trânsito ao vivo)";
 }
@@ -518,7 +543,12 @@ async function setMode(mode) {
   try {
     await ensureMap();
   } catch (err) {
-    document.getElementById("driveMap").innerHTML = tobaEmpty("📡", "Mapa sem internet", "O mapa precisa de internet. Dá pra ir pelo Google Maps/Waze no ↗️.", { compact: true });
+    const why = err?.why === "webgl"
+      ? ["🧱", "Esse navegador não abre mapa 3D", "Atualiza o Chrome (ou liga a aceleração de hardware). A voz e a faixa da manobra funcionam igual; o ↗️ abre no Maps/Waze."]
+      : navigator.onLine === false
+        ? ["📡", "Mapa sem internet", "O mapa precisa de internet. A voz segue funcionando; dá pra ir pelo Google Maps/Waze no ↗️."]
+        : ["😵", "O mapa não abriu", "O Mapbox não respondeu agora. Volta e tenta de novo; a voz segue funcionando e o ↗️ abre no Maps/Waze."];
+    document.getElementById("driveMap").innerHTML = tobaEmpty(why[0], why[1], why[2], { compact: true });
   }
   setTimeout(() => nav.map && nav.map.resize(), 60);
   renderRoute();
@@ -756,7 +786,8 @@ function navTick() {
 
   if (nav.follow && nav.map) {
     const z = pos.speed > 22 ? 15 : pos.speed > 12 ? 16 : 17;
-    nav.map.setView(here, Math.max(z, Math.min(nav.map.getZoom(), 18)), { animate: true });
+    const at = nav.carView ? [nav.carView.lat, nav.carView.lng] : here;
+    nav.map.setView(at, Math.max(z, Math.min(nav.map.getZoom(), 18)), { animate: true });
   }
 }
 
@@ -1037,8 +1068,6 @@ function syncPrefInputs() {
   document.getElementById("prefTolls").checked = p.avoidTolls;
   document.getElementById("prefCopilot").checked = p.copilot;
   document.getElementById("prefGame").checked = p.gameView;
-  document.getElementById("prefNight").checked = p.autoNight;
-  document.getElementById("prefMap3d").checked = p.map3d;
 }
 
 function prefChange() {
@@ -1048,20 +1077,8 @@ function prefChange() {
     avoidTolls: document.getElementById("prefTolls").checked,
     copilot: document.getElementById("prefCopilot").checked,
     gameView: document.getElementById("prefGame").checked,
-    autoNight: document.getElementById("prefNight").checked,
-    map3d: document.getElementById("prefMap3d").checked,
   });
-  // 🏙️ trocou o tipo de mapa: na tela de escolher dá pra refazer o mapa já
-  if (nav.map && (nav.map.kind === "mapbox") !== readDrivePrefs().map3d) {
-    if (nav.mode === "pick") {
-      nav.map.destroy();
-      nav.map = null;
-      nav.mapPromise = null;
-      document.getElementById("driveMap").className = "dv-map";
-    } else {
-      tobaToast("🏙️ A troca de mapa vale quando tu voltar pra tela de destino.");
-    }
-  }
+  if (typeof gameApplyView === "function" && nav.mode === "nav") gameApplyView();
   if (nav.mode === "nav") driveKeepAwake(true);
   if (!readDrivePrefs().voice) driveShutUp();
   tobaSaved();
@@ -1105,6 +1122,7 @@ tobaActions({
   openStyleSheet,
   pickVehicle,
   pickRouteColor,
+  pickSpeedo,
   openOut,
   openGoogleMaps,
   openWaze,

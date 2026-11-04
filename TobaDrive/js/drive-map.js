@@ -1,24 +1,32 @@
 /* =====================================================================
  * Toba Drive · motor do mapa do Navegar (desde v1.69) — carregado antes do navegar.js
- * - 🏙️ Mapbox GL JS (padrão): estilo Mapbox Standard, prédios em 3D, nomes de
- *   rua em pé, inclina e gira de verdade. Luz do mapa (lightPreset):
- *   🌅 dawn, ☀️ day, 🌇 dusk, 🌙 night ou 🌗 automático pelo sol (driveLightPreset).
+ * - 🏙️ Mapbox GL JS: estilo Mapbox Standard, prédios em 3D, nomes de rua em pé,
+ *   inclina e gira de verdade. Luz do mapa (lightPreset): 🌅 dawn, ☀️ day,
+ *   🌇 dusk, 🌙 night ou 🌗 automático pelo sol (driveLightPreset).
  *   Token público TOBA_MAPBOX_TOKEN (assets/toba-maps.js).
- * - 🗺️ Plano B = o mapa da v1.66-v1.68 (Leaflet + TomTom/CARTO em imagem):
- *   sem WebGL, ⚙️ "Mapa 3D" desligado, Mapbox recusou (4xx = desliga o Mapbox
- *   por DRIVE_MAPBOX_OFF_HOURS neste aparelho) ou não abriu em DRIVE_MAPBOX_WAIT_MS.
+ * - v1.70: só Mapbox (o mapa clássico Leaflet/TomTom/CARTO saiu do Navegar).
+ *   Sem WebGL ou Mapbox fora = aviso no lugar do mapa; a navegação (voz, faixa,
+ *   velocímetro) segue sem mapa e o ↗️ abre no Maps/Waze.
+ * - v1.70: 🚗 carango DENTRO do mapa (camadas do Mapbox, não mais um <div> por
+ *   cima): seta e Toba GT são modelos 3D de verdade (drive-models.js) que somem
+ *   atrás dos prédios; emoji fica em pé no chão, com sombra. Anda deslizando
+ *   entre uma leitura do GPS e outra.
+ * - v1.70: 🚦 trânsito ao vivo da cidade inteira = tileset mapbox-traffic-v1
+ *   (moderado/pesado/parado, atualiza a cada DRIVE_TRAFFIC_RELOAD_MS) por cima
+ *   das ruas e da linha da rota. Os trechos parados do TomTom continuam na rota.
  * - navegar.js e drive-game.js só falam com o objeto de driveCreateMap (nav.map).
  *   Nada aqui grava no TOBA_DRIVE_DB.
- * - Rota, trânsito da rota e limite da via continuam vindo do TomTom (drive-route.js).
  * ===================================================================== */
 const DRIVE_MAPBOX_VERSION = "3.7.0";
 const DRIVE_MAPBOX_JS = `https://cdn.jsdelivr.net/npm/mapbox-gl@${DRIVE_MAPBOX_VERSION}/dist/mapbox-gl.js`;
 const DRIVE_MAPBOX_CSS = `https://cdn.jsdelivr.net/npm/mapbox-gl@${DRIVE_MAPBOX_VERSION}/dist/mapbox-gl.css`;
 const DRIVE_MAPBOX_STYLE = "mapbox://styles/mapbox/standard";
-const DRIVE_MAPBOX_STATE_KEY = "toba_mapbox_state"; // { offUntil: ms, offWhy } só deste aparelho
-const DRIVE_MAPBOX_OFF_HOURS = 6;
-const DRIVE_MAPBOX_WAIT_MS = 12000;
+const DRIVE_MAPBOX_TRAFFIC = "mapbox://mapbox.mapbox-traffic-v1";
+const DRIVE_MAPBOX_WAIT_MS = 15000;
+const DRIVE_TRAFFIC_RELOAD_MS = 3 * 60 * 1000;
+const DRIVE_CAR_GLIDE_MS = 850;
 const DRIVE_GAME_PITCH = 60;
+const DRIVE_TRAFFIC_COLORS = { moderate: "#f59e0b", heavy: "#ef4444", severe: "#991b1b" };
 const DRIVE_LIGHTS = [
   { id: "auto", icon: "🌗", name: "Automático (pelo sol)" },
   { id: "dawn", icon: "🌅", name: "Amanhecer" },
@@ -27,25 +35,6 @@ const DRIVE_LIGHTS = [
   { id: "night", icon: "🌙", name: "Noite" },
 ];
 
-/* ---------- liga/desliga do Mapbox neste aparelho ---------- */
-function driveMapboxState() {
-  try {
-    const s = JSON.parse(localStorage.getItem(DRIVE_MAPBOX_STATE_KEY) || "{}") || {};
-    return { offUntil: Number(s.offUntil) || 0, offWhy: String(s.offWhy || "") };
-  } catch (err) {
-    return { offUntil: 0, offWhy: "" };
-  }
-}
-
-function driveMapboxOff(why) {
-  try {
-    localStorage.setItem(DRIVE_MAPBOX_STATE_KEY, JSON.stringify({ offUntil: Date.now() + DRIVE_MAPBOX_OFF_HOURS * 3600 * 1000, offWhy: why }));
-  } catch (err) {
-    /* sem storage: vale só agora */
-  }
-  console.warn(`Mapbox desligado por ${DRIVE_MAPBOX_OFF_HOURS} h: ${why}`);
-}
-
 function driveHasWebGl() {
   try {
     const c = document.createElement("canvas");
@@ -53,14 +42,6 @@ function driveHasWebGl() {
   } catch (err) {
     return false;
   }
-}
-
-// Mapbox vale agora? (token + ⚙️ ligado + não recusou há pouco + celular com WebGL)
-function driveMapboxWanted() {
-  return typeof TOBA_MAPBOX_TOKEN === "string" && TOBA_MAPBOX_TOKEN.startsWith("pk.")
-    && readDrivePrefs().map3d
-    && driveMapboxState().offUntil <= Date.now()
-    && driveHasWebGl();
 }
 
 let driveMapboxPromise = null;
@@ -78,121 +59,54 @@ function loadDriveMapbox() {
       js.onerror = () => reject(new Error("Mapbox não carregou"));
       document.head.appendChild(js);
     }).catch((err) => {
-      driveMapboxPromise = null;
+      driveMapboxPromise = null; // tenta de novo na próxima
       throw err;
     });
   }
   return driveMapboxPromise;
 }
 
-/* ---------- luz / estilo ---------- */
-// Luz que o mapa deveria ter agora. Mapbox: preset; Leaflet: "light" | "dark".
-function driveMapLook(kind, at) {
+/* ---------- luz ---------- */
+// Luz que o mapa deveria ter agora (preset do Mapbox)
+function driveMapLook(at) {
   const p = readDrivePrefs();
-  if (kind === "mapbox") {
-    if (p.mapLight !== "auto") return p.mapLight;
-    return at ? driveLightPreset(at[0], at[1]) : "day";
-  }
-  // Leaflet: noite automática só navegando (igual v1.68)
-  if (nav.mode === "nav" && p.autoNight && at) return driveIsDark(at[0], at[1]) ? "dark" : "light";
-  return p.mapStyle;
+  if (p.mapLight !== "auto") return p.mapLight;
+  return at ? driveLightPreset(at[0], at[1]) : "day";
 }
 
 function driveLightInfo(id) {
   return DRIVE_LIGHTS.find((l) => l.id === id) || DRIVE_LIGHTS[0];
 }
 
-/* ---------- criar o mapa (Mapbox, senão Leaflet) ---------- */
-async function driveCreateMap(box, center, zoom) {
-  if (driveMapboxWanted()) {
-    try {
-      return await driveMapboxMap(box, center, zoom);
-    } catch (err) {
-      if (err && err.status >= 400 && err.status < 500) driveMapboxOff(`HTTP ${err.status}`);
-      console.warn("Mapbox fora, indo de mapa clássico:", err?.message || err);
-      box.innerHTML = "";
-      box.className = "dv-map";
-    }
+/* ---------- emoji vira imagem do mapa ---------- */
+// face "left": o emoji olha pra esquerda; a versão "-r" é espelhada (andando pra direita da tela)
+function driveEmojiImage(icon, mirror) {
+  const size = 128;
+  const c = document.createElement("canvas");
+  c.width = size;
+  c.height = size;
+  const g = c.getContext("2d");
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.font = `${Math.round(size * 0.78)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+  if (mirror) {
+    g.translate(size, 0);
+    g.scale(-1, 1);
   }
-  await loadDriveLeaflet();
-  return driveLeafletMap(box, center, zoom);
+  g.fillText(icon, size / 2, size * 0.56);
+  return g.getImageData(0, 0, size, size);
 }
 
-/* ---------- Leaflet (plano B: o mapa de antes) ---------- */
-function driveLeafletMap(box, center, zoom) {
-  const map = L.map(box, { zoomControl: false, attributionControl: true }).setView(center, zoom);
-  const style = driveMapLook("leaflet", center);
-  const tiles = tobaBaseTiles(map, style, { cartoKey: DRIVE_CARTO_KEY, onFallback: () => typeof renderTrafficBtn === "function" && renderTrafficBtn() });
-  const traffic = tobaTrafficTiles(map, style);
-  traffic.tobaSetOn(readDrivePrefs().traffic);
-  const routeLayer = L.layerGroup().addTo(map);
-  const marks = L.layerGroup().addTo(map);
-  let car = null;
-  let carKey = "";
-  box.classList.toggle("is-dark", style === "dark");
-  return {
-    kind: "leaflet",
-    look: style,
-    cam: null,
-    setView(ll, z, o = {}) {
-      map.setView(ll, z, { animate: Boolean(o.animate) });
-    },
-    fit(points, pad) {
-      map.fitBounds(L.latLngBounds(points), { paddingTopLeft: [pad.left, pad.top], paddingBottomRight: [pad.right, pad.bottom] });
-    },
-    getZoom: () => map.getZoom(),
-    resize: () => map.invalidateSize(),
-    onClick: (fn) => map.on("click", (ev) => fn({ lat: ev.latlng.lat, lng: ev.latlng.lng })),
-    onDragStart: (fn) => map.on("dragstart", fn),
-    setRoute(coords, color, jams) {
-      routeLayer.clearLayers();
-      if (!coords || coords.length < 2) return;
-      L.polyline(coords, { color: "#0d1117", weight: 10, opacity: 0.55 }).addTo(routeLayer);
-      L.polyline(coords, { color, weight: 6, opacity: 0.95 }).addTo(routeLayer);
-      (jams || []).forEach((j) => L.polyline(j.coords, { color: j.color, weight: 6, opacity: 0.95 }).addTo(routeLayer));
-    },
-    clearMarks: () => marks.clearLayers(),
-    addMark(ll, html, o = {}) {
-      L.marker(ll, { icon: L.divIcon({ className: o.className || "dv-flag-wrap", html, iconSize: o.size || [32, 32], iconAnchor: o.anchor || [16, 16] }), interactive: false }).addTo(marks);
-    },
-    // carango: cria (ou recria se trocou) e devolve o elemento pra mexer no giro
-    car(ll, html, key) {
-      if (car && carKey !== key) {
-        car.remove();
-        car = null;
-      }
-      if (!car) {
-        car = L.marker(ll, { icon: L.divIcon({ className: "dv-car-wrap", html, iconSize: [40, 40], iconAnchor: [20, 20] }), interactive: false, zIndexOffset: 1000 }).addTo(map);
-        carKey = key;
-      } else {
-        car.setLatLng(ll);
-      }
-      return car.getElement();
-    },
-    dropCar() {
-      if (car) car.remove();
-      car = null;
-    },
-    screenHeading: (h) => h, // o giro do modo jogo no Leaflet é CSS (drive-game.js)
-    setLook(next) {
-      this.look = next;
-      tiles.tobaSetStyle(next);
-      traffic.tobaSetStyle(next);
-      box.classList.toggle("is-dark", next === "dark");
-    },
-    setTraffic: (on) => traffic.tobaSetOn(on),
-    trafficReady: () => tobaTomTomOn(),
-    destroy() {
-      traffic.tobaSetOn(false);
-      map.remove();
-    },
-  };
-}
-
-/* ---------- Mapbox (3D) ---------- */
-async function driveMapboxMap(box, center, zoom) {
+/* ---------- criar o mapa ---------- */
+async function driveCreateMap(box, center, zoom) {
+  if (typeof TOBA_MAPBOX_TOKEN !== "string" || !TOBA_MAPBOX_TOKEN.startsWith("pk.")) throw Object.assign(new Error("Sem token do Mapbox"), { why: "token" });
+  if (!driveHasWebGl()) throw Object.assign(new Error("Sem WebGL"), { why: "webgl" });
   await loadDriveMapbox();
-  const look = driveMapLook("mapbox", center);
+  return driveMapboxMap(box, center, zoom);
+}
+
+async function driveMapboxMap(box, center, zoom) {
+  const look = driveMapLook(center);
   const map = new mapboxgl.Map({
     container: box,
     accessToken: TOBA_MAPBOX_TOKEN,
@@ -228,13 +142,14 @@ async function driveMapboxMap(box, center, zoom) {
       const st = Number(ev?.error?.status) || 0;
       if (!done && st >= 400 && st < 500) {
         clearTimeout(timer);
-        fail(Object.assign(new Error(`Mapbox HTTP ${st}`), { status: st }));
+        fail(Object.assign(new Error(`Mapbox HTTP ${st}`), { status: st, why: "http" }));
       }
     });
   });
 
-  // Rota: uma fonte, linha escura por baixo e a cor (trechos com trânsito por cima)
-  map.addSource("dv-route", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+  const empty = { type: "FeatureCollection", features: [] };
+  // Rota: uma fonte, linha escura por baixo e a cor (trechos parados do TomTom por cima)
+  map.addSource("dv-route", { type: "geojson", data: empty });
   map.addLayer({
     id: "dv-route-casing",
     type: "line",
@@ -253,10 +168,101 @@ async function driveMapboxMap(box, center, zoom) {
     paint: { "line-color": ["get", "color"], "line-width": ["interpolate", ["linear"], ["zoom"], 12, 3.5, 16, 8, 19, 20], "line-emissive-strength": 1 },
   });
 
+  // 🚦 Trânsito ao vivo (Mapbox Traffic): só o que tá lento/parado, mais fino que a rota
+  let trafficOk = true;
+  let trafficTimer = null;
+  try {
+    map.addSource("dv-traffic", { type: "vector", url: DRIVE_MAPBOX_TRAFFIC });
+    map.addLayer({
+      id: "dv-traffic",
+      type: "line",
+      source: "dv-traffic",
+      "source-layer": "traffic",
+      slot: "top",
+      filter: ["match", ["get", "congestion"], ["moderate", "heavy", "severe"], true, false],
+      layout: { "line-cap": "round", "line-join": "round", visibility: readDrivePrefs().traffic ? "visible" : "none" },
+      paint: {
+        "line-color": ["match", ["get", "congestion"], "severe", DRIVE_TRAFFIC_COLORS.severe, "heavy", DRIVE_TRAFFIC_COLORS.heavy, DRIVE_TRAFFIC_COLORS.moderate],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.2, 14, 2.5, 17, 5, 19, 10],
+        // mão e contramão lado a lado (cada sentido vem numa linha)
+        "line-offset": ["interpolate", ["linear"], ["zoom"], 12, 0.6, 16, 2.5, 19, 6],
+        "line-opacity": 0.92,
+        "line-emissive-strength": 1,
+      },
+    });
+  } catch (err) {
+    trafficOk = false;
+    console.warn("Trânsito do Mapbox não entrou:", err?.message || err);
+  }
+  const trafficTick = () => {
+    if (document.hidden || !readDrivePrefs().traffic) return;
+    try {
+      map.getSource("dv-traffic")?.reload();
+    } catch (err) {
+      /* fonte ainda carregando */
+    }
+  };
+  if (trafficOk) trafficTimer = setInterval(trafficTick, DRIVE_TRAFFIC_RELOAD_MS);
+
+  // 🚗 Carango: modelo 3D (seta / Toba GT) ou emoji em pé no chão com sombra
+  map.addSource("dv-car", { type: "geojson", data: empty });
+  map.addLayer({
+    id: "dv-car-shadow",
+    type: "circle",
+    source: "dv-car",
+    slot: "top",
+    paint: {
+      "circle-pitch-alignment": "map",
+      "circle-radius": ["interpolate", ["exponential", 2], ["zoom"], 13, 5, 17, 15, 19, 34],
+      "circle-color": ["get", "glow"],
+      "circle-opacity": ["get", "glowA"],
+      "circle-blur": 0.75,
+      "circle-emissive-strength": 1,
+    },
+  });
+  map.addLayer({
+    id: "dv-car-model",
+    type: "model",
+    source: "dv-car",
+    slot: "top",
+    filter: ["==", ["get", "kind"], "model"],
+    layout: { "model-id": ["get", "model"] },
+    paint: {
+      "model-type": "common-3d",
+      // exagerado de propósito (carro de 4 m some no zoom de rua): ~30-40 px na tela
+      "model-scale": ["interpolate", ["exponential", 2], ["zoom"], 13, ["literal", [88, 88, 88]], 17, ["literal", [11, 11, 11]], 19, ["literal", [4, 4, 4]]],
+      // modelo nasce olhando pro sul: +180 = olhando pro rumo
+      "model-rotation": ["literal", [0, 0, 180]],
+      "model-cast-shadows": true,
+      "model-receive-shadows": false,
+      // seta = brilho fixo (é marcador); GT pega a luz do mapa e brilha mais de noite (em, no car())
+      "model-emissive-strength": ["get", "em"],
+    },
+  });
+  map.addLayer({
+    id: "dv-car-emoji",
+    type: "symbol",
+    source: "dv-car",
+    slot: "top",
+    filter: ["==", ["get", "kind"], "emoji"],
+    layout: {
+      "icon-image": ["get", "img"],
+      "icon-anchor": "bottom",
+      "icon-offset": [0, 8],
+      "icon-size": ["interpolate", ["linear"], ["zoom"], 13, 0.55, 16, 0.85, 18, 1.15, 19, 1.4],
+      "icon-rotate": ["get", "rot"],
+      "icon-rotation-alignment": "viewport",
+      "icon-pitch-alignment": "viewport",
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+      "symbol-z-elevate": false,
+    },
+    paint: { "icon-occlusion-opacity": 0.35, "icon-emissive-strength": 1 },
+  });
+
   let marks = [];
-  let car = null;
-  let carKey = "";
   let lastRoute = null;
+  const car = { shown: null, target: null, from: null, t0: 0, raf: 0, props: null };
   const toLngLat = (ll) => [ll[1], ll[0]];
   const pad0 = { top: 0, bottom: 0, left: 0, right: 0 };
   const el = (html, className) => {
@@ -267,6 +273,37 @@ async function driveMapboxMap(box, center, zoom) {
   };
   box.classList.add("is-3d");
   box.classList.toggle("is-dark", look === "night" || look === "dusk");
+
+  const carRender = () => {
+    if (!car.shown || !car.props) return;
+    const p = car.props;
+    const props = { ...p, rot: p.rot ?? 0 };
+    map.getSource("dv-car")?.setData({ type: "Feature", properties: props, geometry: { type: "Point", coordinates: [car.shown.lng, car.shown.lat] } });
+    if (p.kind === "model") map.setPaintProperty("dv-car-model", "model-rotation", ["literal", [0, 0, (car.shown.h + 180) % 360]]);
+  };
+  // desliza do ponto mostrado até o novo em DRIVE_CAR_GLIDE_MS (giro pelo lado mais curto)
+  const carStep = () => {
+    car.raf = 0;
+    if (!car.target) return;
+    const k = Math.min(1, (performance.now() - car.t0) / DRIVE_CAR_GLIDE_MS);
+    const e = k * (2 - k);
+    const f = car.from;
+    const t = car.target;
+    const dh = ((t.h - f.h + 540) % 360) - 180;
+    car.shown = { lat: f.lat + (t.lat - f.lat) * e, lng: f.lng + (t.lng - f.lng) * e, h: (f.h + dh * e + 360) % 360 };
+    carRender();
+    if (k < 1) car.raf = requestAnimationFrame(carStep);
+  };
+  const ensureModel = (id, kind, color) => {
+    if (map.hasModel && map.hasModel(id)) return;
+    map.addModel(id, driveModelUrl(kind, color));
+  };
+  const ensureEmoji = (veh) => {
+    const id = `dv-veh-${veh.id}`;
+    if (!map.hasImage(id)) map.addImage(id, driveEmojiImage(veh.icon, false), { pixelRatio: 2 });
+    if (veh.face === "left" && !map.hasImage(`${id}-r`)) map.addImage(`${id}-r`, driveEmojiImage(veh.icon, true), { pixelRatio: 2 });
+    return id;
+  };
 
   const api = {
     kind: "mapbox",
@@ -281,7 +318,8 @@ async function driveMapboxMap(box, center, zoom) {
         bearing: o.bearing ?? (cam ? cam.bearing : 0),
         pitch: o.pitch ?? (cam ? cam.pitch : 0),
         padding: cam ? { ...pad0, top: Math.round(box.clientHeight * cam.padTop) } : pad0,
-        duration: o.animate ? 900 : 0,
+        duration: o.animate ? DRIVE_CAR_GLIDE_MS : 0,
+        easing: (k) => k * (2 - k),
         essential: true,
       });
     },
@@ -324,31 +362,50 @@ async function driveMapboxMap(box, center, zoom) {
       const d = el(html, o.className || "dv-flag-wrap");
       d.style.width = `${size[0]}px`;
       d.style.height = `${size[1]}px`;
-      // âncora do Leaflet (px a partir do canto de cima) -> offset do Mapbox (a partir do centro)
+      // âncora em px a partir do canto de cima -> offset do Mapbox (a partir do centro)
       marks.push(new mapboxgl.Marker({ element: d, anchor: "center", offset: [size[0] / 2 - anchor[0], size[1] / 2 - anchor[1]] }).setLngLat(toLngLat(ll)).addTo(map));
     },
-    car(ll, html, key) {
-      if (car && carKey !== key) {
-        car.remove();
-        car = null;
-      }
-      if (!car) {
-        const d = el(html, "dv-car-wrap");
-        d.style.width = "40px";
-        d.style.height = "40px";
-        car = new mapboxgl.Marker({ element: d, anchor: "center" }).setLngLat(toLngLat(ll)).addTo(map);
-        carKey = key;
+    // carango: ll = [lat,lng] (já grudado na rota pelo navegar.js), heading = rumo em graus
+    // veh = item de DRIVE_VEHICLES, color = cor da rota (pinta a seta/GT), isNav = navegando
+    car(ll, heading, veh, color, isNav) {
+      const h = Number.isFinite(heading) ? ((heading % 360) + 360) % 360 : car.target?.h ?? 0;
+      const target = { lat: ll[0], lng: ll[1], h };
+      let props;
+      if (veh.face === "arrow" || veh.face === "model") {
+        const kind = veh.face === "model" ? "gt" : "arrow";
+        const id = `dv-${kind}-${color.replace("#", "")}`;
+        ensureModel(id, kind, color);
+        const dark = api.look === "night" || api.look === "dusk";
+        props = { kind: "model", model: id, em: kind === "arrow" ? 0.85 : dark ? 0.7 : 0.3, glow: color, glowA: isNav ? 0.55 : 0.4 };
       } else {
-        car.setLngLat(toLngLat(ll));
+        const base = ensureEmoji(veh);
+        // na tela: rumo menos o giro do mapa (o emoji de lado vira pro lado que anda)
+        const screen = (((h - map.getBearing()) % 360) + 360) % 360;
+        let img = base;
+        let rot = 0;
+        if (veh.face === "left" && screen > 0 && screen < 180) img = `${base}-r`;
+        if (veh.face === "up") rot = Math.round(screen - 45); // 🚀 já nasce apontando pra 45°
+        props = { kind: "emoji", img, rot, glow: "#000000", glowA: 0.5 };
       }
-      return car.getElement();
+      car.props = props;
+      // pulo grande (1ª vez, GPS doido) = aparece direto; senão desliza
+      const far = !car.shown || Math.abs(car.shown.lat - target.lat) + Math.abs(car.shown.lng - target.lng) > 0.003;
+      if (far) {
+        car.shown = target;
+        car.target = target;
+        carRender();
+        return;
+      }
+      car.from = { ...car.shown };
+      car.target = target;
+      car.t0 = performance.now();
+      if (!car.raf) car.raf = requestAnimationFrame(carStep);
     },
     dropCar() {
-      if (car) car.remove();
-      car = null;
+      car.shown = null;
+      car.target = null;
+      map.getSource("dv-car")?.setData(empty);
     },
-    // carango fica de pé na tela: o rumo dele menos o giro do mapa
-    screenHeading: (h) => (Number.isFinite(h) ? h - map.getBearing() : h),
     setLook(next) {
       if (next === api.look) return;
       api.look = next;
@@ -359,13 +416,22 @@ async function driveMapboxMap(box, center, zoom) {
       }
       box.classList.toggle("is-dark", next === "night" || next === "dusk");
     },
-    // 🚦 no 3D: trânsito só na linha da rota (trechos lentos/parados do TomTom)
-    setTraffic() {
+    setTraffic(on) {
+      if (trafficOk) {
+        try {
+          map.setLayoutProperty("dv-traffic", "visibility", on ? "visible" : "none");
+          if (on) trafficTick();
+        } catch (err) {
+          /* camada fora */
+        }
+      }
       if (lastRoute) api.setRoute(lastRoute.coords, lastRoute.color, lastRoute.jams);
       return true;
     },
     trafficReady: () => true,
     destroy() {
+      if (trafficTimer) clearInterval(trafficTimer);
+      if (car.raf) cancelAnimationFrame(car.raf);
       map.remove();
     },
   };

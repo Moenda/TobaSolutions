@@ -1,12 +1,13 @@
 /* =====================================================================
  * Toba Drive · modo dirigir ULTRA (desde v1.68) — carregado depois do navegar.js
- * - 🎮 Visual de jogo: navegando, o mapa inclina e gira com o carro. Mapa 3D
- *   (v1.69, drive-map.js): câmera do Mapbox (nav.map.cam). Mapa clássico: CSS em
- *   cima do Leaflet (o #driveMap fica maior que a tela, gira e deita). Zoom
+ * - 🎮 Visual de jogo: navegando, o mapa inclina e gira com o carro (câmera do
+ *   Mapbox, nav.map.cam; o truque de CSS do mapa clássico saiu na v1.70). Zoom
  *   pela velocidade já vinha do navTick. Arrastou o mapa = volta pro plano até
- *   o 🎯. Noite automática: navegando, mapa escuro entre o pôr e o nascer do sol.
- * - 🏎️ Velocímetro estilo Forza: velocidade do GPS + placa do limite da via
- *   (TomTom, route.limits). Passou do limite = borda vermelha + Cloba reclama.
+ *   o 🎯. Luz do mapa: 🌗 auto = pelo sol.
+ * - 🏎️ Velocímetro: velocidade do GPS + placa do limite da via (TomTom,
+ *   route.limits). Passou do limite = borda vermelha + Cloba reclama.
+ *   v1.70: skins estilo Need for Speed (DRIVE_SPEEDOS), ponteiro/arco pela
+ *   escala da skin, troca no 🎨 até no meio da rota.
  * - 🤡 Cloba copiloto: piadinhas (DRIVE_COPILOT_LINES) em momentos de calma,
  *   nunca em cima de manobra, no máximo uma a cada DRIVE_JOKE_GAP_MS.
  * - 📸 Radar: radares do OpenStreetMap na rota (driveFetchRadars) avisados a 400 m.
@@ -43,8 +44,10 @@ function gameViewWanted() {
 }
 
 // gira pelo caminho mais curto (359° -> 1° não dá a volta inteira)
+// v1.70: rumo do carango grudado na rota (nav.carView), senão o do GPS
 function gameFollowHeading() {
-  const h = Number.isFinite(nav.pos?.heading) ? nav.pos.heading : game.heading;
+  const raw = Number.isFinite(nav.carView?.heading) ? nav.carView.heading : nav.pos?.heading;
+  const h = Number.isFinite(raw) ? raw : game.heading;
   let diff = ((h - game.heading + 540) % 360) - 180;
   if (Math.abs(diff) > 120 && (nav.pos?.speed || 0) < 2) diff = 0; // parado, a bússola pula: ignora
   game.heading += diff;
@@ -54,42 +57,18 @@ function gameApplyView() {
   const box = document.getElementById("driveMap");
   if (!box || !nav.map) return;
   const want = gameViewWanted();
-  // 🏙️ Mapa 3D (v1.69): câmera de verdade (inclina 60° e gira com o rumo), carango a 70% da tela
-  if (nav.map.kind === "mapbox") {
-    const was = Boolean(nav.map.cam);
-    if (want) gameFollowHeading();
-    nav.map.cam = want ? { bearing: ((game.heading % 360) + 360) % 360, pitch: DRIVE_GAME_PITCH, padTop: 0.4 } : null;
-    document.body.classList.toggle("is-game3d", want);
-    if (want && !was && nav.pos) nav.map.setView([nav.pos.lat, nav.pos.lng], nav.map.getZoom(), { animate: true });
-    return;
-  }
-  // 🗺️ Mapa clássico: truque de CSS em cima do Leaflet (v1.68)
-  const was = box.classList.contains("is-game");
-  if (want !== was) {
-    box.classList.toggle("is-game", want);
-    document.body.classList.toggle("is-game", want);
-    if (!want) box.style.transform = "";
-    setTimeout(() => nav.map && nav.map.resize(), 30);
-    nav.map.dropCar();
-    drawCar();
-  }
-  if (!want) return;
-  gameFollowHeading();
-  box.style.transform = `perspective(1100px) rotateX(42deg) rotate(${-game.heading}deg)`;
+  // câmera de verdade (inclina 60° e gira com o rumo), carango a 70% da tela
+  const was = Boolean(nav.map.cam);
+  if (want) gameFollowHeading();
+  nav.map.cam = want ? { bearing: ((game.heading % 360) + 360) % 360, pitch: DRIVE_GAME_PITCH, padTop: 0.4 } : null;
+  document.body.classList.toggle("is-game3d", want);
+  if (want && !was && nav.pos) nav.map.setView(nav.carView ? [nav.carView.lat, nav.carView.lng] : [nav.pos.lat, nav.pos.lng], nav.map.getZoom(), { animate: true });
 }
 
-// Carango no visual de jogo: em pé na tela (desfaz o giro do mapa)
-function gameVehicleTransform(vehicle) {
-  if (!document.getElementById("driveMap")?.classList.contains("is-game")) return null;
-  // o mapa gira -heading: girar +heading deixa a seta apontando pra frente e o emoji em pé
-  const h = Math.round(game.heading);
-  return vehicle.face === "up" ? `rotate(${h - 45}deg)` : `rotate(${h}deg)`;
-}
-
-/* ---------- 🌙 noite automática ---------- */
-// Clássico: escuro do pôr ao nascer do sol (só navegando). 3D: luz do 🌗 (auto = pelo sol)
+/* ---------- 🌗 luz do mapa ---------- */
+// luz do 🌗 (auto = pelo sol)
 function gameEffectiveStyle() {
-  return driveMapLook(nav.map?.kind || "leaflet", nav.pos ? [nav.pos.lat, nav.pos.lng] : null);
+  return driveMapLook(nav.pos ? [nav.pos.lat, nav.pos.lng] : null);
 }
 
 function gameSyncStyle() {
@@ -135,6 +114,7 @@ function gameStart() {
   game.overSaid = 0;
   game.aheadSaid = false;
   game.dark = null;
+  game.speedoArgs = null;
   game.heading = Number.isFinite(nav.pos?.heading) ? nav.pos.heading : 0;
   game.ghost = nav.pos && nav.dest ? driveFindGhost(driveDb, nav.pos, nav.dest) : null;
   try {
@@ -217,6 +197,7 @@ function gameTick(next, left, total) {
   if (over && !game.overSince) game.overSince = now;
   if (!over) game.overSince = 0;
   document.body.classList.toggle("is-over", over);
+  game.speedoArgs = [kmh, limit, over];
   renderSpeedo(kmh, limit, over);
   const calm = !next || next.dist > 600;
   // passou do limite por 4 s seguidos: Cloba reclama (no máximo 1 a cada 90 s)
@@ -283,7 +264,15 @@ function renderSpeedo(kmh = 0, limit = null, over = false) {
   const box = document.getElementById("speedo");
   if (!box) return;
   box.hidden = nav.mode !== "nav";
+  const skin = currentSpeedo();
+  if (box.dataset.skin !== skin.id) {
+    box.className = box.className.replace(/\bdv-sp-\S+/g, "").trim();
+    box.classList.add(`dv-sp-${skin.id}`);
+    box.dataset.skin = skin.id;
+  }
   box.classList.toggle("is-over", over);
+  // arco/ponteiro: 0 a 1 na escala da skin
+  box.style.setProperty("--p", String(Math.max(0, Math.min(1, kmh / (skin.max || 160)))));
   document.getElementById("speedoValue").textContent = String(kmh);
   const sign = document.getElementById("speedoLimit");
   sign.hidden = !limit;

@@ -83,6 +83,8 @@ function loadDatabase() {
         if (!f.deposits) f.deposits = [];
         if (!f.balanceLogs) f.balanceLogs = [];
         if (f.isCofrinho === undefined) f.isCofrinho = false;
+        // v1.70: isento de IR (LCI, LCA, poupança...). Ausente = paga IR.
+        if (f.irExempt === undefined) f.irExempt = false;
       });
 
       parsed.splitterGroups.forEach((g) => {

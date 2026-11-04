@@ -1654,3 +1654,51 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 - Testar em 360px e 384px.
 
 **Commit sugerido:** `v1.69 - Navegar com Mapbox 3D (predios, camera de jogo, transito so na rota, luz amanhecer/dia/por do sol/noite automatica) e mapa classico de plano B`
+
+---
+
+## v1.70 — 📈 Toba Investimentos repaginado (ritmo por mês, gráficos novos, prévia do Leão 🦁) + 🧭 Navegar com carango 3D, trânsito ao vivo de verdade e velocímetros Need for Speed
+
+### 📈 Investimentos
+
+**Arquivos alterados:** `TobaBank/TobaBank-Investimento.html`, `TobaBank/css/investimento.css`, `TobaBank/js/investimento.js`, `TobaBank/js/bank-core.js`, `CLAUDE.md`
+
+1. **🏁 Já resgatados virou sanfona:** lá no fundo agora é uma linha só ("🏁 Já resgatados 23 · +R$ 1.887,98") que começa fechada. Abriu? Lista compacta por ano (com total do ano), uma linha por investimento: nome, período, dias, % de IR que pagou e o lucro. Toca na linha e abre o detalhe, agora com dias, rendimento por mês e quanto a tabela de IR cobraria nesse prazo. A busca continua lá dentro.
+2. **📅 Rendimento por mês na carteira:** o resumo ganhou "Ritmo por mês" (quanto a carteira rende por mês no ritmo atual) e "🧾 IR se sacar tudo hoje" (toca no ❔ pra ver a tabela). Cada investimento ganhou três quadradinhos: 📅 Por mês (R$ e % a.m.), 🚀 12 meses e 🧾 IR hoje. Cofrinho mostra a faixa do IR e quando ela cai.
+3. **🧾 Prévia do imposto de renda:** tabela regressiva de verdade (até 180 dias 22,5%, até 360 dias 20%, até 720 dias 17,5%, depois 15%), contando o prazo de **cada aporte** (o mais antigo sai primeiro) e o IOF quando tem menos de 30 dias. Mostra "⏳ segura mais X dias e cai pra Y%" com quanto economiza. Ao 🏁 Finalizar, o campo "IR retido" já vem preenchido pela tabela (antes era 15% fixo) e recalcula quando muda o valor bruto ou a data; se digitar o valor do banco, toca na dica pra voltar pra prévia. LCI, LCA, poupança: marque **🛡️ Isento de IR** (no 📜 Extrato do investimento ou ao criar).
+4. **Tela do investimento nova:** em cima o saldo grandão + "Líquido hoje" (já sem o IR), investido, quanto rendeu e por mês. Embaixo abas 🔄 Saldo / ➕ Aporte / 🪙 Retirar / 📜 Extrato no lugar das sanfonas. Campo de valor grande, botões rápidos +100 / +500 / +1 mil / +5 mil, Hoje / Ontem pra data, e prévia ao vivo ("rendeu +R$ 98 em 30 dias ≈ +R$ 98/mês", "investido vai de X → Y"). Cofrinho ganhou ➕ Base. Criar investimento também tem os botões rápidos e o 🧾 Paga IR / 🛡️ Isento.
+5. **📊 Gráficos novos (4 abas):** ⏪ **Evolução** agora usa os saldos que você lançou de verdade no fim de cada mês (antes era uma curva inventada pra trás pela taxa) e ganhou o período "Tudo"; 📅 **Por mês** = barras do rendimento de cada mês (longo prazo + cofrinhos), linha da média, "este mês / média / melhor mês" e a lista mês a mês que abre o detalhe por investimento (o botão "📅 Mês a mês" no topo abre direto aqui, substituindo o antigo 📜 Histórico); 🏆 **Ranking** = quem rende mais por mês, bruto e depois do IR (pódio 🥇🥈🥉); 🔮 **Futuro** ganhou "💸 colocando todo mês" (nada / 500 / 1 mil / 2 mil / 5 mil), a linha do que você colocou e o líquido no bolso já com IR estimado.
+
+**Dados:** campo novo **opcional** `irExempt` (true/false) em cada investimento do `TOBA_BANK_DB`, preenchido como `false` no load quando falta (banco e backups antigos continuam funcionando; ausente = paga IR). Todo o resto (IR, ritmo por mês, gráficos) é só cálculo, nada gravado. Saldos, aportes, retiradas e resgatados continuam exatamente como estavam.
+
+**Como testar:**
+- Investimentos: o fim da tela tem a sanfona 🏁 fechada com o total; abre, confere os anos e toca numa linha.
+- Toca num investimento: abas, botões +500/+1 mil, Hoje/Ontem; digita um saldo novo e vê a prévia do rendimento. Lança e confere que o card atualiza igual antes.
+- 📜 Extrato › marca 🛡️ Isento num LCI/LCA: IR hoje vira "Isento".
+- 🏁 Finalizar › Resgate total: o IR já vem pela tabela; muda o valor bruto e vê recalcular.
+- 📊: as 4 abas, "Tudo" na Evolução, "1 mil" no Futuro. 📅 Mês a mês abre direto no Por mês.
+- Testar em 360px e 384px.
+
+### 🧭 Navegar (Toba Racing)
+
+**Arquivos novos/alterados:** `TobaDrive/js/drive-models.js` (NOVO), `TobaDrive/js/drive-map.js`, `TobaDrive/js/navegar.js`, `TobaDrive/js/drive-game.js`, `TobaDrive/js/drive-route.js`, `TobaDrive/js/drive-metrics.js`, `TobaDrive/css/navegar.css`, `TobaDrive/TobaDrive-Navegar.html`, `assets/toba-player.js`, `sw.js` (versão `toba-v31`), `CLAUDE.md`
+
+1. **🚗 Carango dentro do mapa, não mais colado por cima:** antes ele era uma bolinha laranja flutuando em cima dos prédios. Agora a **seta virou uma seta 3D de verdade** deitada na rua, e tem carro novo pra todo mundo: **🏎️ Toba GT 3D**, um esportivo com aerofólio, faróis e lanternas acesos, pintado na cor da rota. Os dois somem atrás dos prédios igual carro de verdade. Os emojis (🚗 🚕 🐢 ...) ficam em pé no chão com sombra.
+2. **Carango anda EM CIMA da linha:** navegando, ele gruda na rota (se o GPS tá até uns 25 m dela) virado pro sentido da rua, e desliza de uma leitura do GPS pra outra em vez de pular. A câmera do modo jogo segue ele.
+3. **🎨 Trocar o carango no meio da rota:** botão 🎨 novo no painel de baixo, do lado do 🚦. Carango, cor da rota e velocímetro trocam na hora, sem parar a navegação.
+4. **🚦 Trânsito ao vivo de verdade:** o mapa agora mostra o trânsito da cidade inteira (amarelo = lento, vermelho = pesado, vinho = parado), por cima das ruas e da tua rota, atualizando a cada 3 minutos. E o "Trânsito ao vivo: caminho livre" que aparecia sempre foi consertado: ele só contava acidente e bloqueio; agora compara o tempo com o trânsito de agora com o tempo de rua vazia, então mostra "+X min de lentidão no caminho" de verdade.
+5. **🏁 Velocímetros desbloqueáveis estilo Need for Speed:** 9 skins no 🎨, com arco que enche e ponteiro nos analógicos: 🟠 Toba e ⚪ HUD limpo (liberados), 📟 Painel do Uno, 🇯🇵 Drift Tóquio, 💜 Underground, 🔵 Nitro, ⬛ Fibra de carbono, 🥇 Max Tobasten e 🌈 Lendário. Os trancados saem nas conquistas do Navegar.
+6. **🏆 3 conquistas novas (🏁 Pista):** 🌃 **Underground** (5 navegações saindo entre 22h e 5h, destrava o 💜), 🔵 **Nitro no tanque** (500 km navegados, destrava o 🔵) e 🧘 **Motorista de comercial** (5 viagens de 20 min+ sem passar do limite, destrava o ⬛).
+7. **🧹 Mapa antigo aposentado no Navegar:** saiu o mapa clássico (Leaflet com TomTom/CARTO em imagem) e as opções ⚙️ "Mapa 3D" e "Mapa escuro à noite". Fica só o Mapbox 3D (a luz 🌗 continua no botão de cima). Se o mapa não abrir (sem internet, navegador sem 3D), aparece um aviso e a navegação segue com voz, faixa da manobra e velocímetro; o ↗️ abre no Maps/Waze. O 🗺️ Mapa do Toba Places não mudou.
+
+**Dados:** nenhuma mudança no `TOBA_DRIVE_DB` (viagens, favoritos e recentes intactos). Só a preferência deste aparelho (`toba_drive_prefs`) ganhou `speedo` (velocímetro escolhido) e perdeu `mapStyle`, `autoNight` e `map3d` do mapa clássico. Conquistas novas são calculadas das viagens que já existem: quem já tem 5 saídas de madrugada ou 500 km destrava na hora.
+
+**Como testar (Navegar):**
+- Abre o Navegar, escolhe um destino: a seta 3D aparece na rua onde tu tá; o 🚦 liga/desliga as linhas de trânsito da cidade.
+- A linha "🚦 Trânsito ao vivo" no card da prévia: em horário de pico deve mostrar "+X min de lentidão".
+- 🚀 Partiu: a seta anda em cima da linha; toca no 🎨 do painel, escolhe 🏎️ Toba GT 3D e troca a cor da rota (o GT muda de cor junto) e o velocímetro.
+- Perfil › 🏁 Pista: as 3 conquistas novas aparecem.
+- Desliga a internet antes de abrir o mapa: aparece o aviso e o resto continua.
+- Testar em 360px e 384px.
+
+**Commit sugerido:** `v1.70 - Investimentos repaginados (resgatados em sanfona, rendimento por mes, previa do IR pela tabela regressiva, tela de aporte nova e graficos com evolucao real, por mes, ranking e futuro com aporte mensal) + Navegar com carango 3D na rua, troca de skin no meio da rota, transito ao vivo da cidade, velocimetros desbloqueaveis e mapa antigo aposentado`

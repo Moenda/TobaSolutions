@@ -9,9 +9,11 @@
  *   Os dois são servidores de uso justo: 1 rota por vez, recálculo no máximo a
  *   cada DRIVE_REROUTE_GAP_MS. Nada disso vai pro cache do sw.js.
  * - Busca de endereço: Nominatim (mesma regra do Toba Places: 1 por segundo).
- * - Mapa: Leaflet 1.9.4 + TomTom (tobaBaseTiles); plano B = CARTO com a MESMA
- *   chave do Toba Places (TURISM_CARTO_KEY em TobaTurism/js/places-map.js).
- *   Trocou lá, troca aqui. Camada 🚦 de trânsito: tobaTrafficTiles.
+ * - Mapa: só Mapbox 3D desde v1.70 (drive-map.js). O Leaflet/CARTO/TomTom em
+ *   imagem saiu do Navegar (o Toba Places continua com eles).
+ * - v1.70: TomTom com computeTravelTimeFor=all: a lentidão do caminho é
+ *   "tempo com trânsito agora − tempo de rua vazia" (antes só contava acidente
+ *   e bloqueio, e quase sempre dava "caminho livre").
  * - Voz: speechSynthesis do navegador em pt-BR.
  * - Tela acesa: Wake Lock (navegador) ou TOBA_NATIVE.keepScreenOn (APK).
  * ===================================================================== */
@@ -22,9 +24,6 @@ const DRIVE_VALHALLA_URL = "https://valhalla1.openstreetmap.de/route?json=";
 const DRIVE_OSRM_URL = "https://router.project-osrm.org/route/v1/driving/";
 const DRIVE_SEARCH_URL = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=1&accept-language=pt-BR&countrycodes=br&q=";
 const DRIVE_REVERSE_URL = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&addressdetails=1&accept-language=pt-BR";
-const DRIVE_LEAFLET_CSS = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css";
-const DRIVE_LEAFLET_JS = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";
-const DRIVE_CARTO_KEY = "cb1_4zv2_1_2e88aba5239e1a6ac05ddc60"; // = TURISM_CARTO_KEY (places-map.js)
 const DRIVE_FETCH_TIMEOUT_MS = 12000;
 const DRIVE_REROUTE_GAP_MS = 12000;
 const DRIVE_PREFS_KEY = "toba_drive_prefs";
@@ -40,16 +39,14 @@ function readDrivePrefs() {
   return {
     voice: p.voice !== false,
     keepAwake: p.keepAwake !== false,
-    mapStyle: p.mapStyle === "dark" ? "dark" : "light",
     avoidTolls: Boolean(p.avoidTolls),
-    traffic: p.traffic !== false, // 🚦 camada de trânsito no mapa (v1.66)
+    traffic: p.traffic !== false, // 🚦 trânsito ao vivo no mapa (v1.66; v1.70 = Mapbox Traffic)
     vehicle: typeof p.vehicle === "string" ? p.vehicle : "seta", // 🎨 carango no mapa (v1.67, DRIVE_VEHICLES)
-    autoNight: p.autoNight !== false, // v1.68: navegando, mapa escuro sozinho do pôr ao nascer do sol
     gameView: p.gameView !== false, // v1.68: mapa inclinado girando com o carro (visual de jogo)
     copilot: p.copilot !== false, // v1.68: 🤡 Cloba copiloto (piadinhas na voz)
-    map3d: p.map3d !== false, // v1.69: 🏙️ mapa 3D do Mapbox (desligado = mapa clássico Leaflet)
     mapLight: ["auto", "dawn", "day", "dusk", "night"].includes(p.mapLight) ? p.mapLight : "auto", // v1.69: luz do mapa 3D
     routeColor: typeof p.routeColor === "string" ? p.routeColor : "laranja", // 🎨 cor da rota (v1.67, DRIVE_ROUTE_COLORS)
+    speedo: typeof p.speedo === "string" ? p.speedo : "toba", // 🎨 velocímetro (v1.70, DRIVE_SPEEDOS)
   };
 }
 
@@ -92,6 +89,7 @@ async function driveFetchTomTom(from, to, options = {}) {
     instructionsType: "text",
     language: "pt-BR",
     sectionType: "traffic",
+    computeTravelTimeFor: "all", // v1.70: devolve o tempo de rua vazia (noTrafficTravelTimeInSeconds)
   });
   if (prefs.avoidTolls) params.set("avoid", "tollRoads");
   if (Number.isFinite(options.heading) && options.speed > 3) params.set("vehicleHeading", String(Math.round(options.heading) % 360));
@@ -200,31 +198,6 @@ async function driveReverse(lat, lng) {
     address: driveAddressLine(r?.address, ""),
   };
 }
-
-/* ---------- mapa ---------- */
-let driveLeafletPromise = null;
-
-function loadDriveLeaflet() {
-  if (window.L) return Promise.resolve();
-  if (!driveLeafletPromise) {
-    driveLeafletPromise = new Promise((resolve, reject) => {
-      const css = document.createElement("link");
-      css.rel = "stylesheet";
-      css.href = DRIVE_LEAFLET_CSS;
-      document.head.appendChild(css);
-      const js = document.createElement("script");
-      js.src = DRIVE_LEAFLET_JS;
-      js.onload = () => (window.L ? resolve() : reject(new Error("Leaflet sem L")));
-      js.onerror = () => reject(new Error("Leaflet não carregou"));
-      document.head.appendChild(js);
-    }).catch((err) => {
-      driveLeafletPromise = null; // tenta de novo na próxima
-      throw err;
-    });
-  }
-  return driveLeafletPromise;
-}
-
 
 /* ---------- voz ---------- */
 let driveVoice = null;
