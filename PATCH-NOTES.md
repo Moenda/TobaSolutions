@@ -1857,3 +1857,19 @@ Depois Generate Signed APK (mesma chave) e `adb install -r`. Sem o APK novo o si
 **Como testar:** DHU no PC (README do TobaAndroid seção 6.2) › Toba: mapa 3D escuro sem cartão preto. Buscar › destino › Simular: pílula da manobra em cima, velocidade + placa embaixo, trânsito só na rota. Tocar 🧊 (vira 2D) e 🎨 (troca a cor). Com a rota rodando no carro, abrir o 🧭 Navegar no celular: mesma rota. Encerrar no celular: o carro para. Dar Partiu no celular: o carro segue.
 
 **Commit sugerido:** `v1.78 - Android Auto clean estilo Waze (mapa 3D do Toba, velocidade + placa da rua, 2D/3D e skin, transito so na rota) e rota junta entre carro e celular (APK 1.7)`
+
+## v1.79 — 🚘 Android Auto: o 🎨 troca a luz do mapa (Auto, Amanhecer, Dia, Entardecer, Noite)
+
+**Arquivos que mudaram:** `TobaDrive/js/auto-map.js`, `TobaAndroid/app/auto/br/com/toba/auto/CarMap.java`, `TobaAndroid/app/build.gradle` (versionCode 9 / versionName 1.8), `sw.js` (cache `toba-v39`), `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **🎨 = luz do mapa:** o botão do carro agora passa por Auto (dia ou noite pelo farol do carro), Amanhecer, Dia, Entardecer e Noite, igual a 🌗 do Navegar do celular. Antes ele trocava a cor da rota.
+2. **Rota sempre azul:** a linha da rota fica num azul só, em qualquer luz.
+3. **Painel acompanha:** no Entardecer e na Noite as pílulas ficam escuras; no Amanhecer e no Dia, claras.
+
+**Dados:** Nenhuma mudança. A escolha continua na mesma preferência `skin` do `toba_auto` (quem estava na skin 2 cai no Dia, por exemplo).
+
+**APK:** o mapa muda só com o push do site. O APK 1.8 só corrige o nome no aviso do botão (o 1.7 ainda fala "🎨 Neon" etc.); pode gerar junto com a próxima mexida no app, sempre pelo KingInstaller.
+
+**Como testar:** DHU › Toba › Buscar › destino › Simular. Tocar no 🎨 várias vezes: o mapa passa por amanhecer, dia, entardecer e noite, a rota fica azul.
+
+**Commit sugerido:** `v1.79 - Android Auto: botao de skin troca a luz do mapa (auto, amanhecer, dia, entardecer, noite) e a rota fica sempre azul`

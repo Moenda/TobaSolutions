@@ -19,8 +19,8 @@ import java.util.Locale;
  * cartões do próprio Android Auto. O NavEngine só fala com esta classe.
  */
 final class CarMap implements SurfaceCallback, WebMap.Host {
-    /** Nomes das skins (mesma ordem do AM_SKINS em TobaDrive/js/auto-map.js). */
-    static final String[] SKINS = {"Toba", "Céu", "Neon", "Clean", "Max Tobasten"};
+    /** Luz do mapa no botão 🎨 (mesma ordem do AM_SKINS em TobaDrive/js/auto-map.js). */
+    static final String[] SKINS = {"Auto (farol do carro)", "Amanhecer", "Dia", "Entardecer", "Noite"};
 
     private final CarContext car;
     private final MapRenderer still;

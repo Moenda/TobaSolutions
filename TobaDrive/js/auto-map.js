@@ -17,13 +17,16 @@
  * - Nada aqui grava no localStorage: 3D/2D e skin ficam no app (toba_auto).
  * ===================================================================== */
 const AM_STYLE = "mapbox://styles/mapbox/standard";
-// mesma ordem do CarMap.SKINS (Java): o botão 🎨 do carro passa de uma em uma
+// mesma ordem do CarMap.SKINS (Java): o botão 🎨 do carro troca a LUZ do mapa
+// (igual a 🌗 do Navegar do celular). light null = Auto, segue o farol do carro.
+// A rota fica sempre no mesmo azul.
+const AM_ROUTE = { route: "#3b82f6", casing: "#1e3a8a", theme: "default" };
 const AM_SKINS = [
-  { id: "toba", route: "#22c55e", casing: "#0f5132", theme: "default" },
-  { id: "ceu", route: "#38bdf8", casing: "#075985", theme: "default" },
-  { id: "neon", route: "#ff2bd6", casing: "#581c87", theme: "monochrome" },
-  { id: "clean", route: "#3b82f6", casing: "#1e3a8a", theme: "faded" },
-  { id: "max", route: "#fbbf24", casing: "#7c2d12", theme: "default" },
+  { id: "auto", light: null, ...AM_ROUTE },
+  { id: "dawn", light: "dawn", ...AM_ROUTE },
+  { id: "day", light: "day", ...AM_ROUTE },
+  { id: "dusk", light: "dusk", ...AM_ROUTE },
+  { id: "night", light: "night", ...AM_ROUTE },
 ];
 const AM_JAM_COLORS = { 1: "#facc15", 2: "#ef4444", 3: "#b91c1c" };
 const AM_PITCH_3D = 60;
@@ -247,6 +250,11 @@ function amAddLayers() {
   });
 }
 
+// Luz do mapa: a da skin escolhida, ou dia/noite pelo farol do carro (Auto)
+function amLight() {
+  return amSkin().light || (am.cfg.dark ? "night" : "day");
+}
+
 function amApplySkin() {
   const map = am.map;
   if (!map || !am.styleOk) return;
@@ -264,7 +272,7 @@ function amApplyLook(force = false) {
   const map = am.map;
   if (!map || !am.styleOk) return;
   const skin = amSkin();
-  const light = am.cfg.dark ? "night" : "day";
+  const light = amLight();
   const look = `${light}|${skin.theme}|${am.cfg.mode3d}`;
   if (!force && look === am.appliedLook) return;
   am.appliedLook = look;
@@ -278,8 +286,9 @@ function amApplyLook(force = false) {
   set("lightPreset", light);
   set("theme", skin.theme);
   set("show3dObjects", Boolean(am.cfg.mode3d));
-  document.body.classList.toggle("am-dark", am.cfg.dark);
-  document.body.classList.toggle("am-light", !am.cfg.dark);
+  const dark = light === "night" || light === "dusk";
+  document.body.classList.toggle("am-dark", dark);
+  document.body.classList.toggle("am-light", !dark);
 }
 
 /* ---------- rota ---------- */
@@ -487,7 +496,7 @@ window.tobaAuto = {
       style: AM_STYLE,
       config: {
         basemap: {
-          lightPreset: am.cfg.dark ? "night" : "day",
+          lightPreset: amLight(),
           theme: skin.theme,
           showPointOfInterestLabels: false,
           showTransitLabels: false,
