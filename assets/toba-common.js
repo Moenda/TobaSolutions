@@ -740,6 +740,27 @@ function tobaIsApp() {
   return Boolean(TOBA_NATIVE);
 }
 
+// v1.80 (APK 1.8): manda os ⭐ favoritos do 🧭 Navegar (TOBA_DRIVE_DB) pro Android Auto.
+// Roda em toda página aberta no app e a cada gravação do Drive. APK antigo: não faz nada.
+function tobaShareDriveFavs(db) {
+  if (!TOBA_NATIVE || typeof TOBA_NATIVE.autoFavorites !== "function") return;
+  try {
+    const data = db || JSON.parse(localStorage.getItem("TOBA_DRIVE_DB") || "null");
+    const favs = (data && Array.isArray(data.favorites) ? data.favorites : [])
+      .filter((f) => f && Number.isFinite(Number(f.lat)) && Number.isFinite(Number(f.lng)))
+      .map((f) => ({
+        name: String(f.name || "Favorito"),
+        emoji: String(f.emoji || "⭐"),
+        address: String(f.address || ""),
+        lat: Number(f.lat),
+        lng: Number(f.lng),
+      }));
+    TOBA_NATIVE.autoFavorites(JSON.stringify(favs));
+  } catch (err) {
+    console.error("Não deu pra mandar os favoritos pro carro", err);
+  }
+}
+
 const TOBA_ICON_URL = (() => {
   try {
     return new URL("../icons/icon-192.png", document.currentScript.src).href;
@@ -1110,4 +1131,5 @@ tobaActions({
 document.addEventListener("DOMContentLoaded", () => {
   ensureTobaShell();
   ensureTobaSettings();
+  tobaShareDriveFavs();
 });

@@ -11,7 +11,7 @@
   --am-ink: #f0f6fc;
   --am-soft: rgba(240, 246, 252, 0.72);
   --am-line: rgba(255, 255, 255, 0.1);
-  --am-accent: #22c55e;
+  --am-accent: #3b82f6;
 }
 
 body.am-light {
@@ -56,11 +56,20 @@ body.am-light {
 }
 
 /* ---------- manobra (pílula pequena em cima à esquerda) ---------- */
-.am-turn {
+/* v1.80: manobra, faixas e radar empilhados */
+.am-top {
   position: absolute;
   top: 10px;
   left: 10px;
   max-width: min(52%, 360px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.am-turn {
+  max-width: 100%;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -116,10 +125,89 @@ body.am-light {
   background: #6e7681;
 }
 
+/* ---------- v1.80: faixas (embaixo da manobra) ---------- */
+.am-lanes {
+  display: flex;
+  gap: 2px;
+  padding: 5px 8px;
+  border-radius: 12px;
+  background: var(--am-glass);
+  border: 1px solid var(--am-line);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+}
+
+.am-lane {
+  width: 26px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  opacity: 0.35;
+  border-right: 1px dashed var(--am-soft);
+}
+
+.am-lane:last-child {
+  border-right: 0;
+}
+
+.am-lane.is-go {
+  opacity: 1;
+}
+
+.am-lane svg {
+  width: 22px;
+  height: 22px;
+}
+
+.am-lane.is-go svg path {
+  stroke: var(--am-accent);
+}
+
+/* ---------- v1.80: radar na frente ---------- */
+.am-radar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 6px;
+  border-radius: 999px;
+  background: #fff;
+  color: #111;
+  border: 3px solid #dc2626;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.am-radar b {
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.am-radar-ic {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* ---------- v1.80: rua atual (embaixo, do lado da chegada) ---------- */
+.am-road {
+  min-width: 0;
+  max-width: 260px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--am-glass);
+  border: 1px solid var(--am-line);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ---------- embaixo: velocidade, placa e chegada ---------- */
 .am-bottom {
   position: absolute;
   left: 10px;
+  right: 10px;
   bottom: 10px;
   display: flex;
   align-items: center;

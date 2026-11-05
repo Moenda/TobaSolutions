@@ -8,7 +8,9 @@
  *     car({ lat, lon, head, speed })                   ~1 por segundo
  *     route({ id, pts:[[lat,lon]...], jams:[[i0,i1,nível]], dest:[lat,lon] } | null)
  *     progress({ seg, along } | null)                  along = metros já rodados
- *     overview({ route, origin:[lat,lon] } | null)     prévia antes do "Bora!"
+ *     pan(dx,dy) / scale(dz,fx,fy) / recenter()       v1.80: arrastar, pinçar e 🎯 centralizar
+ *     overview({ route, origin:[lat,lon], alts:[[[lat,lon]...]] } | null)  prévia antes do "Bora!"
+ *                                                     (v1.80: alts = outros caminhos, em cinza)
  *     hud({ nav, state, speed, limit, icon, dist, street, exit, eta, min, left, traffic, rerouting })
  * - A página avisa o Java: TobaAuto.ready() com o mapa pronto, TobaAuto.fail(motivo)
  *   se não der (aí o carro volta pro mapa de imagens, MapRenderer).
@@ -30,6 +32,10 @@ const AM_SKINS = [
 ];
 const AM_JAM_COLORS = { 1: "#facc15", 2: "#ef4444", 3: "#b91c1c" };
 const AM_PITCH_3D = 60;
+// v1.80: rota mais fininha (dá pra ver o trânsito) e aparecendo por trás dos prédios
+const AM_W_CASING = ["interpolate", ["linear"], ["zoom"], 11, 4.5, 15, 9, 18, 18];
+const AM_W_LINE = ["interpolate", ["linear"], ["zoom"], 11, 2.5, 15, 6, 18, 12.5];
+const AM_SEE_THROUGH = 0.55;
 const AM_FRAME_MS = 33; // ~30 quadros por segundo (o celular também está dirigindo o carro)
 const AM_READY_WAIT_MS = 20000;
 
@@ -45,6 +51,7 @@ const am = {
   overview: null,
   hud: null,
   zoom: 16.5,
+  free: false, // v1.80: câmera solta (arrastou o mapa) até o 🎯 centralizar
   lastFrame: 0,
   lastPuck: "",
   lastJamAlong: -1,
@@ -140,6 +147,29 @@ function amIcon(key, exit) {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="${stem}"/><path d="M${h1[0].toFixed(2)} ${h1[1].toFixed(2)}L${x1.toFixed(2)} ${y1.toFixed(2)}L${h2[0].toFixed(2)} ${h2[1].toFixed(2)}"/></svg>`;
 }
 
+// v1.80: uma faixa: setinha de cada direção que ela permite; acesa = a que é pra seguir
+const AM_LANE_ANG = { STRAIGHT: 0, SLIGHT_RIGHT: 40, RIGHT: 90, SHARP_RIGHT: 130, SLIGHT_LEFT: -40, LEFT: -90, SHARP_LEFT: -130 };
+function amLaneHtml(l) {
+  const dirs = Array.isArray(l.d) && l.d.length ? l.d : ["STRAIGHT"];
+  const go = Boolean(l.f);
+  const paths = dirs.map((d) => {
+    if (d === "LEFT_U_TURN" || d === "RIGHT_U_TURN") {
+      const m = d === "LEFT_U_TURN" ? 1 : -1;
+      return `<path d="M${12 + 2 * m} 21V10a${4} ${4} 0 0 ${m > 0 ? 0 : 1} ${-8 * m} 0v3"/>`;
+    }
+    const ang = AM_LANE_ANG[d] ?? 0;
+    const r = (ang * Math.PI) / 180;
+    const x1 = 12 + Math.sin(r) * 7;
+    const y1 = 11 - Math.cos(r) * 7;
+    const hd = (a) => [x1 - Math.sin(r + a) * 4, y1 + Math.cos(r + a) * 4];
+    const h1 = hd(0.6);
+    const h2 = hd(-0.6);
+    const stem = ang === 0 ? "M12 21V5" : `M12 21V11L${x1.toFixed(1)} ${y1.toFixed(1)}`;
+    return `<path d="${stem}"/><path d="M${h1[0].toFixed(1)} ${h1[1].toFixed(1)}L${x1.toFixed(1)} ${y1.toFixed(1)}L${h2[0].toFixed(1)} ${h2[1].toFixed(1)}"/>`;
+  }).join("");
+  return `<div class="am-lane${go ? " is-go" : ""}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${paths}</svg></div>`;
+}
+
 /* ---------- painel ---------- */
 function amNote(text) {
   const el = document.getElementById("amNote");
@@ -160,13 +190,24 @@ function amRenderHud() {
     document.getElementById("amTurnStreet").textContent = wait ? "Calma que o Cloba acha outro caminho" : h.street || "";
   }
   const speed = Math.max(0, Math.round(Number(h.speed) || 0));
-  const limit = navOn ? Math.round(Number(h.limit) || 0) : 0;
+  // v1.80: limite da rua também sem rota (o app pega no TomTom pela rua onde o carro tá)
+  const limit = am.overview ? 0 : Math.round(Number(h.limit) || 0);
   document.getElementById("amSpeedNum").textContent = String(speed);
   document.getElementById("amSpeed").classList.toggle("is-over", limit > 0 && speed > limit + 3);
   document.getElementById("amSpeed").parentElement.hidden = Boolean(am.overview);
   const lim = document.getElementById("amLimit");
   lim.hidden = !(limit > 0);
   document.getElementById("amLimitNum").textContent = limit > 0 ? String(limit) : "";
+  // v1.80: faixas (do TomTom) embaixo da manobra
+  const lanesEl = document.getElementById("amLanes");
+  const lanes = navOn && !h.rerouting && Array.isArray(h.lanes) ? h.lanes : null;
+  lanesEl.hidden = !lanes;
+  if (lanes) lanesEl.innerHTML = lanes.map(amLaneHtml).join("");
+  // v1.80: rua atual embaixo no meio
+  const road = document.getElementById("amRoad");
+  road.hidden = Boolean(am.overview) || !h.road;
+  road.textContent = h.road || "";
+  amRenderRadar();
   const eta = document.getElementById("amEta");
   eta.hidden = !navOn || !h.eta;
   if (navOn && h.eta) {
@@ -185,6 +226,21 @@ function amAddLayers() {
   map.addSource("am-jams", { type: "geojson", data: amEmpty() });
   map.addSource("am-dest", { type: "geojson", data: amEmpty() });
   map.addSource("am-car", { type: "geojson", data: amEmpty() });
+  map.addSource("am-alts", { type: "geojson", data: amEmpty() });
+  // v1.80: outros caminhos da prévia, cinza por baixo da rota escolhida
+  map.addLayer({
+    id: "am-alts",
+    type: "line",
+    source: "am-alts",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: {
+      "line-color": "#94a3b8",
+      "line-opacity": 0.85,
+      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 3, 15, 6, 18, 12],
+      "line-emissive-strength": 1,
+      "line-occlusion-opacity": AM_SEE_THROUGH,
+    },
+  });
   map.addLayer({
     id: "am-route-casing",
     type: "line",
@@ -192,8 +248,9 @@ function amAddLayers() {
     layout: { "line-cap": "round", "line-join": "round" },
     paint: {
       "line-color": skin.casing,
-      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 6, 15, 13, 18, 26],
+      "line-width": AM_W_CASING,
       "line-trim-offset": [0, 0],
+      "line-occlusion-opacity": AM_SEE_THROUGH, // v1.80: rota aparece "atrás" dos prédios
     },
   });
   map.addLayer({
@@ -203,9 +260,10 @@ function amAddLayers() {
     layout: { "line-cap": "round", "line-join": "round" },
     paint: {
       "line-color": skin.route,
-      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 3.5, 15, 8.5, 18, 18],
+      "line-width": AM_W_LINE,
       "line-trim-offset": [0, 0],
       "line-emissive-strength": 1,
+      "line-occlusion-opacity": AM_SEE_THROUGH,
     },
   });
   map.addLayer({
@@ -215,21 +273,55 @@ function amAddLayers() {
     layout: { "line-cap": "round", "line-join": "round" },
     paint: {
       "line-color": ["match", ["get", "lvl"], 3, AM_JAM_COLORS[3], 2, AM_JAM_COLORS[2], AM_JAM_COLORS[1]],
-      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 3.5, 15, 8.5, 18, 18],
+      "line-width": AM_W_LINE,
       "line-emissive-strength": 1,
+      "line-occlusion-opacity": AM_SEE_THROUGH,
     },
   });
+  // v1.80: 🏁 bandeirinha em pé no destino
+  map.addImage("am-flag", amEmojiImage("🏁", 64), { pixelRatio: 2 });
   map.addLayer({
-    id: "am-dest-dot",
-    type: "circle",
+    id: "am-dest-flag",
+    type: "symbol",
     source: "am-dest",
+    layout: {
+      "icon-image": "am-flag",
+      "icon-size": ["interpolate", ["linear"], ["zoom"], 11, 0.7, 16, 1, 19, 1.3],
+      "icon-anchor": "bottom-left",
+      "icon-offset": [-6, 0],
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+    },
+    paint: { "icon-emissive-strength": 1, "icon-occlusion-opacity": 0.7 },
+  });
+  // v1.80: 📸 radares (OpenStreetMap) com a plaquinha do limite
+  map.addSource("am-radars", { type: "geojson", data: amEmpty() });
+  map.addImage("am-radar", amEmojiImage("📸", 44), { pixelRatio: 2 });
+  map.addLayer({
+    id: "am-radar",
+    type: "symbol",
+    source: "am-radars",
+    minzoom: 12,
+    layout: {
+      "icon-image": "am-radar",
+      "icon-size": ["interpolate", ["linear"], ["zoom"], 12, 0.6, 16, 0.9, 19, 1.1],
+      "icon-anchor": "bottom",
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+      "text-field": ["case", [">", ["get", "lim"], 0], ["to-string", ["get", "lim"]], ""],
+      "text-size": 12,
+      "text-font": ["DIN Pro Bold", "Arial Unicode MS Bold"],
+      "text-anchor": "top",
+      "text-offset": [0, 0.15],
+      "text-allow-overlap": true,
+    },
     paint: {
-      "circle-radius": 9,
-      "circle-color": "#e5534b",
-      "circle-stroke-color": "#ffffff",
-      "circle-stroke-width": 3,
-      "circle-pitch-alignment": "map",
-      "circle-emissive-strength": 1,
+      "icon-emissive-strength": 1,
+      "icon-occlusion-opacity": 0.7,
+      "text-color": "#111111",
+      "text-halo-color": "#ffffff",
+      "text-halo-width": 2.5,
+      "text-emissive-strength": 1,
     },
   });
   map.addImage("am-arrow", amArrowImage(skin.route), { pixelRatio: 2 });
@@ -239,15 +331,65 @@ function amAddLayers() {
     source: "am-car",
     layout: {
       "icon-image": "am-arrow",
-      "icon-size": ["interpolate", ["linear"], ["zoom"], 12, 0.7, 16, 1, 19, 1.25],
+      "icon-size": ["interpolate", ["linear"], ["zoom"], 12, 0.55, 16, 0.78, 19, 1],
       "icon-rotate": ["get", "head"],
       "icon-rotation-alignment": "map",
       "icon-pitch-alignment": "map",
       "icon-allow-overlap": true,
       "icon-ignore-placement": true,
     },
-    paint: { "icon-emissive-strength": 1 },
+    paint: { "icon-emissive-strength": 1, "icon-occlusion-opacity": 1 },
   });
+  amAddTraffic();
+}
+
+// v1.80: 🚦 trânsito das ruas em volta (Mapbox Traffic), SÓ amarelo / vermelho / vinho,
+// fininho e por baixo da rota. Rua livre (verde) não aparece.
+function amAddTraffic() {
+  const map = am.map;
+  try {
+    map.addSource("am-traffic", { type: "vector", url: "mapbox://mapbox.mapbox-traffic-v1" });
+    map.addLayer({
+      id: "am-traffic",
+      type: "line",
+      source: "am-traffic",
+      "source-layer": "traffic",
+      filter: ["match", ["get", "congestion"], ["moderate", "heavy", "severe"], true, false],
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": ["match", ["get", "congestion"], "severe", AM_JAM_COLORS[3], "heavy", AM_JAM_COLORS[2], AM_JAM_COLORS[1]],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 12, 1.5, 16, 3, 19, 6],
+        "line-offset": ["interpolate", ["linear"], ["zoom"], 12, 1, 16, 2.5, 19, 5],
+        "line-opacity": 0.85,
+        "line-emissive-strength": 1,
+        "line-occlusion-opacity": AM_SEE_THROUGH,
+      },
+    }, "am-alts");
+    setInterval(() => {
+      try {
+        map.getSource("am-traffic")?.reload();
+      } catch (err) {
+        /* carregando */
+      }
+    }, 120000);
+  } catch (err) {
+    console.warn("Trânsito do Mapbox não entrou:", err?.message || err);
+  }
+}
+
+// emoji desenhado num quadradinho (bandeira, radar)
+function amEmojiImage(emoji, size) {
+  const c = document.createElement("canvas");
+  c.width = size;
+  c.height = size;
+  const g = c.getContext("2d");
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.font = `${Math.round(size * 0.8)}px "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+  g.shadowColor = "rgba(0,0,0,0.4)";
+  g.shadowBlur = 4;
+  g.fillText(emoji, size / 2, size / 2 + size * 0.04);
+  return g.getImageData(0, 0, size, size);
 }
 
 // Luz do mapa: a da skin escolhida, ou dia/noite pelo farol do carro (Auto)
@@ -369,6 +511,7 @@ function amFrame(now) {
     am.lastPuck = key;
     am.map.getSource("am-car").setData({ type: "Feature", properties: { head: p.head }, geometry: { type: "Point", coordinates: [p.lon, p.lat] } });
   }
+  if (am.free) return; // v1.80: arrastou o mapa: a seta anda, a câmera fica
   const kmh = (am.car.speed || 0) * 3.6;
   const mode3d = Boolean(am.cfg.mode3d);
   // zoom abre um tico em velocidade de avenida/estrada
@@ -383,12 +526,24 @@ function amFrame(now) {
   });
 }
 
+function amSetAlts(alts) {
+  if (!am.map || !am.styleOk) return;
+  const src = am.map.getSource("am-alts");
+  if (!src) return;
+  src.setData(alts && alts.length
+    ? { type: "FeatureCollection", features: alts.map((a) => amLine(a)) }
+    : amEmpty());
+}
+
 function amShowOverview() {
   const o = am.overview;
   if (!o || !am.styleOk) return;
   const r = o.route;
   amSetRouteData(r);
+  const alts = Array.isArray(o.alts) ? o.alts.filter((a) => Array.isArray(a) && a.length > 1) : [];
+  amSetAlts(alts);
   const pts = r.pts.slice();
+  alts.forEach((a) => a.forEach((pt) => pts.push(pt)));
   if (Array.isArray(o.origin)) pts.push(o.origin);
   let s = 90;
   let w = 180;
@@ -412,6 +567,166 @@ function amShowOverview() {
   } catch (err) {
     /* área livre pequena demais pro enquadramento: fica onde está */
   }
+}
+
+
+/* ---------- 📸 radares (v1.80): OpenStreetMap pelo Overpass, mesmo cache do Navegar ----------
+ * Caixas de ~4 km em volta do carro; o aviso vale pro radar na frente (até 30° do rumo)
+ * a menos de 450 m. Falhou = segue sem radar.
+ */
+const AM_RADAR_TILE = 0.04;
+const AM_RADAR_WARN_M = 450;
+const AM_RADAR_CACHE_KEY = "toba_drive_radar_cache"; // o mesmo do Navegar (drive-route.js)
+const AM_RADAR_CACHE_DAYS = 7;
+const AM_OVERPASS = [
+  "https://overpass-api.de/api/interpreter?data=",
+  "https://overpass.private.coffee/api/interpreter?data=",
+  "https://overpass.kumi.systems/api/interpreter?data=",
+];
+const amRadar = { tiles: new Set(), list: new Map(), warned: new Set(), busy: false, near: null };
+
+function amBearing(a, b) {
+  const p1 = (a[0] * Math.PI) / 180;
+  const p2 = (b[0] * Math.PI) / 180;
+  const dl = ((b[1] - a[1]) * Math.PI) / 180;
+  const y = Math.sin(dl) * Math.cos(p2);
+  const x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
+function amRadarLimit(v) {
+  const n = parseInt(String(v || ""), 10);
+  return Number.isFinite(n) && n >= 10 && n <= 150 ? n : 0;
+}
+
+function amRadarCache() {
+  try {
+    return JSON.parse(localStorage.getItem(AM_RADAR_CACHE_KEY) || "{}") || {};
+  } catch (err) {
+    return {};
+  }
+}
+
+async function amRadarBox(s, w, n, e) {
+  const key = [s, w, n, e].map((v) => v.toFixed(2)).join(",");
+  const hit = amRadarCache()[key];
+  if (hit && Date.now() - hit.t < AM_RADAR_CACHE_DAYS * 86400000 && Array.isArray(hit.r)) return hit.r;
+  const b = `(${s},${w},${n},${e})`;
+  const q = encodeURIComponent(`[out:json][timeout:20];(node[highway=speed_camera]${b};node[enforcement=maxspeed]${b};)->.a;relation[enforcement=maxspeed]${b}->.r;node(r.r:"device")->.d;(.a;.d;);out body 500;.r out body;`);
+  let json = null;
+  for (const base of AM_OVERPASS) {
+    try {
+      const res = await fetch(base + q);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      json = await res.json();
+      break;
+    } catch (err) {
+      /* próximo espelho */
+    }
+  }
+  if (!json) throw new Error("Overpass fora");
+  const relLimit = new Map();
+  const nodes = [];
+  (json.elements || []).forEach((el) => {
+    if (el.type === "relation") {
+      const lim = amRadarLimit(el.tags?.maxspeed);
+      (el.members || []).forEach((m) => {
+        if (m.type === "node" && m.role === "device" && lim) relLimit.set(m.ref, lim);
+      });
+    } else if (el.type === "node") nodes.push(el);
+  });
+  const seen = new Set();
+  const rows = [];
+  nodes.forEach((el) => {
+    const lat = Number(el.lat);
+    const lng = Number(el.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || seen.has(el.id)) return;
+    seen.add(el.id);
+    rows.push([Math.round(lat * 1e6) / 1e6, Math.round(lng * 1e6) / 1e6, amRadarLimit(el.tags?.maxspeed) || relLimit.get(el.id) || 0]);
+  });
+  try {
+    const all = amRadarCache();
+    all[key] = { t: Date.now(), r: rows };
+    Object.keys(all).sort((a, b2) => all[b2].t - all[a].t).slice(15).forEach((k) => delete all[k]);
+    localStorage.setItem(AM_RADAR_CACHE_KEY, JSON.stringify(all));
+  } catch (err) {
+    /* sem storage: só não guarda */
+  }
+  return rows;
+}
+
+function amRadarLoad(lat, lon) {
+  const ty = Math.floor(lat / AM_RADAR_TILE);
+  const tx = Math.floor(lon / AM_RADAR_TILE);
+  const key = `${ty},${tx}`;
+  if (amRadar.busy || amRadar.tiles.has(key)) return;
+  amRadar.busy = true;
+  const r2 = (v) => Math.round(v * 100) / 100;
+  const s = r2(ty * AM_RADAR_TILE - 0.02);
+  const w = r2(tx * AM_RADAR_TILE - 0.02);
+  amRadarBox(s, w, r2(s + AM_RADAR_TILE + 0.04), r2(w + AM_RADAR_TILE + 0.04))
+    .then((rows) => {
+      amRadar.tiles.add(key);
+      rows.forEach(([la, lo, lim]) => {
+        const id = `${la},${lo}`;
+        const old = amRadar.list.get(id);
+        amRadar.list.set(id, { lat: la, lon: lo, lim: lim || (old && old.lim) || 0 });
+      });
+      if (amRadar.list.size > 600) {
+        // guarda só os mais perto
+        const keep = [...amRadar.list.entries()].sort((a, b) => amDist([lat, lon], [a[1].lat, a[1].lon]) - amDist([lat, lon], [b[1].lat, b[1].lon])).slice(0, 400);
+        amRadar.list = new Map(keep);
+      }
+      amRadarDraw();
+    })
+    .catch(() => {
+      amRadar.tiles.add(key); // não insiste nessa caixa agora
+      setTimeout(() => amRadar.tiles.delete(key), 300000);
+    })
+    .finally(() => {
+      amRadar.busy = false;
+    });
+}
+
+function amRadarDraw() {
+  const src = am.map && am.styleOk && am.map.getSource("am-radars");
+  if (!src) return;
+  src.setData({
+    type: "FeatureCollection",
+    features: [...amRadar.list.values()].map((r) => ({ type: "Feature", properties: { lim: r.lim }, geometry: { type: "Point", coordinates: [r.lon, r.lat] } })),
+  });
+}
+
+// radar na frente do carro: pílula + voz (uma vez por radar)
+function amRadarCheck(lat, lon, head, speed) {
+  amRadarLoad(lat, lon);
+  let best = null;
+  amRadar.list.forEach((r, id) => {
+    const d = amDist([lat, lon], [r.lat, r.lon]);
+    if (d > AM_RADAR_WARN_M) return;
+    const diff = Math.abs(((amBearing([lat, lon], [r.lat, r.lon]) - head + 540) % 360) - 180);
+    if (diff > 30 && d > 40) return;
+    if (!best || d < best.d) best = { id, d, lim: r.lim };
+  });
+  const moving = (speed || 0) > 3;
+  amRadar.near = best && moving ? best : null;
+  if (best && moving && !amRadar.warned.has(best.id)) {
+    amRadar.warned.add(best.id);
+    const n = amNative();
+    const m = Math.max(50, Math.round(best.d / 50) * 50);
+    if (n && typeof n.say === "function") n.say(`Radar a ${m} metros.${best.lim ? ` Limite de ${best.lim}.` : ""}`);
+  }
+  amRenderRadar();
+}
+
+function amRenderRadar() {
+  const el = document.getElementById("amRadar");
+  if (!el) return;
+  const r = am.overview ? null : amRadar.near;
+  el.hidden = !r;
+  if (!r) return;
+  const m = r.d < 1000 ? `${Math.max(10, Math.round(r.d / 10) * 10)} m` : `${(r.d / 1000).toFixed(1).replace(".", ",")} km`;
+  el.innerHTML = `<span class="am-radar-ic">📸</span>${r.lim ? `<b>${r.lim}</b>` : "<b>Radar</b>"}<span>${m}</span>`;
 }
 
 /* ---------- API do Java (window.tobaAuto) ---------- */
@@ -443,6 +758,7 @@ window.tobaAuto = {
     // pulo grande (GPS voltou, simulação nova): não desliza pela cidade toda
     const jump = amDist([cur.lat, cur.lon], [to.lat, to.lon]) > 300;
     am.car = { from: jump ? to : cur, to, t0: now, dur: Math.max(250, Math.min(1500, now - (am.car.at || now - 1000))), speed: c.speed || 0, at: now };
+    amRadarCheck(to.lat, to.lon, to.head, c.speed || 0);
   },
   route(r) {
     am.route = amPrepRoute(r);
@@ -455,10 +771,29 @@ window.tobaAuto = {
   },
   overview(o) {
     const r = o ? amPrepRoute(o.route) : null;
-    am.overview = r ? { route: r, origin: o.origin } : null;
+    am.overview = r ? { route: r, origin: o.origin, alts: o.alts } : null;
     if (am.overview) amShowOverview();
-    else amSetRouteData(am.route);
+    else {
+      amSetAlts(null);
+      amSetRouteData(am.route);
+    }
     amRenderHud();
+  },
+  // v1.80: arrastar / pinçar na tela do carro solta a câmera; 🎯 centralizar volta atrás do carro
+  pan(dx, dy) {
+    if (!am.map || !am.styleOk) return;
+    am.free = true;
+    am.map.panBy([Number(dx) || 0, Number(dy) || 0], { duration: 0 });
+  },
+  scale(dz, fx, fy) {
+    if (!am.map || !am.styleOk) return;
+    am.free = true;
+    const z = Math.max(3, Math.min(20, am.map.getZoom() + (Number(dz) || 0)));
+    am.map.zoomTo(z, { duration: 200, around: am.map.unproject([Number(fx) || 0, Number(fy) || 0]) });
+  },
+  recenter() {
+    am.free = false;
+    if (am.overview) amShowOverview();
   },
   hud(h) {
     am.hud = h || null;
@@ -538,6 +873,7 @@ window.tobaAuto = {
     }
     am.styleOk = true;
     amApplyLook(true);
+    amRadarDraw();
     if (am.overview) amShowOverview();
     else amSetRouteData(am.route);
     if (!am.car) amNote(amNative() ? "📡 Procurando o GPS…" : "🚘 Mapa do Android Auto (abre no carro pelo app Toba)");

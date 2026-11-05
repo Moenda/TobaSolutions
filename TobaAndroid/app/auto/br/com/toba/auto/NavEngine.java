@@ -20,6 +20,7 @@ import androidx.car.app.navigation.model.TravelEstimate;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
@@ -36,6 +37,13 @@ final class NavEngine implements LocationListener {
 
     interface RouteCallback {
         void ok(Route route);
+
+        void fail(String why);
+    }
+
+    /** v1.80: várias rotas de uma vez (a 1ª é a mais rápida do TomTom). */
+    interface RoutesCallback {
+        void ok(List<Route> routes);
 
         void fail(String why);
     }
@@ -92,6 +100,7 @@ final class NavEngine implements LocationListener {
         this.app = car.getApplicationContext();
         this.map = map;
         this.voice = new Voice(car);
+        map.setOnSay(voice::say); // v1.80: aviso de radar da página
         this.nav = car.getCarService(NavigationManager.class);
         nav.setNavigationManagerCallback(new NavigationManagerCallback() {
             @Override
@@ -180,6 +189,7 @@ final class NavEngine implements LocationListener {
         } else {
             map.setCar(loc.getLatitude(), loc.getLongitude(), heading, speed());
         }
+        refreshLimit(loc);
         pushHud();
         changed();
     }
@@ -196,6 +206,21 @@ final class NavEngine implements LocationListener {
     /* ------------------------------------------------------------ rota */
 
     void computeRoute(Place to, RouteCallback cb) {
+        computeRoutes(to, 0, new RoutesCallback() {
+            @Override
+            public void ok(List<Route> routes) {
+                cb.ok(routes.get(0));
+            }
+
+            @Override
+            public void fail(String why) {
+                cb.fail(why);
+            }
+        });
+    }
+
+    /** v1.80: a rota e até {@code alternatives} caminhos diferentes (prévia com 2-3 opções). */
+    void computeRoutes(Place to, int alternatives, RoutesCallback cb) {
         // v1.76: liberou a localização no celular depois de abrir o carro? liga o GPS agora
         if (!locationOn) startLocation();
         Location from = last;
@@ -207,7 +232,7 @@ final class NavEngine implements LocationListener {
         }
         io.execute(() -> {
             try {
-                Route r = TobaApi.route(app, from, to);
+                List<Route> r = TobaApi.routes(app, from, to, alternatives);
                 main.post(() -> cb.ok(r));
             } catch (IOException e) {
                 main.post(() -> cb.fail("Não deu pra traçar a rota: " + TobaApi.friendly(e)));
@@ -463,7 +488,64 @@ final class NavEngine implements LocationListener {
 
     /** Limite da rua agora (km/h, 0 = não sei). Só com rota (vem do TomTom). */
     int speedLimit() {
-        return state == State.NAVIGATING && route != null ? route.limitAt(seg) : 0;
+        int fromRoute = state == State.NAVIGATING && route != null ? route.limitAt(seg) : 0;
+        return fromRoute > 0 ? fromRoute : limitHere;
+    }
+
+    /** v1.80: rua onde o carro tá (da manobra que já passou; sem rota, do TomTom). */
+    private String currentStreet() {
+        if (state == State.NAVIGATING && route != null && nextIdx > 0 && nextIdx - 1 < route.instr.size()) {
+            String st = route.instr.get(nextIdx - 1).street;
+            if (st != null && !st.trim().isEmpty()) return PreviewScreen.shortStreet(st);
+        }
+        return PreviewScreen.shortStreet(streetHere);
+    }
+
+    /* v1.80: limite da rua sem rota (ou trecho sem limite na rota): TomTom pela posição */
+    private int limitHere;
+    private String streetHere = "";
+    private double limitLat = Double.NaN, limitLon = Double.NaN;
+    private long limitAt;
+    private boolean limitBusy, limitOff;
+
+    private void refreshLimit(Location loc) {
+        if (limitBusy || limitOff || loc == null) return;
+        // a rota já sabe o limite (a rua atual vem da manobra)
+        if (state == State.NAVIGATING && route != null && route.limitAt(seg) > 0) return;
+        long now = System.currentTimeMillis();
+        double moved = Double.isNaN(limitLat) ? 1e9 : Geo.distance(limitLat, limitLon, loc.getLatitude(), loc.getLongitude());
+        boolean moving = loc.getSpeed() > 2f;
+        // andando: a cada 15 s e 120 m; parado: só se nunca pegou ou mudou de lugar
+        if (moving ? (now - limitAt < 15000 || moved < 120) : moved < 60) return;
+        limitBusy = true;
+        limitAt = now;
+        limitLat = loc.getLatitude();
+        limitLon = loc.getLongitude();
+        final double la = limitLat, lo = limitLon;
+        final float hd = loc.hasBearing() && moving ? loc.getBearing() : Float.NaN;
+        io.execute(() -> {
+            TobaApi.RoadInfo info;
+            boolean ok = true;
+            try {
+                info = TobaApi.speedLimitAt(app, la, lo, hd);
+            } catch (IOException | RuntimeException e) {
+                info = null;
+                ok = false; // sem internet: mantém o último por um tempo
+            }
+            final TobaApi.RoadInfo got = info;
+            final boolean fine = ok;
+            main.post(() -> {
+                limitBusy = false;
+                if (fine && got == null) {
+                    limitOff = true; // trava do dia
+                    limitHere = 0;
+                } else if (got != null) {
+                    limitHere = got.kmh;
+                    if (!got.street.isEmpty()) streetHere = got.street;
+                }
+                pushHud();
+            });
+        });
     }
 
     /**
@@ -477,9 +559,15 @@ final class NavEngine implements LocationListener {
             o.put("nav", state == State.NAVIGATING);
             o.put("state", state.name().toLowerCase(java.util.Locale.US));
             if (dest != null) o.put("dest", dest.name);
+            o.put("limit", speedLimit());
+            String road = currentStreet();
+            if (!road.isEmpty()) o.put("road", road);
             if (state == State.NAVIGATING) {
                 o.put("rerouting", rerouting);
-                o.put("limit", speedLimit());
+                if (route != null && !rerouting) {
+                    String ln = route.lanesAhead(seg, along, 700);
+                    if (ln != null) o.put("lanes", new org.json.JSONArray(ln));
+                }
                 Route.Instr next = nextInstr();
                 if (next != null && !rerouting) {
                     o.put("icon", Maneuvers.key(next));

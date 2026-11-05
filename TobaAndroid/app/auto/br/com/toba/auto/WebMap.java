@@ -40,6 +40,9 @@ final class WebMap {
         void onWebReady();
 
         void onWebFailed(String why);
+
+        /** v1.80: a página quer falar (aviso de radar). Main thread. */
+        default void onWebSay(String text) {}
     }
 
     static final String URL = TobaApi.SITE + "TobaDrive/TobaDrive-Auto.html?apk=" + BuildConfig.VERSION_NAME;
@@ -180,6 +183,16 @@ final class WebMap {
         }
     }
 
+    /** v1.80: toque de botão (zoom, centralizar): só vale com o mapa pronto, não guarda pra depois. */
+    void callNow(String js) {
+        if (failed || !ready || web == null) return;
+        try {
+            web.evaluateJavascript("try{window.tobaAuto&&" + js + "}catch(e){}", null);
+        } catch (RuntimeException ignored) {
+            // página trocando
+        }
+    }
+
     private WebView build(Context ctx) {
         WebView w = new WebView(ctx);
         w.setBackgroundColor(0xFF0D1117);
@@ -247,7 +260,16 @@ final class WebMap {
 
         @JavascriptInterface
         public int version() {
-            return 1;
+            return 2; // 2 = v1.80 (say)
+        }
+
+        /** v1.80: aviso falado da página (radar). Respeita o mudo do carro. */
+        @JavascriptInterface
+        public void say(String text) {
+            if (text == null || text.trim().isEmpty() || text.length() > 200) return;
+            main.post(() -> {
+                if (!failed) host.onWebSay(text);
+            });
         }
     }
 }

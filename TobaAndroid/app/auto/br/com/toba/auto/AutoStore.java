@@ -85,6 +85,43 @@ final class AutoStore {
         prefs(c).edit().putInt("skin", skin).apply();
     }
 
+    /**
+     * v1.80: ⭐ favoritos do 🧭 Navegar do site (cópia que o site manda pela ponte,
+     * TobaNative.autoFavorites). Quem manda é o site: aqui só lê. Formato do site:
+     * [{name, emoji, address, lat, lng}].
+     */
+    static JSONArray favorites(Context c) {
+        try {
+            return new JSONArray(prefs(c).getString("favs", "[]"));
+        } catch (org.json.JSONException e) {
+            return new JSONArray();
+        }
+    }
+
+    static boolean setFavorites(Context c, String json) {
+        try {
+            JSONArray in = new JSONArray(json == null ? "[]" : json);
+            JSONArray out = new JSONArray();
+            for (int i = 0; i < in.length() && out.length() < 100; i++) {
+                JSONObject o = in.optJSONObject(i);
+                if (o == null) continue;
+                double lat = o.optDouble("lat", Double.NaN);
+                double lng = o.optDouble("lng", Double.NaN);
+                if (Double.isNaN(lat) || Double.isNaN(lng)) continue;
+                out.put(new JSONObject()
+                        .put("name", o.optString("name", "Favorito"))
+                        .put("emoji", o.optString("emoji", "⭐"))
+                        .put("address", o.optString("address", ""))
+                        .put("lat", lat)
+                        .put("lng", lng));
+            }
+            prefs(c).edit().putString("favs", out.toString()).apply();
+            return true;
+        } catch (org.json.JSONException e) {
+            return false;
+        }
+    }
+
     /** Diário das viagens do carro ({at, km, min, dest}); um dia o site importa pro TOBA_DRIVE_DB. */
     static void logTrip(Context c, Place dest, double meters, long startedAt, boolean arrived) {
         if (meters < 200) return;

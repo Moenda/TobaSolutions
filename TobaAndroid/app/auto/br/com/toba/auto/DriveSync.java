@@ -107,6 +107,11 @@ public final class DriveSync {
         }
     }
 
+    /** v1.80: ⭐ favoritos do Navegar do site ([{name, emoji, address, lat, lng}]) pro carro. */
+    public static boolean setFavorites(android.content.Context c, String json) {
+        return AutoStore.setFavorites(c, json);
+    }
+
     /** Do site: json {name,lat,lng} = rota nova; "" = parou. Roda no carro pela main thread. */
     public static void fromPhone(String json) {
         Car c = car;

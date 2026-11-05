@@ -40,7 +40,7 @@ final class TobaBridge {
 
     @JavascriptInterface
     public int version() {
-        return 7; // 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
+        return 8; // 8 = APK 1.8 (autoFavorites: ⭐ no Android Auto); 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
     }
 
     /* ---------------- Notificações do Toba ---------------- */
@@ -220,6 +220,12 @@ final class TobaBridge {
     @JavascriptInterface
     public void autoRoute(String json) {
         DriveSync.fromPhone(json);
+    }
+
+    // v1.80: ⭐ favoritos do 🧭 Navegar ([{name, emoji, address, lat, lng}]) pro botão Favoritos do carro
+    @JavascriptInterface
+    public boolean autoFavorites(String json) {
+        return DriveSync.setFavorites(activity, json);
     }
 
     /* ---------------- Toba Routine ---------------- */

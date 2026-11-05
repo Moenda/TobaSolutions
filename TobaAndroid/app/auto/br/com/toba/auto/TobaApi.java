@@ -235,44 +235,115 @@ final class TobaApi {
     /* ------------------------------------------------------------ rota */
 
     static Route route(Context c, Location from, Place to) throws IOException {
+        return routes(c, from, to, 0).get(0);
+    }
+
+    /** v1.80: rota + até {@code alternatives} caminhos diferentes (prévia). Conta 1 na trava do dia. */
+    static List<Route> routes(Context c, Location from, Place to, int alternatives) throws IOException {
         SharedPreferences p = AutoStore.prefs(c);
         String today = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new java.util.Date());
         int count = today.equals(p.getString("routes_day", "")) ? p.getInt("routes_n", 0) : 0;
         if (count >= ROUTES_PER_DAY) throw new IOException("já foram " + ROUTES_PER_DAY + " rotas hoje (trava da cota grátis)");
         p.edit().putString("routes_day", today).putInt("routes_n", count + 1).apply();
         try {
-            return routeOnce(c, from, to);
+            return routeOnce(c, from, to, alternatives);
         } catch (IOException e) {
-            if (refreshAfterRefusal(c, e)) return routeOnce(c, from, to);
+            if (refreshAfterRefusal(c, e)) return routeOnce(c, from, to, alternatives);
             throw e;
         }
     }
 
-    private static Route routeOnce(Context c, Location from, Place to) throws IOException {
+    private static List<Route> routeOnce(Context c, Location from, Place to, int alternatives) throws IOException {
         try {
-            return routeOnce(c, from, to, true);
+            return routeOnce(c, from, to, alternatives, true);
         } catch (HttpError e) {
-            // v1.78: TomTom não gostou do sectionType=speedLimit? vai sem o limite da rua
-            if (e.code == 400) return routeOnce(c, from, to, false);
+            // v1.78: TomTom não gostou do sectionType=speedLimit/lanes? vai sem limite e sem faixas
+            if (e.code == 400) return routeOnce(c, from, to, alternatives, false);
             throw e;
         }
     }
 
-    private static Route routeOnce(Context c, Location from, Place to, boolean limits) throws IOException {
+    private static List<Route> routeOnce(Context c, Location from, Place to, int alternatives, boolean limits)
+            throws IOException {
         StringBuilder url = new StringBuilder("https://api.tomtom.com/routing/1/calculateRoute/")
                 .append(ll(from.getLatitude(), from.getLongitude())).append(':').append(ll(to.lat, to.lon))
                 .append("/json?key=").append(tomtomKey(c))
                 .append("&traffic=true&travelMode=car&routeType=fastest&computeTravelTimeFor=all")
                 .append("&instructionsType=text&language=pt-BR&sectionType=traffic");
-        if (limits) url.append("&sectionType=speedLimit");
+        if (limits) url.append("&sectionType=speedLimit&sectionType=lanes"); // v1.80: + faixas
+        if (alternatives > 0) url.append("&maxAlternatives=").append(Math.min(5, alternatives));
         if (from.hasBearing() && from.getSpeed() > 2) {
             url.append("&vehicleHeading=").append(Math.round(from.getBearing()) % 360);
         }
         try {
-            return Route.parse(new JSONObject(getText(url.toString())), to);
+            return Route.parseAll(new JSONObject(getText(url.toString())), to);
         } catch (org.json.JSONException e) {
             throw new IOException("resposta estranha da rota");
         }
+    }
+
+    /* ------------------------------------------------------------ limite da rua */
+
+    /** v1.80: trava diária das consultas de limite (sobra cota grátis pras rotas e buscas). */
+    static final int LIMITS_PER_DAY = 1200;
+
+    /** v1.80: rua onde o carro tá: limite (km/h, 0 = não sei) e nome. */
+    static final class RoadInfo {
+        final int kmh;
+        final String street;
+
+        RoadInfo(int kmh, String street) {
+            this.kmh = kmh;
+            this.street = street == null ? "" : street;
+        }
+    }
+
+    /**
+     * v1.80: velocidade máxima e nome da rua onde o carro tá (TomTom Reverse Geocode com
+     * returnSpeedLimit). null = acabou a trava do dia.
+     */
+    static RoadInfo speedLimitAt(Context c, double lat, double lon, float heading) throws IOException {
+        SharedPreferences p = AutoStore.prefs(c);
+        String today = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new java.util.Date());
+        int count = today.equals(p.getString("limits_day", "")) ? p.getInt("limits_n", 0) : 0;
+        if (count >= LIMITS_PER_DAY) return null;
+        p.edit().putString("limits_day", today).putInt("limits_n", count + 1).apply();
+        try {
+            return speedLimitOnce(c, lat, lon, heading);
+        } catch (IOException e) {
+            if (refreshAfterRefusal(c, e)) return speedLimitOnce(c, lat, lon, heading);
+            throw e;
+        }
+    }
+
+    private static RoadInfo speedLimitOnce(Context c, double lat, double lon, float heading) throws IOException {
+        StringBuilder url = new StringBuilder("https://api.tomtom.com/search/2/reverseGeocode/")
+                .append(ll(lat, lon)).append(".json?key=").append(tomtomKey(c))
+                .append("&returnSpeedLimit=true&radius=40&language=pt-BR");
+        if (!Float.isNaN(heading)) url.append("&heading=").append(Math.round(heading) % 360);
+        try {
+            JSONObject json = new JSONObject(getText(url.toString()));
+            org.json.JSONArray list = json.optJSONArray("addresses");
+            JSONObject first = list == null || list.length() == 0 ? null : list.optJSONObject(0);
+            JSONObject addr = first == null ? null : first.optJSONObject("address");
+            String raw = addr == null ? "" : addr.optString("speedLimit", "");
+            String street = addr == null ? "" : addr.optString("streetName", "");
+            return new RoadInfo(parseLimit(raw), street);
+        } catch (org.json.JSONException e) {
+            throw new IOException("resposta estranha do limite da rua");
+        }
+    }
+
+    /** "50.00KPH" -> 50; "30.00MPH" -> 48. Lixo -> 0. */
+    static int parseLimit(String raw) {
+        if (raw == null) return 0;
+        String t = raw.trim().toUpperCase(Locale.US);
+        Matcher m = Pattern.compile("([0-9]+(?:\\.[0-9]+)?)").matcher(t);
+        if (!m.find()) return 0;
+        double v = Double.parseDouble(m.group(1));
+        if (t.contains("MPH")) v *= 1.609344;
+        int kmh = (int) Math.round(v);
+        return kmh > 0 && kmh < 200 ? kmh : 0;
     }
 
     /* ------------------------------------------------------------ mapa */

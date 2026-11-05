@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="color-scheme" content="dark light" />
   <meta name="robots" content="noindex" />
-  <!-- v1.78: mapa da tela do carro (Android Auto, APK 1.7). Só abre dentro do app:
+  <!-- v1.78 (v1.80: faixas, radar, rua atual): mapa da tela do carro (Android Auto, APK 1.7). Só abre dentro do app:
        o WebMap.java desenha esta página na tela do carro e manda carro/rota/painel
        por window.tobaAuto. No navegador mostra um mapa parado de demonstração. -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mapbox-gl@3.7.0/dist/mapbox-gl.css" />
@@ -18,12 +18,16 @@
   <div id="amMap"></div>
 
   <div id="amHud">
-    <div class="am-turn" id="amTurn" hidden>
-      <div class="am-turn-icon" id="amTurnIcon"></div>
-      <div class="am-turn-txt">
-        <b id="amTurnDist"></b>
-        <span id="amTurnStreet"></span>
+    <div class="am-top">
+      <div class="am-turn" id="amTurn" hidden>
+        <div class="am-turn-icon" id="amTurnIcon"></div>
+        <div class="am-turn-txt">
+          <b id="amTurnDist"></b>
+          <span id="amTurnStreet"></span>
+        </div>
       </div>
+      <div class="am-lanes" id="amLanes" hidden></div>
+      <div class="am-radar" id="amRadar" hidden></div>
     </div>
 
     <div class="am-bottom">
@@ -33,6 +37,7 @@
         <b id="amEtaClock"></b>
         <span id="amEtaRest"></span>
       </div>
+      <div class="am-road" id="amRoad" hidden></div>
     </div>
 
     <div class="am-note" id="amNote" hidden></div>

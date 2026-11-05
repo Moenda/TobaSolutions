@@ -69,10 +69,6 @@ final class HomeScreen extends Screen implements NavEngine.Listener {
         }
     }
 
-    private static Action button(String title, OnClickListener click) {
-        return new Action.Builder().setTitle(title).setOnClickListener(click).build();
-    }
-
     private Action icon(int res, OnClickListener click) {
         return new Action.Builder()
                 .setIcon(new CarIcon.Builder(IconCompat.createWithResource(getCarContext(), res)).build())
@@ -95,9 +91,15 @@ final class HomeScreen extends Screen implements NavEngine.Listener {
         NavigationTemplate.Builder b = new NavigationTemplate.Builder();
         ActionStrip.Builder strip = new ActionStrip.Builder();
         boolean hud = engine.map().drawsHud();
+        Action mute = icon(engine.muted() ? R.drawable.ic_car_mute : R.drawable.ic_car_sound, () -> {
+            engine.toggleMute();
+            CarToast.makeText(getCarContext(), engine.muted() ? "🔇 Mudo" : "🔊 Com voz", CarToast.LENGTH_SHORT).show();
+            invalidate();
+        });
+        // v1.80: faixa de cima só com ícones (cabe até 4)
         if (engine.isNavigating()) {
-            strip.addAction(button("Parar", () -> engine.stop(true)));
-            strip.addAction(button(engine.muted() ? "Som" : "Mudo", engine::toggleMute));
+            strip.addAction(icon(R.drawable.ic_car_stop, () -> engine.stop(true)));
+            strip.addAction(mute);
             if (!hud) {
                 // plano B (sem mapa 3D): cartões do Android Auto
                 b.setNavigationInfo(routingInfo());
@@ -105,25 +107,35 @@ final class HomeScreen extends Screen implements NavEngine.Listener {
                 if (te != null) b.setDestinationTravelEstimate(te);
             }
         } else {
-            strip.addAction(button("Buscar", () ->
+            strip.addAction(icon(R.drawable.ic_car_search, () ->
                     getScreenManager().push(new SearchScreen(getCarContext(), engine))));
-            strip.addAction(button("Recentes", () ->
+            strip.addAction(icon(R.drawable.ic_car_star, () ->
+                    getScreenManager().push(new FavScreen(getCarContext(), engine))));
+            strip.addAction(icon(R.drawable.ic_car_history, () ->
                     getScreenManager().push(new RecentScreen(getCarContext(), engine))));
+            strip.addAction(mute);
             MessageInfo msg = idleMessage();
             if (msg != null) b.setNavigationInfo(msg);
         }
         if (hud) {
             Action view = icon(engine.map().is3d() ? R.drawable.ic_map_2d : R.drawable.ic_map_3d, this::toggle3d);
+            Action center = icon(R.drawable.ic_car_center, this::recenter);
             Action skin = icon(R.drawable.ic_map_skin, this::nextSkin);
             if (getCarContext().getCarAppApiLevel() >= CarAppApiLevels.LEVEL_2) {
-                b.setMapActionStrip(new ActionStrip.Builder().addAction(view).addAction(skin).build());
-            } else {
-                strip.addAction(view);
+                // v1.80: lado direito = 2D/3D, centralizar e luz do mapa
+                b.setMapActionStrip(new ActionStrip.Builder().addAction(view).addAction(center).addAction(skin).build());
+            } else if (engine.isNavigating()) {
+                strip.addAction(view); // host antigo: só 4 na faixa de cima
                 strip.addAction(skin);
             }
         }
         b.setActionStrip(strip.build());
         return b.build();
+    }
+
+    private void recenter() {
+        engine.map().recenter();
+        CarToast.makeText(getCarContext(), "🎯 Centralizado", CarToast.LENGTH_SHORT).show();
     }
 
     private RoutingInfo routingInfo() {

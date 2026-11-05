@@ -91,6 +91,7 @@ function saveDriveDb(options = {}) {
     return false;
   }
   if (!options.silent) tobaSaved();
+  if (typeof tobaShareDriveFavs === "function") tobaShareDriveFavs(driveDb); // v1.80: ⭐ no Android Auto
   return true;
 }
 

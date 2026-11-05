@@ -17,10 +17,23 @@ import androidx.car.app.navigation.model.RoutePreviewNavigationTemplate;
 import androidx.lifecycle.DefaultLifecycleObserver;
 import androidx.lifecycle.LifecycleOwner;
 
-/** Prévia da rota no mapa: tempo, km, trânsito e o botão "Bora!". */
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Prévia da rota no mapa: tempo, km, trânsito e o botão "Bora!".
+ * v1.80: até 3 caminhos ("via Av. 23 de Maio"); tocar num troca a rota azul do mapa
+ * (os outros ficam cinza). Texto curto: o cartão é do Android Auto e a fonte é dele.
+ */
 final class PreviewScreen extends Screen {
+    /** Quantos caminhos além do mais rápido o TomTom manda (custa a mesma 1 rota da cota). */
+    private static final int ALTERNATIVES = 2;
+
     private final NavEngine engine;
     private final Place dest;
+    private final List<Route> routes = new ArrayList<>();
+    private final List<String> vias = new ArrayList<>();
+    private int selected;
     private Route route;
     private String error;
     private boolean loading = true;
@@ -33,7 +46,7 @@ final class PreviewScreen extends Screen {
         getLifecycle().addObserver(new DefaultLifecycleObserver() {
             @Override
             public void onStart(LifecycleOwner owner) {
-                if (route != null) engine.map().showOverview(route, originLat, originLon);
+                if (route != null) showOnMap();
             }
 
             @Override
@@ -52,12 +65,17 @@ final class PreviewScreen extends Screen {
             originLat = from.getLatitude();
             originLon = from.getLongitude();
         }
-        engine.computeRoute(dest, new NavEngine.RouteCallback() {
+        engine.computeRoutes(dest, ALTERNATIVES, new NavEngine.RoutesCallback() {
             @Override
-            public void ok(Route r) {
-                route = r;
+            public void ok(List<Route> list) {
+                routes.clear();
+                routes.addAll(list);
+                vias.clear();
+                vias.addAll(viaNames(routes));
+                selected = 0;
+                route = routes.get(0);
                 loading = false;
-                engine.map().showOverview(r, originLat, originLon);
+                showOnMap();
                 invalidate();
             }
 
@@ -68,6 +86,50 @@ final class PreviewScreen extends Screen {
                 invalidate();
             }
         });
+    }
+
+    private void showOnMap() {
+        List<Route> others = new ArrayList<>(routes);
+        others.remove(route);
+        engine.map().showOverview(route, others, originLat, originLon);
+    }
+
+    /** "via X" de cada caminho: a rua mais rodada que os outros caminhos não usam como principal. */
+    private static List<String> viaNames(List<Route> all) {
+        List<String> out = new ArrayList<>();
+        List<String> used = new ArrayList<>();
+        for (Route r : all) {
+            List<String> streets = r.mainStreets();
+            String pick = "";
+            for (String st : streets) {
+                if (!used.contains(st)) {
+                    pick = st;
+                    break;
+                }
+            }
+            if (pick.isEmpty() && !streets.isEmpty()) pick = streets.get(0);
+            if (!pick.isEmpty()) used.add(pick);
+            out.add(shortStreet(pick));
+        }
+        return out;
+    }
+
+    /** Avenida -> Av., Rua -> R. ... pra caber no cartão. */
+    static String shortStreet(String s) {
+        if (s == null) return "";
+        String t = s.trim();
+        String[][] abbr = {
+                {"Avenida ", "Av. "}, {"Rua ", "R. "}, {"Rodovia ", "Rod. "}, {"Estrada ", "Estr. "},
+                {"Viaduto ", "Vd. "}, {"Alameda ", "Al. "}, {"Praça ", "Pç. "}, {"Travessa ", "Tv. "},
+                {"Marginal ", "Marg. "}, {"Ponte ", "Pte. "}, {"Túnel ", "Tún. "},
+        };
+        for (String[] a : abbr) {
+            if (t.startsWith(a[0])) {
+                t = a[1] + t.substring(a[0].length());
+                break;
+            }
+        }
+        return t.length() > 28 ? t.substring(0, 27).trim() + "…" : t;
     }
 
     private void go(boolean simulate) {
@@ -94,18 +156,30 @@ final class PreviewScreen extends Screen {
         if (loading || route == null) return b.setLoading(true).build();
 
         // o Android Auto troca o 1º caractere pelo tempo / pela distância (DurationSpan / DistanceSpan)
-        SpannableString title = new SpannableString("  · " + (dest.addr.isEmpty() ? "pelo TomTom" : dest.addr));
-        title.setSpan(DurationSpan.create(route.time), 0, 1, Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-        String transito = route.delay > 60
-                ? "🚦 +" + Math.round(route.delay / 60.0) + " min de trânsito"
-                : "✅ caminho livre";
-        SpannableString text = new SpannableString("  · " + transito);
-        text.setSpan(DistanceSpan.create(Maneuvers.distance(route.length)), 0, 1, Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-        Row row = new Row.Builder().setTitle(title).addText(text).build();
-        ItemList list = new ItemList.Builder()
-                .addItem(row)
-                .setOnSelectedListener(index -> {})
-                .setSelectedIndex(0)
+        long best = routes.get(0).time;
+        ItemList.Builder items = new ItemList.Builder();
+        for (int i = 0; i < routes.size(); i++) {
+            Route r = routes.get(i);
+            String via = i < vias.size() ? vias.get(i) : "";
+            SpannableString title = new SpannableString(via.isEmpty() ? " " : "  · via " + via);
+            title.setSpan(DurationSpan.create(r.time), 0, 1, Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+            String transito = r.delay > 600 ? "🔴 +" + Math.round(r.delay / 60.0) + " min"
+                    : r.delay > 90 ? "🟡 +" + Math.round(r.delay / 60.0) + " min"
+                    : "🟢 livre";
+            long slower = Math.round((r.time - best) / 60.0);
+            String extra = i == 0 ? " · ⚡ mais rápida" : slower >= 1 ? " · " + slower + " min a mais" : "";
+            SpannableString text = new SpannableString("  · " + transito + extra);
+            text.setSpan(DistanceSpan.create(Maneuvers.distance(r.length)), 0, 1, Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+            items.addItem(new Row.Builder().setTitle(title).addText(text).build());
+        }
+        ItemList list = items
+                .setOnSelectedListener(index -> {
+                    if (index < 0 || index >= routes.size() || index == selected) return;
+                    selected = index;
+                    route = routes.get(index);
+                    showOnMap();
+                })
+                .setSelectedIndex(Math.min(selected, routes.size() - 1))
                 .build();
         return b.setItemList(list)
                 .setNavigateAction(new Action.Builder().setTitle("Bora!").setOnClickListener(() -> go(false)).build())

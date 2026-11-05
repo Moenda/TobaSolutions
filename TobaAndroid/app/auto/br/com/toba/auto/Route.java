@@ -31,6 +31,19 @@ final class Route {
     final List<int[]> jams = new ArrayList<>();
     /** v1.78: velocidade máxima da rua {ponto inicial, ponto final, km/h} (sectionType=speedLimit). */
     final List<int[]> limits = new ArrayList<>();
+    /** v1.80: faixas do TomTom (sectionType=lanes): trecho + [{d:[direções], f:"seguir"}] em JSON. */
+    final List<Lanes> lanes = new ArrayList<>();
+
+    static final class Lanes {
+        final int a, b;
+        final String json;
+
+        Lanes(int a, int b, String json) {
+            this.a = a;
+            this.b = b;
+            this.json = json;
+        }
+    }
 
     private Route(double[] lat, double[] lon, long time, long delay, List<Instr> instr, Place dest) {
         this.lat = lat;
@@ -72,6 +85,9 @@ final class Route {
                 String cat = s.optString("simpleCategory", "");
                 int lvl = "ROAD_CLOSURE".equals(cat) || mag >= 3 ? 3 : mag == 2 ? 2 : 1;
                 if (b > a) jams.add(new int[] {a, b, lvl});
+            } else if ("LANES".equals(type)) {
+                String js = lanesJson(s.optJSONArray("lanes"));
+                if (js != null) lanes.add(new Lanes(a, b, js));
             } else if ("SPEED_LIMIT".equals(type)) {
                 int kmh = (int) Math.round(s.optDouble("maxSpeedLimitInKmh", 0));
                 if (kmh > 0 && kmh < 200) limits.add(new int[] {a, b, kmh});
@@ -79,10 +95,86 @@ final class Route {
         }
     }
 
+    /** [{directions:[..], follow}] do TomTom -> [{"d":[..],"f":".."}] curtinho pro mapa. */
+    private static String lanesJson(JSONArray in) {
+        if (in == null || in.length() == 0 || in.length() > 12) return null;
+        JSONArray out = new JSONArray();
+        boolean anyFollow = false;
+        for (int i = 0; i < in.length(); i++) {
+            JSONObject l = in.optJSONObject(i);
+            if (l == null) return null;
+            JSONArray d = l.optJSONArray("directions");
+            JSONObject o = new JSONObject();
+            try {
+                o.put("d", d == null ? new JSONArray().put("STRAIGHT") : d);
+                String f = l.optString("follow", "");
+                if (!f.isEmpty()) {
+                    o.put("f", f);
+                    anyFollow = true;
+                }
+            } catch (org.json.JSONException e) {
+                return null;
+            }
+            out.put(o);
+        }
+        // só vale mostrar se tem faixa pra seguir e mais de uma faixa
+        return anyFollow && out.length() > 1 ? out.toString() : null;
+    }
+
+    /** v1.80: faixas pra mostrar agora: o trecho que começa até {@code ahead} m na frente. */
+    String lanesAhead(int seg, double along, double ahead) {
+        for (Lanes l : lanes) {
+            if (seg > l.b) continue;
+            double start = cum[Math.min(l.a, cum.length - 1)];
+            if (start - along > ahead) break;
+            return l.json;
+        }
+        return null;
+    }
+
     static Route parse(JSONObject json, Place dest) throws IOException {
+        return parseAll(json, dest).get(0);
+    }
+
+    /** v1.80: a principal + as alternativas do TomTom (maxAlternatives), na ordem da resposta. */
+    static List<Route> parseAll(JSONObject json, Place dest) throws IOException {
         JSONArray routes = json.optJSONArray("routes");
         if (routes == null || routes.length() == 0) throw new IOException("o TomTom não achou caminho");
-        JSONObject r = routes.optJSONObject(0);
+        List<Route> out = new ArrayList<>();
+        IOException first = null;
+        for (int i = 0; i < routes.length(); i++) {
+            JSONObject r = routes.optJSONObject(i);
+            if (r == null) continue;
+            try {
+                out.add(parseOne(r, dest));
+            } catch (IOException e) {
+                if (first == null) first = e;
+            }
+        }
+        if (out.isEmpty()) throw first != null ? first : new IOException("o TomTom não achou caminho");
+        return out;
+    }
+
+    /**
+     * v1.80: ruas por onde a rota mais anda (metros somados entre uma manobra e a próxima),
+     * da mais comprida pra mais curta. Serve pro "via Av. 23 de Maio" da prévia.
+     */
+    List<String> mainStreets() {
+        java.util.Map<String, Double> m = new java.util.LinkedHashMap<>();
+        for (int i = 0; i < instr.size(); i++) {
+            Instr it = instr.get(i);
+            String st = it.street == null ? "" : it.street.trim();
+            if (st.isEmpty() || it.maneuver.startsWith("ARRIVE")) continue;
+            double end = i + 1 < instr.size() ? instr.get(i + 1).offset : length;
+            double d = Math.max(0, end - it.offset);
+            m.put(st, m.getOrDefault(st, 0.0) + d);
+        }
+        List<String> names = new ArrayList<>(m.keySet());
+        names.sort((a, b) -> Double.compare(m.get(b), m.get(a)));
+        return names;
+    }
+
+    private static Route parseOne(JSONObject r, Place dest) throws IOException {
         JSONObject sum = r.optJSONObject("summary");
         long time = sum == null ? 0 : sum.optLong("travelTimeInSeconds");
         long delay = sum == null ? 0 : sum.optLong("trafficDelayInSeconds");

@@ -26,6 +26,7 @@ final class CarMap implements SurfaceCallback, WebMap.Host {
     private final MapRenderer still;
     private final WebMap web;
     private Runnable onModeChanged;
+    private java.util.function.Consumer<String> onSay;
 
     private boolean useWeb = true;
     private SurfaceContainer container;
@@ -45,6 +46,16 @@ final class CarMap implements SurfaceCallback, WebMap.Host {
 
     void setOnModeChanged(Runnable r) {
         onModeChanged = r;
+    }
+
+    /** v1.80: quem fala os avisos da página (radar): o NavEngine, com a voz do carro. */
+    void setOnSay(java.util.function.Consumer<String> say) {
+        onSay = say;
+    }
+
+    @Override
+    public void onWebSay(String text) {
+        if (onSay != null) onSay.accept(text);
     }
 
     /** true = o painel (manobra, chegada, velocidade) é desenhado no mapa 3D; false = cartões do Auto. */
@@ -88,6 +99,25 @@ final class CarMap implements SurfaceCallback, WebMap.Host {
         container = null;
     }
 
+    /** v1.80: arrastar o mapa na tela do carro (se o carro mandar): solta a câmera até o 🎯. */
+    @Override
+    public void onScroll(float distanceX, float distanceY) {
+        float d = cssPerPx();
+        web.callNow(String.format(Locale.US, "tobaAuto.pan(%.1f,%.1f)", distanceX * d, distanceY * d));
+    }
+
+    /** v1.80: pinça no mapa (se o carro mandar). scaleFactor < 0 = toque duplo (zoom +1). */
+    @Override
+    public void onScale(float focusX, float focusY, float scaleFactor) {
+        double z = scaleFactor < 0 ? 1 : Math.log(Math.max(0.05f, scaleFactor)) / Math.log(2);
+        float d = cssPerPx();
+        web.callNow(String.format(Locale.US, "tobaAuto.scale(%.3f,%.1f,%.1f)", z, focusX * d, focusY * d));
+    }
+
+    private float cssPerPx() {
+        return 160f / Math.max(120, container == null ? 160 : container.getDpi());
+    }
+
     /* ------------------------------------------------------------ WebMap.Host */
 
     @Override
@@ -124,6 +154,11 @@ final class CarMap implements SurfaceCallback, WebMap.Host {
         return SKINS[skin];
     }
 
+    /** v1.80: 🎯 centralizar: volta a câmera atrás do carro (e a prévia inteira na tela). */
+    void recenter() {
+        web.callNow("tobaAuto.recenter()");
+    }
+
     /* ------------------------------------------------------------ dados (main thread) */
 
     void setCar(double lat, double lon, double heading, float speed) {
@@ -150,9 +185,23 @@ final class CarMap implements SurfaceCallback, WebMap.Host {
     }
 
     void showOverview(Route r, double originLat, double originLon) {
+        showOverview(r, null, originLat, originLon);
+    }
+
+    /** v1.80: prévia com os outros caminhos em cinza (só no mapa 3D; o plano B mostra a escolhida). */
+    void showOverview(Route r, java.util.List<Route> others, double originLat, double originLon) {
         still.showOverview(r, originLat, originLon);
+        StringBuilder alts = new StringBuilder("[");
+        if (others != null) {
+            for (Route o : others) {
+                if (o == null || o.size() < 2) continue;
+                if (alts.length() > 1) alts.append(',');
+                alts.append(ptsJson(o));
+            }
+        }
+        alts.append(']');
         String js = "tobaAuto.overview({route:" + routeJson(r) + ",origin:["
-                + String.format(Locale.US, "%.6f,%.6f", originLat, originLon) + "]})";
+                + String.format(Locale.US, "%.6f,%.6f", originLat, originLon) + "],alts:" + alts + "})";
         web.call("overview", js);
     }
 
@@ -197,18 +246,22 @@ final class CarMap implements SurfaceCallback, WebMap.Host {
                 dark, map3d, skin, t, r, b, l));
     }
 
+    private static String ptsJson(Route r) {
+        StringBuilder pts = new StringBuilder("[");
+        for (int i = 0; i < r.size(); i++) {
+            if (i > 0) pts.append(',');
+            pts.append(String.format(Locale.US, "[%.6f,%.6f]", r.lat[i], r.lon[i]));
+        }
+        return pts.append(']').toString();
+    }
+
     /** Rota pro mapa 3D: pontos (6 casas), trechos de trânsito e destino. */
     private static String routeJson(Route r) {
         if (r == null || r.size() < 2) return "null";
         try {
             JSONObject o = new JSONObject();
             o.put("id", r.createdAt);
-            StringBuilder pts = new StringBuilder("[");
-            for (int i = 0; i < r.size(); i++) {
-                if (i > 0) pts.append(',');
-                pts.append(String.format(Locale.US, "[%.6f,%.6f]", r.lat[i], r.lon[i]));
-            }
-            pts.append(']');
+            String pts = ptsJson(r);
             JSONArray jams = new JSONArray();
             for (int[] j : r.jams) jams.put(new JSONArray().put(j[0]).put(j[1]).put(j[2]));
             o.put("jams", jams);

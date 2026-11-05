@@ -1873,3 +1873,25 @@ Depois Generate Signed APK (mesma chave) e `adb install -r`. Sem o APK novo o si
 **Como testar:** DHU › Toba › Buscar › destino › Simular. Tocar no 🎨 várias vezes: o mapa passa por amanhecer, dia, entardecer e noite, a rota fica azul.
 
 **Commit sugerido:** `v1.79 - Android Auto: botao de skin troca a luz do mapa (auto, amanhecer, dia, entardecer, noite) e a rota fica sempre azul`
+
+## v1.80 — 🚘 Android Auto: prévia com 2–3 rotas, ⭐ favoritos, botões em ícone, limite da rua sempre, faixas, 📸 radares e trânsito em volta
+
+**Arquivos que mudaram:** `TobaDrive/js/auto-map.js`, `TobaDrive/css/auto-map.css`, `TobaDrive/TobaDrive-Auto.html`, `TobaDrive/js/drive-core.js`, `assets/toba-common.js`, `sw.js` (cache `toba-v40`), `TobaAndroid/app/auto/br/com/toba/auto/` (`FavScreen.java` novo; `PreviewScreen.java`, `HomeScreen.java`, `NavEngine.java`, `Route.java`, `TobaApi.java`, `CarMap.java`, `WebMap.java`, `AutoStore.java`, `DriveSync.java`), `TobaAndroid/app/auto/br/com/toba/app/TobaBridge.java`, `TobaAndroid/app/src/main/res/drawable/ic_car_*.xml` (7 novos), `TobaAndroid/app/build.gradle` (versionCode 9 / versionName 1.8), `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **Prévia com 2 ou 3 caminhos:** o TomTom manda até 2 alternativas (mesma 1 rota da cota). Cada uma numa linha curtinha: "19 min · via Av. 23 de Maio" e "12 km · 🟢 livre · ⚡ mais rápida" (ou "+4 min"). Tocar numa troca a rota azul no mapa; as outras ficam cinza. O Simular continua. A fonte do cartão é do Android Auto (não dá pra mudar), por isso o texto encurtou.
+2. **⭐ Favoritos no carro:** os favoritos do 🧭 Navegar do celular aparecem no botão ⭐ do carro. O site manda a lista pro app toda vez que abre uma página no app e quando mexe no Navegar.
+3. **Botões em ícone:** em cima 🔍 Buscar, ⭐ Favoritos, 🕘 Recentes e 🔇 Mudo (navegando: ✖️ Parar e 🔇 Mudo). Na direita: 2D/3D, 🎯 Centralizar e 🎨 Luz do mapa. O Android Auto esconde os da direita quando ninguém mexe.
+4. **Limite da rua sempre:** sem rota (ou em trecho que a rota não sabe), o app pergunta o limite da rua pro TomTom pela posição do carro (a cada 15 s / 120 m andando, trava de 1200 por dia). A bolinha da velocidade fica vermelha passando do limite.
+5. **Rua atual:** pílula embaixo, do lado da chegada, com o nome da rua onde o carro tá.
+6. **Faixas:** chegando numa saída/conversão onde o TomTom tem o dado, aparece embaixo da manobra a fileira de faixas, com as que servem acesas.
+7. **📸 Radares:** os mesmos radares do OpenStreetMap do Navegar (cache de 7 dias, sem chave nem API nova). No mapa com a plaquinha do limite; a 450 m de um radar na frente aparece "📸 50 · 300 m" embaixo da manobra e a voz avisa uma vez.
+8. **Rota por trás dos prédios + mais fina:** a rota, o trânsito e a seta aparecem meio transparentes quando um prédio tapa. Rota e seta mais finas. 🏁 bandeirinha no destino.
+9. **Trânsito em volta:** as ruas lentas em volta aparecem fininhas em amarelo, vermelho e vinho (verde nunca). Na rota continua o trânsito do TomTom por cima do azul.
+
+**Dados:** Nenhuma mudança nos bancos do site. No app, `toba_auto` ganhou `favs` (cópia dos ⭐ do site, quem manda é o site) e a trava `limits_day`/`limits_n`. O mapa do carro lê e grava o mesmo cache de radares do Navegar (`toba_drive_radar_cache`). Nada é apagado.
+
+**APK 1.8 (precisa):** Generate Signed APK (mesma chave) e **instalar por cima pelo KingInstaller**. Sem o APK novo o site já mostra rota fina, bandeirinha, trânsito em volta e radares; os ícones, favoritos, prévia com 3 rotas, limite sem rota, faixas e rua atual vêm com o 1.8. Depois de instalar, abrir o Toba no celular uma vez (manda os ⭐ pro carro).
+
+**Como testar:** DHU › Toba: ícones em cima; ⭐ lista os favoritos do Navegar. 🔍 › destino: 2–3 caminhos, tocar troca a rota no mapa. Simular: limite da rua, rua atual embaixo, faixas antes das saídas, 📸 nos radares, ruas lentas em amarelo/vermelho em volta, 🏁 no destino. Parado sem rota: a placa do limite aparece.
+
+**Commit sugerido:** `v1.80 - Android Auto: previa com 2-3 rotas, favoritos do Navegar, botoes em icone, limite da rua sempre, rua atual, faixas, radares, transito em volta e rota por tras dos predios (APK 1.8)`
