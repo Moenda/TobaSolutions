@@ -27,6 +27,10 @@ final class Route {
     final List<Instr> instr;
     final Place dest;
     final long createdAt = System.currentTimeMillis();
+    /** v1.78: trechos parados do TomTom {ponto inicial, ponto final, 1 lento / 2 pesado / 3 parado}. */
+    final List<int[]> jams = new ArrayList<>();
+    /** v1.78: velocidade máxima da rua {ponto inicial, ponto final, km/h} (sectionType=speedLimit). */
+    final List<int[]> limits = new ArrayList<>();
 
     private Route(double[] lat, double[] lon, long time, long delay, List<Instr> instr, Place dest) {
         this.lat = lat;
@@ -44,6 +48,35 @@ final class Route {
 
     int size() {
         return lat.length;
+    }
+
+    /** v1.78: limite da rua no trecho seg (km/h), 0 = não sei. */
+    int limitAt(int seg) {
+        for (int[] l : limits) {
+            if (seg >= l[0] && seg < Math.max(l[1], l[0] + 1)) return l[2];
+        }
+        return 0;
+    }
+
+    private void readSections(JSONArray sections) {
+        if (sections == null) return;
+        int last = lat.length - 1;
+        for (int i = 0; i < sections.length(); i++) {
+            JSONObject s = sections.optJSONObject(i);
+            if (s == null) continue;
+            int a = Math.max(0, Math.min(last, s.optInt("startPointIndex", 0)));
+            int b = Math.max(a, Math.min(last, s.optInt("endPointIndex", a)));
+            String type = s.optString("sectionType", "");
+            if ("TRAFFIC".equals(type)) {
+                int mag = s.optInt("magnitudeOfDelay", 0);
+                String cat = s.optString("simpleCategory", "");
+                int lvl = "ROAD_CLOSURE".equals(cat) || mag >= 3 ? 3 : mag == 2 ? 2 : 1;
+                if (b > a) jams.add(new int[] {a, b, lvl});
+            } else if ("SPEED_LIMIT".equals(type)) {
+                int kmh = (int) Math.round(s.optDouble("maxSpeedLimitInKmh", 0));
+                if (kmh > 0 && kmh < 200) limits.add(new int[] {a, b, kmh});
+            }
+        }
     }
 
     static Route parse(JSONObject json, Place dest) throws IOException {
@@ -103,6 +136,7 @@ final class Route {
             }
         }
         Route route = new Route(la, lo, time, delay, list, dest);
+        route.readSections(r.optJSONArray("sections"));
         if (list.isEmpty() || !list.get(list.size() - 1).maneuver.startsWith("ARRIVE")) {
             Instr end = new Instr();
             end.offset = route.length;

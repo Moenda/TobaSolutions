@@ -32,6 +32,10 @@
  * plano + GPS nativo (onTobaNativeFix) e a voz nativa enquanto a tela está
  * apagada. 🏁 Cheguei só nos últimos DRIVE_ARRIVE_BTN_M. Bolinha de skin
  * (nextVehicle) ao lado do 3D/2D.
+ * v1.78 (APK 1.7): rota junta com o Android Auto, estilo Waze. Começou rota no
+ * carro? window.onTobaAutoRoute chega aqui e o celular segue a mesma rota (e o
+ * inverso: o Partiu daqui manda pro carro por TobaNative.autoRoute). Com o carro
+ * navegando, quem fala é o carro (driveSpeak fica mudo, driveAutoNavigating).
  * ===================================================================== */
 const DRIVE_FAV_EMOJIS = ["🏠", "💼", "❤️", "☕", "🏋️", "🛒", "🍻", "🐾", "⭐"];
 const DRIVE_GPS_TIMEOUT_MS = 20000;
@@ -74,6 +78,7 @@ const nav = {
   searchSeq: 0,
   waiters: [],
   favEmoji: "⭐",
+  autoQuiet: false, // v1.78: mudança que veio do Android Auto (não manda de volta pro carro)
 };
 
 /* ---------------------------------------------------------------------
@@ -822,6 +827,7 @@ function startNav(resumed = null) {
   if (!trip) nav.trip.etaS = Math.round(nav.route.duration || 0); // previsão no Partiu (conquistas de tempo)
   driveKeepAwake(true);
   driveNativeKeepAlive(true);
+  if (!nav.autoQuiet) driveAutoShare(nav.dest); // v1.78: o carro acompanha
   saveActiveTrip(true);
   setMode("nav").then(() => {
     gameStart();
@@ -1045,6 +1051,8 @@ function finishTrip(arrived) {
   clearActiveTrip();
   driveKeepAwake(false);
   driveNativeKeepAlive(false);
+  // v1.78: parou aqui (✕ Encerrar)? o carro para junto. Chegou: o carro chega sozinho.
+  if (!arrived && !nav.autoQuiet) driveAutoShare(null);
   if (!trip) return { arrived, m: 0, s: 0 };
   const s = (Date.now() - trip.startedAt) / 1000;
   nav.trip = trip; // gameTripExtras lê daqui
@@ -1395,6 +1403,76 @@ function driveNativeKeepAlive(on) {
   }
 }
 
+/* ---------------------------------------------------------------------
+ * v1.78 (APK 1.7): rota junta com o Android Auto (DriveSync.java)
+ * Nada novo no localStorage: o carro guarda a rota dele no app.
+ * ------------------------------------------------------------------- */
+function driveAutoShare(dest) {
+  if (!TOBA_NATIVE || typeof TOBA_NATIVE.autoRoute !== "function") return;
+  try {
+    TOBA_NATIVE.autoRoute(dest ? JSON.stringify({ name: dest.name || "Destino", address: dest.address || "", lat: Number(dest.lat), lng: Number(dest.lng) }) : "");
+  } catch (err) {
+    /* APK sem a ponte nova: cada um na sua */
+  }
+}
+
+// Rota que o carro está fazendo agora ({ name, address, lat, lng }) ou null
+function driveAutoRouteNow() {
+  if (!TOBA_NATIVE || typeof TOBA_NATIVE.autoRouteNow !== "function") return null;
+  try {
+    const d = JSON.parse(TOBA_NATIVE.autoRouteNow() || "null");
+    return d && driveValidPoint({ lat: Number(d.lat), lng: Number(d.lng) }) ? d : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+// Carro navegando = a voz sai no carro (driveSpeak do celular fica mudo)
+function driveAutoNavigating() {
+  return Boolean(driveAutoRouteNow());
+}
+
+function driveSameDest(a, b) {
+  return Boolean(a && b) && driveDist([Number(a.lat), Number(a.lng)], [Number(b.lat), Number(b.lng)]) < 80;
+}
+
+// O carro começou rota: o celular segue a mesma (prévia rapidinha e Partiu sozinho)
+async function driveFollowAuto(d) {
+  const dest = { name: d.name || "Destino", address: d.address || "", lat: Number(d.lat), lng: Number(d.lng) };
+  if (!driveValidPoint(dest)) return;
+  if ((nav.mode === "nav" || nav.loading) && driveSameDest(nav.dest, dest)) return;
+  nav.autoQuiet = true;
+  if (nav.mode === "nav") nav.result = finishTrip(false);
+  nav.autoQuiet = false;
+  tobaToast(`🚘 Rota do Android Auto: ${dest.name}`);
+  await setDestination(dest);
+  if (nav.mode === "preview" && nav.route && driveSameDest(nav.dest, dest)) {
+    nav.autoQuiet = true; // não precisa mandar de volta pro carro
+    startNav();
+    nav.autoQuiet = false;
+  }
+}
+
+window.onTobaAutoRoute = function onTobaAutoRoute(d) {
+  if (!d) return;
+  if (d.end) {
+    // só encerra se for a MESMA rota (o carro pode estar trocando de destino)
+    if (nav.mode !== "nav" || !driveSameDest(nav.dest, d)) return;
+    nav.autoQuiet = true;
+    if (d.arrived) {
+      arrive();
+    } else {
+      driveShutUp();
+      nav.result = finishTrip(false);
+      setMode("done").then(() => fitRoute());
+      tobaToast("🚘 Rota encerrada no carro");
+    }
+    nav.autoQuiet = false;
+    return;
+  }
+  driveFollowAuto(d);
+};
+
 (function initNavegar() {
   syncPrefInputs();
   renderPickVehicle();
@@ -1420,6 +1498,13 @@ function driveNativeKeepAlive(on) {
       return;
     }
     closeActiveTrip(active);
+  }
+  // v1.78: o carro já está navegando? o celular entra na mesma rota
+  const carRoute = hasQs ? null : driveAutoRouteNow();
+  if (carRoute) {
+    startGps();
+    driveFollowAuto(carRoute);
+    return;
   }
   if (hasQs) {
     setDestination({ name: qs.get("name") || "Destino", address: qs.get("address") || "", lat, lng, ...(qs.get("place") ? { placeId: qs.get("place") } : {}) });

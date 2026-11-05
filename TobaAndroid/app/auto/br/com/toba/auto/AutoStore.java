@@ -67,6 +67,24 @@ final class AutoStore {
         prefs(c).edit().putBoolean("muted", on).apply();
     }
 
+    /** v1.78: mapa do carro em 3D (padrão) ou 2D. */
+    static boolean map3d(Context c) {
+        return prefs(c).getBoolean("map3d", true);
+    }
+
+    static void setMap3d(Context c, boolean on) {
+        prefs(c).edit().putBoolean("map3d", on).apply();
+    }
+
+    /** v1.78: skin do mapa do carro (índice em WebMap.SKINS; o site sabe o nome). */
+    static int skin(Context c) {
+        return prefs(c).getInt("skin", 0);
+    }
+
+    static void setSkin(Context c, int skin) {
+        prefs(c).edit().putInt("skin", skin).apply();
+    }
+
     /** Diário das viagens do carro ({at, km, min, dest}); um dia o site importa pro TOBA_DRIVE_DB. */
     static void logTrip(Context c, Place dest, double meters, long startedAt, boolean arrived) {
         if (meters < 200) return;

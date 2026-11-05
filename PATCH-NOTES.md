@@ -1835,3 +1835,25 @@ Depois Generate Signed APK (mesma chave) e `adb install -r`. Sem o APK novo o si
 **Como testar:** Navegar › destino › 🚀 Partiu: tocar na bolinha em cima do 2D/3D e ver os carangos 3D trocando (os trancados pulam). No caminho, bloquear o celular uns minutos: no APK 1.6 aparece "🧭 Navegando no Toba" na barra e a voz segue; desbloqueando, o mapa está no lugar certo. Fechar o app pelo multitarefa no meio da rota e abrir o Navegar de novo: volta pra rota. Chegando: o 🏁 Cheguei só aparece nos últimos 250 m.
 
 **Commit sugerido:** `v1.77 - Navegar: todo carango em 3D, rota volta sozinha depois do celular bloquear (APK 1.6 segura GPS e voz com a tela apagada), Cheguei so nos ultimos 250 m e bolinha de skin`
+
+## v1.78 — 🚘 Android Auto clean estilo Waze (mapa 3D, velocidade + placa da rua) e rota junta carro ↔ celular
+
+**Arquivos que mudaram:** `TobaDrive/TobaDrive-Auto.html` (novo), `TobaDrive/css/auto-map.css` (novo), `TobaDrive/js/auto-map.js` (novo), `TobaDrive/js/navegar.js`, `TobaDrive/js/drive-route.js`, `sw.js` (cache `toba-v38`), `TobaAndroid/app/auto/br/com/toba/auto/` (`WebMap.java`, `CarMap.java` e `DriveSync.java` novos; `NavEngine.java`, `HomeScreen.java`, `TobaCarSession.java`, `Route.java`, `TobaApi.java`, `Maneuvers.java`, `MapRenderer.java`, `AutoStore.java`), `TobaAndroid/app/auto/br/com/toba/app/MainActivity.java` e `TobaBridge.java`, `TobaAndroid/app/src/main/res/drawable/ic_map_3d.xml`, `ic_map_2d.xml`, `ic_map_skin.xml` (novos), `TobaAndroid/app/build.gradle` (versionCode 8 / versionName 1.7), `TobaAndroid/README.md`, `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **Mapa 3D clean na tela do carro:** saiu o mapa de "páginas amarelas". Agora é o mesmo Mapbox 3D do Navegar (prédios, modo noturno que segue o farol do carro), com o carro em seta seguindo a rua e o zoom acompanhando a velocidade.
+2. **Tchau quadradão preto:** a manobra virou uma pílula pequena em cima à esquerda (seta + distância + rua) e a chegada uma pílula embaixo (hora, minutos, km, cor do trânsito). Os cartões grandes do Android Auto não aparecem mais.
+3. **Velocidade do carro + placa da rua:** bolinha com os km/h embaixo à esquerda e, do lado, a plaquinha redonda do limite da rua (quando a TomTom sabe). Passou do limite: a bolinha fica vermelha.
+4. **2D/3D e 🎨 skin com 1 toque:** dois botões no canto do mapa. A skin troca a cor da rota (Toba, Céu, Neon, Clean, Max Tobasten) e fica guardada.
+5. **Trânsito só na rota:** nada de rua inteira pintada de verde. Só os trechos lentos da SUA rota, em amarelo/vermelho, e só pra frente do carro.
+6. **Rota junta, estilo Waze:** começou a rota no carro, o 🧭 Navegar do celular abre a mesma rota sozinho (calado, quem fala é o carro). Deu Partiu no celular com o carro conectado, o carro sai navegando ("📱 Rota do celular"). Parou ou chegou de um lado, o outro encerra junto. Dá pra ir de tela do celular apagada.
+7. **Plano B:** sem internet pro mapa 3D (ou se ele não carregar em 25 s), volta o mapa de imagens antigo com os cartões do Auto, pra nunca ficar sem rota.
+
+**O que não dá pra tirar:** a faixa de botões do próprio Android Auto (Parar e Mudo/Som, do lado direito) e o cantinho dos botões do mapa (2D/3D e 🎨) são desenhados pelo carro, não pelo Toba. No plano B os cartões do Auto voltam.
+
+**Dados:** Nenhuma mudança nos bancos nem chave nova do site. No app, duas preferências novas do carro em `toba_auto` (`map3d` e `skin`). Nada é apagado.
+
+**APK 1.7:** Generate Signed APK (mesma chave) e **instalar por cima pelo KingInstaller** (não pelo adb, senão o Toba some do carro). O site também precisa subir (página nova `TobaDrive-Auto.html`): sem o push o carro cai no plano B.
+
+**Como testar:** DHU no PC (README do TobaAndroid seção 6.2) › Toba: mapa 3D escuro sem cartão preto. Buscar › destino › Simular: pílula da manobra em cima, velocidade + placa embaixo, trânsito só na rota. Tocar 🧊 (vira 2D) e 🎨 (troca a cor). Com a rota rodando no carro, abrir o 🧭 Navegar no celular: mesma rota. Encerrar no celular: o carro para. Dar Partiu no celular: o carro segue.
+
+**Commit sugerido:** `v1.78 - Android Auto clean estilo Waze (mapa 3D do Toba, velocidade + placa da rua, 2D/3D e skin, transito so na rota) e rota junta entre carro e celular (APK 1.7)`

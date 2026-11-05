@@ -47,7 +47,7 @@ final class NavEngine implements LocationListener {
 
     private final CarContext car;
     private final Context app;
-    private final MapRenderer map;
+    private final CarMap map;
     private final Voice voice;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService io = Executors.newSingleThreadExecutor();
@@ -82,11 +82,12 @@ final class NavEngine implements LocationListener {
     private final Runnable backToIdle = () -> {
         if (state == State.ARRIVED) {
             state = State.IDLE;
+            pushHud();
             changed();
         }
     };
 
-    NavEngine(CarContext car, MapRenderer map) {
+    NavEngine(CarContext car, CarMap map) {
         this.car = car;
         this.app = car.getApplicationContext();
         this.map = map;
@@ -177,8 +178,9 @@ final class NavEngine implements LocationListener {
         if (state == State.NAVIGATING && route != null && !rerouting) {
             progress(loc);
         } else {
-            map.setCar(loc.getLatitude(), loc.getLongitude(), heading);
+            map.setCar(loc.getLatitude(), loc.getLongitude(), heading, speed());
         }
+        pushHud();
         changed();
     }
 
@@ -234,8 +236,10 @@ final class NavEngine implements LocationListener {
         String transito = r.delay > 120 ? ", com uns " + Math.round(r.delay / 60.0) + " minutos de trânsito" : ", caminho livre";
         voice.say("Bora! " + Geo.spokenDistance(r.length) + ", uns " + Math.max(1, Math.round(r.time / 60.0))
                 + " minutos" + transito + ".");
+        DriveSync.carStarted(to);
         if (simulate) startSimulation();
         else if (last != null) progress(last);
+        pushHud();
         changed();
     }
 
@@ -256,13 +260,17 @@ final class NavEngine implements LocationListener {
         if (state != State.NAVIGATING) return;
         finishTrip(false);
         state = State.IDLE;
+        DriveSync.carEnded(false);
         if (byUser) voice.say("Navegação encerrada. Valeu, parceiro!");
+        pushHud();
         changed();
     }
 
     private void arrive() {
         finishTrip(true);
         state = State.ARRIVED;
+        DriveSync.carEnded(true);
+        pushHud();
         voice.say("Chegou! " + (dest == null ? "" : dest.name + ". ") + "Nunca foi sorte, Cloba. Nunca foi sorte.");
         main.postDelayed(backToIdle, 20000);
         changed();
@@ -288,6 +296,7 @@ final class NavEngine implements LocationListener {
         rerouting = true;
         lastReroute = System.currentTimeMillis();
         voice.say("Recalculando. Calma que o Cloba acha outro caminho.");
+        pushHud();
         changed();
         Location from = last;
         Place to = dest;
@@ -299,6 +308,7 @@ final class NavEngine implements LocationListener {
                     rerouting = false;
                     useRoute(r);
                     if (last != null) progress(last);
+                    pushHud();
                     changed();
                 });
             } catch (IOException e) {
@@ -339,7 +349,7 @@ final class NavEngine implements LocationListener {
         double acc = loc.hasAccuracy() ? loc.getAccuracy() : 20;
         if (best > Math.max(45, acc * 1.5)) {
             offCount++;
-            map.setCar(lat, lon, heading);
+            map.setCar(lat, lon, heading, speed());
             if (offCount >= 3 && System.currentTimeMillis() - lastReroute > 12000) reroute();
             return;
         }
@@ -351,8 +361,8 @@ final class NavEngine implements LocationListener {
         double sLon = r.lon[bestI] + (r.lon[bestI + 1] - r.lon[bestI]) * bestT;
         double segHead = Geo.bearing(r.lat[bestI], r.lon[bestI], r.lat[bestI + 1], r.lon[bestI + 1]);
         if (!(loc.hasBearing() && loc.getSpeed() > 3f) || segLen > 2) heading = segHead;
-        map.setCar(sLat, sLon, heading);
-        map.setProgress(seg);
+        map.setCar(sLat, sLon, heading, speed());
+        map.setProgress(seg, along);
 
         remaining = Math.max(0, r.length - along);
         remainingSec = r.length > 0 ? Math.round(r.time * remaining / r.length) : 0;
@@ -445,6 +455,52 @@ final class NavEngine implements LocationListener {
         if (simulating) main.postDelayed(simTick, 500);
     }
 
+    /* ------------------------------------------------------------ v1.78: painel do mapa 3D */
+
+    private float speed() {
+        return last != null && last.hasSpeed() ? last.getSpeed() : 0f;
+    }
+
+    /** Limite da rua agora (km/h, 0 = não sei). Só com rota (vem do TomTom). */
+    int speedLimit() {
+        return state == State.NAVIGATING && route != null ? route.limitAt(seg) : 0;
+    }
+
+    /**
+     * Manda pro mapa 3D o painel enxuto (no lugar dos cartões pretos do Auto):
+     * manobra, chegada, velocidade do carro e da rua. Plano B ignora.
+     */
+    private void pushHud() {
+        try {
+            org.json.JSONObject o = new org.json.JSONObject();
+            o.put("speed", Math.round(speed() * 3.6f));
+            o.put("nav", state == State.NAVIGATING);
+            o.put("state", state.name().toLowerCase(java.util.Locale.US));
+            if (dest != null) o.put("dest", dest.name);
+            if (state == State.NAVIGATING) {
+                o.put("rerouting", rerouting);
+                o.put("limit", speedLimit());
+                Route.Instr next = nextInstr();
+                if (next != null && !rerouting) {
+                    o.put("icon", Maneuvers.key(next));
+                    o.put("dist", Maneuvers.distanceText(distToNext));
+                    o.put("street", Maneuvers.cue(next, dest));
+                    if (next.exit > 0) o.put("exit", next.exit);
+                }
+                long sec = Math.max(0, remainingSec);
+                java.text.SimpleDateFormat hm = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.US);
+                o.put("eta", hm.format(new java.util.Date(System.currentTimeMillis() + sec * 1000)));
+                o.put("min", Math.max(1, Math.round(sec / 60.0)));
+                o.put("left", Maneuvers.distanceText(remaining));
+                long delay = route == null ? 0 : route.delay;
+                o.put("traffic", delay > 300 ? 3 : delay > 90 ? 2 : 1);
+            }
+            map.hud(o.toString());
+        } catch (org.json.JSONException ignored) {
+            // painel é enfeite: a navegação segue
+        }
+    }
+
     /* ------------------------------------------------------------ pra tela */
 
     State state() {
@@ -491,7 +547,7 @@ final class NavEngine implements LocationListener {
         return b.build();
     }
 
-    MapRenderer map() {
+    CarMap map() {
         return map;
     }
 

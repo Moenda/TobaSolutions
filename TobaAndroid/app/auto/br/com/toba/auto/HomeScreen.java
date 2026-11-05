@@ -7,6 +7,7 @@ import androidx.car.app.CarToast;
 import androidx.car.app.Screen;
 import androidx.car.app.model.Action;
 import androidx.car.app.model.ActionStrip;
+import androidx.car.app.model.CarIcon;
 import androidx.car.app.model.OnClickListener;
 import androidx.car.app.model.Template;
 import androidx.car.app.navigation.model.MessageInfo;
@@ -15,10 +16,19 @@ import androidx.car.app.navigation.model.RoutingInfo;
 import androidx.car.app.navigation.model.TravelEstimate;
 import androidx.lifecycle.DefaultLifecycleObserver;
 import androidx.lifecycle.LifecycleOwner;
+import androidx.car.app.versioning.CarAppApiLevels;
+import androidx.core.graphics.drawable.IconCompat;
+
+import br.com.toba.app.R;
 
 import java.util.Arrays;
 
-/** Tela principal do carro: mapa, botões Buscar/Recentes e, com rota, o cartão da manobra. */
+/**
+ * Tela principal do carro: mapa, botões Buscar/Recentes e, com rota, a manobra.
+ * v1.78: com o mapa 3D (CarMap.drawsHud) a manobra, a chegada e as velocidades
+ * são desenhadas no próprio mapa, sem os cartões pretos do Android Auto; os
+ * botões 🧊 3D/2D e 🎨 skin ficam no canto do mapa.
+ */
 final class HomeScreen extends Screen implements NavEngine.Listener {
     private final NavEngine engine;
     private boolean askedPermission;
@@ -63,16 +73,37 @@ final class HomeScreen extends Screen implements NavEngine.Listener {
         return new Action.Builder().setTitle(title).setOnClickListener(click).build();
     }
 
+    private Action icon(int res, OnClickListener click) {
+        return new Action.Builder()
+                .setIcon(new CarIcon.Builder(IconCompat.createWithResource(getCarContext(), res)).build())
+                .setOnClickListener(click)
+                .build();
+    }
+
+    private void toggle3d() {
+        boolean on = engine.map().toggle3d();
+        CarToast.makeText(getCarContext(), on ? "🧊 Mapa 3D" : "🗺️ Mapa 2D", CarToast.LENGTH_SHORT).show();
+        invalidate();
+    }
+
+    private void nextSkin() {
+        CarToast.makeText(getCarContext(), "🎨 " + engine.map().nextSkin(), CarToast.LENGTH_SHORT).show();
+    }
+
     @Override
     public Template onGetTemplate() {
         NavigationTemplate.Builder b = new NavigationTemplate.Builder();
         ActionStrip.Builder strip = new ActionStrip.Builder();
+        boolean hud = engine.map().drawsHud();
         if (engine.isNavigating()) {
             strip.addAction(button("Parar", () -> engine.stop(true)));
             strip.addAction(button(engine.muted() ? "Som" : "Mudo", engine::toggleMute));
-            b.setNavigationInfo(routingInfo());
-            TravelEstimate te = engine.estimate();
-            if (te != null) b.setDestinationTravelEstimate(te);
+            if (!hud) {
+                // plano B (sem mapa 3D): cartões do Android Auto
+                b.setNavigationInfo(routingInfo());
+                TravelEstimate te = engine.estimate();
+                if (te != null) b.setDestinationTravelEstimate(te);
+            }
         } else {
             strip.addAction(button("Buscar", () ->
                     getScreenManager().push(new SearchScreen(getCarContext(), engine))));
@@ -80,6 +111,16 @@ final class HomeScreen extends Screen implements NavEngine.Listener {
                     getScreenManager().push(new RecentScreen(getCarContext(), engine))));
             MessageInfo msg = idleMessage();
             if (msg != null) b.setNavigationInfo(msg);
+        }
+        if (hud) {
+            Action view = icon(engine.map().is3d() ? R.drawable.ic_map_2d : R.drawable.ic_map_3d, this::toggle3d);
+            Action skin = icon(R.drawable.ic_map_skin, this::nextSkin);
+            if (getCarContext().getCarAppApiLevel() >= CarAppApiLevels.LEVEL_2) {
+                b.setMapActionStrip(new ActionStrip.Builder().addAction(view).addAction(skin).build());
+            } else {
+                strip.addAction(view);
+                strip.addAction(skin);
+            }
         }
         b.setActionStrip(strip.build());
         return b.build();
@@ -93,8 +134,7 @@ final class HomeScreen extends Screen implements NavEngine.Listener {
         Place dest = engine.destination();
         RoutingInfo.Builder rb = new RoutingInfo.Builder()
                 .setCurrentStep(Maneuvers.step(getCarContext(), next, dest), Maneuvers.distance(engine.distToNext()));
-        Route.Instr after = engine.afterInstr();
-        if (after != null) rb.setNextStep(Maneuvers.step(getCarContext(), after, dest));
+        // v1.78: sem a "manobra seguinte" embaixo (cartão menor)
         return rb.build();
     }
 

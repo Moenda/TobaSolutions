@@ -1,0 +1,243 @@
+/* Toba Drive · mapa da tela do carro (Android Auto, v1.78)
+ * Painel enxuto estilo Waze: pílula da manobra em cima, velocidade + placa da rua
+ * + chegada embaixo. Fica dentro da área livre que o Android Auto informa
+ * (--am-t/--am-r/--am-b/--am-l, vindos do WebMap.java). */
+:root {
+  --am-t: 0px;
+  --am-r: 0px;
+  --am-b: 0px;
+  --am-l: 0px;
+  --am-glass: rgba(13, 17, 23, 0.82);
+  --am-ink: #f0f6fc;
+  --am-soft: rgba(240, 246, 252, 0.72);
+  --am-line: rgba(255, 255, 255, 0.1);
+  --am-accent: #22c55e;
+}
+
+body.am-light {
+  --am-glass: rgba(255, 255, 255, 0.92);
+  --am-ink: #111827;
+  --am-soft: rgba(17, 24, 39, 0.62);
+  --am-line: rgba(0, 0, 0, 0.08);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #0d1117;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body.am-light {
+  background: #e8eaed;
+}
+
+#amMap {
+  position: absolute;
+  inset: 0;
+}
+
+#amHud {
+  position: absolute;
+  top: var(--am-t);
+  right: var(--am-r);
+  bottom: var(--am-b);
+  left: var(--am-l);
+  pointer-events: none;
+  color: var(--am-ink);
+}
+
+/* ---------- manobra (pílula pequena em cima à esquerda) ---------- */
+.am-turn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  max-width: min(52%, 360px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px 8px 8px;
+  border-radius: 999px;
+  background: var(--am-glass);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--am-line);
+}
+
+.am-turn-icon {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--am-accent);
+  display: grid;
+  place-items: center;
+}
+
+.am-turn-icon svg {
+  width: 30px;
+  height: 30px;
+}
+
+.am-turn-icon .am-flag {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.am-turn-txt {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.am-turn-txt b {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.am-turn-txt span {
+  font-size: 14px;
+  color: var(--am-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.am-turn.is-wait .am-turn-icon {
+  background: #6e7681;
+}
+
+/* ---------- embaixo: velocidade, placa e chegada ---------- */
+.am-bottom {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.am-speed {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--am-glass);
+  border: 1px solid var(--am-line);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.am-speed b {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.am-speed small {
+  font-size: 9px;
+  color: var(--am-soft);
+  margin-top: 2px;
+}
+
+.am-speed.is-over {
+  background: #dc2626;
+  color: #fff;
+  border-color: #fff;
+}
+
+.am-speed.is-over small {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.am-limit {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  border: 5px solid #dc2626;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  color: #111;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.am-limit b {
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.am-eta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: var(--am-glass);
+  border: 1px solid var(--am-line);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+  white-space: nowrap;
+}
+
+.am-eta b {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.am-eta span {
+  font-size: 13px;
+  color: var(--am-soft);
+}
+
+.am-eta .is-t1 {
+  color: #22c55e;
+}
+
+.am-eta .is-t2 {
+  color: #facc15;
+}
+
+.am-eta .is-t3 {
+  color: #ef4444;
+}
+
+/* ---------- aviso no meio ---------- */
+.am-note {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 80%;
+  text-align: center;
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: var(--am-glass);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Mapbox: logo e créditos pequenos, dentro da área livre */
+.mapboxgl-ctrl-bottom-right {
+  right: var(--am-r) !important;
+  bottom: var(--am-b) !important;
+}
+
+.mapboxgl-ctrl-bottom-right .mapboxgl-ctrl {
+  margin: 0 6px 6px 0 !important;
+}
+
+.mapboxgl-ctrl-attrib.mapboxgl-compact {
+  opacity: 0.6;
+}

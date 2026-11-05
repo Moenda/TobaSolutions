@@ -293,6 +293,8 @@ if ("speechSynthesis" in window) {
 
 function driveSpeak(text, options = {}) {
   if (!text || !readDrivePrefs().voice) return;
+  // v1.78: Android Auto navegando = o carro fala (senão sai voz dobrada)
+  if (typeof driveAutoNavigating === "function" && driveAutoNavigating()) return;
   // v1.77: tela apagada no APK 1.6+ = voz do Android (a do navegador fica muda escondida)
   if ((document.hidden || !("speechSynthesis" in window)) && TOBA_NATIVE && typeof TOBA_NATIVE.speak === "function") {
     try {

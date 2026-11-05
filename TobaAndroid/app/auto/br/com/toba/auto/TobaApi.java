@@ -249,11 +249,22 @@ final class TobaApi {
     }
 
     private static Route routeOnce(Context c, Location from, Place to) throws IOException {
+        try {
+            return routeOnce(c, from, to, true);
+        } catch (HttpError e) {
+            // v1.78: TomTom não gostou do sectionType=speedLimit? vai sem o limite da rua
+            if (e.code == 400) return routeOnce(c, from, to, false);
+            throw e;
+        }
+    }
+
+    private static Route routeOnce(Context c, Location from, Place to, boolean limits) throws IOException {
         StringBuilder url = new StringBuilder("https://api.tomtom.com/routing/1/calculateRoute/")
                 .append(ll(from.getLatitude(), from.getLongitude())).append(':').append(ll(to.lat, to.lon))
                 .append("/json?key=").append(tomtomKey(c))
                 .append("&traffic=true&travelMode=car&routeType=fastest&computeTravelTimeFor=all")
                 .append("&instructionsType=text&language=pt-BR&sectionType=traffic");
+        if (limits) url.append("&sectionType=speedLimit");
         if (from.hasBearing() && from.getSpeed() > 2) {
             url.append("&vehicleHeading=").append(Math.round(from.getBearing()) % 360);
         }

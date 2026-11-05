@@ -112,6 +112,38 @@ final class Maneuvers {
         return Distance.create(Math.round(m / 10.0) * 10, Distance.UNIT_METERS);
     }
 
+    /** v1.78: nome do desenho da seta no mapa 3D (TobaDrive/js/auto-map.js, amIcon). */
+    static String key(Route.Instr it) {
+        switch (type(it)) {
+            case Maneuver.TYPE_TURN_NORMAL_RIGHT: return "right";
+            case Maneuver.TYPE_TURN_NORMAL_LEFT: return "left";
+            case Maneuver.TYPE_TURN_SLIGHT_RIGHT:
+            case Maneuver.TYPE_KEEP_RIGHT:
+            case Maneuver.TYPE_OFF_RAMP_SLIGHT_RIGHT: return "slight_right";
+            case Maneuver.TYPE_TURN_SLIGHT_LEFT:
+            case Maneuver.TYPE_KEEP_LEFT:
+            case Maneuver.TYPE_OFF_RAMP_SLIGHT_LEFT: return "slight_left";
+            case Maneuver.TYPE_TURN_SHARP_RIGHT: return "sharp_right";
+            case Maneuver.TYPE_TURN_SHARP_LEFT: return "sharp_left";
+            case Maneuver.TYPE_U_TURN_LEFT: return "uturn";
+            case Maneuver.TYPE_ROUNDABOUT_ENTER_AND_EXIT_CCW:
+            case Maneuver.TYPE_ROUNDABOUT_ENTER_CCW: return "roundabout";
+            case Maneuver.TYPE_DESTINATION:
+            case Maneuver.TYPE_DESTINATION_LEFT:
+            case Maneuver.TYPE_DESTINATION_RIGHT: return "arrive";
+            default: return "straight";
+        }
+    }
+
+    /** v1.78: "350 m" / "1,2 km" / "12 km" (mesmo arredondamento do distance()). */
+    static String distanceText(double meters) {
+        double m = Math.max(0, meters);
+        if (m >= 10000) return Math.round(m / 1000.0) + " km";
+        if (m >= 1000) return String.format(Geo.BR, "%.1f km", Math.round(m / 100.0) / 10.0);
+        if (m >= 300) return (Math.round(m / 50.0) * 50) + " m";
+        return (Math.round(m / 10.0) * 10) + " m";
+    }
+
     /** Frase falada (o TomTom já manda pronta em pt-BR; isto é só o plano B). */
     static String phrase(Route.Instr it) {
         if (it.message != null && !it.message.isEmpty()) return it.message;

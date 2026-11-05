@@ -24,6 +24,7 @@ import android.webkit.WebViewClient;
 
 import java.util.Locale;
 
+import br.com.toba.auto.DriveSync;
 import br.com.toba.auto.NavService;
 
 /**
@@ -37,6 +38,8 @@ import br.com.toba.auto.NavService;
  * Navegando no 🧭 Navegar (TobaNative.navKeepAlive), a rota não morre com o
  * celular bloqueado: serviço em primeiro plano (NavService), GPS nativo mandado
  * pra página (window.onTobaNativeFix), WebView sem pausar e voz do Android.
+ * v1.78 (APK 1.7): rota junta com o Android Auto (DriveSync): rota do carro chega
+ * no site por window.onTobaAutoRoute; a do site vai pro carro por TobaNative.autoRoute.
  */
 public class MainActivity extends Activity {
     static final String EXTRA_URL = "url";
@@ -56,6 +59,10 @@ public class MainActivity extends Activity {
     private TextToSpeech tts;
     private boolean ttsReady = false;
     private int ttsSeq = 0;
+    // v1.78 (APK 1.7): rota do Android Auto -> 🧭 Navegar do site (window.onTobaAutoRoute)
+    private final DriveSync.Phone carRoutes = json -> runOnUiThread(() -> {
+        if (web != null) web.evaluateJavascript("window.onTobaAutoRoute&&window.onTobaAutoRoute(" + json + ")", null);
+    });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -157,6 +164,7 @@ public class MainActivity extends Activity {
             web.loadUrl(startUrl(getIntent()));
         }
         askNotificationPermission();
+        DriveSync.setPhone(carRoutes);
     }
 
     @Override
@@ -187,6 +195,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        DriveSync.clearPhone(carRoutes);
         stopNav();
         if (tts != null) {
             tts.shutdown();

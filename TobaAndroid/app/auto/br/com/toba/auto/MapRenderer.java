@@ -24,13 +24,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Desenha o mapa na tela do carro. Sem SDK de mapa: pede ao Mapbox uma imagem
- * pronta (Static Images API, estilos navigation-day/night) já girada pro rumo do
+ * Plano B do mapa do carro (v1.78: o principal é o WebMap, o mapa 3D do site).
+ * Sem SDK de mapa: pede ao Mapbox uma imagem
+ * pronta (Static Images API, v1.78 estilos limpos light/dark, sem o trânsito verde
+ * da cidade inteira que os navigation-day/night pintavam) já girada pro rumo do
  * carro e com a rota pintada, e aqui só desliza/gira essa imagem a cada quadro
  * com o carango no meio. Imagem nova só quando o carro anda bastante ou vira,
  * então gasta pouco da cota grátis do Mapbox.
  */
 final class MapRenderer implements SurfaceCallback {
+    private static final String ROUTE_COLOR = "2f81f7"; // v1.78: azul (o verde se misturava com o mapa)
     private static final int BG_NIGHT = 0xFF0D1117;
     private static final int BG_DAY = 0xFFE8EAED;
     private static final int TOBA_GREEN = 0xFF3FB950;
@@ -369,8 +372,8 @@ final class MapRenderer implements SurfaceCallback {
     }
 
     private String style(boolean dark) {
-        if (styleFallback) return dark ? "dark-v11" : "streets-v12";
-        return dark ? "navigation-night-v1" : "navigation-day-v1";
+        if (styleFallback) return dark ? "navigation-night-v1" : "streets-v12";
+        return dark ? "dark-v11" : "light-v11";
     }
 
     private void fetchFollow(boolean dark, double[] center, double zoom, long bearing) {
@@ -470,7 +473,7 @@ final class MapRenderer implements SurfaceCallback {
             if (poly.length() < 6000) break;
             tol *= 2;
         }
-        StringBuilder sb = new StringBuilder("path-8+3fb950-0.95(").append(poly).append(')');
+        StringBuilder sb = new StringBuilder("path-8+" + ROUTE_COLOR + "-0.95(").append(poly).append(')');
         if (r.dest != null && (whole || to == r.size() - 1)) {
             sb.append(String.format(Locale.US, ",pin-l+e5534b(%.6f,%.6f)", r.dest.lon, r.dest.lat));
         }

@@ -70,6 +70,8 @@ Gastos / Pesagem / Treinos → ⚙️ → 🔔 Lembretes. No app, o botão vira 
 
 ## 6. 🚘 Android Auto (APK 1.4+)
 
+**Desde o APK 1.7 (v1.78):** mapa 3D clean (o mesmo Mapbox do Navegar, modo noturno seguindo o carro), botões 🧊 2D/3D e 🎨 skin no canto do mapa, velocidade do carro + placa da rua, trânsito só na rota. A rota é uma só: começou no carro, aparece no celular; deu Partiu no celular, o carro segue. Sem internet pro mapa 3D, volta o mapa de imagens com os cartões do Auto.
+
 O Toba aparece no Android Auto como app de **navegação**: tela do carro com mapa, botões **Buscar** e **Recentes**, prévia da rota (tempo, km e trânsito) e **Bora!**. Navegando: cartão da próxima manobra, chegada prevista, voz em pt-BR que abaixa a música, recálculo quando sai da rota e "🏁 Chegou! Nunca foi sorte, Cloba." no fim.
 
 - **Rota e busca:** TomTom (a mesma chave do Navegar do site). **Mapa:** Mapbox (estilos de navegação dia/noite, seguindo o farol do carro). As chaves **não ficam no APK**: o app lê do próprio site (`assets/toba-maps.js`) e guarda no celular. Trocou a chave no site? O carro pega sozinho.
@@ -82,7 +84,7 @@ O Toba aparece no Android Auto como app de **navegação**: tela do carro com ma
 1. No celular: **Configurações → Dispositivos conectados → Preferências de conexão → Android Auto** (na Samsung: Configurações → Conexões → Android Auto). Ou abra o app **Android Auto**.
 2. Role até o fim e toque **10 vezes em "Versão"** → aceite o modo desenvolvedor.
 3. **⋮ (canto de cima) → Configurações do desenvolvedor → marque "Fontes desconhecidas"** (*Unknown sources*). Sem isso o Toba não aparece no carro.
-4. Instale o APK 1.4 (seção 2) e abra o Toba uma vez no celular.
+4. Instale o APK **pelo KingInstaller** (não pelo `adb install`): no Android Auto 17+ o validador do carro recusa app instalado por fora da Play ("Package DENIED" no log) mesmo com Fontes desconhecidas. KingInstaller → escolha o `app-release.apk` → instalar por cima. **Toda versão nova do APK vai pelo KingInstaller** (por cima, nunca desinstalar: os dados do Toba moram no app). Abra o Toba uma vez no celular.
 5. Configurações → Apps → Toba → **Permissões → Localização → Permitir durante o uso** (o carro também pede na 1ª vez). Samsung: **Bateria → Sem restrições**.
 
 ### 6.2 Testar no PC (DHU, sem carro)

@@ -21,6 +21,8 @@ import org.json.JSONObject;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
+import br.com.toba.auto.DriveSync;
+
 /**
  * window.TobaNative no site. Tudo entra e sai como texto/JSON.
  * Mudou algum método? Atualize também o lado do site (toba-common.js,
@@ -38,7 +40,7 @@ final class TobaBridge {
 
     @JavascriptInterface
     public int version() {
-        return 6; // 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
+        return 7; // 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
     }
 
     /* ---------------- Notificações do Toba ---------------- */
@@ -198,6 +200,26 @@ final class TobaBridge {
     @JavascriptInterface
     public void speak(String text, boolean interrupt) {
         activity.speak(text, interrupt);
+    }
+
+    /* ---------------- v1.78 (APK 1.7): rota junta com o Android Auto ---------------- */
+
+    // Toba aberto na tela do carro agora (aí quem fala é o carro, o site fica mudo)
+    @JavascriptInterface
+    public boolean autoOn() {
+        return DriveSync.carOn();
+    }
+
+    // Rota que o carro está fazendo: {name, address, lat, lng} ou "" (sem rota)
+    @JavascriptInterface
+    public String autoRouteNow() {
+        return DriveSync.carRoute();
+    }
+
+    // O 🧭 Navegar do site começou ({name, lat, lng}) ou parou ("") a rota: o carro acompanha
+    @JavascriptInterface
+    public void autoRoute(String json) {
+        DriveSync.fromPhone(json);
     }
 
     /* ---------------- Toba Routine ---------------- */

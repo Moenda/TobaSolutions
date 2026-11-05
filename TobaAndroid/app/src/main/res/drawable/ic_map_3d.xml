@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v1.78: botão do mapa do Android Auto: muda pro 3D (cubo) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M 12,2.5 L 20.5,7.2 L 20.5,16.8 L 12,21.5 L 3.5,16.8 L 3.5,7.2 Z M 12,12 L 20.5,7.2 M 12,12 L 3.5,7.2 M 12,12 L 12,21.5"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>
