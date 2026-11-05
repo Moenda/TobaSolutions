@@ -7,7 +7,7 @@
  *   cota grátis do TomTom e o mapa já visto abre offline. Trânsito NÃO entra.
  * - NUNCA mexe no localStorage: seus dados não passam por aqui.
  * Mudou a lista de arquivos? Aumente a versão abaixo. */
-const VERSION = "toba-v42";
+const VERSION = "toba-v43";
 const TILE_CACHE = "toba-tiles-v1";
 const TILE_MAX = 3000;
 const NETWORK_TIMEOUT_MS = 4000;
@@ -107,20 +107,19 @@ const PRECACHE = [
   "./TobaTurism/js/turism-core.js",
   "./TobaTurism/js/places-map.js",
   "./TobaTurism/js/places.js",
-  "./TobaDrive/TobaDrive-Index.html",
-  "./TobaDrive/TobaDrive-Navegar.html",
-  "./TobaDrive/css/drive-base.css",
-  "./TobaDrive/css/navegar.css",
-  "./TobaDrive/js/drive-metrics.js",
-  "./TobaDrive/js/drive-core.js",
-  "./TobaDrive/js/drive-route.js",
-  "./TobaDrive/js/navegar.js",
-  "./TobaDrive/js/drive-models.js",
-  "./TobaDrive/js/drive-map.js",
-  "./TobaDrive/js/drive-game.js",
-  "./TobaDrive/TobaDrive-Auto.html",
-  "./TobaDrive/css/auto-map.css",
-  "./TobaDrive/js/auto-map.js",
+  "./TobaRacing/TobaDrive/TobaDrive.html",
+  "./TobaRacing/TobaDrive/css/drive-base.css",
+  "./TobaRacing/TobaDrive/css/drive.css",
+  "./TobaRacing/TobaDrive/js/drive-metrics.js",
+  "./TobaRacing/TobaDrive/js/drive-core.js",
+  "./TobaRacing/TobaDrive/js/drive-route.js",
+  "./TobaRacing/TobaDrive/js/drive.js",
+  "./TobaRacing/TobaDrive/js/drive-models.js",
+  "./TobaRacing/TobaDrive/js/drive-map.js",
+  "./TobaRacing/TobaDrive/js/drive-game.js",
+  "./TobaRacing/TobaDrive/TobaDrive-Auto.html",
+  "./TobaRacing/TobaDrive/css/auto-map.css",
+  "./TobaRacing/TobaDrive/js/auto-map.js",
   "https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js",
   "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js",
   "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css",

@@ -9,7 +9,7 @@ import android.speech.tts.UtteranceProgressListener;
 
 import java.util.Locale;
 
-/** Voz do Navegar no carro: TTS em pt-BR que abaixa a música enquanto fala. */
+/** Voz do Toba Drive no carro: TTS em pt-BR que abaixa a música enquanto fala. */
 final class Voice implements TextToSpeech.OnInitListener {
     private final Context ctx;
     private final TextToSpeech tts;

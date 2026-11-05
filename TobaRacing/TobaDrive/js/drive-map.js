@@ -1,10 +1,10 @@
 /* =====================================================================
- * Toba Drive · motor do mapa do Navegar (desde v1.69) — carregado antes do navegar.js
+ * Toba Drive · motor do mapa do Toba Drive (desde v1.69) — carregado antes do drive.js
  * - 🏙️ Mapbox GL JS: estilo Mapbox Standard, prédios em 3D, nomes de rua em pé,
  *   inclina e gira de verdade. Luz do mapa (lightPreset): 🌅 dawn, ☀️ day,
  *   🌇 dusk, 🌙 night ou 🌗 automático pelo sol (driveLightPreset).
  *   Token público TOBA_MAPBOX_TOKEN (assets/toba-maps.js).
- * - v1.70: só Mapbox (o mapa clássico Leaflet/TomTom/CARTO saiu do Navegar).
+ * - v1.70: só Mapbox (o mapa clássico Leaflet/TomTom/CARTO saiu do Toba Drive).
  *   Sem WebGL ou Mapbox fora = aviso no lugar do mapa; a navegação (voz, faixa,
  *   velocímetro) segue sem mapa e o ↗️ abre no Maps/Waze.
  * - v1.70: 🚗 carango DENTRO do mapa (camadas do Mapbox, não mais um <div> por
@@ -17,7 +17,7 @@
  * - v1.73: trânsito da rota casado pelo sentido e distância (driveRouteTrafficRuns)
  *   e pintado largo embaixo do risco; nas outras ruas fica fininho. 📸 radares em
  *   camada própria (setRadars), não somem quando a rota é redesenhada.
- * - navegar.js e drive-game.js só falam com o objeto de driveCreateMap (nav.map).
+ * - drive.js e drive-game.js só falam com o objeto de driveCreateMap (nav.map).
  *   Nada aqui grava no TOBA_DRIVE_DB.
  * ===================================================================== */
 const DRIVE_MAPBOX_VERSION = "3.7.0";
@@ -717,7 +717,7 @@ async function driveMapboxMap(box, center, zoom) {
       // âncora em px a partir do canto de cima -> offset do Mapbox (a partir do centro)
       marks.push(new mapboxgl.Marker({ element: d, anchor: "center", offset: [size[0] / 2 - anchor[0], size[1] / 2 - anchor[1]] }).setLngLat(toLngLat(ll)).addTo(map));
     },
-    // carango: ll = [lat,lng] (já grudado na rota pelo navegar.js), heading = rumo em graus
+    // carango: ll = [lat,lng] (já grudado na rota pelo drive.js), heading = rumo em graus
     // veh = item de DRIVE_VEHICLES, color = cor da rota (pinta a seta/GT), isNav = navegando
     car(ll, heading, veh, color, isNav) {
       const h = Number.isFinite(heading) ? ((heading % 360) + 360) % 360 : car.target?.h ?? 0;

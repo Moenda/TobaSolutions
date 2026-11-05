@@ -383,7 +383,7 @@
   font-weight: 500;
 }
 
-/* v1.66: Navegar (Toba Drive) dentro do Racing */
+/* v1.66: Toba Drive dentro do Racing */
 .toba-hub-card.is-soon {
   opacity: 0.45;
   filter: grayscale(100%);

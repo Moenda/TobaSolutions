@@ -10,8 +10,8 @@ import org.json.JSONObject;
  * v1.78 (APK 1.7): rota junta no celular e no Android Auto, estilo Waze.
  * Os dois lados moram no mesmo processo do app, então é só um quadro de avisos:
  * - o carro começou/terminou rota -> avisa o celular (MainActivity roda
- *   window.onTobaAutoRoute no 🧭 Navegar do site);
- * - o Navegar do site começou/parou rota (TobaNative.autoRoute) -> avisa o carro
+ *   window.onTobaAutoRoute no 🧭 Toba Drive do site);
+ * - o Toba Drive do site começou/parou rota (TobaNative.autoRoute) -> avisa o carro
  *   (TobaCarSession traça a mesma rota e sai navegando).
  * Com o carro conectado quem fala é o carro (o site fica mudo, TobaNative.autoOn).
  * Nada aqui é gravado: some quando o app fecha.
@@ -107,7 +107,7 @@ public final class DriveSync {
         }
     }
 
-    /** v1.80: ⭐ favoritos do Navegar do site ([{name, emoji, address, lat, lng}]) pro carro. */
+    /** v1.80: ⭐ favoritos do Toba Drive do site ([{name, emoji, address, lat, lng}]) pro carro. */
     public static boolean setFavorites(android.content.Context c, String json) {
         return AutoStore.setFavorites(c, json);
     }

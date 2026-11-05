@@ -35,7 +35,7 @@ import br.com.toba.auto.NavService;
  *
  * v1.77 (APK 1.6): este arquivo mudou de casa, de src/main/java/br/com/toba/app/
  * pra app/auto/br/com/toba/app/ (mesmo pacote; o Cloba só alcança até 7 pastas).
- * Navegando no 🧭 Navegar (TobaNative.navKeepAlive), a rota não morre com o
+ * Navegando no 🧭 Toba Drive (TobaNative.navKeepAlive), a rota não morre com o
  * celular bloqueado: serviço em primeiro plano (NavService), GPS nativo mandado
  * pra página (window.onTobaNativeFix), WebView sem pausar e voz do Android.
  * v1.78 (APK 1.7): rota junta com o Android Auto (DriveSync): rota do carro chega
@@ -59,7 +59,7 @@ public class MainActivity extends Activity {
     private TextToSpeech tts;
     private boolean ttsReady = false;
     private int ttsSeq = 0;
-    // v1.78 (APK 1.7): rota do Android Auto -> 🧭 Navegar do site (window.onTobaAutoRoute)
+    // v1.78 (APK 1.7): rota do Android Auto -> 🧭 Toba Drive do site (window.onTobaAutoRoute)
     private final DriveSync.Phone carRoutes = json -> runOnUiThread(() -> {
         if (web != null) web.evaluateJavascript("window.onTobaAutoRoute&&window.onTobaAutoRoute(" + json + ")", null);
     });
@@ -77,7 +77,7 @@ public class MainActivity extends Activity {
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setDatabaseEnabled(true);
-        // v1.76: GPS liberado pro site (Navegar, Places...). Sem isso o WebView nega calado.
+        // v1.76: GPS liberado pro site (Toba Drive, Places...). Sem isso o WebView nega calado.
         s.setGeolocationEnabled(true);
         s.setUserAgentString(s.getUserAgentString() + " TobaApp/" + BuildConfig.VERSION_NAME);
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
@@ -255,7 +255,7 @@ public class MainActivity extends Activity {
         });
     }
 
-    /* ---------------- v1.77: 🧭 Navegar com a tela apagada ---------------- */
+    /* ---------------- v1.77: 🧭 Toba Drive com a tela apagada ---------------- */
 
     // Chamado pela ponte (TobaNative.navKeepAlive) no Partiu e no fim da rota.
     void setNavigating(boolean on, String text) {

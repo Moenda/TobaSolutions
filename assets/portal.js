@@ -686,13 +686,13 @@ function renderRacingCard() {
     if (s.avgKml) parts.push(`📊 média ${formatRacingKml(s.avgKml)}`);
   }
   if (s.monthSpent) parts.push(`⛽ ${formatCurrency(s.monthSpent)} no mês`);
-  // Navegar (Toba Drive, dentro do Racing desde v1.66): km do mês pelo GPS
+  // 🧭 Toba Drive (dentro do Racing desde v1.66; pasta TobaRacing/TobaDrive/ desde v1.83): km do mês pelo GPS
   if (typeof calcDriveSummary === "function") {
     let drive = null;
     try {
       drive = JSON.parse(localStorage.getItem("TOBA_DRIVE_DB") || "null");
     } catch (e) {
-      console.error("Erro ao ler os dados do Navegar", e);
+      console.error("Erro ao ler os dados do Toba Drive", e);
     }
     const d = calcDriveSummary(drive);
     if (d.monthKm) parts.push(`🧭 ${driveFormatKm(d.monthKm * 1000)} km navegados`);

@@ -2,7 +2,7 @@
  * Toba Drive · mapa da tela do carro (Android Auto, desde v1.78 / APK 1.7)
  * - O WebMap.java (TobaAndroid/app/auto/) desenha ESTA página na tela do carro
  *   (tela virtual em cima da Surface da Car App Library). Mesmo Mapbox Standard
- *   do 🧭 Navegar do celular: prédios 3D, luz de dia/noite pelo farol do carro.
+ *   do 🧭 Toba Drive do celular: prédios 3D, luz de dia/noite pelo farol do carro.
  * - O Java manda tudo por window.tobaAuto:
  *     config({ dark, mode3d, skin, pad:{t,r,b,l} })   pad = área livre (px CSS)
  *     car({ lat, lon, head, speed })                   ~1 por segundo
@@ -20,7 +20,7 @@
  * ===================================================================== */
 const AM_STYLE = "mapbox://styles/mapbox/standard";
 // mesma ordem do CarMap.SKINS (Java): o botão 🎨 do carro troca a LUZ do mapa
-// (igual a 🌗 do Navegar do celular). light null = Auto, segue o farol do carro.
+// (igual a 🌗 do Toba Drive do celular). light null = Auto, segue o farol do carro.
 // A rota fica sempre no mesmo azul.
 const AM_ROUTE = { route: "#3b82f6", casing: "#1e3a8a", theme: "default" };
 const AM_SKINS = [
@@ -595,13 +595,13 @@ function amShowOverview() {
 }
 
 
-/* ---------- 📸 radares (v1.80): OpenStreetMap pelo Overpass, mesmo cache do Navegar ----------
+/* ---------- 📸 radares (v1.80): OpenStreetMap pelo Overpass, mesmo cache do Toba Drive ----------
  * Caixas de ~4 km em volta do carro; o aviso vale pro radar na frente (até 30° do rumo)
  * a menos de 450 m. Falhou = segue sem radar.
  */
 const AM_RADAR_TILE = 0.04;
 const AM_RADAR_WARN_M = 450;
-const AM_RADAR_CACHE_KEY = "toba_drive_radar_cache"; // o mesmo do Navegar (drive-route.js)
+const AM_RADAR_CACHE_KEY = "toba_drive_radar_cache"; // o mesmo do Toba Drive (drive-route.js)
 const AM_RADAR_CACHE_DAYS = 7;
 const AM_OVERPASS = [
   "https://overpass-api.de/api/interpreter?data=",

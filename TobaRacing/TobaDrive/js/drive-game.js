@@ -1,5 +1,5 @@
 /* =====================================================================
- * Toba Drive · modo dirigir ULTRA (desde v1.68) — carregado depois do navegar.js
+ * Toba Drive · modo dirigir ULTRA (desde v1.68) — carregado depois do drive.js
  * - 🎮 Visual de jogo: navegando, o mapa inclina e gira com o carro (câmera do
  *   Mapbox, nav.map.cam; o truque de CSS do mapa clássico saiu na v1.70). Zoom
  *   pela velocidade já vinha do navTick. Arrastou o mapa = volta pro plano até
@@ -379,7 +379,7 @@ function gameDoneExtra(r) {
 function markPlaceVisited() {
   const id = nav.result?.placeId;
   if (!id) return;
-  window.location.href = `../TobaTurism/TobaTurism-Places.html?fui=${encodeURIComponent(id)}`;
+  window.location.href = `../../TobaTurism/TobaTurism-Places.html?fui=${encodeURIComponent(id)}`;
 }
 
 function readPlaceStatus(id) {
@@ -574,5 +574,5 @@ async function findFuel() {
 
 tobaActions({ shareTrip, findFuel, markPlaceVisited, toggle3d });
 
-// navegar.js abre antes deste arquivo: a primeira tela não viu o banner, mostra agora
+// drive.js abre antes deste arquivo: a primeira tela não viu o banner, mostra agora
 if (typeof nav !== "undefined" && nav.mode === "pick") renderFuelBanner();

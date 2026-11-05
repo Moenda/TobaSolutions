@@ -7,27 +7,27 @@
   <meta name="color-scheme" content="dark" />
   <meta name="supported-color-schemes" content="dark" />
   <meta name="theme-color" content="#0d1117" />
-  <link rel="manifest" href="../manifest.webmanifest" />
-  <link rel="icon" href="../icons/icon-192.png" />
-  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+  <link rel="manifest" href="../../manifest.webmanifest" />
+  <link rel="icon" href="../../icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Toba" />
-  <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="../../assets/toba-common.css" />
   <link rel="stylesheet" href="css/drive-base.css" />
-  <link rel="stylesheet" href="../assets/toba-player.css" />
-  <link rel="stylesheet" href="css/navegar.css" />
-  <title>Toba Racing | Navegar</title>
+  <link rel="stylesheet" href="../../assets/toba-player.css" />
+  <link rel="stylesheet" href="css/drive.css" />
+  <title>Toba Racing | Toba Drive 🧭</title>
 </head>
 
 <body>
   <!-- 1. Escolher o destino -->
   <div class="container" id="pickView">
     <header class="toba-header">
-      <a class="toba-back" href="../TobaRacing/TobaRacing-Index.html" data-label="Voltar para o Toba Racing" aria-label="Voltar para o Toba Racing">‹</a>
-      <a class="toba-titles" href="../TobaRacing/TobaRacing-Index.html">
+      <a class="toba-back" href="../TobaRacing-Index.html" data-label="Voltar para o Toba Racing" aria-label="Voltar para o Toba Racing">‹</a>
+      <a class="toba-titles" href="../TobaRacing-Index.html">
         <span class="toba-app">🏁 Toba Racing</span>
-        <span class="toba-page">Navegar</span>
+        <span class="toba-page">🧭 Toba Drive</span>
       </a>
       <div class="toba-header-actions">
         <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
@@ -47,8 +47,7 @@
     <div class="dv-chips is-wrap" id="favChips"></div>
 
     <div class="section-title" id="placesTitle">📌 Do Toba Places</div>
-    <div class="dv-chips" id="placesLists"></div>
-    <div class="dv-chips is-wrap" id="placesChips"></div>
+    <div class="dv-pl-grid" id="placesLists"></div>
 
     <div class="section-title dv-title-row"><span>🕘 Recentes</span><button type="button" class="chip-btn dv-mini" id="clearRecentBtn" data-click="clearRecent" hidden>🧹 Limpar</button></div>
     <div class="toba-list" id="recentList"></div>
@@ -142,9 +141,23 @@
       <div class="dv-veh-grid" id="vehicleChips"></div>
       <div class="section-title dv-title-row"><span>🏁 Velocímetro</span><span class="dv-count" id="speedoCount"></span></div>
       <div class="dv-sp-grid" id="speedoChips"></div>
-      <div class="section-title">🛣️ Cor da rota (pinta a seta e o Toba GT)</div>
+      <div class="section-title">🛣️ Cor da rota (pinta a seta também)</div>
       <div class="dv-colors" id="routeColorChips"></div>
-      <p class="dv-hint">🔒 Os trancados saem nas conquistas do Navegar (🏁 Pista, no Perfil). Dá pra trocar até no meio da rota pelo 🎨 do painel.</p>
+      <p class="dv-hint">🔒 Os trancados saem nas conquistas do Toba Drive (🏁 Pista, no Perfil). Dá pra trocar até no meio da rota pelo 🎨 do painel.</p>
+    </div>
+  </div>
+
+  <!-- 📌 Lugares de uma lista do Toba Places (v1.83) -->
+  <div class="toba-modal" id="placesSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <div class="dv-pl-head">
+          <h3 id="placesSheetTitle">📌 Toba Places</h3>
+          <small id="placesSheetSub"></small>
+        </div>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="placesSheetBody"></div>
     </div>
   </div>
 
@@ -178,7 +191,7 @@
         <h3>↗️ Ir por outro app</h3>
         <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
       </div>
-      <p class="dv-hint">Abre o mesmo destino já navegando. É o caminho pro Android Auto enquanto o Navegar não roda lá.</p>
+      <p class="dv-hint">Abre o mesmo destino já navegando. Pra quem prefere o Maps ou o Waze. No carro, o Toba Drive já abre sozinho no Android Auto 🚘.</p>
       <div class="dv-out-btns">
         <button type="button" class="btn btn-outline" data-click="openGoogleMaps">🗺️ Google Maps</button>
         <button type="button" class="btn btn-outline" data-click="openWaze">🚙 Waze</button>
@@ -186,23 +199,23 @@
     </div>
   </div>
 
-  <script src="../assets/toba-common.js"></script>
-  <script src="../assets/toba-cloud.js"></script>
+  <script src="../../assets/toba-common.js"></script>
+  <script src="../../assets/toba-cloud.js"></script>
   <script src="js/drive-metrics.js"></script>
-  <script src="../TobaHealth/js/health-metrics.js"></script>
-  <script src="../TobaRoutine/js/routine-metrics.js"></script>
-  <script src="../TobaKitchen/js/kitchen-recipes.js"></script>
-  <script src="../TobaRacing/js/racing-metrics.js"></script>
-  <script src="../TobaTurism/js/turism-metrics.js"></script>
-  <script src="../assets/toba-player.js"></script>
+  <script src="../../TobaHealth/js/health-metrics.js"></script>
+  <script src="../../TobaRoutine/js/routine-metrics.js"></script>
+  <script src="../../TobaKitchen/js/kitchen-recipes.js"></script>
+  <script src="../js/racing-metrics.js"></script>
+  <script src="../../TobaTurism/js/turism-metrics.js"></script>
+  <script src="../../assets/toba-player.js"></script>
   <script src="js/drive-core.js"></script>
-  <script src="../assets/toba-maps.js"></script>
+  <script src="../../assets/toba-maps.js"></script>
   <script src="js/drive-route.js"></script>
   <script src="js/drive-models.js"></script>
   <script src="js/drive-map.js"></script>
-  <script src="js/navegar.js"></script>
+  <script src="js/drive.js"></script>
   <script src="js/drive-game.js"></script>
-  <script src="../assets/pwa-register.js"></script>
+  <script src="../../assets/pwa-register.js"></script>
 </body>
 
 </html>

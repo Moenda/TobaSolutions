@@ -28,7 +28,7 @@ import br.com.toba.app.BuildConfig;
 
 /**
  * Internet do Android Auto: chaves, busca (TomTom Search), rota (TomTom Routing,
- * a mesma do Navegar do site) e imagem do mapa (Mapbox Static Images).
+ * a mesma do Toba Drive do site) e imagem do mapa (Mapbox Static Images).
  *
  * As chaves NÃO moram no APK: são lidas do próprio site (assets/toba-maps.js,
  * TOBA_TOMTOM_KEY e TOBA_MAPBOX_TOKEN) e guardadas no aparelho. Trocou a chave no

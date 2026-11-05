@@ -10,7 +10,7 @@
  *   cada DRIVE_REROUTE_GAP_MS. Nada disso vai pro cache do sw.js.
  * - Busca de endereço: Nominatim (mesma regra do Toba Places: 1 por segundo).
  * - Mapa: só Mapbox 3D desde v1.70 (drive-map.js). O Leaflet/CARTO/TomTom em
- *   imagem saiu do Navegar (o Toba Places continua com eles).
+ *   imagem saiu do Toba Drive (o Toba Places continua com eles).
  * - v1.70: TomTom com computeTravelTimeFor=all: a lentidão do caminho é
  *   "tempo com trânsito agora − tempo de rua vazia" (antes só contava acidente
  *   e bloqueio, e quase sempre dava "caminho livre").

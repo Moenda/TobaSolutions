@@ -33,10 +33,10 @@
 
     <div class="toba-kicker">Pé leve, bolso cheio. Ou não. 🏎️💨</div>
     <nav class="toba-hub-list" aria-label="Módulos do Toba Racing">
-      <a class="toba-hub-card" href="../TobaDrive/TobaDrive-Navegar.html">
+      <a class="toba-hub-card" href="TobaDrive/TobaDrive.html">
         <span class="toba-hub-icon">🧭</span>
         <span class="toba-hub-text">
-          <span class="toba-hub-title">Navegar</span>
+          <span class="toba-hub-title">Toba Drive</span>
           <span class="toba-hub-desc" id="hubNavDesc">GPS com voz e trânsito ao vivo. Destino da busca, dos favoritos ou do Toba Places.</span>
         </span>
         <span class="toba-hub-chevron">›</span>
@@ -49,19 +49,11 @@
         </span>
         <span class="toba-hub-chevron">›</span>
       </a>
-      <div class="toba-hub-card is-soon" role="button" tabindex="0" data-click="soonAuto">
-        <span class="toba-hub-icon">🚘</span>
-        <span class="toba-hub-text">
-          <span class="toba-hub-title">Android Auto <span class="rc-soon">SOON</span></span>
-          <span class="toba-hub-desc">O Navegar na tela do carro. Precisa do app Android novo 🔧</span>
-        </span>
-        <span class="toba-hub-chevron">🔒</span>
-      </div>
     </nav>
 
     <div class="section-title">🧭 Na estrada</div>
     <div class="toba-stats" id="hubDriveStats"></div>
-    <p class="rc-hint rc-hint-top">💡 Navegando, deixa o Toba aberto na tela: o navegador não deixa site usar o GPS com a tela apagada (por isso o Toba segura a tela acesa).</p>
+    <p class="rc-hint rc-hint-top">💡 No app Android o Toba Drive segue com a tela apagada e aparece sozinho no Android Auto 🚘. No navegador, deixa o Toba aberto na tela (site não usa GPS com a tela apagada).</p>
 
     <div class="section-title">🏆 Seu pit stop</div>
     <div class="toba-stats" id="hubStats"></div>
@@ -70,7 +62,7 @@
   <script src="../assets/toba-common.js"></script>
   <script src="../assets/toba-cloud.js"></script>
   <script src="js/racing-metrics.js"></script>
-  <script src="../TobaDrive/js/drive-metrics.js"></script>
+  <script src="TobaDrive/js/drive-metrics.js"></script>
   <script src="js/racing-core.js"></script>
   <script>
     // O Hub só mostra um resumo; quem grava é o módulo (e a ⚙️ com backup / Meu carro).
@@ -95,14 +87,14 @@
         + tile("📅 No mês", formatCurrency(s.monthSpent), s.monthKm ? `${formatRacingKm(s.monthKm)} km rodados` : "em combustível")
         + tile("📍 Odômetro", s.lastOdometer ? `${formatRacingKm(s.lastOdometer)} <small>km</small>` : "--", s.lastFillDaysAgo === null ? "nenhuma parada ainda" : s.lastFillDaysAgo === 0 ? "abasteceu hoje" : `última parada há ${s.lastFillDaysAgo} ${s.lastFillDaysAgo === 1 ? "dia" : "dias"}`);
     }
-    // Navegar (v1.66: o Toba Drive mora dentro do Racing). Só LÊ o TOBA_DRIVE_DB;
-    // quem grava é o Navegar (TobaDrive/js/drive-core.js, com a ⚙️ e backup próprios).
+    // 🧭 Toba Drive (mora dentro do Racing: TobaRacing/TobaDrive/ desde v1.83). Só LÊ o TOBA_DRIVE_DB;
+    // quem grava é o Toba Drive (TobaDrive/js/drive-core.js, com a ⚙️ e backup próprios).
     function renderDriveHub() {
       let data = null;
       try {
         data = JSON.parse(localStorage.getItem("TOBA_DRIVE_DB") || "null");
       } catch (e) {
-        console.error("Erro ao ler os dados do Navegar", e);
+        console.error("Erro ao ler os dados do Toba Drive", e);
       }
       const s = calcDriveSummary(data);
       document.getElementById("hubNavDesc").textContent = s.last
@@ -120,9 +112,6 @@
         + tile("🏁 Chegou", String(s.arrived), s.arrived ? "sem se perder" : "o destino te espera")
         + tile("⭐ Favoritos", String(s.favorites), s.favorites ? "a um toque" : "🏠 Casa, 💼 Trampo...");
     }
-    tobaActions({
-      soonAuto: () => showPageMessage("🚘 Pra aparecer na tela do carro, o Android Auto só aceita app Android de verdade (não site). Primeiro o Navegar fica redondo no celular; depois vem o APK novo com GPS e o modo Android Auto. Enquanto isso, o ↗️ da navegação abre o mesmo destino no Maps/Waze, que já rodam no Auto.", { title: "Em breve", icon: "🚧" }),
-    });
     function onRacingDataReplaced() {
       renderRacingHub();
     }

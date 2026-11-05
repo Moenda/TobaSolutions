@@ -39,6 +39,7 @@ const TOBA_CLOUD_STATE_KEY = "toba_cloud_state";
 const TOBA_CLOUD_CHUNK = 300000; // caracteres por pedaço (até ~900 KB em UTF-8)
 const TOBA_CLOUD_PUSH_DELAY = 2500;
 const TOBA_CLOUD_DAILY_KEEP = 7;
+const TOBA_CLOUD_NAG_SNOOZE_DAYS = 30; // ✕ no aviso "sem Conta Toba" (v1.83)
 
 // Ordem = ordem dos chips na folha. Nunca troque uma "key" (é o id na nuvem).
 const TOBA_CLOUD_KEYS = [
@@ -892,7 +893,49 @@ tobaActions({
     TOBA_CLOUD.error = "";
     tobaCloudRender();
   },
+  tobaCloudNagCreate: () => {
+    TOBA_CLOUD.mode = "signup";
+    TOBA_CLOUD.error = "";
+    tobaCloudOpen();
+  },
+  tobaCloudNagLater: () => {
+    const state = tobaCloudReadState();
+    state.nagUntil = Date.now() + TOBA_CLOUD_NAG_SNOOZE_DAYS * 86400000;
+    tobaCloudWriteState(state);
+    tobaCloudRenderNag();
+    tobaToast(`Beleza, te lembro daqui a ${TOBA_CLOUD_NAG_SNOOZE_DAYS} dias 🤞`);
+  },
 });
+
+/* ---------------------------------------------------------------------
+ * Aviso "sem Conta Toba = sem backup" (v1.83)
+ * Só no portal, só pra quem não entrou numa conta e já tem algum dado.
+ * Sem conta, tudo mora no localStorage deste navegador: limpar os dados do
+ * site/app (ou trocar de celular) apaga tudo. ✕ esconde por 30 dias
+ * (toba_cloud_state.nagUntil); entrar na conta some com ele na hora.
+ * ------------------------------------------------------------------- */
+function tobaCloudHasLocalData() {
+  return TOBA_CLOUD_KEYS.some(({ key, group }) => group !== "prefs" && tobaCloudRaw.get.call(localStorage, key) !== null);
+}
+
+function tobaCloudRenderNag() {
+  const header = document.querySelector(".portal-header");
+  if (!header || !document.getElementById("tobaCloudBtn")) return; // só no portal
+  const state = tobaCloudReadState();
+  const show = !TOBA_CLOUD.user && !state.uid && !(Number(state.nagUntil) > Date.now()) && tobaCloudHasLocalData();
+  let nag = document.getElementById("tobaCloudNag");
+  if (!show) {
+    if (nag) nag.remove();
+    return;
+  }
+  if (nag) return;
+  header.insertAdjacentHTML("afterend", `<div class="tc-nag" id="tobaCloudNag" role="note">
+    <span class="tc-nag-icon" aria-hidden="true">⚠️</span>
+    <span class="tc-nag-text"><strong>Teu Toba tá sem backup</strong>Sem conta, tudo mora só neste navegador: limpou os dados do site, foi pro saco. 💩
+      <button type="button" class="tc-nag-go" data-click="tobaCloudNagCreate">☁️ Criar Conta Toba</button></span>
+    <button type="button" class="tc-nag-x" data-click="tobaCloudNagLater" aria-label="Lembrar daqui a 30 dias">✕</button>
+  </div>`);
+}
 
 /* ---------------------------------------------------------------------
  * Tela
@@ -1009,6 +1052,7 @@ function tobaCloudStatusLine() {
 }
 
 function tobaCloudRender() {
+  tobaCloudRenderNag();
   // Botão do portal e item da ⚙️
   const line = tobaCloudStatusLine();
   const portalBtn = document.getElementById("tobaCloudBtn");
@@ -1040,7 +1084,7 @@ function tobaCloudRender() {
     });
     const signup = TOBA_CLOUD.mode === "signup";
     body.innerHTML = `
-      <p class="toba-sheet-text">Com conta, teu Toba fica salvo na nuvem e aparece em qualquer celular ou PC. Sem conta, continua tudo só neste aparelho, igual sempre. 😎</p>
+      <p class="toba-sheet-text">Com conta, teu Toba fica salvo na nuvem e aparece em qualquer celular ou PC. Sem conta, continua tudo só neste aparelho: se limpar os dados do navegador, some junto. 😬</p>
       <div class="tc-chips tc-mode">
         <button type="button" class="tc-chip${signup ? "" : " is-on"}" data-click="tobaCloudMode" data-mode="login">Entrar</button>
         <button type="button" class="tc-chip${signup ? " is-on" : ""}" data-click="tobaCloudMode" data-mode="signup">Criar conta</button>

@@ -5,7 +5,9 @@
  *   de qual dia encaixar a task (fim do arquivo).
  * - Não depende de routine-core.js: o portal, o Perfil e o Treinos carregam
  *   este arquivo sozinho para o XP do jogador bater em todas as telas.
- *   (toba-player.js chama calcRoutinePlayer.) Nunca grava nada.
+ *   (toba-player.js chama calcRoutinePlayer.) Nunca grava nada, com UMA
+ *   exceção (v1.83, fim do arquivo): a fila do "✅ Feito" da notificação do
+ *   APK, que entra no log em qualquer tela que carregue este arquivo.
  * ===================================================================== */
 
 // A key é gravada em tasks[].difficulty e log[].difficulty: não renomeie.
@@ -761,3 +763,108 @@ function calcRoutineDayAgenda(db, iso, today = toIsoDate()) {
 
   return { date: iso, blocks, timed, untimed, allDay, wakeAt: wake ? wake.end : null, sleepAt: sleep ? sleep.start : null };
 }
+
+/* ---------------------------------------------------------------------
+ * "✅ Feito" tocado na notificação do APK (desde v1.83 em TODA tela que
+ * carrega este arquivo: portal, Perfil, hub do Routine, Task, Agenda...).
+ * Antes só a página da Rotina lia a fila, então quem marcava pela
+ * notificação e abria o portal não via a tarefa feita nem o XP.
+ * ------------------------------------------------------------------- */
+const ROUTINE_NATIVE_DONE_KEEP_DAYS = 30; // tarefa que não aparece no banco fica na fila até isso
+
+// Fila do Android: [{ taskId, date, at }] que o site ainda não gravou
+function readNativeRoutineDone() {
+  if (typeof TOBA_NATIVE === "undefined" || !TOBA_NATIVE || typeof TOBA_NATIVE.getDoneTasks !== "function") return [];
+  try {
+    const list = JSON.parse(TOBA_NATIVE.getDoneTasks() || "[]");
+    return Array.isArray(list) ? list.filter((item) => item && item.taskId && routineIsIso(item.date)) : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+// Regra pura: põe a fila no banco recebido (muda o objeto, não grava).
+// Devolve { added, ack, names }: ack = "taskId|data" que já pode sair da fila
+// (gravou, já estava no log, expirou ou é evento do Calendar = "ciente").
+// Tarefa que não está no banco (ex.: nuvem ainda descendo) fica na fila.
+function routineApplyNativeDone(db, list, now = Date.now()) {
+  const result = { added: 0, ack: [], names: [] };
+  if (!db || !Array.isArray(db.tasks)) return result;
+  if (!Array.isArray(db.log)) db.log = [];
+  const today = toIsoDate(new Date(now));
+  list.forEach((item) => {
+    const key = `${item.taskId}|${item.date}`;
+    const task = db.tasks.find((t) => t && String(t.id) === String(item.taskId));
+    if (!task) {
+      const isEvent = Array.isArray(db.events) && db.events.some((e) => e && String(e.id) === String(item.taskId));
+      if (isEvent || routineAddDays(item.date, ROUTINE_NATIVE_DONE_KEEP_DAYS) < today) result.ack.push(key);
+      return;
+    }
+    result.ack.push(key);
+    if (db.log.some((e) => e && String(e.taskId) === String(task.id) && e.date === item.date)) return;
+    const doneAt = Number(item.at) || now;
+    // "✅ Feito" tocado depois da meia-noite numa tarefa que não passa pro dia seguinte: expirou
+    if (!routineCarriesOver(task) && toIsoDate(new Date(doneAt)) > item.date) return;
+    db.log.push({ id: `l-${now}-${Math.random().toString(36).slice(2, 6)}`, taskId: String(task.id), date: item.date, doneAt, difficulty: ROUTINE_DIFFICULTIES[task.difficulty] ? task.difficulty : "easy" });
+    // Tinha deixado pra lá e tocou "✅ Feito" na notificação: o feito ganha
+    if (Array.isArray(db.skipped)) db.skipped = db.skipped.filter((k) => !(k && String(k.taskId) === String(task.id) && k.date === item.date));
+    result.added += 1;
+    result.names.push(`${task.emoji || "✅"} ${task.name}`);
+  });
+  return result;
+}
+
+// EXCEÇÃO QUE GRAVA (v1.83, ver CLAUDE.md): tira a fila do Android e grava no TOBA_ROUTINE_DB.
+// Com routine-core.js já carregado, mexe no routineDb da memória e salva por ele
+// (senão a próxima gravação da página passaria por cima). Sem ele (portal, Perfil,
+// ou o load antes do core), relê o texto cru, guarda o anterior no _AUTO_BACKUP e
+// grava. Banco ilegível/inexistente = não grava nem tira nada da fila.
+// Devolve quantas tarefas entraram no log.
+function routineAbsorbNativeDone() {
+  const list = readNativeRoutineDone();
+  if (!list.length) return 0;
+  let result;
+  if (typeof routineDb !== "undefined" && typeof saveRoutineDb === "function") {
+    if (!isRoutineDbLoaded) return 0;
+    result = routineApplyNativeDone(routineDb, list);
+    if (result.added && !saveRoutineDb({ silent: true })) return 0;
+  } else {
+    const raw = localStorage.getItem("TOBA_ROUTINE_DB");
+    if (raw === null) return 0;
+    let data = null;
+    try {
+      data = JSON.parse(raw);
+    } catch (err) {
+      return 0;
+    }
+    if (!data || typeof data !== "object" || Array.isArray(data) || !Array.isArray(data.tasks)) return 0;
+    result = routineApplyNativeDone(data, list);
+    if (result.added) {
+      try {
+        localStorage.setItem("TOBA_ROUTINE_DB_AUTO_BACKUP", raw);
+        localStorage.setItem("TOBA_ROUTINE_DB", JSON.stringify(data));
+      } catch (err) {
+        return 0; // não gravou: fica tudo na fila pra próxima
+      }
+    }
+  }
+  // Só tira da fila do app o que ficou resolvido no banco
+  if (result.ack.length && typeof TOBA_NATIVE.ackDoneTasks === "function") TOBA_NATIVE.ackDoneTasks(JSON.stringify(result.ack));
+  if (result.added) {
+    if (typeof tobaPlayerCheck === "function") {
+      tobaPlayerCheck({ reason: `✅ ${result.added === 1 ? `${result.names[0]} marcada` : `${result.added} tarefas marcadas`} pela notificação` });
+    }
+  }
+  return result.added;
+}
+
+// Já entra no load (antes do routine-core ler o banco e antes do portal/Perfil
+// desenharem) e de novo sempre que o app volta pra frente. Os ouvintes daqui
+// são registrados antes dos das páginas, então elas já redesenham com o feito.
+routineAbsorbNativeDone();
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") routineAbsorbNativeDone();
+});
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) routineAbsorbNativeDone();
+});

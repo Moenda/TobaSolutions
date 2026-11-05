@@ -12,9 +12,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
- * v1.80: ⭐ favoritos do 🧭 Navegar do site (Casa, Trampo...). Quem manda a lista é o
+ * v1.80: ⭐ favoritos do 🧭 Toba Drive do site (Casa, Trampo...). Quem manda a lista é o
  * site, pela ponte (TobaNative.autoFavorites), toda vez que abre uma página no app ou
- * mexe no Navegar. Tocar = prévia da rota.
+ * mexe no Toba Drive. Tocar = prévia da rota.
  */
 final class FavScreen extends Screen {
     private final NavEngine engine;
@@ -28,7 +28,7 @@ final class FavScreen extends Screen {
     public Template onGetTemplate() {
         JSONArray favs = AutoStore.favorites(getCarContext());
         ItemList.Builder list = new ItemList.Builder()
-                .setNoItemsMessage("Sem ⭐ ainda. Salva no 🧭 Navegar do celular e abre o Toba no celular uma vez.");
+                .setNoItemsMessage("Sem ⭐ ainda. Salva no 🧭 Toba Drive do celular e abre o Toba no celular uma vez.");
         android.location.Location here = engine.lastLocation();
         // o Android Auto mostra no máximo uns 6 itens com o carro andando (ele mesmo corta)
         for (int i = 0; i < favs.length(); i++) {

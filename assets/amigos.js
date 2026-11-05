@@ -968,7 +968,7 @@ const AM_HELP = {
     title: "🙈 O que os amigos veem",
     html: `
       <p>Sempre: teu <b>@</b>, avatar, título, <b>nível, XP e troféus</b>.</p>
-      <p>Cada chip ligado mostra os <b>totais</b> daquele app: 🏋️ treinos, kg levantado, km, streak · ✅ tarefas feitas · 🍳 pratos feitos · 🏁 abastecidas e km · 📍 lugares e cidades.</p>
+      <p>Cada chip ligado mostra os <b>totais</b> daquele app: 🏋️ treinos, kg levantado, km, streak · ✅ tarefas feitas · 🍳 pratos feitos · 🏁 abastecidas, km e viagens do Toba Drive · 📍 lugares e cidades.</p>
       <p>Desligou um chip? Os números e os troféus daquele app somem da tua vitrine (o amigo vê 🙈).</p>
       <p>⚖️ <b>Teu peso</b> vem desligado. Só aparece se tu ligar.</p>
       <p>Nunca aparece: 💰 Bank, treino por treino, nome de tarefa, receita, lista de lugares, endereço. Isso fica só contigo. 🤐</p>

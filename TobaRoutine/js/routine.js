@@ -683,29 +683,10 @@ async function enableRoutineNotify() {
 }
 
 // O app Android guarda os "✅ Feito" tocados na notificação; aqui viram log.
+// Desde v1.83 a regra mora no routine-metrics.js (routineAbsorbNativeDone),
+// que roda em toda tela; aqui só redesenha a Rotina quando entrou algo.
 function importNativeRoutineDone() {
-  const list = readNativeRoutineDone();
-  if (!list.length || !isRoutineDbLoaded) return;
-  let added = 0;
-  list.forEach((item) => {
-    const task = findRoutineTask(item.taskId);
-    if (!task) return;
-    if (routineDb.log.some((e) => e.taskId === String(task.id) && e.date === item.date)) return;
-    const doneAt = Number(item.at) || Date.now();
-    // "✅ Feito" tocado depois da meia-noite numa tarefa que não passa pro dia seguinte: expirou
-    if (!routineCarriesOver(task) && toIsoDate(new Date(doneAt)) > item.date) return;
-    routineDb.log.push({ id: newRoutineLogId(), taskId: String(task.id), date: item.date, doneAt, difficulty: task.difficulty });
-    // Tinha deixado pra lá e tocou "✅ Feito" na notificação: o feito ganha
-    routineDb.skipped = routineDb.skipped.filter((k) => !(k.taskId === String(task.id) && k.date === item.date));
-    added += 1;
-  });
-  // Só tira da fila do app o que ficou gravado no banco
-  if (added && !saveRoutineDb({ silent: true })) return;
-  TOBA_NATIVE.ackDoneTasks(JSON.stringify(list.map((item) => `${item.taskId}|${item.date}`)));
-  if (added) {
-    renderRoutine();
-    tobaPlayerCheck({ reason: `✅ ${added === 1 ? "Tarefa marcada" : `${added} tarefas marcadas`} pela notificação` });
-  }
+  if (routineAbsorbNativeDone()) renderRoutine();
 }
 
 /* ---------------------------------------------------------------------

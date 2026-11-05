@@ -112,7 +112,7 @@ final class Maneuvers {
         return Distance.create(Math.round(m / 10.0) * 10, Distance.UNIT_METERS);
     }
 
-    /** v1.78: nome do desenho da seta no mapa 3D (TobaDrive/js/auto-map.js, amIcon). */
+    /** v1.78: nome do desenho da seta no mapa 3D (TobaRacing/TobaDrive/js/auto-map.js, amIcon). */
     static String key(Route.Instr it) {
         switch (type(it)) {
             case Maneuver.TYPE_TURN_NORMAL_RIGHT: return "right";

@@ -27,7 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Cérebro do Navegar no carro: GPS, onde estou na rota, próxima manobra, voz,
+ * Cérebro do Toba Drive no carro: GPS, onde estou na rota, próxima manobra, voz,
  * recálculo quando sai da rota e chegada. Tudo na main thread (a internet vai no io).
  */
 final class NavEngine implements LocationListener {

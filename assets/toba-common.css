@@ -1768,6 +1768,62 @@ body:has(> .toba-fullpage.active) > .container {
   margin-bottom: 0.6rem;
 }
 
+/* Aviso "sem Conta Toba = sem backup" no portal (v1.83) */
+.tc-nag {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 0.9rem;
+  padding: 0.55rem 0.6rem 0.6rem 0.8rem;
+  border: 1px solid rgba(227, 179, 65, 0.4);
+  border-radius: var(--radius);
+  background: linear-gradient(150deg, rgba(227, 179, 65, 0.1), var(--surface) 70%);
+}
+
+.tc-nag-icon {
+  font-size: 1.2rem;
+}
+
+.tc-nag-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--text-2);
+}
+
+.tc-nag-text strong {
+  font-size: 0.82rem;
+  color: var(--text);
+}
+
+.tc-nag-go {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text);
+  border: 1px solid var(--blue);
+  border-radius: 999px;
+  background: rgba(88, 166, 255, 0.14);
+  cursor: pointer;
+}
+
+.tc-nag-x {
+  flex-shrink: 0;
+  align-self: flex-start;
+  padding: 0.1rem 0.25rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
 .tc-or {
   text-align: center;
   color: var(--muted);

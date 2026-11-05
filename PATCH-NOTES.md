@@ -1935,3 +1935,55 @@ O velocímetro continua na esquerda: os botões do Android Auto ficam sempre na 
 **Como testar:** DHU › Toba › tocar no mapa: na direita "3D", 🧭 e 🎨. Simular numa avenida de mão dupla com radar só de um lado: no sentido sem radar a voz fica quieta.
 
 **Commit sugerido:** `v1.82 - Android Auto: botao 3D/2D escrito e bussola no centralizar (APK 1.9); radar da pista do outro sentido nao avisa mais (carro e celular)`
+
+## v1.83 — Pacote da lista do Rafa (5 patches num commit só)
+
+**Arquivos que mudaram:** `TobaBank/js/gastos.js`, `TobaRoutine/js/routine-metrics.js`, `TobaRoutine/js/routine.js`, `TobaRoutine/js/routine-alerts.js`, `assets/toba-cloud.js`, `assets/toba-common.css`, `CLAUDE.md`, `sw.js` (cache `toba-v43`), `PATCH-NOTES.md`.
+
+### 💳 Gastos: parcelas do mês entram nas categorias
+1. **Gastos por categoria** agora soma as compras à vista **e as parcelas do mês** de cada categoria (igual o histórico dos meses já fazia). Ex.: Cuidados = Shampoo 36,00 + Kérastase 37,99 + Pomada 29,95 = **R$ 103,94**. A % de cada barra é sobre o total variável do mês (à vista + parcelas).
+2. **Filtro da categoria:** o "Total no mês" e a "Média" contam as parcelas também ("em 1 compra + 2 parcelas", média "por lançamento").
+3. Com filtro ligado, a sanfona **Parcelas do mês** também mostra só as da categoria (contador "2/12"). Categoria que só tem parcela no mês agora aparece nas barras e dá pra filtrar.
+
+**Dados:** Nenhuma mudança (é só conta na tela).
+
+**Como testar:** Gastos › Mês › tocar em 🧴 Cuidados: barra e quadradinho com R$ 103,94, Parcelas do mês mostrando Kérastase e Pomada.
+
+### ☁️ Aviso de "sem Conta Toba = sem backup"
+1. **No portal**, quem usa o Toba **sem Conta Toba** (e já tem algum dado) vê um aviso pequeno logo abaixo do cabeçalho: *"Teu Toba tá sem backup · Sem conta, tudo mora só neste navegador: limpou os dados do site, foi pro saco. 💩"*, com o botão **☁️ Criar Conta Toba** (abre a ☁️ já em "Criar conta").
+2. **✕** esconde por 30 dias (toast "te lembro daqui a 30 dias"). Entrou na conta, o aviso some na hora; saiu da conta, ele volta. Aparelho zerado (sem nenhum dado) não vê aviso.
+3. A tela de login da ☁️ agora fala a real: "Sem conta, continua tudo só neste aparelho: se limpar os dados do navegador, some junto."
+4. **Conferido:** os 8 bancos sobem pra nuvem (Bank, Health, Routine, Kitchen, Racing, Tourism, Drive e Perfil) + as preferências dos cards. Ficam só no aparelho (de propósito, são ajustes de tela): as escolhas do 🧭 Navegar (voz, carango, luz, velocímetro), o período do gráfico da Pesagem, o estilo do mapa do Places, cache de radar e o treino/receita em andamento.
+
+**Arquivos:** `assets/toba-cloud.js` (`tobaCloudRenderNag`, `tobaCloudHasLocalData`, ações `tobaCloudNagCreate`/`tobaCloudNagLater`), `assets/toba-common.css` (`.tc-nag*`).
+
+**Dados:** Nenhuma mudança nos bancos. Campo novo `nagUntil` dentro do `toba_cloud_state` (só o toba-cloud grava).
+
+**Como testar:** aba anônima com algum dado (ou sair da conta) › portal mostra o aviso › ☁️ Criar Conta Toba abre o cadastro › ✕ some e não volta ao recarregar. Logado: nada de aviso.
+
+### ✅ Routine: "Feito" da notificação conta assim que abre o app
+1. **O BO:** o "✅ Feito" tocado na notificação do APK ficava numa fila do Android, e só a página da **Rotina** lia essa fila. Abrindo o app no portal (ou no hub do Routine, Perfil, Task, Agenda), a tarefa aparecia como não feita e o XP não vinha até entrar na Rotina.
+2. **Agora:** a leitura da fila mudou pro `routine-metrics.js` (`routineAbsorbNativeDone`), que roda em **toda tela** que carrega ele: no load (antes do portal/hub desenharem) e toda vez que o app volta pra frente (`visibilitychange`/`pageshow`). Entra no log do mesmo jeito de antes e solta o "+XP" com o nome da tarefa.
+3. **Mais seguro:** banco ilegível ou ainda vazio = não grava e **não tira da fila** (antes um "feito" de tarefa que o banco ainda não tinha, tipo com a nuvem descendo, era descartado). Tarefa que não aparece fica na fila até 30 dias; evento do Calendar continua virando "ciente".
+4. Na Rotina nada muda pro usuário: `importNativeRoutineDone()` só chama a regra nova e redesenha.
+
+**Dados:** Nenhuma mudança de formato (entrada no `log` igual à de antes; o anterior vai pro `TOBA_ROUTINE_DB_AUTO_BACKUP`). Não precisa de APK novo.
+
+**Como testar:** no celular, tocar "✅ Feito" numa notificação do Routine (ex. 🧴 Skin care diurno), abrir o app no portal: o card do Routine já mostra feita e aparece o "+XP ... pela notificação". No navegador do PC nada muda (sem ponte, a fila é vazia).
+
+### 🧭 Toba Drive: tudo dentro do Racing, sem "Navegar" e sem SOON
+1. **Pasta nova:** o Drive saiu da raiz e foi pra `TobaRacing/TobaDrive/`. A tela principal virou `TobaDrive.html` (era `TobaDrive-Navegar.html`), `js/navegar.js` virou `js/drive.js` e `css/navegar.css` virou `css/drive.css`. Todos os links, o `sw.js` e os `<script>` do `drive-metrics.js` (portal, Perfil, Amigos, Places, Racing, Treinos, Rotina, Task, Agenda, Receitas e Semana) apontam pro lugar novo. **Dados:** nenhuma chave do localStorage mudou (`TOBA_DRIVE_DB`, `toba_drive_prefs`, `toba_drive_active`...), então favoritos, viagens e conquistas ficam onde estão.
+2. **Nome:** na tela é **🧭 Toba Drive** em todo canto (card do Racing, cabeçalho, conquistas `dv-*`, avisos, notificação do Auto). Nada de "Navegar".
+3. **Racing:** saiu o card 🚘 **Android Auto SOON** (o Auto já abre sozinho no carro). A dica do "Na estrada" agora fala que no app a tela pode apagar.
+4. **📌 Do Toba Places:** em vez de chips soltos, um **card por lista** (emoji, nome, "📌 3 pra ir · ✅ 2 · cidade" e quantos lugares). Tocou, abre um **popup** com "📌 Quero ir" e "✅ Já fui" (mais perto em cima quando tem GPS, distância na direita, nota do rolê nos que já foi). Tocou no lugar, a rota sai na hora; 🔎 = sem pino, procura pelo nome.
+5. **🏎️ Toba GT 3D** saiu da lista de carangos: carrão de corrida é prêmio do MAX TOBASTEN. Quem estava com ele volta pra ➤ seta sozinho.
+6. **Toba dos amigos:** o duelo do 🏁 Toba Racing ficava 0 x 0 pra quem só navega. Agora conta também **🧭 Km no Toba Drive**, **🛣️ Viagens** e **🏁 Chegadas** (mesma conta do card do Racing). Amigo com versão velha aparece "--" até abrir o Toba atualizado.
+7. **APK 2.0 (versionCode 11):** o mapa do carro (`WebMap.java`) abre o endereço novo `TobaRacing/TobaDrive/TobaDrive-Auto.html`; textos "Navegar" do carro viraram "Toba Drive".
+
+**Arquivos:** `TobaRacing/TobaDrive/**` (novo lugar), `TobaRacing/TobaRacing-Index.html`, `TobaRacing/TobaRacing-Combustivel.html`, `TobaRacing/css/racing-base.css`, `index.html`, `Toba-Perfil.html`, `Toba-Amigos.html`, `TobaTurism/TobaTurism-Places.html`, `TobaHealth/TobaHealth-Treinos.html`, `TobaRoutine/TobaRoutine-{Agenda,Rotina,Task}.html`, `TobaKitchen/TobaKitchen-{Receitas,Semana}.html`, `assets/toba-social.js` (`socialDriveNumbers`, stats `driveKm`/`driveTrips`/`driveArrived`), `assets/amigos.js`, `assets/toba-player.js` (só textos), `assets/portal.js`, `assets/toba-maps.js` (comentários), `TobaAndroid/app/build.gradle`, `TobaAndroid/app/auto/**` (`WebMap.URL` + textos), `TobaAndroid/README.md`.
+
+**⚠️ Antes do commit:** apagar a pasta antiga **`TobaDrive/` da raiz** (`git rm -r TobaDrive` ou apagar no Explorer). A IA não consegue apagar arquivo no PC. Depois do push, gerar o **APK 2.0** e instalar **pelo KingInstaller** (o APK 1.9 ainda procura o mapa do carro no endereço velho; sem o 2.0 o carro cai no mapa de imagens).
+
+**Como testar:** Racing › 🧭 Toba Drive (sem card SOON) › 📌 Do Toba Places › tocar numa lista › popup › tocar num lugar = rota. 🎨 sem o Toba GT 3D. Toba dos amigos › duelo do Racing com Km no Toba Drive / Viagens / Chegadas. No carro (DHU), depois do APK 2.0: mapa 3D abre normal.
+
+**Commit sugerido:** `v1.83 - Gastos: parcelas do mes somam nas categorias e no filtro + Feito da notificacao do Routine conta em qualquer tela + Toba Drive dentro do Racing (sem Navegar, sem SOON, listas do Places em popup, APK 2.0) (+ demais patches da lista)`

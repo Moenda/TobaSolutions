@@ -25,11 +25,11 @@ import java.util.Map;
 import br.com.toba.app.BuildConfig;
 
 /**
- * v1.78 (APK 1.7): o mapa do carro é o MESMO mapa 3D do 🧭 Navegar do site
+ * v1.78 (APK 1.7): o mapa do carro é o MESMO mapa 3D do 🧭 Toba Drive do site
  * (Mapbox GL, estilo Standard, prédios em 3D, luz de noite). Como a Car App
  * Library só entrega uma Surface pra desenhar, o Toba cria uma tela virtual
  * (VirtualDisplay) em cima dessa Surface e mostra nela um WebView com a página
- * TobaDrive/TobaDrive-Auto.html. O Java manda carro, rota e painel pra página
+ * TobaRacing/TobaDrive/TobaDrive-Auto.html. O Java manda carro, rota e painel pra página
  * (window.tobaAuto.*); a página avisa quando o mapa ficou pronto (TobaAuto.ready).
  *
  * Deu ruim (sem internet na 1ª vez, WebGL, Mapbox recusou, demorou demais)?
@@ -45,7 +45,7 @@ final class WebMap {
         default void onWebSay(String text) {}
     }
 
-    static final String URL = TobaApi.SITE + "TobaDrive/TobaDrive-Auto.html?apk=" + BuildConfig.VERSION_NAME;
+    static final String URL = TobaApi.SITE + "TobaRacing/TobaDrive/TobaDrive-Auto.html?apk=" + BuildConfig.VERSION_NAME;
     private static final long READY_TIMEOUT_MS = 25000;
 
     private final CarContext car;

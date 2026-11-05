@@ -179,7 +179,7 @@ final class Route {
         long time = sum == null ? 0 : sum.optLong("travelTimeInSeconds");
         long delay = sum == null ? 0 : sum.optLong("trafficDelayInSeconds");
         if (sum != null && sum.has("noTrafficTravelTimeInSeconds")) {
-            // mesma conta do Navegar do site: lentidão = com trânsito − sem trânsito
+            // mesma conta do Toba Drive do site: lentidão = com trânsito − sem trânsito
             delay = Math.max(delay, time - sum.optLong("noTrafficTravelTimeInSeconds"));
         }
 

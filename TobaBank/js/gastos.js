@@ -178,7 +178,13 @@ function renderDashboard() {
   }
 
   // RENDERIZAÇÃO OBRIGATÓRIA DAS SANFONAS E HISTÓRICOS ABAIXO
-  renderCategoryBars(currentMonthTransactions, monthlySpentVista, "categoryBarsContainer");
+  // v1.83: parcelas do mês também entram no "Gastos por categoria"
+  // (igual ao histórico dos meses). Só conta, nada é gravado.
+  const monthCategoryItems = [
+    ...currentMonthTransactions,
+    ...activeInstallmentsMonth.map((p) => ({ category: p.category, amount: p.amount })),
+  ];
+  renderCategoryBars(monthCategoryItems, monthlySpentVista + monthInstallmentsTotal, "categoryBarsContainer");
   renderExpenseListWithInstallments(currentMonthTransactions, activeInstallmentsMonth);
 }
 
@@ -248,17 +254,20 @@ function renderExpenseListWithInstallments(
     "homeInstallmentsListContainer",
   );
 
-  // Filtro de categoria: some sozinho se a categoria não tem mais gasto no mês
-  if (expenseCategoryFilter !== null && !transactions.some((t) => getCleanCategory(t.category) === expenseCategoryFilter)) {
+  // Filtro de categoria: some sozinho se a categoria não tem mais gasto nem parcela no mês
+  const inFilter = (t) => getCleanCategory(t.category) === expenseCategoryFilter;
+  if (expenseCategoryFilter !== null && !transactions.some(inFilter) && !activeInstallments.some(inFilter)) {
     expenseCategoryFilter = null;
     document.querySelectorAll("#categoryBarsContainer .category-item").forEach((item) => item.classList.remove("is-selected", "is-dim"));
   }
   const filtered = expenseCategoryFilter === null
     ? transactions
-    : transactions.filter((t) => getCleanCategory(t.category) === expenseCategoryFilter);
+    : transactions.filter(inFilter);
+  // v1.83: o filtro também separa as parcelas do mês da categoria
+  const filteredInst = expenseCategoryFilter === null ? activeInstallments : activeInstallments.filter(inFilter);
   setText("homeTransCount", expenseCategoryFilter === null ? transactions.length : `${filtered.length}/${transactions.length}`);
-  setText("homeInstCount", activeInstallments.length);
-  renderExpenseFilterBar(filtered);
+  setText("homeInstCount", expenseCategoryFilter === null ? activeInstallments.length : `${filteredInst.length}/${activeInstallments.length}`);
+  renderExpenseFilterBar(filtered, filteredInst);
 
   if (transContainer) {
     if (transactions.length === 0) {
@@ -268,10 +277,12 @@ function renderExpenseListWithInstallments(
         "Toque em <b>+ Gasto</b> para começar. Seu bolso agradece.",
       );
     } else {
-      transContainer.innerHTML = [...filtered]
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .map(transactionItemHtml)
-        .join("");
+      transContainer.innerHTML = filtered.length === 0
+        ? tobaEmpty("🧾", "Só parcela nessa categoria", "Nenhuma compra à vista dela no mês.", { compact: true })
+        : [...filtered]
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .map(transactionItemHtml)
+          .join("");
     }
   }
 
@@ -279,17 +290,27 @@ function renderExpenseListWithInstallments(
     instContainer.innerHTML =
       activeInstallments.length === 0
         ? tobaEmpty("💳", "Nenhuma parcela neste mês", "Cartão de férias. Aproveite!", { compact: true })
-        : activeInstallments.map(installmentItemHtml).join("");
+        : filteredInst.length === 0
+          ? tobaEmpty("💳", "Nenhuma parcela dessa categoria", "Só compra à vista nela esse mês.", { compact: true })
+          : filteredInst.map(installmentItemHtml).join("");
   }
 }
 
-function renderExpenseFilterBar(filtered) {
+function renderExpenseFilterBar(filtered, filteredInst = []) {
   const bar = document.getElementById("expenseFilterBar");
   if (!bar) return;
   bar.hidden = expenseCategoryFilter === null;
   if (expenseCategoryFilter === null) return;
-  const total = filtered.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-  const count = filtered.length;
+  // v1.83: total e média somam as compras à vista + as parcelas do mês da categoria
+  const sumOf = (list) => list.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+  const total = sumOf(filtered) + sumOf(filteredInst);
+  const buys = filtered.length;
+  const parcels = filteredInst.length;
+  const count = buys + parcels;
+  const countNote = [
+    buys ? `${buys} ${buys === 1 ? "compra" : "compras"}` : "",
+    parcels ? `${parcels} ${parcels === 1 ? "parcela" : "parcelas"}` : "",
+  ].filter(Boolean).join(" + ");
   // v1.51: total e média por compra em 2 quadradinhos
   const tile = (label, value, note, extra = "") => `
       <span class="expense-filter-stat${extra}">
@@ -303,8 +324,8 @@ function renderExpenseFilterBar(filtered) {
     </span>
     <button type="button" class="chip-btn" data-click="clearExpenseFilter">✕ Limpar filtro</button>
     <span class="expense-filter-stats">
-      ${tile("💸 Total no mês", formatCurrency(total), `em ${count} ${count === 1 ? "compra" : "compras"}`)}
-      ${tile("📊 Média", count ? formatCurrency(total / count) : "--", "por compra", " is-avg")}
+      ${tile("💸 Total no mês", formatCurrency(total), `em ${countNote || "0 compras"}`)}
+      ${tile("📊 Média", count ? formatCurrency(total / count) : "--", parcels ? "por lançamento" : "por compra", " is-avg")}
     </span>`;
 }
 

@@ -17,7 +17,7 @@ import br.com.toba.app.R;
 /**
  * Serviço em primeiro plano (tipo "location") enquanto tem rota no carro:
  * sem ele o Android corta o GPS quando a tela do celular apaga.
- * v1.77 (APK 1.6): o 🧭 Navegar do celular (MainActivity.startNav) usa também,
+ * v1.77 (APK 1.6): o 🧭 Toba Drive do celular (MainActivity.startNav) usa também,
  * com título próprio.
  */
 public final class NavService extends Service {
@@ -53,13 +53,13 @@ public final class NavService extends Service {
         String title = intent == null ? null : intent.getStringExtra(EXTRA_TITLE);
         NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         if (nm != null && nm.getNotificationChannel(CHANNEL) == null) {
-            nm.createNotificationChannel(new NotificationChannel(CHANNEL, "Navegar (Android Auto)", NotificationManager.IMPORTANCE_LOW));
+            nm.createNotificationChannel(new NotificationChannel(CHANNEL, "Toba Drive (Android Auto)", NotificationManager.IMPORTANCE_LOW));
         }
         PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class),
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         Notification n = new Notification.Builder(this, CHANNEL)
                 .setSmallIcon(R.drawable.ic_stat_toba)
-                .setContentTitle(title == null ? "🧭 Navegar no Android Auto" : title)
+                .setContentTitle(title == null ? "🧭 Toba Drive no Android Auto" : title)
                 .setContentText(text == null ? "Rota ligada" : text)
                 .setCategory(Notification.CATEGORY_NAVIGATION)
                 .setOngoing(true)

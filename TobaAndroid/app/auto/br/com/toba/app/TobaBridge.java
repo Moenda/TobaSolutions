@@ -189,7 +189,7 @@ final class TobaBridge {
         activity.keepScreenOn(on);
     }
 
-    // v1.77 (APK 1.6): 🧭 Navegar com a tela apagada. on = rota ligada (serviço em
+    // v1.77 (APK 1.6): 🧭 Toba Drive com a tela apagada. on = rota ligada (serviço em
     // primeiro plano + GPS nativo pra window.onTobaNativeFix); text = linha da notificação.
     @JavascriptInterface
     public void navKeepAlive(boolean on, String text) {
@@ -216,13 +216,13 @@ final class TobaBridge {
         return DriveSync.carRoute();
     }
 
-    // O 🧭 Navegar do site começou ({name, lat, lng}) ou parou ("") a rota: o carro acompanha
+    // O 🧭 Toba Drive do site começou ({name, lat, lng}) ou parou ("") a rota: o carro acompanha
     @JavascriptInterface
     public void autoRoute(String json) {
         DriveSync.fromPhone(json);
     }
 
-    // v1.80: ⭐ favoritos do 🧭 Navegar ([{name, emoji, address, lat, lng}]) pro botão Favoritos do carro
+    // v1.80: ⭐ favoritos do 🧭 Toba Drive ([{name, emoji, address, lat, lng}]) pro botão Favoritos do carro
     @JavascriptInterface
     public boolean autoFavorites(String json) {
         return DriveSync.setFavorites(activity, json);

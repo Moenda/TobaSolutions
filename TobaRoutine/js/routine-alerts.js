@@ -115,16 +115,7 @@ function routineDoneLine(difficulty, late) {
   return routinePick(ROUTINE_DONE_LINES[difficulty] || ROUTINE_DONE_LINES.easy);
 }
 
-// "taskId|data" que o app Android marcou como feito e o site ainda não leu
-function readNativeRoutineDone() {
-  if (!TOBA_NATIVE || typeof TOBA_NATIVE.getDoneTasks !== "function") return [];
-  try {
-    const list = JSON.parse(TOBA_NATIVE.getDoneTasks() || "[]");
-    return Array.isArray(list) ? list.filter((item) => item && item.taskId && routineIsIso(item.date)) : [];
-  } catch (err) {
-    return [];
-  }
-}
+// readNativeRoutineDone() mora no routine-metrics.js desde v1.83 (fila do "✅ Feito" do APK).
 
 // Próximos avisos: [{ key, at, title, body, url, taskId, date }] em ordem de horário
 function buildRoutineAlerts(data, now = Date.now()) {

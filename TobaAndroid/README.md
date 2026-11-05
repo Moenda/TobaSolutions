@@ -6,7 +6,7 @@ App Android que abre o site do Toba (`https://moenda.github.io/TobaSolutions/`) 
 - **Lembretes de verdade:** 08:00 / 14:00 / 22:00 (gastos), pesagem e treino, avisados pelo próprio Toba, mesmo com o app fechado.
 - **Fim do descanso** no treino ao vivo na hora certa, mesmo com a tela apagada.
 - Backup salvo direto em `Downloads/Toba`.
-- **🚘 Android Auto (APK 1.4, desde v1.75):** o 🧭 Navegar na tela do carro, com mapa, voz, trânsito do TomTom e recálculo. Ver a seção 6.
+- **🚘 Android Auto (APK 1.4, desde v1.75):** o 🧭 Toba Drive na tela do carro, com mapa, voz, trânsito do TomTom e recálculo. Ver a seção 6.
 
 Projeto Java puro. Única biblioteca (desde o APK 1.4): a **Car App Library** do Android Auto. Não entra no site (o `sw.js` não precisa dele).
 
@@ -70,14 +70,14 @@ Gastos / Pesagem / Treinos → ⚙️ → 🔔 Lembretes. No app, o botão vira 
 
 ## 6. 🚘 Android Auto (APK 1.4+)
 
-**Desde o APK 1.7 (v1.78):** mapa 3D clean (o mesmo Mapbox do Navegar, modo noturno seguindo o carro), botões 🧊 2D/3D e 🎨 skin no canto do mapa, velocidade do carro + placa da rua, trânsito só na rota. A rota é uma só: começou no carro, aparece no celular; deu Partiu no celular, o carro segue. Sem internet pro mapa 3D, volta o mapa de imagens com os cartões do Auto.
+**Desde o APK 1.7 (v1.78):** mapa 3D clean (o mesmo Mapbox do Toba Drive, modo noturno seguindo o carro), botões 🧊 2D/3D e 🎨 skin no canto do mapa, velocidade do carro + placa da rua, trânsito só na rota. A rota é uma só: começou no carro, aparece no celular; deu Partiu no celular, o carro segue. Sem internet pro mapa 3D, volta o mapa de imagens com os cartões do Auto.
 
 O Toba aparece no Android Auto como app de **navegação**: tela do carro com mapa, botões **Buscar** e **Recentes**, prévia da rota (tempo, km e trânsito) e **Bora!**. Navegando: cartão da próxima manobra, chegada prevista, voz em pt-BR que abaixa a música, recálculo quando sai da rota e "🏁 Chegou! Nunca foi sorte, Cloba." no fim.
 
-- **Rota e busca:** TomTom (a mesma chave do Navegar do site). **Mapa:** Mapbox (estilos de navegação dia/noite, seguindo o farol do carro). As chaves **não ficam no APK**: o app lê do próprio site (`assets/toba-maps.js`) e guarda no celular. Trocou a chave no site? O carro pega sozinho.
+- **Rota e busca:** TomTom (a mesma chave do Toba Drive do site). **Mapa:** Mapbox (estilos de navegação dia/noite, seguindo o farol do carro). As chaves **não ficam no APK**: o app lê do próprio site (`assets/toba-maps.js`) e guarda no celular. Trocou a chave no site? O carro pega sozinho.
 - **Teclado só com o carro parado** (regra do Android Auto). Andando, use **Recentes**.
 - **Simular:** na prévia da rota, o botão **Simular** dirige sozinho a 50 km/h pela rota. Serve pra testar no PC ou parado na garagem.
-- O que é do carro fica no celular (`toba_auto`: recentes, mudo e um diário das viagens). Os ⭐ favoritos, os km e as conquistas do Navegar do site **ainda não** conversam com o carro.
+- O que é do carro fica no celular (`toba_auto`: recentes, mudo e um diário das viagens). Os ⭐ favoritos, os km e as conquistas do Toba Drive do site **ainda não** conversam com o carro.
 
 ### 6.1 Liberar o Android Auto pra app de fora da Play Store (1 vez)
 

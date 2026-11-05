@@ -1,5 +1,5 @@
 /* =====================================================================
- * Toba Drive · 🧭 Navegar (desde v1.65)
+ * Toba Drive · 🧭 tela do Toba Drive (desde v1.65; era navegar.js até a v1.82)
  * Telas (mesmo HTML):
  *   "pick"    escolher o destino (busca, ⭐ favoritos, 📌 Toba Places, recentes)
  *   "choose"  mapa: toca onde quer ir
@@ -8,7 +8,7 @@
  *   "done"    chegou (ou encerrou): resumo da viagem
  * GPS: navigator.geolocation.watchPosition (só com a página aberta: navegador
  * não deixa site usar GPS com a tela apagada, por isso a tela acesa).
- * Abrir já com destino: TobaDrive-Navegar.html?lat=-23.5&lng=-46.6&name=Café
+ * Abrir já com destino: TobaDrive.html?lat=-23.5&lng=-46.6&name=Café
  * Só LÊ o TOBA_TURISM_DB (destinos do Toba Places); grava só o TOBA_DRIVE_DB.
  * v1.66: mora dentro do Toba Racing (‹ volta pro hub do Racing). Mapa e rota
  * do TomTom (assets/toba-maps.js + drive-route.js), 🚦 camada de trânsito e,
@@ -163,6 +163,8 @@ function onFix(p) {
   renderGpsStatus();
   drawCar();
   if (nav.mode === "nav") navTick();
+  // v1.83: popup do Places aberto e chegou o 1º GPS -> mostra as distâncias
+  if (!prev && document.getElementById("placesSheet")?.classList.contains("active")) renderPlacesSheet();
 }
 
 // Espera a 1ª posição (ou desiste em ms)
@@ -227,22 +229,20 @@ function renderPick() {
     ? favs.map((f) => chip(`${escapeHtml(f.emoji)} ${escapeHtml(f.name)}`, "goFav", { id: f.id })).join("")
     : `<span class="dv-hint">Escolhe um destino e toca em ⭐ pra deixar aqui (🏠 Casa, 💼 Trampo...).</span>`;
 
-  // 📌 Toba Places
+  // 📌 Toba Places (v1.83): um card por lista; tocar abre o popup com os lugares
   const t = readTurismForDrive();
   const lists = t.lists.filter((l) => t.places.some((p) => String(p.listId) === String(l.id)));
   document.getElementById("placesTitle").hidden = !lists.length;
-  if (lists.length && !lists.some((l) => String(l.id) === nav.placesListId)) nav.placesListId = String(lists[0].id);
-  document.getElementById("placesLists").innerHTML = lists.length > 1
-    ? lists.map((l) => chip(`${escapeHtml(l.emoji || "📍")} ${escapeHtml(l.name)}`, "pickPlacesList", { id: l.id }, String(l.id) === nav.placesListId ? " is-on" : "")).join("")
-    : "";
-  const list = lists.find((l) => String(l.id) === nav.placesListId);
-  const places = list ? t.places.filter((p) => String(p.listId) === String(list.id)) : [];
-  // Primeiro os que ainda quer ir, depois os já visitados
-  places.sort((a, b) => (a.status === "been") - (b.status === "been") || String(a.name).localeCompare(String(b.name)));
-  document.getElementById("placesChips").innerHTML = places.map((p) => {
-    const pin = drivePlacePin(p);
-    const icon = (typeof turismKind === "function" && turismKind(p.kind)?.icon) || (p.status === "been" ? "✅" : "📌");
-    return chip(`${icon} ${escapeHtml(p.name)}${pin ? "" : " 🔎"}`, "goPlace", { id: p.id });
+  document.getElementById("placesLists").innerHTML = lists.map((l) => {
+    const mine = t.places.filter((p) => String(p.listId) === String(l.id));
+    const been = mine.filter((p) => p.status === "been").length;
+    const want = mine.length - been;
+    const sub = [want ? `📌 ${want} pra ir` : "", been ? `✅ ${been}` : "", l.city ? escapeHtml(l.city) : ""].filter(Boolean).join(" · ");
+    return `<button type="button" class="dv-pl-card" data-click="openPlacesList" data-id="${escapeHtml(String(l.id))}">
+      <span class="dv-pl-emoji">${escapeHtml(l.emoji || "📍")}</span>
+      <span class="dv-pl-text"><b>${escapeHtml(l.name)}</b><small>${sub}</small></span>
+      <span class="dv-pl-count">${mine.length}</span>
+    </button>`;
   }).join("");
 
   // 🕘 Recentes
@@ -305,15 +305,54 @@ function goFav(el) {
   if (f) setDestination({ name: f.name, address: f.address, lat: f.lat, lng: f.lng });
 }
 
-function pickPlacesList(el) {
+// 📌 Popup de uma lista do Toba Places (v1.83): quero ir primeiro (mais perto em cima
+// quando tem GPS), depois os que já foi. Tocar no lugar = rota.
+function drivePlaceRow(p) {
+  const pin = drivePlacePin(p);
+  const icon = (typeof turismKind === "function" && turismKind(p.kind)?.icon) || "📍";
+  const where = p.region || p.address || "";
+  const rating = p.status === "been" && typeof turismRating === "function" ? turismRating(p.rating) : null;
+  const note = rating ? `${rating.icon} ${escapeHtml(rating.label)}` : "";
+  const right = !pin ? "🔎" : nav.pos ? driveFormatDist(driveDist([nav.pos.lat, nav.pos.lng], [pin.lat, pin.lng])) : "›";
+  return `<div class="toba-list-item dv-pl-place${p.status === "been" ? " is-been" : ""}" role="button" tabindex="0" data-click="goPlace" data-id="${escapeHtml(String(p.id))}">
+      <span class="dv-pl-kind">${icon}</span>
+      <span class="dv-item-text"><b>${escapeHtml(p.name)}</b>${where || note ? `<small>${[escapeHtml(where), note].filter(Boolean).join(" · ")}</small>` : ""}</span>
+      <span class="dv-item-km">${right}</span>
+    </div>`;
+}
+
+function renderPlacesSheet() {
+  const t = readTurismForDrive();
+  const list = t.lists.find((l) => String(l.id) === nav.placesListId);
+  if (!list) return false;
+  const mine = t.places.filter((p) => String(p.listId) === String(list.id));
+  const distOf = (p) => {
+    const pin = drivePlacePin(p);
+    return pin && nav.pos ? driveDist([nav.pos.lat, nav.pos.lng], [pin.lat, pin.lng]) : Infinity;
+  };
+  const byNear = (a, b) => distOf(a) - distOf(b) || String(a.name).localeCompare(String(b.name));
+  const want = mine.filter((p) => p.status !== "been").sort(byNear);
+  const been = mine.filter((p) => p.status === "been").sort(byNear);
+  document.getElementById("placesSheetTitle").textContent = `${list.emoji || "📍"} ${list.name}`;
+  document.getElementById("placesSheetSub").textContent = [list.city, `${mine.length} ${mine.length === 1 ? "lugar" : "lugares"}`].filter(Boolean).join(" · ");
+  document.getElementById("placesSheetBody").innerHTML =
+    (want.length ? `<div class="section-title">📌 Quero ir</div><div class="toba-list">${want.map(drivePlaceRow).join("")}</div>` : "")
+    + (been.length ? `<div class="section-title">✅ Já fui</div><div class="toba-list">${been.map(drivePlaceRow).join("")}</div>` : "")
+    + `<p class="dv-hint">Toca no lugar e o Toba Drive já traça a rota 🏁. 🔎 = sem pino no Places, aí eu procuro pelo nome.</p>`;
+  return true;
+}
+
+function openPlacesList(el) {
   nav.placesListId = String(el.dataset.id);
-  renderPick();
+  startGps(); // pra mostrar a distância de cada lugar
+  if (renderPlacesSheet()) openTobaModal("placesSheet");
 }
 
 function goPlace(el) {
   const t = readTurismForDrive();
   const p = t.places.find((x) => String(x.id) === String(el.dataset.id));
   if (!p) return;
+  closeTobaModal("placesSheet");
   const pin = drivePlacePin(p);
   if (pin) {
     setDestination({ name: p.name, address: p.address || p.region || "", lat: pin.lat, lng: pin.lng, placeId: p.id });
@@ -468,7 +507,7 @@ function currentRouteColor() {
 
 function driveAchievementInfo(id) {
   const a = typeof PLAYER_ACHIEVEMENTS !== "undefined" ? PLAYER_ACHIEVEMENTS.find((x) => x.id === id) : null;
-  return a ? `${a.icon} ${a.name}: ${a.hint}` : "uma conquista do Navegar";
+  return a ? `${a.icon} ${a.name}: ${a.hint}` : "uma conquista do Toba Drive";
 }
 
 function renderStyleSheet() {
@@ -524,7 +563,7 @@ function pickRouteColor(el) {
   storeDrivePrefs({ routeColor: el.dataset.id });
   renderStyleSheet();
   drawRoute();
-  drawCar(); // seta e GT 3D são pintados na cor da rota
+  drawCar(); // a seta é pintada na cor da rota
 }
 
 function pickSpeedo(el) {
@@ -1244,7 +1283,7 @@ tobaActions({
   goRecent,
   goFav,
   goPlace,
-  pickPlacesList,
+  openPlacesList,
   clearRecent,
   chooseOnMap,
   routeBack,
@@ -1473,7 +1512,7 @@ window.onTobaAutoRoute = function onTobaAutoRoute(d) {
   driveFollowAuto(d);
 };
 
-(function initNavegar() {
+(function initDrive() {
   syncPrefInputs();
   renderPickVehicle();
   renderGpsStatus();

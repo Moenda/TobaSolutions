@@ -53,6 +53,10 @@ const SOCIAL_STATS = [
   { key: "kitchenDistinct", icon: "📖", label: "Receitas diferentes", section: "cozinha" },
   { key: "racingFuelings", icon: "⛽", label: "Abastecidas", section: "racing" },
   { key: "racingKm", icon: "🏁", label: "Km rodados", section: "racing", unit: "km" },
+  // v1.83: o 🧭 Toba Drive entra no duelo do Racing (antes só o Combustível contava e quem só navega ficava 0 x 0)
+  { key: "driveKm", icon: "🧭", label: "Km no Toba Drive", section: "racing", unit: "km" },
+  { key: "driveTrips", icon: "🛣️", label: "Viagens", section: "racing" },
+  { key: "driveArrived", icon: "🏁", label: "Chegadas", section: "racing" },
   { key: "turismVisits", icon: "📍", label: "Lugares visitados", section: "places" },
   { key: "turismAdded", icon: "🗺️", label: "Lugares na lista", section: "places" },
   { key: "turismCities", icon: "🏙️", label: "Cidades", section: "places" },
@@ -214,6 +218,24 @@ function socialHeatLevels(state) {
   return out;
 }
 
+// v1.83: números do 🧭 Toba Drive direto do TOBA_DRIVE_DB (mesma conta do card do Racing:
+// km de todas as viagens). Lê na mão pra não depender do drive-metrics.js estar na página.
+function socialDriveNumbers() {
+  let trips = [];
+  try {
+    const db = JSON.parse(localStorage.getItem("TOBA_DRIVE_DB") || "null");
+    trips = Array.isArray(db?.trips) ? db.trips.filter((t) => t && typeof t.date === "string") : [];
+  } catch (err) {
+    trips = [];
+  }
+  const km = trips.reduce((acc, t) => acc + (Number(t.km) || 0), 0);
+  return {
+    driveKm: Math.round(km),
+    driveTrips: trips.length,
+    driveArrived: trips.filter((t) => t.arrived).length,
+  };
+}
+
 function socialBuildVitrine(state, prefs) {
   const show = prefs.show;
   const look = getPlayerLook(state);
@@ -245,6 +267,7 @@ function socialBuildVitrine(state, prefs) {
     kitchenDistinct: state.stats.kitchenDistinct || 0,
     racingFuelings: state.stats.racingFuelings || 0,
     racingKm: Math.round(state.stats.racingKm || 0),
+    ...socialDriveNumbers(),
     turismVisits: state.stats.turismVisits || 0,
     turismAdded: state.stats.turismAdded || 0,
     turismCities: state.stats.turismCities || 0,

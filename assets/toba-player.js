@@ -5,8 +5,8 @@
  * do TobaRoutine/js/routine-metrics.js (XP das tarefas, desde v1.41) e do
  * TobaKitchen/js/kitchen-recipes.js (conquistas da cozinha, desde v1.44), do
  * TobaRacing/js/racing-metrics.js e do TobaTurism/js/turism-metrics.js (conquistas
- * da pista e dos rolês, desde v1.56) e do TobaDrive/js/drive-metrics.js (conquistas
- * do 🧭 Navegar, desde v1.67; pode vir em qualquer ponto antes do player):
+ * da pista e dos rolês, desde v1.56) e do TobaRacing/TobaDrive/js/drive-metrics.js (conquistas
+ * do 🧭 Toba Drive, desde v1.67; pode vir em qualquer ponto antes do player):
  *   toba-common.js -> health-metrics.js -> routine-metrics.js -> kitchen-recipes.js
  *     -> racing-metrics.js -> turism-metrics.js -> drive-metrics.js -> toba-player.js
  * Sem routine-metrics.js, kitchen-recipes.js, racing-metrics.js, turism-metrics.js ou drive-metrics.js o
@@ -396,11 +396,11 @@ function buildPlayerAchievements() {
     { id: "rc-etanol", cat: "pista", tier: "bronze", icon: "🌽", name: "Movido a milho", desc: "Abasteceu com etanol. O carro virou pamonha.", hint: "Anote um abastecimento de etanol.", metric: (s) => s.racingEthanol, goal: 1 },
     { id: "rc-viagem", cat: "pista", tier: "prata", icon: "🏖️", name: "Bate e volta", desc: "Um tanque só com 500 km ou mais. Pegou estrada, hein!", hint: "Rode 500 km num trecho de tanque cheio a cheio.", metric: (s) => s.racingRoad, goal: 500 },
     { id: "rc-dor", cat: "pista", tier: "bronze", icon: "😭", name: "Doeu no bolso", desc: "Um abastecimento de R$ 300 ou mais. Choro na bomba.", hint: "Anote um abastecimento de R$ 300+.", metric: (s) => s.racingBigFill, goal: 300 },
-    // Toba Racing · 🧭 Navegar (desde v1.67; números de calcDrivePlayer em drive-metrics.js). Só viagem que chegou conta.
-    { id: "dv-1", cat: "pista", tier: "bronze", icon: "🧭", name: "Largada no GPS", desc: "Primeira navegação até o fim no Toba. O Cloba agora é teu copiloto.", hint: "Chegue a um destino pelo 🧭 Navegar.", metric: (s) => s.driveArrived, goal: 1 },
-    { id: "dv-10", cat: "pista", tier: "prata", icon: "🗺️", name: "GPS de carne e osso", desc: "10 chegadas pelo Navegar. Já sabe o caminho, mas liga o Toba por amor.", hint: "Chegue a 10 destinos pelo Navegar.", metric: (s) => s.driveArrived, goal: 10 },
-    { id: "dv-50", cat: "pista", tier: "ouro", icon: "🛰️", name: "Satélite particular", desc: "50 chegadas. A NASA pediu teu histórico emprestado.", hint: "Chegue a 50 destinos pelo Navegar.", metric: (s) => s.driveArrived, goal: 50, title: "🛰️ Satélite do Toba" },
-    { id: "dv-km100", cat: "pista", tier: "bronze", icon: "🛣️", name: "Cem conto de asfalto", desc: "100 km navegados com o Toba.", hint: "Some 100 km em viagens que chegaram pelo Navegar.", metric: (s) => s.driveKm, goal: 100 },
+    // Toba Racing · 🧭 Toba Drive (desde v1.67; números de calcDrivePlayer em drive-metrics.js). Só viagem que chegou conta.
+    { id: "dv-1", cat: "pista", tier: "bronze", icon: "🧭", name: "Largada no GPS", desc: "Primeira navegação até o fim no Toba. O Cloba agora é teu copiloto.", hint: "Chegue a um destino pelo 🧭 Toba Drive.", metric: (s) => s.driveArrived, goal: 1 },
+    { id: "dv-10", cat: "pista", tier: "prata", icon: "🗺️", name: "GPS de carne e osso", desc: "10 chegadas pelo Toba Drive. Já sabe o caminho, mas liga o Toba por amor.", hint: "Chegue a 10 destinos pelo Toba Drive.", metric: (s) => s.driveArrived, goal: 10 },
+    { id: "dv-50", cat: "pista", tier: "ouro", icon: "🛰️", name: "Satélite particular", desc: "50 chegadas. A NASA pediu teu histórico emprestado.", hint: "Chegue a 50 destinos pelo Toba Drive.", metric: (s) => s.driveArrived, goal: 50, title: "🛰️ Satélite do Toba" },
+    { id: "dv-km100", cat: "pista", tier: "bronze", icon: "🛣️", name: "Cem conto de asfalto", desc: "100 km navegados com o Toba.", hint: "Some 100 km em viagens que chegaram pelo Toba Drive.", metric: (s) => s.driveKm, goal: 100 },
     { id: "dv-km1000", cat: "pista", tier: "ouro", icon: "🌎", name: "Mil e uma rotas", desc: "1.000 km navegados. O GPS já te chama pelo nome.", hint: "Some 1.000 km navegados.", metric: (s) => s.driveKm, goal: 1000 },
     { id: "dv-tobasten", cat: "pista", tier: "ouro", icon: "⚡", name: "DANDANDAN MAX TOBASTEN", desc: "Rota de 10 min+ feita 10% antes do previsto. O trânsito abriu o mar pra você.", hint: "Chegue 10% antes do previsto numa rota de 10 min ou mais (sem pisar fundo: o Cloba te quer inteiro).", metric: (s) => s.driveTobasten, goal: 1, title: "⚡ Max Tobasten" },
     { id: "dv-tobasten5", cat: "pista", tier: "lenda", icon: "🏆", name: "Tobasten pentacampeão", desc: "5 vezes Max Tobasten. Interlagos tá ligando.", hint: "Faça o Max Tobasten 5 vezes.", metric: (s) => s.driveTobasten, goal: 5 },
@@ -411,8 +411,8 @@ function buildPlayerAchievements() {
     { id: "dv-ghost10", cat: "pista", tier: "ouro", icon: "🔦", name: "Caça-fantasmas", desc: "10 fantasmas derrotados. Who you gonna call? Toba!", hint: "Bata o fantasma 10 vezes.", metric: (s) => s.driveGhost, goal: 10, title: "🔦 Caça-fantasmas" },
     { id: "dv-radar10", cat: "pista", tier: "prata", icon: "📸", name: "Sorria, você NÃO foi filmado", desc: "Passou por 10 radares dentro do limite. A prefeitura chorou.", hint: "Passe por 10 radares navegando, sem estourar o limite.", metric: (s) => s.driveRadars, goal: 10 },
     { id: "dv-zen", cat: "pista", tier: "prata", icon: "😇", name: "Pé de anjo", desc: "Viagem de 20 min+ sem passar do limite nenhuma vez.", hint: "Navegue 20 min ou mais sem o velocímetro ficar vermelho.", metric: (s) => s.driveZen, goal: 1 },
-    { id: "dv-posto", cat: "pista", tier: "bronze", icon: "⛽", name: "Pit stop guiado", desc: "Foi até um posto pelo ⛽ do Navegar. Box, box, box!", hint: "Toque em ⛽ Posto perto no Navegar e chegue lá.", metric: (s) => s.driveFuel, goal: 1 },
-    { id: "dv-places", cat: "pista", tier: "bronze", icon: "📍", name: "Do mapa pro rolê", desc: "Chegou num lugar do Toba Places navegando pelo Toba.", hint: "Escolha um lugar do Places no Navegar e chegue lá.", metric: (s) => s.drivePlaces, goal: 1 },
+    { id: "dv-posto", cat: "pista", tier: "bronze", icon: "⛽", name: "Pit stop guiado", desc: "Foi até um posto pelo ⛽ do Toba Drive. Box, box, box!", hint: "Toque em ⛽ Posto perto no Toba Drive e chegue lá.", metric: (s) => s.driveFuel, goal: 1 },
+    { id: "dv-places", cat: "pista", tier: "bronze", icon: "📍", name: "Do mapa pro rolê", desc: "Chegou num lugar do Toba Places navegando pelo Toba.", hint: "Escolha um lugar do Places no Toba Drive e chegue lá.", metric: (s) => s.drivePlaces, goal: 1 },
     { id: "dv-share", cat: "pista", tier: "bronze", icon: "📤", name: "Influencer do asfalto", desc: "Mandou o resumo da viagem pra tropa. Like, compartilha e ativa o sininho.", hint: "No fim de uma viagem, toque em 📤 Tropa.", metric: (s) => s.driveShared, goal: 1 },
     { id: "dv-longa", cat: "pista", tier: "prata", icon: "🏖️", name: "Destino: praia", desc: "Uma viagem só com 80 km ou mais. Desceu a serra!", hint: "Chegue a um destino rodando 80 km+ numa viagem só.", metric: (s) => s.driveLongest, goal: 80 },
     // v1.70: destravam velocímetros (DRIVE_SPEEDOS em drive-metrics.js)
@@ -1172,18 +1172,18 @@ function computePlayer(options = {}) {
   } else {
     console.warn("toba-player: racing-metrics.js não carregado; conquistas da pista fora da conta.");
   }
-  // 🧭 Navegar (TOBA_DRIVE_DB, desde v1.67): só conquistas
+  // 🧭 Toba Drive (TOBA_DRIVE_DB, desde v1.67): só conquistas
   const driveSource = readPlayerSource("TOBA_DRIVE_DB");
   const hasDriveRules = typeof calcDrivePlayer === "function";
   if (hasDriveRules) {
-    // v1.68: começa os números do Navegar em zero (sem viagem nenhuma eles nem existiam e a barrinha enchia)
+    // v1.68: começa os números do Toba Drive em zero (sem viagem nenhuma eles nem existiam e a barrinha enchia)
     Object.assign(stats, calcDrivePlayer({}, today).stats);
     calcDrivePlayer(driveSource.data, today).timeline.forEach((step) => {
       Object.assign(stats, step.stats);
       checkAchievements(step.date);
     });
   } else {
-    console.warn("toba-player: drive-metrics.js não carregado; conquistas do Navegar fora da conta.");
+    console.warn("toba-player: drive-metrics.js não carregado; conquistas do Toba Drive fora da conta.");
   }
   const turismSource = readPlayerSource("TOBA_TURISM_DB");
   const hasTurismRules = typeof calcTurismPlayer === "function";

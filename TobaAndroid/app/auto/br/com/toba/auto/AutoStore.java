@@ -86,7 +86,7 @@ final class AutoStore {
     }
 
     /**
-     * v1.80: ⭐ favoritos do 🧭 Navegar do site (cópia que o site manda pela ponte,
+     * v1.80: ⭐ favoritos do 🧭 Toba Drive do site (cópia que o site manda pela ponte,
      * TobaNative.autoFavorites). Quem manda é o site: aqui só lê. Formato do site:
      * [{name, emoji, address, lat, lng}].
      */

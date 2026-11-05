@@ -1,7 +1,7 @@
 /* =====================================================================
  * Toba Drive · regras puras (desde v1.65)
  * - Só LÊ (recebe o banco por parâmetro); nunca grava. Usado no hub, no
- *   Navegar e no card do portal (que carrega este arquivo sozinho).
+ *   Toba Drive e no card do portal (que carrega este arquivo sozinho).
  * - Conta de mapa: distância (haversine), rumo, projeção do GPS na rota,
  *   polyline do roteador e o texto/voz das manobras em pt-BR.
  * ===================================================================== */
@@ -456,10 +456,10 @@ function driveFindGhost(db, start, dest) {
   return best;
 }
 
-/* ---------- ⛽ Combustível (v1.68): autonomia estimada pro Navegar ----------
+/* ---------- ⛽ Combustível (v1.68): autonomia estimada pro Toba Drive ----------
  * Só com tanque cadastrado e média de km/l no Toba Racing, e se o último
  * abastecimento foi de tanque cheio. Desconta os km navegados DEPOIS do dia
- * do abastecimento (o que rodou sem o Navegar não entra: é um chute pra baixo).
+ * do abastecimento (o que rodou sem o Toba Drive não entra: é um chute pra baixo).
  * Devolve { range, used, left, low } ou null. Só LÊ os dois bancos.
  */
 function driveFuelEstimate(racingDb, driveData, summaryFn) {
@@ -508,7 +508,7 @@ function driveIsDark(lat, lng, now = Date.now()) {
 
 /* ---------- 🤡 Cloba copiloto (v1.68): piadinha quinta série faz parte do DNA ----------
  * {limit}, {dist}, {min}, {pct} são trocados na hora. Nunca fala em cima de manobra
- * (navegar.js só chama com a próxima manobra longe).
+ * (drive.js só chama com a próxima manobra longe).
  */
 const DRIVE_COPILOT_LINES = {
   start: [
@@ -616,10 +616,11 @@ function calcDrivePlayer(data, today) {
  * (drive-models.js, model = qual modelo; v1.70 só o GT, v1.77 TODOS, porque a
  * Milena achou o emoji de lado "nada a ver" no mapa 3D). O emoji (icon) fica só
  * no 🎨 e na bolinha de skin. O id nunca muda (fica no toba_drive_prefs); item novo = linha nova.
+ * v1.83: o 🏎️ "Toba GT 3D" saiu da lista (Rafa: carrão de corrida é prêmio do MAX TOBASTEN,
+ * não vem de graça). Quem estava com "gt" volta pra seta sozinho (driveVehicle cai no [0]).
  */
 const DRIVE_VEHICLES = [
   { id: "seta", icon: "➤", name: "Seta clássica", face: "arrow" },
-  { id: "gt", icon: "🏎️", name: "Toba GT 3D", face: "model", model: "gt" },
   { id: "carro", icon: "🚗", name: "Carrinho", face: "model", model: "carro" },
   { id: "tartaruga", icon: "🐢", name: "Modo Marginal", face: "model", model: "tartaruga" },
   { id: "moto", icon: "🏍️", name: "Motoca", face: "model", model: "moto", achievement: "dv-1", need: (s) => s.driveArrived >= 1 },
@@ -634,7 +635,7 @@ const DRIVE_VEHICLES = [
 ];
 
 /* ---------- 🏁 velocímetros (v1.70, estilo Need for Speed) ----------
- * Skin do velocímetro navegando (classe .dv-sp-<id> no navegar.css). Destravam
+ * Skin do velocímetro navegando (classe .dv-sp-<id> no drive.css). Destravam
  * igual aos carangos: meta da conquista "achievement" calculada na hora, nunca
  * gravada. max = fundo da escala do ponteiro (km/h). O id nunca muda.
  */

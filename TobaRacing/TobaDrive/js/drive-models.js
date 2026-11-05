@@ -1,5 +1,5 @@
 /* =====================================================================
- * Toba Drive · carangos em 3D de verdade no mapa do Navegar (desde v1.70)
+ * Toba Drive · carangos em 3D de verdade no mapa do Toba Drive (desde v1.70)
  * Os modelos são montados aqui mesmo, em código (caixinhas e prismas, sem
  * arquivo .glb no repo), e viram um glTF em memória que o Mapbox carrega com
  * map.addModel(id, url). Unidade = metro, Y pra cima, frente do carango = +Z.

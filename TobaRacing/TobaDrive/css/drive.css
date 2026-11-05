@@ -1,4 +1,4 @@
-/* Toba Drive · 🧭 Navegar */
+/* Toba Drive · 🧭 tela do Toba Drive (era navegar.css até a v1.82) */
 
 /* ---------- escolher destino ---------- */
 .dv-notice {
@@ -1265,4 +1265,115 @@ body.is-over .dv-route::after {
 @media (prefers-reduced-motion: reduce) {
   .dv-sp-lenda .dv-speedo-dial { animation: none; }
   .dv-speedo .dv-speedo-dial::after { transition: none; }
+}
+
+/* 📌 Do Toba Places (v1.83): card por lista + popup com os lugares */
+.dv-pl-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin-bottom: 0.6rem;
+}
+
+.dv-pl-grid:empty {
+  display: none;
+}
+
+.dv-pl-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.12), rgba(255, 255, 255, 0.02));
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.dv-pl-card:active {
+  transform: scale(0.97);
+}
+
+.dv-pl-emoji {
+  flex: 0 0 auto;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.dv-pl-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dv-pl-text b,
+.dv-pl-text small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dv-pl-text b {
+  font-size: 0.86rem;
+}
+
+.dv-pl-text small {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.dv-pl-count {
+  flex: 0 0 auto;
+  min-width: 22px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(251, 146, 60, 0.2);
+  color: var(--drive);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.dv-pl-head {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dv-pl-head h3 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dv-pl-head small {
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.dv-pl-place {
+  gap: 10px;
+}
+
+.dv-pl-kind {
+  flex: 0 0 auto;
+  font-size: 1.25rem;
+}
+
+.dv-pl-place .dv-item-text {
+  flex: 1 1 auto;
+}
+
+.dv-pl-place.is-been {
+  opacity: 0.72;
+}
+
+#placesSheetBody .dv-hint {
+  margin-top: 0.8rem;
 }
