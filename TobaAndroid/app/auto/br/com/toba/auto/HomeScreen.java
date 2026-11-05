@@ -118,7 +118,8 @@ final class HomeScreen extends Screen implements NavEngine.Listener {
             if (msg != null) b.setNavigationInfo(msg);
         }
         if (hud) {
-            Action view = icon(engine.map().is3d() ? R.drawable.ic_map_2d : R.drawable.ic_map_3d, this::toggle3d);
+            // v1.82: o botão mostra o modo de agora ("3D" ou "2D" escrito); tocar troca
+            Action view = icon(engine.map().is3d() ? R.drawable.ic_map_3d : R.drawable.ic_map_2d, this::toggle3d);
             Action center = icon(R.drawable.ic_car_center, this::recenter);
             Action skin = icon(R.drawable.ic_map_skin, this::nextSkin);
             if (getCarContext().getCarAppApiLevel() >= CarAppApiLevels.LEVEL_2) {

@@ -1918,3 +1918,20 @@ O velocímetro continua na esquerda: os botões do Android Auto ficam sempre na 
 **Como testar:** DHU › Toba › 🔍 › destino › Simular: embaixo à esquerda a bolinha com a placa grudada, "XX min" grande e a barrinha andando; a rua atual no meio embaixo.
 
 **Commit sugerido:** `v1.81 - Android Auto: chegada com minutos grandes e barrinha de progresso, placa do limite grudada na velocidade, rua atual no meio, piadinhas do Cloba nos marcos da viagem e rota aparecendo atras dos predios no Navegar do celular`
+
+## v1.82 — 🚘 Android Auto: ícones da direita novos (3D/2D escrito e 🧭 bússola) e 📸 radar da pista do outro lado não avisa mais
+
+**Arquivos que mudaram:** `TobaAndroid/app/src/main/res/drawable/ic_map_3d.xml`, `ic_map_2d.xml` e `ic_car_center.xml`, `TobaAndroid/app/auto/br/com/toba/auto/HomeScreen.java`, `TobaAndroid/app/build.gradle` (versionCode 10 / versionName 1.9), `TobaDrive/js/auto-map.js`, `TobaDrive/js/drive-route.js`, `sw.js` (cache `toba-v42`), `PATCH-NOTES.md`.
+
+1. **Ícone do 2D/3D:** saiu o mapinha dobrado (que ficava tronxo). Agora o botão vem escrito **3D** ou **2D**, mostrando o modo de agora; tocar troca.
+2. **Centralizar = 🧭 bússola** (era a mira). A 🎨 paleta da luz do mapa continua.
+3. **📸 Radar só da tua pista:** antes o carro avisava radar que tava na mão contrária (ou na rua do lado) só por estar perto e mais ou menos na frente. Agora, com rota, só avisa radar a até 18 m da linha da rota e na frente do carro; sem rota, só o que tá na frente e no máximo 12 m pro lado. No mapa os radares continuam todos aparecendo.
+4. **Mesmo conserto no 🧭 Navegar do celular:** o radar "da rota" era tudo a até 40 m da linha (pegava a pista do outro sentido); agora é até 18 m.
+
+**Dados:** Nenhuma mudança.
+
+**APK 1.9:** precisa pros ícones (moram no app). Generate Signed APK e instalar por cima **pelo KingInstaller**. O conserto do radar é só site: vale com o push, mesmo no APK 1.8.
+
+**Como testar:** DHU › Toba › tocar no mapa: na direita "3D", 🧭 e 🎨. Simular numa avenida de mão dupla com radar só de um lado: no sentido sem radar a voz fica quieta.
+
+**Commit sugerido:** `v1.82 - Android Auto: botao 3D/2D escrito e bussola no centralizar (APK 1.9); radar da pista do outro sentido nao avisa mais (carro e celular)`

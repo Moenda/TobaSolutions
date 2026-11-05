@@ -25,7 +25,7 @@ const DRIVE_OVERPASS_MIRRORS = [DRIVE_OVERPASS_URL, "https://overpass.private.co
 const DRIVE_RADAR_CACHE_KEY = "toba_drive_radar_cache";
 const DRIVE_RADAR_CACHE_DAYS = 7;
 const DRIVE_RADAR_CACHE_MAX = 15;
-const DRIVE_RADAR_NEAR_M = 40;
+const DRIVE_RADAR_NEAR_M = 18; // v1.82: era 40 (pegava radar da pista do outro sentido)
 const DRIVE_VALHALLA_URL = "https://valhalla1.openstreetmap.de/route?json=";
 const DRIVE_OSRM_URL = "https://router.project-osrm.org/route/v1/driving/";
 const DRIVE_SEARCH_URL = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=1&accept-language=pt-BR&countrycodes=br&q=";

@@ -722,16 +722,58 @@ function amRadarDraw() {
   });
 }
 
+// v1.82: radar está NA ROTA, na frente? (até 18 m da linha; pista do outro sentido fica fora)
+const AM_RADAR_ROUTE_M = 18;
+const AM_RADAR_SIDE_M = 12; // sem rota: até 12 m pro lado da linha reta do rumo
+
+function amRadarOnRoute(r, lat, lon) {
+  const rt = am.route;
+  if (!rt || rt.pts.length < 2) return null;
+  const k = Math.cos((lat * Math.PI) / 180) * 111320;
+  const toXY = (pt) => [(pt[1] - lon) * k, (pt[0] - lat) * 110540];
+  const p = toXY([r.lat, r.lon]);
+  let best = null;
+  for (let i = 0; i < rt.pts.length - 1; i++) {
+    if (rt.cum[i + 1] < am.along - 30) continue;
+    if (rt.cum[i] > am.along + AM_RADAR_WARN_M + 50) break;
+    const a = toXY(rt.pts[i]);
+    const b = toXY(rt.pts[i + 1]);
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const len2 = dx * dx + dy * dy || 1;
+    const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2));
+    const off = Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
+    if (off <= AM_RADAR_ROUTE_M && (!best || off < best.off)) {
+      best = { off, along: rt.cum[i] + t * Math.sqrt(len2) };
+    }
+  }
+  return best;
+}
+
 // radar na frente do carro: pílula + voz (uma vez por radar)
 function amRadarCheck(lat, lon, head, speed) {
   amRadarLoad(lat, lon);
   let best = null;
+  const routed = Boolean(am.route) && !am.overview;
   amRadar.list.forEach((r, id) => {
     const d = amDist([lat, lon], [r.lat, r.lon]);
-    if (d > AM_RADAR_WARN_M) return;
-    const diff = Math.abs(((amBearing([lat, lon], [r.lat, r.lon]) - head + 540) % 360) - 180);
-    if (diff > 30 && d > 40) return;
-    if (!best || d < best.d) best = { id, d, lim: r.lim };
+    if (d > AM_RADAR_WARN_M + 60) return;
+    let ahead;
+    if (routed) {
+      // com rota: só radar em cima da rota e na frente (pela distância rodada)
+      const on = amRadarOnRoute(r, lat, lon);
+      if (!on) return;
+      ahead = on.along - am.along;
+      if (ahead < -5 || ahead > AM_RADAR_WARN_M) return;
+    } else {
+      // sem rota: na frente (até 30°) e no máximo 12 m pro lado do rumo
+      const diff = Math.abs(((amBearing([lat, lon], [r.lat, r.lon]) - head + 540) % 360) - 180);
+      const side = d * Math.sin((Math.min(diff, 90) * Math.PI) / 180);
+      if ((diff > 30 || side > AM_RADAR_SIDE_M) && d > 25) return;
+      if (d > AM_RADAR_WARN_M) return;
+      ahead = d;
+    }
+    if (!best || ahead < best.d) best = { id, d: Math.max(0, ahead), lim: r.lim };
   });
   const moving = (speed || 0) > 3;
   amRadar.near = best && moving ? best : null;
