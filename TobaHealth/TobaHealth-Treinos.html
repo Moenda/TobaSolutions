@@ -18,6 +18,8 @@
   <link rel="stylesheet" href="css/health-base.css" />
   <link rel="stylesheet" href="css/treinos.css" />
   <link rel="stylesheet" href="css/sessao.css" />
+  <link rel="stylesheet" href="css/alongamento.css" />
+  <link rel="stylesheet" href="css/caminhada.css" />
 </head>
 
 <body>
@@ -76,6 +78,10 @@
     <div id="viewSummary" class="app-view">
       <div id="strengthSummaryContent"></div>
     </div>
+
+    <div id="viewWalks" class="app-view">
+      <div id="walkHistoryContent"></div>
+    </div>
   </div>
 
   <div class="toba-modal" id="workoutModal" data-backdrop="static">
@@ -102,11 +108,18 @@
               <span class="toba-menu-desc">O herói do expediente registra o que aguentou hoje.</span>
             </span>
           </button>
+          <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="stretch">
+            <span class="toba-menu-icon">🧘</span>
+            <span class="toba-menu-text">
+              <span class="toba-menu-title">Alongamento</span>
+              <span class="toba-menu-desc">10 ou 20 min em casa, com timer e bonequinho de cada posição.</span>
+            </span>
+          </button>
           <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="walking">
             <span class="toba-menu-icon">🚶</span>
             <span class="toba-menu-text">
               <span class="toba-menu-title">Caminhada / Corrida</span>
-              <span class="toba-menu-desc">Do passeio contemplativo ao sprint atrás do ônibus.</span>
+              <span class="toba-menu-desc">Ao vivo com GPS, na rua ou na esteira. Do passeio ao sprint atrás do ônibus.</span>
             </span>
           </button>
           <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="bike">
@@ -206,6 +219,47 @@
         </label>
         <div class="toba-sheet-footer">
           <button type="submit" class="btn btn-primary">Salvar treino 💪</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="walkFinishModal" data-backdrop="static">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🏁 Fim da caminhada</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form data-submit="saveWalkLive">
+        <p class="toba-sheet-text" id="walkFinishSummary"></p>
+        <input type="hidden" id="walk-finish-activity" value="walk" />
+        <div class="form-group">
+          <span class="form-label">Foi o quê?</span>
+          <div class="walk-chips">
+            <button type="button" class="live-chip active" data-click="pickWalkFinishActivity" data-walk-activity="walk">🚶 Caminhada</button>
+            <button type="button" class="live-chip" data-click="pickWalkFinishActivity" data-walk-activity="run">🏃 Corrida</button>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="walk-finish-km">Distância (km)</label>
+            <input id="walk-finish-km" class="form-control" type="number" inputmode="decimal" min="0" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label for="walk-finish-minutes">Tempo (min)</label>
+            <input id="walk-finish-minutes" class="form-control" type="number" inputmode="numeric" min="1" step="1" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="walk-finish-calories">Calorias (kcal, estimadas pelo seu peso)</label>
+          <input id="walk-finish-calories" class="form-control" type="number" inputmode="numeric" min="0" step="1" />
+        </div>
+        <div class="form-group">
+          <label for="walk-finish-notes">Observações (opcional)</label>
+          <input id="walk-finish-notes" class="form-control" type="text" maxlength="160" placeholder="Por onde andou?" />
+        </div>
+        <div class="toba-sheet-footer">
+          <button type="submit" class="btn btn-primary">Salvar no histórico 🚶</button>
         </div>
       </form>
     </div>
@@ -338,6 +392,9 @@
   <script src="js/forca.js"></script>
   <script src="js/sessao.js"></script>
   <script src="js/sessao-saitama.js"></script>
+  <script src="../assets/toba-maps.js"></script>
+  <script src="js/sessao-alongamento.js"></script>
+  <script src="js/sessao-caminhada.js"></script>
   <script src="js/treinos.js"></script>
   <script src="../assets/pwa-register.js"></script>
 </body>

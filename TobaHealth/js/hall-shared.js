@@ -183,6 +183,7 @@ const MUSCLE_SHAPES = {
 
 // Cardio também pinta, mas leve: cada km vira "reps equivalentes" por grupo.
 // Sem distância, estima pelo tempo (km por minuto de cada atividade).
+// Alongamento (v1.84) não está aqui: pinta pelo que esticou (calcStretchMuscleItems).
 const CARDIO_MUSCLES = {
   walking: { kmPerMin: 0.1, perKm: { panturrilha: 12, quadriceps: 6, gluteos: 4, posterior: 3 } },
   bike: { kmPerMin: 0.3, perKm: { quadriceps: 5, panturrilha: 2, gluteos: 2 } },
@@ -214,6 +215,10 @@ function getMuscleExtras(workout) {
     const reps = (Number(workout.sets) || 0) * (Number(workout.reps) || 0) || Number(workout.durationMinutes) || 0;
     const each = Math.max(1, Math.round(reps / STRENGTH_GROUPS.length));
     if (reps > 0) STRENGTH_GROUPS.forEach((group) => items.push([group.id, each, each * MUSCLE_CARDIO_INTENSITY]));
+  }
+  // v1.84: alongamento pinta de leve o que esticou (catálogo em health-metrics.js)
+  if (workout.type === "stretch" && typeof calcStretchMuscleItems === "function") {
+    calcStretchMuscleItems(workout).forEach(([group, reps]) => items.push([group, reps, reps * MUSCLE_CARDIO_INTENSITY]));
   }
   return items;
 }

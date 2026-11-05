@@ -499,3 +499,109 @@ function calcHealthSummary(healthData, referenceDate = new Date()) {
     lastWorkoutDaysAgo: lastWorkout ? daysSince(lastWorkout.date) : null,
   };
 }
+
+/* =====================================================================
+ * 🧘 ALONGAMENTO (v1.84): catálogo e planos de 10 e 20 min.
+ * Mora aqui (e não em sessao-alongamento.js) porque o mapa de calor
+ * (hall-shared.js) do portal, do Perfil e do Toba-Amigos também precisa
+ * saber que músculo cada alongamento estica.
+ * - Os `id` de STRETCH_EXERCISES e STRETCH_PLANS ficam gravados no treino
+ *   (workout.stretch.plan / workout.stretch.held): nunca renomeie nem apague.
+ *   Pode mudar nome, texto e tempo à vontade.
+ * - groups: fatia de cada grupo do STRENGTH_GROUPS (somam 1). O "relax"
+ *   não tem grupo (não pinta o boneco).
+ * - sides: true = faz um lado e depois o outro (o tempo vale por lado).
+ * ===================================================================== */
+const STRETCH_PREP_SECONDS = 5; // "Prepara..." antes de cada posição
+const STRETCH_REPS_PER_MINUTE = 6; // mapa de calor: 1 min segurando = 6 reps leves
+
+const STRETCH_EXERCISES = [
+  { id: "bracos-circulo", name: "Círculos de braço", how: "Braços abertos na altura do ombro. Faz círculos pequenos e vai aumentando. Na metade, troca o sentido.", tip: "Aquecimento: devagar e sem tranco.", groups: { ombros: 1 }, sides: false },
+  { id: "pescoco", name: "Pescoço de lado", how: "Leva a orelha na direção do ombro. A mão do mesmo lado só apoia na cabeça, sem puxar forte.", tip: "Ombro de baixo relaxado, longe da orelha.", groups: { ombros: 0.6, costas: 0.4 }, sides: true },
+  { id: "ombro-cruzado", name: "Ombro cruzado", how: "Braço esticado na frente do peito. A outra mão abraça o cotovelo e puxa pra perto.", tip: "Não gira o tronco junto.", groups: { ombros: 0.7, costas: 0.3 }, sides: true },
+  { id: "triceps-nuca", name: "Tríceps atrás da cabeça", how: "Cotovelo pra cima, mão descendo pelas costas. A outra mão empurra o cotovelo de leve.", tip: "Cabeça reta, sem empurrar o pescoço pra frente.", groups: { triceps: 0.8, ombros: 0.2 }, sides: true },
+  { id: "peito-porta", name: "Peito no batente", how: "Antebraço apoiado no batente da porta (ou na parede), cotovelo na altura do ombro. Dá um passinho à frente e gira o corpo pro outro lado.", tip: "Sentiu no peito, parou ali. Nada de dor no ombro.", groups: { peito: 0.8, ombros: 0.2 }, sides: true },
+  { id: "antebraco", name: "Punho e antebraço", how: "Braço esticado pra frente, palma pra cima. A outra mão puxa os dedos pra baixo e pra trás.", tip: "Bom pra quem vive no celular e no mouse.", groups: { antebraco: 0.8, biceps: 0.2 }, sides: true },
+  { id: "gato-vaca", name: "Gato e vaca", how: "De quatro, mãos embaixo dos ombros. Solta o ar arredondando as costas (gato) e puxa o ar afundando a barriga e olhando pra frente (vaca). Bem devagar.", tip: "Um ciclo a cada respiração.", groups: { costas: 0.6, abdomen: 0.4 }, sides: false },
+  { id: "crianca", name: "Postura da criança", how: "Senta nos calcanhares, joelhos afastados, e deita o tronco pra frente com os braços esticados no chão.", tip: "Testa pode descansar no chão ou numa almofada.", groups: { costas: 0.6, gluteos: 0.2, ombros: 0.2 }, sides: false },
+  { id: "esfinge", name: "Esfinge", how: "Deitado de barriga pra baixo, apoia nos antebraços e levanta o peito. Quadril fica no chão.", tip: "Ombros longe das orelhas, sem forçar a lombar.", groups: { abdomen: 0.7, costas: 0.3 }, sides: false },
+  { id: "torcao", name: "Torção sentado", how: "Sentado, uma perna esticada e a outra cruzada por cima com o pé no chão. Gira o tronco pro lado do joelho dobrado, cotovelo encostado nele.", tip: "Cresce a coluna antes de girar.", groups: { costas: 0.6, gluteos: 0.2, abdomen: 0.2 }, sides: true },
+  { id: "quadriceps", name: "Quadríceps em pé", how: "Em pé, segura o pé atrás e leva o calcanhar perto do bumbum. Joelhos juntos, apoia a outra mão na parede.", tip: "Contrai o bumbum de leve que estica mais.", groups: { quadriceps: 1 }, sides: true },
+  { id: "posterior", name: "Posterior em pé", how: "Um pé à frente com o calcanhar no chão e a ponta pra cima. Dobra a outra perna e leva o quadril pra trás, coluna reta.", tip: "É o quadril que vai pra trás, não as costas que curvam.", groups: { posterior: 0.8, panturrilha: 0.2 }, sides: true },
+  { id: "afundo-quadril", name: "Afundo do quadril", how: "Um joelho no chão (com almofada) e o outro pé na frente. Empurra o quadril pra frente devagar, tronco reto.", tip: "Pra quem passa o dia sentado: esse é o ouro.", groups: { quadriceps: 0.6, gluteos: 0.4 }, sides: true },
+  { id: "figura4", name: "Glúteo (figura 4)", how: "Deitado de costas, cruza o tornozelo em cima do joelho da outra perna. Puxa a coxa de baixo na direção do peito.", tip: "Cabeça e ombros no chão, relaxados.", groups: { gluteos: 0.8, posterior: 0.2 }, sides: true },
+  { id: "panturrilha", name: "Panturrilha na parede", how: "Mãos na parede, uma perna atrás esticada com o calcanhar no chão. Dobra o joelho da frente e leva o corpo pra parede.", tip: "Ponta do pé de trás apontando pra frente.", groups: { panturrilha: 1 }, sides: true },
+  { id: "borboleta", name: "Borboleta", how: "Sentado, junta as solas dos pés e deixa os joelhos caírem pros lados. Segura os pés e cresce a coluna.", tip: "Nada de quicar os joelhos.", groups: { gluteos: 0.5, quadriceps: 0.5 }, sides: false },
+  { id: "relax", name: "Respira e relaxa", how: "Deitado de barriga pra cima, braços soltos. Puxa o ar em 4 tempos e solta em 6.", tip: "Mandíbula solta e dentes sem encostar 🦷", groups: {}, sides: false },
+];
+
+// steps: [id, segundos segurando (por lado)]. O "relax" do fim completa o tempo
+// do plano (prep de 5 s antes de cada posição entra na conta).
+const STRETCH_PLANS = [
+  {
+    id: "s10", name: "Alongamento 10 min", short: "10 min", icon: "🧘", minutes: 10,
+    desc: "Rapidinho: pescoço, ombro, costas e perna.",
+    steps: [["pescoco", 25], ["ombro-cruzado", 25], ["triceps-nuca", 25], ["peito-porta", 25], ["gato-vaca", 45], ["crianca", 45], ["quadriceps", 25], ["posterior", 25], ["panturrilha", 25], ["borboleta", 40], ["relax", 0]],
+  },
+  {
+    id: "s20", name: "Alongamento 20 min", short: "20 min", icon: "🧘‍♂️", minutes: 20,
+    desc: "Completão: do pescoço à panturrilha, com aquecimento e quadril.",
+    steps: [["bracos-circulo", 40], ["pescoco", 30], ["ombro-cruzado", 30], ["triceps-nuca", 30], ["peito-porta", 30], ["antebraco", 25], ["gato-vaca", 75], ["crianca", 75], ["esfinge", 40], ["torcao", 30], ["quadriceps", 35], ["posterior", 35], ["afundo-quadril", 35], ["figura4", 35], ["panturrilha", 30], ["borboleta", 75], ["relax", 0]],
+  },
+];
+
+function getStretchExercise(id) {
+  return STRETCH_EXERCISES.find((item) => item.id === id) || null;
+}
+
+function getStretchPlan(id) {
+  return STRETCH_PLANS.find((plan) => plan.id === id) || null;
+}
+
+// Linha do tempo do plano: [{ kind: "prep"|"hold", exerciseId, side: ""|"R"|"L", secs }]
+// O último "relax" (0 s) fica com o que sobra até fechar os minutos do plano.
+function buildStretchSteps(planId) {
+  const plan = getStretchPlan(planId);
+  if (!plan) return [];
+  const steps = [];
+  plan.steps.forEach(([exerciseId, secs]) => {
+    const exercise = getStretchExercise(exerciseId);
+    if (!exercise) return;
+    (exercise.sides ? ["R", "L"] : [""]).forEach((side) => {
+      steps.push({ kind: "prep", exerciseId, side, secs: STRETCH_PREP_SECONDS });
+      steps.push({ kind: "hold", exerciseId, side, secs: Number(secs) || 0 });
+    });
+  });
+  const used = steps.reduce((sum, step) => sum + step.secs, 0);
+  const last = steps[steps.length - 1];
+  if (last && !last.secs) last.secs = Math.max(20, plan.minutes * 60 - used);
+  return steps;
+}
+
+// Segundos segurados por exercício. Treino ao vivo grava `stretch.held`;
+// anotado na mão (sem held) usa o plano inteiro como se tivesse feito tudo.
+function getStretchHeld(workout) {
+  const stretch = workout && workout.stretch && typeof workout.stretch === "object" ? workout.stretch : {};
+  if (stretch.held && typeof stretch.held === "object" && !Array.isArray(stretch.held)) return stretch.held;
+  const held = {};
+  buildStretchSteps(stretch.plan || "").forEach((step) => {
+    if (step.kind === "hold") held[step.exerciseId] = (held[step.exerciseId] || 0) + step.secs;
+  });
+  return held;
+}
+
+// Mapa de calor do alongamento: [[grupo, reps equivalentes]] (pinta leve).
+function calcStretchMuscleItems(workout) {
+  if (!workout || workout.type !== "stretch") return [];
+  const items = [];
+  Object.entries(getStretchHeld(workout)).forEach(([exerciseId, secs]) => {
+    const exercise = getStretchExercise(exerciseId);
+    if (!exercise) return;
+    const reps = ((Number(secs) || 0) / 60) * STRETCH_REPS_PER_MINUTE;
+    Object.entries(exercise.groups || {}).forEach(([group, share]) => {
+      const value = Math.round(reps * share * 10) / 10;
+      if (value > 0) items.push([group, value]);
+    });
+  });
+  return items;
+}

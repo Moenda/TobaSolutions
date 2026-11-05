@@ -310,6 +310,12 @@ function buildPlayerAchievements() {
     { id: "tr-500", cat: "treinos", tier: "lenda", icon: "🗿", name: "Patrimônio da academia", desc: "500 treinos. Tombado pelo patrimônio histórico.", hint: "Registre 500 treinos.", metric: (s) => s.workouts, goal: 500, title: "🗿 Patrimônio Tombado" },
     { id: "tr-tipos", cat: "treinos", tier: "prata", icon: "🎭", name: "Multiatleta", desc: "Fez 4 tipos diferentes de treino. Versátil igual canivete suíço.", hint: "Faça 4 tipos diferentes de treino.", metric: (s) => s.types, goal: 4 },
     { id: "tr-fds", cat: "treinos", tier: "bronze", icon: "📅", name: "Guerreiro de fim de semana", desc: "Treinou no sábado E no domingo. O churrasco esperou.", hint: "Treine no sábado e no domingo da mesma semana.", metric: (s) => s.weekend, goal: 1 },
+    // v1.84: alongamento (🧘, pedido no pino do dente) e caminhada com GPS
+    { id: "al-1", cat: "treinos", tier: "bronze", icon: "🧘", name: "Elástico de escritório", desc: "Primeiro alongamento. A cadeira gamer sentiu sua falta.", hint: "Faça 1 alongamento (▶ Iniciar treino › 🧘).", metric: (s) => s.stretch, goal: 1 },
+    { id: "al-10", cat: "treinos", tier: "prata", icon: "🪢", name: "Borracha escolar", desc: "10 alongamentos. Estica, mas não arrebenta.", hint: "Faça 10 alongamentos.", metric: (s) => s.stretch, goal: 10 },
+    { id: "al-30", cat: "treinos", tier: "ouro", icon: "🦒", name: "Homem-elástico", desc: "30 alongamentos. O Senhor Fantástico pediu umas dicas.", hint: "Faça 30 alongamentos.", metric: (s) => s.stretch, goal: 30, title: "🧘 Elástico Lendário" },
+    { id: "cm-gps", cat: "distancia", tier: "bronze", icon: "🛰️", name: "Rastreado pelo satélite", desc: "Primeira caminhada gravada com GPS no Toba.", hint: "Grave 1 caminhada/corrida ao vivo com GPS.", metric: (s) => s.gpsWalks, goal: 1 },
+    { id: "cm-gps10", cat: "distancia", tier: "prata", icon: "🗺️", name: "Cartógrafo de bairro", desc: "10 rolês com GPS. Já dá pra desenhar o mapa da vila.", hint: "Grave 10 caminhadas/corridas com GPS.", metric: (s) => s.gpsWalks, goal: 10 },
   ];
   // Nível de cada marco fixado por id (desde v1.47): antes era pela posição na
   // lista, e marco novo no meio mudaria o nível (e o XP) das conquistas antigas.
@@ -818,7 +824,7 @@ function setPlayerPrefs(prefs) {
 /* ---------------------------------------------------------------------
  * Cálculo (só leitura)
  * ------------------------------------------------------------------- */
-const PLAYER_WORKOUT_ICONS = { saitama: "👊", walking: "🚶", bike: "🚴", elliptical: "🏃", strength: "💪", custom: "🏋️" };
+const PLAYER_WORKOUT_ICONS = { saitama: "👊", walking: "🚶", bike: "🚴", elliptical: "🏃", strength: "💪", custom: "🏋️", stretch: "🧘" };
 
 function playerNum(value) {
   return Number(value) || 0;
@@ -1001,6 +1007,7 @@ function computePlayer(options = {}) {
     turismLists: 0, turismAdded: 0, turismVisits: 0, turismTop: 0, turismNem: 0, turismCities: 0,
     turismKinds: 0, turismSameDay: 0, turismAgain: 0, turismValue: 0, turismZerou: 0,
     socialOn: 0, socialFriends: 0, socialDuels: 0, socialBeat: 0, socialGhost: 0,
+    stretch: 0, gpsWalks: 0, // v1.84
   };
   const activeDays = new Set(); // dias com alguma coisa feita (pras temporadas)
   const checkAchievements = (date, active = true) => {
@@ -1081,6 +1088,8 @@ function computePlayer(options = {}) {
         if (day.km >= 10) stats.carecaFull = 1;
       }
     }
+    if (workout.type === "stretch") stats.stretch += 1;
+    if (workout.type === "walking" && workout.mode === "gps") stats.gpsWalks += 1;
     if (workout.type) types.add(workout.type);
     stats.types = types.size;
     const month = date.slice(0, 7);

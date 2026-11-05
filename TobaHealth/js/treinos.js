@@ -78,6 +78,7 @@ const WORKOUT_TYPE_ICONS = {
   elliptical: "🏃",
   strength: "💪",
   custom: "🏋️",
+  stretch: "🧘",
 };
 
 const WORKOUT_ICON_EDIT =
@@ -93,6 +94,7 @@ function renderWorkoutRecord(workout) {
   if (workout.distanceKm) chips.push(`📍 ${formatWorkoutNumber(workout.distanceKm, 2)} km`);
   if (workout.durationMinutes) chips.push(`⏱️ ${formatWorkoutNumber(workout.durationMinutes, 0)} min`);
   if (workout.calories) chips.push(`🔥 ${formatWorkoutNumber(workout.calories, 0)} kcal`);
+  chips.push(...getWalkChips(workout)); // v1.84: ritmo, GPS, esteira, relógio
   if (workout.sets) chips.push(`${formatWorkoutNumber(workout.sets, 0)} séries`);
   if (workout.reps) chips.push(`${formatWorkoutNumber(workout.reps, 0)} repetições`);
   if (workout.weightKg) chips.push(`🏋️ ${formatWorkoutNumber(workout.weightKg, 1)} kg`);
@@ -120,6 +122,7 @@ function renderWorkoutRecord(workout) {
           </div>
         </div>
         ${chips.length ? `<div class="workout-record-chips">${chips.map((chip) => `<span class="workout-chip">${chip}</span>`).join("")}</div>` : ""}
+        ${renderWalkRecordMap(workout)}
         ${renderStrengthExerciseList(workout)}
         ${workout.notes ? `<div class="workout-record-note">📝 ${escapeHtml(workout.notes)}</div>` : ""}
         <span class="workout-record-more">Ver o treino ›</span>
@@ -139,6 +142,7 @@ const WORKOUT_TYPE_NAMES = {
   elliptical: "Elíptico",
   strength: "Treino de força",
   custom: "Treino personalizado",
+  stretch: "Alongamento",
 };
 
 let selectedWorkoutId = "";
@@ -176,7 +180,7 @@ function renderWorkoutView() {
   if (workout.calories) tiles.push(tile("🔥 Energia", `${formatWorkoutNumber(workout.calories, 0)} kcal`, "", "text-gold"));
   if (workout.distanceKm) {
     const pace = workout.durationMinutes ? workout.durationMinutes / workout.distanceKm : 0;
-    tiles.push(tile("📍 Distância", `${formatWorkoutNumber(workout.distanceKm, 2)} km`, pace ? `${formatWorkoutNumber(pace, 1)} min/km` : "", "text-blue"));
+    tiles.push(tile("📍 Distância", `${formatWorkoutNumber(workout.distanceKm, 2)} km`, pace ? `${formatWalkPace(pace)} min/km` : "", "text-blue"));
   }
   if (isStrength) {
     tiles.push(tile("🏋️ Exercícios", `${workout.exercises.length}`, `${getStrengthLift(workout).sets} séries`));
@@ -237,6 +241,8 @@ function renderWorkoutView() {
     </div>
     ${tiles.length ? `<div class="toba-stats wv-stats">${tiles.join("")}</div>` : ""}
     ${exercisesHtml}
+    ${renderWalkWorkoutDetail(workout)}
+    ${renderStretchWorkoutDetail(workout)}
     ${renderMuscleSection([workout], "workout", "🔥 Músculos do treino", { teaseLazy: false })}
     ${workout.notes ? `<div class="workout-record-note wv-note">📝 ${escapeHtml(workout.notes)}</div>` : ""}
     <div class="wv-actions">
@@ -652,7 +658,11 @@ function selectWorkoutType(type) {
     },
     walking: {
       title: "🚶 Caminhada / Corrida",
-      fields: cardioFields("Data da caminhada / corrida"),
+      fields: renderWalkFormExtras() + cardioFields("Data da caminhada / corrida") + renderWalkFormTail(),
+    },
+    stretch: {
+      title: "🧘 Alongamento",
+      fields: renderStretchFormFields(),
     },
     bike: {
       title: "🚴 Bike",
@@ -719,6 +729,8 @@ function editWorkout(workoutId) {
     document.getElementById("workout-title").value = workout.title || "";
     document.getElementById("workout-notes").value = workout.notes || "";
   }
+  if (workout.type === "walking") fillWalkForm(workout);
+  if (workout.type === "stretch") fillStretchForm(workout);
 
   [
     "durationMinutes",
@@ -745,8 +757,15 @@ function readWorkoutNumber(id) {
   return Number.isFinite(number) && number >= 0 ? number : null;
 }
 
+// Campos que o formulário não mostra (trajeto do GPS, origem, alongamento...):
+// editar um treino mantém o que estava gravado (v1.84).
+const WORKOUT_KEEP_ON_EDIT = ["mode", "source", "track", "splits", "startTime", "incline", "stretch", "externalId"];
+
 function saveWorkout() {
   if (!selectedWorkoutType) return;
+  const original = editingWorkoutId
+    ? healthDb.workouts.find((item) => String(item.id) === editingWorkoutId) || null
+    : null;
 
   const workout = {
     id: editingWorkoutId || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -760,7 +779,9 @@ function saveWorkout() {
             ? "Bike"
             : selectedWorkoutType === "elliptical"
               ? "Elíptico"
-              : document.getElementById("workout-title").value.trim(),
+              : selectedWorkoutType === "stretch"
+                ? "Alongamento"
+                : document.getElementById("workout-title").value.trim(),
     date: document.getElementById("workout-date").value,
     durationMinutes: readWorkoutNumber("durationMinutes"),
     calories: readWorkoutNumber("calories"),
@@ -773,6 +794,16 @@ function saveWorkout() {
     weightKg: readWorkoutNumber("weightKg"),
     notes: document.getElementById("workout-notes")?.value.trim() || "",
   };
+  if (original) {
+    WORKOUT_KEEP_ON_EDIT.forEach((key) => {
+      if (original[key] !== undefined) workout[key] = original[key];
+    });
+  }
+  if (selectedWorkoutType === "walking") {
+    Object.assign(workout, readWalkFormExtras(original));
+    if (workout.mode !== "treadmill") delete workout.incline;
+  }
+  if (selectedWorkoutType === "stretch") Object.assign(workout, readStretchFormExtras(original));
   const measurements = [
     workout.durationMinutes,
     workout.calories,
@@ -828,6 +859,7 @@ const WORKOUT_VIEW_BACK = {
   viewSummary: "closeStrengthSummary",
   viewWorkout: "closeWorkoutView",
   viewSession: "leaveLiveSession",
+  viewWalks: "backToTraining",
 };
 
 function openModule(viewId) {
@@ -836,6 +868,7 @@ function openModule(viewId) {
     .forEach((v) => v.classList.toggle("active", v.id === viewId));
   if (["viewTraining", "viewMonth"].includes(viewId)) renderWorkoutScreen();
   if (viewId === "viewTraining") renderLiveSessionLaunch();
+  if (viewId === "viewWalks") renderWalkHistory();
 
   const titles = {
     viewTraining: "🏋️ Treinos",
@@ -844,6 +877,7 @@ function openModule(viewId) {
     viewSummary: "💪 Resumo do treino",
     viewWorkout: "📋 Como foi o treino",
     viewSession: "▶ Treino ao vivo",
+    viewWalks: "🚶 Caminhadas",
   };
   tobaSetHeader({ page: titles[viewId], back: WORKOUT_VIEW_BACK[viewId] });
   document.getElementById("headerAddBtn").hidden = viewId !== "viewTraining";
