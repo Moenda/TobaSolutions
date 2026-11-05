@@ -612,25 +612,25 @@ function calcDrivePlayer(data, today) {
 /* ---------- carango no mapa (v1.67) ----------
  * O que aparece no lugar da bolinha com seta. "need" usa os mesmos números do
  * calcDrivePlayer (e a mesma meta da conquista "achievement" do Perfil), então
- * destrava junto. face: "arrow" = seta 3D, "model" = carro 3D de verdade (v1.70,
- * drive-models.js, pintados na cor da rota); "left" = emoji de lado olhando pra
- * esquerda (vira pro lado que o carro anda); "up" = gira com o rumo; "none" = não gira.
- * O id nunca muda (fica no toba_drive_prefs); item novo = linha nova.
+ * destrava junto. face: "arrow" = seta 3D, "model" = carango 3D de verdade
+ * (drive-models.js, model = qual modelo; v1.70 só o GT, v1.77 TODOS, porque a
+ * Milena achou o emoji de lado "nada a ver" no mapa 3D). O emoji (icon) fica só
+ * no 🎨 e na bolinha de skin. O id nunca muda (fica no toba_drive_prefs); item novo = linha nova.
  */
 const DRIVE_VEHICLES = [
   { id: "seta", icon: "➤", name: "Seta clássica", face: "arrow" },
-  { id: "gt", icon: "🏎️", name: "Toba GT 3D", face: "model", tag: "3D" },
-  { id: "carro", icon: "🚗", name: "Carrinho", face: "left" },
-  { id: "tartaruga", icon: "🐢", name: "Modo Marginal", face: "left" },
-  { id: "moto", icon: "🏍️", name: "Motoca", face: "left", achievement: "dv-1", need: (s) => s.driveArrived >= 1 },
-  { id: "taxi", icon: "🚕", name: "Táxi", face: "left", achievement: "dv-10", need: (s) => s.driveArrived >= 10 },
-  { id: "corujao", icon: "🚓", name: "Viatura", face: "left", achievement: "dv-noite", need: (s) => s.driveNight >= 1 },
-  { id: "busao", icon: "🚌", name: "Busão", face: "left", achievement: "dv-km100", need: (s) => s.driveKm >= 100 },
-  { id: "picape", icon: "🛻", name: "Picape", face: "left", achievement: "dv-longa", need: (s) => s.driveLongest >= 80 },
-  { id: "f1", icon: "🏎️", name: "Max Tobasten", face: "left", achievement: "dv-tobasten", need: (s) => s.driveTobasten >= 1 },
-  { id: "foguete", icon: "🚀", name: "Foguete", face: "up", achievement: "dv-km1000", need: (s) => s.driveKm >= 1000 },
-  { id: "ovni", icon: "🛸", name: "OVNI", face: "none", achievement: "dv-50", need: (s) => s.driveArrived >= 50 },
-  { id: "fantasma", icon: "👻", name: "Fantasma", face: "none", achievement: "dv-ghost", need: (s) => s.driveGhost >= 1 },
+  { id: "gt", icon: "🏎️", name: "Toba GT 3D", face: "model", model: "gt" },
+  { id: "carro", icon: "🚗", name: "Carrinho", face: "model", model: "carro" },
+  { id: "tartaruga", icon: "🐢", name: "Modo Marginal", face: "model", model: "tartaruga" },
+  { id: "moto", icon: "🏍️", name: "Motoca", face: "model", model: "moto", achievement: "dv-1", need: (s) => s.driveArrived >= 1 },
+  { id: "taxi", icon: "🚕", name: "Táxi", face: "model", model: "taxi", achievement: "dv-10", need: (s) => s.driveArrived >= 10 },
+  { id: "corujao", icon: "🚓", name: "Viatura", face: "model", model: "viatura", achievement: "dv-noite", need: (s) => s.driveNight >= 1 },
+  { id: "busao", icon: "🚌", name: "Busão", face: "model", model: "busao", achievement: "dv-km100", need: (s) => s.driveKm >= 100 },
+  { id: "picape", icon: "🛻", name: "Picape", face: "model", model: "picape", achievement: "dv-longa", need: (s) => s.driveLongest >= 80 },
+  { id: "f1", icon: "🏎️", name: "Max Tobasten", face: "model", model: "f1", achievement: "dv-tobasten", need: (s) => s.driveTobasten >= 1 },
+  { id: "foguete", icon: "🚀", name: "Foguete", face: "model", model: "foguete", achievement: "dv-km1000", need: (s) => s.driveKm >= 1000 },
+  { id: "ovni", icon: "🛸", name: "OVNI", face: "model", model: "ovni", achievement: "dv-50", need: (s) => s.driveArrived >= 50 },
+  { id: "fantasma", icon: "👻", name: "Fantasma", face: "model", model: "fantasma", achievement: "dv-ghost", need: (s) => s.driveGhost >= 1 },
 ];
 
 /* ---------- 🏁 velocímetros (v1.70, estilo Need for Speed) ----------

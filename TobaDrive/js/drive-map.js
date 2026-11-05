@@ -8,7 +8,7 @@
  *   Sem WebGL ou Mapbox fora = aviso no lugar do mapa; a navegação (voz, faixa,
  *   velocímetro) segue sem mapa e o ↗️ abre no Maps/Waze.
  * - v1.70: 🚗 carango DENTRO do mapa (camadas do Mapbox, não mais um <div> por
- *   cima): seta e Toba GT são modelos 3D de verdade (drive-models.js) que somem
+ *   cima): seta e carangos são modelos 3D de verdade (drive-models.js) que somem
  *   atrás dos prédios; emoji fica em pé no chão, com sombra. Anda deslizando
  *   entre uma leitura do GPS e outra.
  * - v1.70: 🚦 trânsito ao vivo da cidade inteira = tileset mapbox-traffic-v1
@@ -32,14 +32,15 @@ const DRIVE_CAR_GLIDE_MS = 850;
 // trás, então a largura é o que aparece), igual em qualquer zoom
 // (v1.70 crescia no zoom pra fora: o "carro do Godzilla")
 const DRIVE_CAR_PX = 34;
-const DRIVE_MODEL_WIDTH_M = { gt: 1.9, arrow: 3.8 }; // largura dos modelos do drive-models.js
+// largura de cada modelo: DRIVE_MODEL_SPECS (drive-models.js, v1.77)
 // v1.71: farol no chão (cone amarelinho na frente do carango) de noite / pôr do sol / amanhecer
 const DRIVE_BEAM_LOOKS = ["night", "dusk", "dawn"];
 
 // Brilho próprio do modelo 3D (model-emissive-strength): seta é marcador (sempre acesa);
 // o GT pega a luz do mapa de dia e acende de vez de noite (v1.71: antes ficava quase preto)
+// v1.77: OVNI e fantasma também brilham sozinhos (DRIVE_MODEL_SPECS.lit)
 function driveModelGlow(kind, look) {
-  if (kind === "arrow") return 0.9;
+  if (DRIVE_MODEL_SPECS[kind]?.lit) return 0.9;
   return { night: 1, dusk: 0.85, dawn: 0.6 }[look] ?? 0.3;
 }
 const DRIVE_GAME_PITCH = 60;
@@ -570,7 +571,7 @@ async function driveMapboxMap(box, center, zoom) {
   let lastScale = 0;
   const carScale = () => {
     if (!car.shown) return;
-    const w = DRIVE_MODEL_WIDTH_M[car.props?.mkind] || 1.9;
+    const w = DRIVE_MODEL_SPECS[car.props?.mkind]?.w || 1.9;
     const s = Math.max(0.6, Math.min(900, (DRIVE_CAR_PX * metersPerPx(car.shown.lat)) / w));
     if (Math.abs(s - lastScale) / (lastScale || 1) < 0.02) return;
     lastScale = s;
@@ -592,7 +593,7 @@ async function driveMapboxMap(box, center, zoom) {
     const mpp = metersPerPx(lat);
     const cone = (len, spread, a) => {
       // sai de baixo do carango (o modelo cobre o começo do cone)
-      const nose = offset(lat, lng, h, p.kind === "model" && lastScale ? 0.6 * lastScale : 8 * mpp);
+      const nose = offset(lat, lng, h, p.kind === "model" && lastScale ? (DRIVE_MODEL_SPECS[p.mkind]?.nose ?? 0.6) * lastScale : 8 * mpp);
       const tip = offset(nose[1], nose[0], h, len * mpp);
       const side = (base, w) => [offset(base[1], base[0], h + 90, w * mpp), offset(base[1], base[0], h - 90, w * mpp)];
       const [nl, nr] = side(nose, 9);
@@ -719,10 +720,11 @@ async function driveMapboxMap(box, center, zoom) {
       const target = { lat: ll[0], lng: ll[1], h };
       let props;
       if (veh.face === "arrow" || veh.face === "model") {
-        const kind = veh.face === "model" ? "gt" : "arrow";
+        // v1.77: cada carango tem o próprio modelo (DRIVE_MODELS); sem modelo = GT
+        const kind = veh.face === "arrow" ? "arrow" : DRIVE_MODELS[veh.model] ? veh.model : "gt";
         const id = `dv-${kind}-${color.replace("#", "")}`;
         ensureModel(id, kind, color);
-        props = { kind: "model", model: id, mkind: kind, em: driveModelGlow(kind, api.look), beam: kind === "gt", glow: color, glowA: isNav ? 0.55 : 0.4 };
+        props = { kind: "model", model: id, mkind: kind, em: driveModelGlow(kind, api.look), beam: Boolean(DRIVE_MODEL_SPECS[kind]?.beam), glow: color, glowA: isNav ? 0.55 : 0.4 };
       } else {
         const base = ensureEmoji(veh);
         // na tela: rumo menos o giro do mapa (o emoji de lado vira pro lado que anda)

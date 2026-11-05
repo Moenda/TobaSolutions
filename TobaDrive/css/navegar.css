@@ -322,7 +322,17 @@ body.is-driving {
   letter-spacing: 0.02em;
 }
 
-body:not(.is-nav) .dv-view3d {
+/* v1.77: bolinha da skin, em cima do 3D/2D */
+.dv-skin {
+  position: absolute;
+  z-index: 500;
+  right: 12px;
+  bottom: calc(env(safe-area-inset-bottom) + 258px);
+  font-size: 1.35rem;
+}
+
+body:not(.is-nav) .dv-view3d,
+body:not(.is-nav) .dv-skin {
   display: none;
 }
 

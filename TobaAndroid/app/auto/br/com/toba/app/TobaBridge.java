@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
  * window.TobaNative no site. Tudo entra e sai como texto/JSON.
  * Mudou algum método? Atualize também o lado do site (toba-common.js,
  * gastos.js, sessao.js) e o TobaAndroid/README.md.
+ * v1.77 (APK 1.6): mudou pra app/auto/br/com/toba/app/ junto do MainActivity.
  */
 final class TobaBridge {
     private final MainActivity activity;
@@ -37,7 +38,7 @@ final class TobaBridge {
 
     @JavascriptInterface
     public int version() {
-        return 3; // 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
+        return 6; // 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
     }
 
     /* ---------------- Notificações do Toba ---------------- */
@@ -184,6 +185,19 @@ final class TobaBridge {
     @JavascriptInterface
     public void keepScreenOn(boolean on) {
         activity.keepScreenOn(on);
+    }
+
+    // v1.77 (APK 1.6): 🧭 Navegar com a tela apagada. on = rota ligada (serviço em
+    // primeiro plano + GPS nativo pra window.onTobaNativeFix); text = linha da notificação.
+    @JavascriptInterface
+    public void navKeepAlive(boolean on, String text) {
+        activity.setNavigating(on, text);
+    }
+
+    // v1.77: fala com a voz do Android (o site usa com a tela apagada)
+    @JavascriptInterface
+    public void speak(String text, boolean interrupt) {
+        activity.speak(text, interrupt);
     }
 
     /* ---------------- Toba Routine ---------------- */

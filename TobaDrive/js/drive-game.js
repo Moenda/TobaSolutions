@@ -144,13 +144,16 @@ function gameStart() {
   } catch (err) {
     game.before = null;
   }
-  nav.trip.startLat = nav.pos.lat;
-  nav.trip.startLng = nav.pos.lng;
-  nav.trip.maxKmh = 0;
-  nav.trip.radars = 0;
-  nav.trip.limitS = 0;
-  nav.trip.overS = 0;
-  nav.trip.path = [[nav.pos.lat, nav.pos.lng]];
+  // v1.77: viagem que voltou depois do celular bloquear: mantém começo, máxima e caminho
+  if (!nav.trip.resumed || !Array.isArray(nav.trip.path)) {
+    nav.trip.startLat = nav.pos.lat;
+    nav.trip.startLng = nav.pos.lng;
+    nav.trip.maxKmh = 0;
+    nav.trip.radars = 0;
+    nav.trip.limitS = 0;
+    nav.trip.overS = 0;
+    nav.trip.path = [[nav.pos.lat, nav.pos.lng]];
+  }
   nav.trip.fuelStop = nav.dest?.kind === "fuel";
   nav.trip.placeId = nav.dest?.placeId ? String(nav.dest.placeId) : "";
   gameLoadRadars(nav.route);
@@ -158,6 +161,7 @@ function gameStart() {
   gameApplyView();
   renderSpeedo();
   // abertura do copiloto (depois do "Partiu" de sempre)
+  if (nav.trip.resumed) return; // voltou do bloqueio: sem a abertura do copiloto de novo
   setTimeout(() => {
     if (nav.mode !== "nav") return;
     const late = Math.round((nav.route?.trafficDelay || 0) / 60);

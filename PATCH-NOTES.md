@@ -1815,3 +1815,23 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 **Como testar:** gerar o APK 1.5 assinado e instalar por cima (`adb install -r`). Abrir o Toba › Racing › 🧭 Navegar: o carango aparece onde você está, sem o aviso amarelo. Toba Places › mapa: o ponto azul aparece. No carro: Android Auto › Toba › Buscar › destino › Bora!.
 
 **Commit sugerido:** `v1.76 - GPS liberado no app Toba (APK 1.5): WebView libera a localizacao pro Navegar e pro Places, aviso do APK so em versao antiga e Android Auto liga o GPS ao tracar a rota`
+
+## v1.77 — 🧭 Navegar: pedidos da Milena (todo carango em 3D, rota que não morre no bloqueio, 🏁 Cheguei no finalzinho e bolinha de skin)
+
+**Arquivos que mudaram:** `TobaDrive/js/drive-models.js`, `TobaDrive/js/drive-metrics.js`, `TobaDrive/js/drive-map.js`, `TobaDrive/js/navegar.js`, `TobaDrive/js/drive-game.js`, `TobaDrive/js/drive-route.js`, `TobaDrive/TobaDrive-Navegar.html`, `TobaDrive/css/navegar.css`, `TobaAndroid/app/auto/br/com/toba/app/MainActivity.java` e `TobaBridge.java` (mudaram de pasta, ver abaixo), `TobaAndroid/app/auto/br/com/toba/auto/NavService.java`, `TobaAndroid/app/build.gradle` (versionCode 7 / versionName 1.6), `sw.js` (cache `toba-v37`), `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **Todo carango em 3D:** acabou o emoji de lado no mapa (o "carro de F1 de lado" que a Milena zoou). Cada carango do 🎨 virou modelo 3D de verdade, igual o Toba GT: 🚗 Carrinho, 🐢 tartaruga com casco, 🏍️ Motoca com piloto, 🚕 Táxi amarelo com plaquinha acesa, 🚓 Viatura preta e branca com giroflex, 🚌 Busão, 🛻 Picape com caçamba, 🏎️ Max Tobasten (F1 de roda de fora com as asas), 🚀 Foguete com fogo atrás, 🛸 OVNI com cúpula acesa e 👻 Fantasma. Pintados na cor da rota (menos os de cor de fábrica), farol de noite nos que têm farol, todos do mesmo tamanho na tela.
+2. **Rota não morre mais com o celular bloqueado:** a viagem em andamento fica guardada no aparelho a cada 5 segundos. Se o app recarregar (celular caiu, bloqueou, o Android fechou), ao abrir o Navegar de novo a rota volta sozinha daqui até o destino, com o mesmo começo de viagem, os km e o caminho ("🔄 Rota de volta, piloto!"). Desbloqueou a tela: o GPS liga de novo na hora. Viagem esquecida por mais de 3 h vira "encerrada" no histórico com os km que rodou (nada se perde).
+3. **APK 1.6, rota rodando com a tela apagada:** no 🚀 Partiu o app liga um aviso fixo "🧭 Navegando no Toba" (serviço do Android), não pausa a página, manda o GPS do celular pra ela e fala as manobras com a voz do Android enquanto a tela está apagada. Se o Android matar a página por falta de memória, a janela reabre sozinha e a rota volta.
+4. **🏁 Cheguei só no finalzinho:** aparece faltando 250 m (era 1,5 km).
+5. **Bolinha de skin:** em cima do 3D/2D tem uma bolinha com o carango atual; cada toque troca pro próximo carango destravado, sem abrir o 🎨.
+
+**Dados:** Chave nova `toba_drive_active` (só deste aparelho, fora da nuvem): viagem em andamento, apagada quando a viagem termina. O `TOBA_DRIVE_DB` não mudou de formato. Nada é apagado. Antes, sair da página no meio da rota encerrava a viagem na hora; agora ela fica guardada e volta.
+
+**APK 1.6 (um passo antes de gerar):** o `MainActivity.java` e o `TobaBridge.java` mudaram de casa pra `TobaAndroid/app/auto/br/com/toba/app/` (mesmo pacote; lá o Cloba consegue editar direto, sem `.novo`). **Apague os dois antigos**, senão dá "duplicate class":
+`Remove-Item TobaAndroid\app\src\main\java\br\com\toba\app\MainActivity.java, TobaAndroid\app\src\main\java\br\com\toba\app\TobaBridge.java`
+Depois Generate Signed APK (mesma chave) e `adb install -r`. Sem o APK novo o site já guarda e devolve a rota; o APK é o que segura GPS e voz com a tela apagada.
+
+**Como testar:** Navegar › destino › 🚀 Partiu: tocar na bolinha em cima do 2D/3D e ver os carangos 3D trocando (os trancados pulam). No caminho, bloquear o celular uns minutos: no APK 1.6 aparece "🧭 Navegando no Toba" na barra e a voz segue; desbloqueando, o mapa está no lugar certo. Fechar o app pelo multitarefa no meio da rota e abrir o Navegar de novo: volta pra rota. Chegando: o 🏁 Cheguei só aparece nos últimos 250 m.
+
+**Commit sugerido:** `v1.77 - Navegar: todo carango em 3D, rota volta sozinha depois do celular bloquear (APK 1.6 segura GPS e voz com a tela apagada), Cheguei so nos ultimos 250 m e bolinha de skin`

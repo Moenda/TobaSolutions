@@ -1,0 +1,93 @@
+11-04 23:12:43.708  1433  2121 D PasspointManager: ANQP entry not found for: b8:1e:61:14:d4:ee:<Gonkillutoba>
+11-04 23:12:45.242  1433  2317 I SemWifiIntelligentConnectionManager: HD: d4:ee / 5260 / -63 / 496 / 541 / 541 / 4289 | 69% | 0% | S | IWHcondFalse / F / "Gonkillutoba"WPA_PSK / null / F / TPass / CPass / SelectionTimeGap :1793844764 s  | F / F | F / 0 / 0 / F / F / F
+11-04 23:12:46.114  3152  5034 I NearbyMediums: Wifi changed new SSID: "Gonkillutoba"
+11-04 23:12:52.682  2624  2701 D ShellDesktopMode: DesktopTaskChangeListener: onTaskMovingToBack for taskId=1, displayId=0 - desktop not supported
+11-04 23:12:54.951 21845 22023 I [SC]AutoBackup: default off: false, support disable menu : false
+11-04 23:12:54.957 21845 22023 I [SC]AutoBackupController: automatic backup generated.
+11-04 23:12:54.958 21845 22023 I [SC]AutoBackupController: start automatic backup, nextTimeInterval: 6285765
+11-04 23:12:54.958 21845 22023 I [SC]AutoBackupController: skipped automatic backup scheduled by pending job : (job:50001/com.samsung.android.scloud/.bnr.ui.service.AutoBackupTriggerJobService)
+11-04 23:12:54.958 21845 22023 I [SC]AutoBackupController: current automatic backup triggerTime : Thu Nov 05 00:57:40 GMT-03:00 2026
+11-04 23:12:54.965 21845 22047 I [SC]AutoBackupController: isAllowed: notAfw: true, mum: true, enabled: true, menu visible : true
+11-04 23:12:54.965 21845 22047 I [SC]AutoBackupController: automatic backup reg - isAutoBackupOn: true
+11-04 23:12:55.174  1433  2181 I WifiConnectivityMonitor.NCC: [ Transports: WIFI Capabilities: NOT_METERED&INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VPN&VALIDATED&NOT_ROAMING&FOREGROUND&NOT_CONGESTED&NOT_SUSPENDED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED LinkUpBandwidth>=67086Kbps LinkDnBandwidth>=68547Kbps TransportInfo: <SSID: <unknown ssid>, BSSID: 02:00:00:**:**:00, MAC: 02:00:00:**:**:00, IP: /192.***.**.4, Security type: 2, Supplicant state: COMPLETED, Wi-Fi standard: 11ax, RSSI: -64, Link speed: 432Mbps, Tx Link speed: 432Mbps, Max Supported Tx Link speed: 1200Mbps, Calculated Tx : 309Mbps, Rx Link speed: 576Mbps, Max Supported Rx Link speed: 1200Mbps, Calculated Rx : 490Mbps, Frequency: 5260MHz, Net ID: -1, Metered hint: false, score: 60, isUsable: true, CarrierMerged: false, SubscriptionId: -1, IsPrimary: 1, Trusted: true, Restricted: false, Ephemeral: false, OEM paid: false, OEM private: false, OSU AP: false, FQDN: <none>, Provider friendly name: <none>, Requesting package name: <none><none>MLO Information: , Is TID-To-Link negotiation supported by the AP: false, AP MLD Address: <none>, AP MLO Link Id: <none>, AP MLO Affiliated links: <none>, Vendor Data: <none>> SignalStrength: -64 AdminUids: [1000] SSID: "Gonkillutoba" UnderlyingNetworks: Null]
+11-04 23:12:55.174  1433  2332 I SemWifiConfigManager: addOrUpdateNetwork "Gonkillutoba"WPA_PSK (unchanged)
+11-04 23:12:55.174  1433  2332 D WifiConnectivityMonitor: "Gonkillutoba"WPA_PSK markRssiAtInvalidated : -127 time=0
+11-04 23:12:55.190  3152  5034 I NearbyMediums: Wifi changed new SSID: "Gonkillutoba"
+11-04 23:12:55.753 21845 21862 I [SC]AutoBackup: get backup status apps_backup_status : 1
+11-04 23:12:55.754 21845 21862 I [SC]AutoBackup: get backup status settings_backup_status : 1
+11-04 23:12:55.754 21845 21862 I [SC]AutoBackup: get backup status messages_backup_status : 1
+11-04 23:12:55.755 21845 21862 I [SC]AutoBackup: get backup status clock_backup_status : 1
+11-04 23:12:55.755 21845 21862 I [SC]AutoBackup: get backup status homescreen_backup_status : 1
+11-04 23:12:55.755 21845 21862 I [SC]AutoBackup: get backup status calllog_backup_status : 1
+11-04 23:12:55.756 21845 21862 I [SC]AutoBackup: get backup status contacts_backup_status : 1
+11-04 23:12:55.784 21845 22378 I [SC]AutoBackup: get backup status apps_backup_status : 1
+11-04 23:12:55.784 21845 22378 I [SC]AutoBackup: get backup status settings_backup_status : 1
+11-04 23:12:55.785 21845 22378 I [SC]AutoBackup: get backup status messages_backup_status : 1
+11-04 23:12:55.785 21845 22378 I [SC]AutoBackup: get backup status clock_backup_status : 1
+11-04 23:12:55.786 21845 22378 I [SC]AutoBackup: get backup status homescreen_backup_status : 1
+11-04 23:12:55.786 21845 22378 I [SC]AutoBackup: get backup status calllog_backup_status : 1
+11-04 23:12:55.787 21845 22378 I [SC]AutoBackup: get backup status contacts_backup_status : 1
+11-04 23:12:57.621  5781  5781 I  [BackupRestore] [AutoBackupUtils]: isAutoBackupSwitchOn <> false
+11-04 23:12:58.155  3152 22384 I NearbyMediums: Wifi changed new SSID: "Gonkillutoba"
+11-04 23:12:58.168  1433  2181 I WifiConnectivityMonitor.NCC: [ Transports: WIFI Capabilities: NOT_METERED&INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VPN&VALIDATED&NOT_ROAMING&FOREGROUND&NOT_CONGESTED&NOT_SUSPENDED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED LinkUpBandwidth>=67086Kbps LinkDnBandwidth>=68547Kbps TransportInfo: <SSID: <unknown ssid>, BSSID: 02:00:00:**:**:00, MAC: 02:00:00:**:**:00, IP: /192.***.**.4, Security type: 2, Supplicant state: COMPLETED, Wi-Fi standard: 11ax, RSSI: -64, Link speed: 648Mbps, Tx Link speed: 648Mbps, Max Supported Tx Link speed: 1200Mbps, Calculated Tx : 305Mbps, Rx Link speed: 576Mbps, Max Supported Rx Link speed: 1200Mbps, Calculated Rx : 490Mbps, Frequency: 5260MHz, Net ID: -1, Metered hint: false, score: 60, isUsable: true, CarrierMerged: false, SubscriptionId: -1, IsPrimary: 1, Trusted: true, Restricted: false, Ephemeral: false, OEM paid: false, OEM private: false, OSU AP: false, FQDN: <none>, Provider friendly name: <none>, Requesting package name: <none><none>MLO Information: , Is TID-To-Link negotiation supported by the AP: false, AP MLD Address: <none>, AP MLO Link Id: <none>, AP MLO Affiliated links: <none>, Vendor Data: <none>> SignalStrength: -64 AdminUids: [1000] SSID: "Gonkillutoba" UnderlyingNetworks: Null]
+11-04 23:12:58.171  1433  2332 I SemWifiConfigManager: addOrUpdateNetwork "Gonkillutoba"WPA_PSK (unchanged)
+11-04 23:12:58.171  1433  2332 D WifiConnectivityMonitor: "Gonkillutoba"WPA_PSK markRssiAtInvalidated : -127 time=0
+11-04 23:12:58.974  2624  2701 D ShellDesktopMode: DesktopTaskChangeListener: onTaskMovingToBack for taskId=510, displayId=0 - desktop not supported
+11-04 23:13:01.204  3152 22384 I NearbyMediums: Wifi changed new SSID: "Gonkillutoba"
+11-04 23:13:01.219  1433  2181 I WifiConnectivityMonitor.NCC: [ Transports: WIFI Capabilities: NOT_METERED&INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VPN&VALIDATED&NOT_ROAMING&FOREGROUND&NOT_CONGESTED&NOT_SUSPENDED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED LinkUpBandwidth>=67086Kbps LinkDnBandwidth>=68547Kbps TransportInfo: <SSID: <unknown ssid>, BSSID: 02:00:00:**:**:00, MAC: 02:00:00:**:**:00, IP: /192.***.**.4, Security type: 2, Supplicant state: COMPLETED, Wi-Fi standard: 11ax, RSSI: -65, Link speed: 648Mbps, Tx Link speed: 648Mbps, Max Supported Tx Link speed: 1200Mbps, Calculated Tx : 402Mbps, Rx Link speed: 288Mbps, Max Supported Rx Link speed: 1200Mbps, Calculated Rx : 490Mbps, Frequency: 5260MHz, Net ID: -1, Metered hint: false, score: 60, isUsable: true, CarrierMerged: false, SubscriptionId: -1, IsPrimary: 1, Trusted: true, Restricted: false, Ephemeral: false, OEM paid: false, OEM private: false, OSU AP: false, FQDN: <none>, Provider friendly name: <none>, Requesting package name: <none><none>MLO Information: , Is TID-To-Link negotiation supported by the AP: false, AP MLD Address: <none>, AP MLO Link Id: <none>, AP MLO Affiliated links: <none>, Vendor Data: <none>> SignalStrength: -65 AdminUids: [1000] SSID: "Gonkillutoba" UnderlyingNetworks: Null]
+11-04 23:13:01.220  1433  2332 I SemWifiConfigManager: addOrUpdateNetwork "Gonkillutoba"WPA_PSK (unchanged)
+11-04 23:13:01.220  1433  2332 D WifiConnectivityMonitor: "Gonkillutoba"WPA_PSK markRssiAtInvalidated : -127 time=0
+11-04 23:13:04.206  3152 22384 I NearbyMediums: Wifi changed new SSID: "Gonkillutoba"
+11-04 23:13:04.241  1433  2181 I WifiConnectivityMonitor.NCC: [ Transports: WIFI Capabilities: NOT_METERED&INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VPN&VALIDATED&NOT_ROAMING&FOREGROUND&NOT_CONGESTED&NOT_SUSPENDED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED LinkUpBandwidth>=77884Kbps LinkDnBandwidth>=71931Kbps TransportInfo: <SSID: <unknown ssid>, BSSID: 02:00:00:**:**:00, MAC: 02:00:00:**:**:00, IP: /192.***.**.4, Security type: 2, Supplicant state: COMPLETED, Wi-Fi standard: 11ax, RSSI: -63, Link speed: 480Mbps, Tx Link speed: 480Mbps, Max Supported Tx Link speed: 1200Mbps, Calculated Tx : 391Mbps, Rx Link speed: 648Mbps, Max Supported Rx Link speed: 1200Mbps, Calculated Rx : 245Mbps, Frequency: 5260MHz, Net ID: -1, Metered hint: false, score: 60, isUsable: true, CarrierMerged: false, SubscriptionId: -1, IsPrimary: 1, Trusted: true, Restricted: false, Ephemeral: false, OEM paid: false, OEM private: false, OSU AP: false, FQDN: <none>, Provider friendly name: <none>, Requesting package name: <none><none>MLO Information: , Is TID-To-Link negotiation supported by the AP: false, AP MLD Address: <none>, AP MLO Link Id: <none>, AP MLO Affiliated links: <none>, Vendor Data: <none>> SignalStrength: -63 AdminUids: [1000] SSID: "Gonkillutoba" UnderlyingNetworks: Null]
+11-04 23:13:04.241  1433  2332 I SemWifiConfigManager: addOrUpdateNetwork "Gonkillutoba"WPA_PSK (unchanged)
+11-04 23:13:04.241  1433  2332 D WifiConnectivityMonitor: "Gonkillutoba"WPA_PSK markRssiAtInvalidated : -127 time=0
+11-04 23:13:06.202 11995 12912 W CAR.VALIDATOR: Package DENIED; failed all other checks [br.com.toba.app]
+11-04 23:13:06.326 11853 11853 W CarApp.H: Unable to get vehicle type
+11-04 23:13:06.326 11853 11853 W CarApp.H: rts: java.lang.IllegalStateException: OutOfCarLifecycle
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at ovi.h(SourceFile:73)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at ovi.g(SourceFile:1)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at rxy.h(SourceFile:18)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at rxy.b(SourceFile:9)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at rmb.c(SourceFile:9)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at oua.C(SourceFile:5)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at kgf.b(SourceFile:285)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at lpi.j(SourceFile:77)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at lpi.e(SourceFile:1)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at plv.a(SourceFile:520)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at rbr.f(SourceFile:19)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at ojw.run(SourceFile:237)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at android.os.Handler.handleCallback(Handler.java:1095)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at android.os.Handler.dispatchMessageImpl(Handler.java:135)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at android.os.Handler.dispatchMessage(Handler.java:125)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at android.os.Looper.loopOnce(Looper.java:321)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at android.os.Looper.loop(Looper.java:422)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at android.app.ActivityThread.main(ActivityThread.java:10616)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at java.lang.reflect.Method.invoke(Native Method)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:635)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:982)
+11-04 23:13:06.326 11853 11853 W CarApp.H: Caused by: java.lang.IllegalStateException: OutOfCarLifecycle
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3415)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at android.os.Parcel.createException(Parcel.java:3391)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at android.os.Parcel.readException(Parcel.java:3374)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at android.os.Parcel.readException(Parcel.java:3316)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at ipn.dY(SourceFile:11)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at rdf.q(SourceFile:6)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at rli.call(SourceFile:141)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	at rxy.b(SourceFile:1)
+11-04 23:13:06.326 11853 11853 W CarApp.H: 	... 17 more
+11-04 23:13:06.396 11995 13010 W CAR.VALIDATOR: Package DENIED; failed all other checks [br.com.toba.app]
+11-04 23:13:06.412 11995 13010 W CAR.VALIDATOR: Package DENIED; failed all other checks [br.com.toba.app]
+11-04 23:13:06.604 11995 13010 W CAR.VALIDATOR: Package DENIED; failed all other checks [br.com.toba.app]
+11-04 23:13:06.631 11995 12935 W CAR.VALIDATOR: Package DENIED; failed all other checks [br.com.toba.app]
+11-04 23:13:06.689 11995 12068 W CAR.VALIDATOR: Package DENIED; failed all other checks [br.com.toba.app]
+11-04 23:13:06.707 11995 12068 W CAR.VALIDATOR: Package DENIED; failed all other checks [br.com.toba.app]
+11-04 23:13:06.848 11995 12912 W CAR.VALIDATOR: Package DENIED; failed all other checks [br.com.toba.app]
+11-04 23:13:06.885 11995 13010 W CAR.VALIDATOR: Package DENIED; failed all other checks [br.com.toba.app]
+11-04 23:13:06.915 11853 11853 I GH.OEMAppProvider: OemAppProvider.getApps: [ProjectionApp(appKey=AppKey(componentName=ComponentInfo{com.google.android.projection.gearhead/com.google.android.projection.gearhead.oem.OEMExitService}, profileType=PERSONAL), appCategory=OEM, isParkedOnly=false, isImmersiveApp=false, isNativeApp=false), ProjectionApp(appKey=AppKey(componentName=ComponentInfo{com.google.android.projection.gearhead/com.google.android.projection.gearhead.oem.AllCarAppsService}, profileType=PERSONAL), appCategory=OEM, isParkedOnly=false, isImmersiveApp=false, isNativeApp=false)]
+11-04 23:13:08.308  1353  3033 D LOWI-9.0.1.74: [LOWI-Scan] BSS b8:1e:61:**:**:ee FREQ: 5260, cFreq1[40:80:160] = [5270:5290:0] cFreq2 = 0 SSID Gonkillutoba, RSSI(dBM): -64, 11mcRanging: No, Country Code = US 
+11-04 23:13:08.324  1433  2121 D PasspointManager: ANQP entry not found for: b8:1e:61:14:d4:ee:<Gonkillutoba>
+11-04 23:13:09.887  1433  2317 I SemWifiIntelligentConnectionManager: HD: d4:ee / 5260 / -63 / 496 / 450 / 450 / 4259 | 69% | 0% | S | IWHcondFalse / F / "Gonkillutoba"WPA_PSK / null / F / TPass / CPass / SelectionTimeGap :1793844788 s  | F / F | F / 0 / 0 / F / F / F
+11-04 23:13:10.246  3152 22381 I NearbyMediums: Wifi changed new SSID: "Gonkillutoba"
+11-04 23:13:10.248  1433  2181 I WifiConnectivityMonitor.NCC: [ Transports: WIFI Capabilities: NOT_METERED&INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VPN&VALIDATED&NOT_ROAMING&FOREGROUND&NOT_CONGESTED&NOT_SUSPENDED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED LinkUpBandwidth>=77884Kbps LinkDnBandwidth>=71931Kbps TransportInfo: <SSID: <unknown ssid>, BSSID: 02:00:00:**:**:00, MAC: 02:00:00:**:**:00, IP: /192.***.**.4, Security type: 2, Supplicant state: COMPLETED, Wi-Fi standard: 11ax, RSSI: -62, Link speed: 480Mbps, Tx Link speed: 480Mbps, Max Supported Tx Link speed: 1200Mbps, Calculated Tx : 294Mbps, Rx Link speed: 432Mbps, Max Supported Rx Link speed: 1200Mbps, Calculated Rx : 551Mbps, Frequency: 5260MHz, Net ID: -1, Metered hint: false, score: 60, isUsable: true, CarrierMerged: false, SubscriptionId: -1, IsPrimary: 1, Trusted: true, Restricted: false, Ephemeral: false, OEM paid: false, OEM private: false, OSU AP: false, FQDN: <none>, Provider friendly name: <none>, Requesting package name: <none><none>MLO Information: , Is TID-To-Link negotiation supported by the AP: false, AP MLD Address: <none>, AP MLO Link Id: <none>, AP MLO Affiliated links: <none>, Vendor Data: <none>> SignalStrength: -62 AdminUids: [1000] SSID: "Gonkillutoba" UnderlyingNetworks: Null]
+11-04 23:13:10.249  1433  2332 I SemWifiConfigManager: addOrUpdateNetwork "Gonkillutoba"WPA_PSK (unchanged)
+11-04 23:13:10.249  1433  2332 D WifiConnectivityMonitor: "Gonkillutoba"WPA_PSK markRssiAtInvalidated : -127 time=0

@@ -292,7 +292,17 @@ if ("speechSynthesis" in window) {
 }
 
 function driveSpeak(text, options = {}) {
-  if (!text || !readDrivePrefs().voice || !("speechSynthesis" in window)) return;
+  if (!text || !readDrivePrefs().voice) return;
+  // v1.77: tela apagada no APK 1.6+ = voz do Android (a do navegador fica muda escondida)
+  if ((document.hidden || !("speechSynthesis" in window)) && TOBA_NATIVE && typeof TOBA_NATIVE.speak === "function") {
+    try {
+      TOBA_NATIVE.speak(String(text), options.interrupt !== false);
+    } catch (err) {
+      /* sem voz nativa */
+    }
+    return;
+  }
+  if (!("speechSynthesis" in window)) return;
   try {
     if (options.interrupt !== false) speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);

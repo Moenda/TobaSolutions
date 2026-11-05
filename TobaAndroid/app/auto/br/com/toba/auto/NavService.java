@@ -17,14 +17,21 @@ import br.com.toba.app.R;
 /**
  * Serviço em primeiro plano (tipo "location") enquanto tem rota no carro:
  * sem ele o Android corta o GPS quando a tela do celular apaga.
+ * v1.77 (APK 1.6): o 🧭 Navegar do celular (MainActivity.startNav) usa também,
+ * com título próprio.
  */
 public final class NavService extends Service {
     private static final String CHANNEL = "navegar";
     private static final int ID = 3101;
     private static final String EXTRA_TEXT = "text";
+    private static final String EXTRA_TITLE = "title";
 
     static void start(Context c, String text) {
-        Intent i = new Intent(c, NavService.class).putExtra(EXTRA_TEXT, text);
+        start(c, null, text);
+    }
+
+    public static void start(Context c, String title, String text) {
+        Intent i = new Intent(c, NavService.class).putExtra(EXTRA_TEXT, text).putExtra(EXTRA_TITLE, title);
         try {
             c.startForegroundService(i);
         } catch (Exception ignored) {
@@ -32,7 +39,7 @@ public final class NavService extends Service {
         }
     }
 
-    static void stop(Context c) {
+    public static void stop(Context c) {
         try {
             c.stopService(new Intent(c, NavService.class));
         } catch (Exception ignored) {
@@ -43,6 +50,7 @@ public final class NavService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         String text = intent == null ? null : intent.getStringExtra(EXTRA_TEXT);
+        String title = intent == null ? null : intent.getStringExtra(EXTRA_TITLE);
         NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         if (nm != null && nm.getNotificationChannel(CHANNEL) == null) {
             nm.createNotificationChannel(new NotificationChannel(CHANNEL, "Navegar (Android Auto)", NotificationManager.IMPORTANCE_LOW));
@@ -51,7 +59,7 @@ public final class NavService extends Service {
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         Notification n = new Notification.Builder(this, CHANNEL)
                 .setSmallIcon(R.drawable.ic_stat_toba)
-                .setContentTitle("🧭 Navegar no Android Auto")
+                .setContentTitle(title == null ? "🧭 Navegar no Android Auto" : title)
                 .setContentText(text == null ? "Rota ligada" : text)
                 .setCategory(Notification.CATEGORY_NAVIGATION)
                 .setOngoing(true)

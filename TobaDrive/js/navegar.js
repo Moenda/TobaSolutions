@@ -24,11 +24,25 @@
  * v1.70: só Mapbox 3D; carango 3D/no chão grudado na linha da rota (nav.carView);
  * 🎨 abre até navegando (troca carango, cor e velocímetro no meio da rota);
  * 🚦 trânsito ao vivo da cidade (Mapbox Traffic) + lentidão real do TomTom.
+ * v1.77 (pedidos da Milena): rota sobrevive ao celular bloqueado. A viagem em
+ * andamento fica guardada em DRIVE_ACTIVE_KEY (localStorage, a cada ~5 s); se a
+ * página reabrir (Android matou o app, tela bloqueou e recarregou) ela volta
+ * sozinha com rota nova daqui até o destino, sem perder km nem o começo da
+ * viagem. No APK 1.6+ o TobaNative.navKeepAlive liga um serviço em primeiro
+ * plano + GPS nativo (onTobaNativeFix) e a voz nativa enquanto a tela está
+ * apagada. 🏁 Cheguei só nos últimos DRIVE_ARRIVE_BTN_M. Bolinha de skin
+ * (nextVehicle) ao lado do 3D/2D.
  * ===================================================================== */
 const DRIVE_FAV_EMOJIS = ["🏠", "💼", "❤️", "☕", "🏋️", "🛒", "🍻", "🐾", "⭐"];
 const DRIVE_GPS_TIMEOUT_MS = 20000;
 const DRIVE_ARRIVE_M = 35;
-const DRIVE_ARRIVE_BTN_M = 1500; // v1.73: 🏁 Cheguei aparece faltando 1,5 km
+// v1.73: 🏁 Cheguei aparecia faltando 1,5 km; v1.77: só no finalzinho (Milena: "aparece muito antes")
+const DRIVE_ARRIVE_BTN_M = 250;
+// v1.77: viagem em andamento (pra voltar depois que o celular bloqueia / o app recarrega)
+const DRIVE_ACTIVE_KEY = "toba_drive_active";
+const DRIVE_ACTIVE_SAVE_MS = 5000;
+const DRIVE_RESUME_MAX_MS = 3 * 60 * 60 * 1000; // mais velha que 3 h = viagem encerrada (guarda o que rodou)
+const DRIVE_GPS_STALE_MS = 12000;
 const DRIVE_TRAFFIC_CHECK_MS = 5 * 60 * 1000;
 const DRIVE_SWAP_SAVE_S = 180;
 
@@ -38,6 +52,8 @@ const nav = {
   route: null,
   routeId: 0,
   pos: null, // { lat, lng, acc, speed (m/s), heading, at }
+  posAt: 0, // v1.77: relógio do aparelho na última leitura (pra saber se o GPS travou)
+  activeSavedAt: 0, // v1.77: última vez que a viagem foi pro DRIVE_ACTIVE_KEY
   watchId: null,
   gpsError: "",
   seg: 0,
@@ -54,6 +70,7 @@ const nav = {
   trip: null, // { startedAt, km, last: [lat, lng] }
   result: null, // resumo do "done"
   placesListId: "",
+  resuming: null, // v1.77: viagem guardada esperando rota nova (DRIVE_ACTIVE_KEY)
   searchSeq: 0,
   waiters: [],
   favEmoji: "⭐",
@@ -91,6 +108,35 @@ function onGpsError(err) {
   renderGpsStatus();
 }
 
+// v1.77: GPS nativo do APK (tela apagada: o WebView não entrega GPS pra página escondida)
+window.onTobaNativeFix = function onTobaNativeFix(f) {
+  if (!f || !Number.isFinite(Number(f.lat)) || !Number.isFinite(Number(f.lng))) return;
+  // com a página na tela o GPS do próprio WebView já chega: o nativo só cobre a tela apagada
+  if (!document.hidden && nav.pos && Date.now() - nav.posAt < DRIVE_GPS_STALE_MS) return;
+  const num = (v) => (v === null || v === undefined || v === "" || !Number.isFinite(Number(v)) ? null : Number(v));
+  onFix({
+    coords: { latitude: Number(f.lat), longitude: Number(f.lng), accuracy: num(f.acc) ?? 30, speed: num(f.speed), heading: num(f.heading) },
+    timestamp: num(f.at) || Date.now(),
+  });
+};
+
+// v1.77: voltou pra tela (desbloqueou o celular): GPS parado há tempo = liga de novo
+function wakeGps() {
+  if (!nav.watchId && nav.watchId !== 0) {
+    startGps();
+    return;
+  }
+  if (nav.posAt && Date.now() - nav.posAt > DRIVE_GPS_STALE_MS) {
+    try {
+      navigator.geolocation.clearWatch(nav.watchId);
+    } catch (err) {
+      /* já parado */
+    }
+    nav.watchId = null;
+    startGps();
+  }
+}
+
 function onFix(p) {
   const c = p.coords;
   const prev = nav.pos;
@@ -106,6 +152,7 @@ function onFix(p) {
     if (heading === null) heading = prev.heading;
   }
   nav.pos = { lat: here[0], lng: here[1], acc: Number(c.accuracy) || 999, speed: Math.max(0, speed || 0), heading, at: p.timestamp || Date.now() };
+  nav.posAt = Date.now();
   nav.gpsError = "";
   nav.waiters.splice(0).forEach((w) => w(nav.pos));
   renderGpsStatus();
@@ -490,6 +537,24 @@ function pickSpeedo(el) {
 function renderPickVehicle() {
   const btn = document.getElementById("styleOpenBtn");
   if (btn) btn.textContent = `🎨 Personalizar · ${currentVehicle().icon}`;
+  const skin = document.getElementById("skinBtn");
+  if (skin) {
+    const v = currentVehicle();
+    skin.textContent = v.icon;
+    skin.setAttribute("aria-label", `Carango: ${v.name}. Toca pra trocar`);
+  }
+}
+
+// v1.77: bolinha da skin (igual o 3D/2D): pula pro próximo carango destravado
+function nextVehicle() {
+  const stats = driveStatsNow();
+  const open = DRIVE_VEHICLES.filter((v) => driveVehicleUnlocked(v, stats));
+  const at = open.findIndex((v) => v.id === currentVehicle().id);
+  const v = open[(at + 1) % open.length] || DRIVE_VEHICLES[0];
+  storeDrivePrefs({ vehicle: v.id });
+  drawCar();
+  renderPickVehicle();
+  tobaToast(`${v.icon} ${v.name}`);
 }
 
 // 🚦 trânsito ao vivo: ruas lentas/paradas da cidade (Mapbox Traffic) + trechos parados da rota (TomTom)
@@ -583,6 +648,11 @@ function routeBack() {
   if (nav.mode === "nav") {
     endNav();
     return;
+  }
+  // v1.77: desistiu da viagem que tinha voltado: guarda o que rodou e esquece
+  if (nav.resuming) {
+    closeActiveTrip(nav.resuming);
+    nav.resuming = null;
   }
   nav.route = null;
   nav.dest = null;
@@ -732,20 +802,38 @@ function renderRoute() {
 /* ---------------------------------------------------------------------
  * Navegando
  * ------------------------------------------------------------------- */
-function startNav() {
+// resumed (v1.77) = viagem que voltou depois do celular bloquear: segue a mesma
+// viagem (começo, km, caminho), só com rota nova daqui
+function startNav(resumed = null) {
   if (!nav.route || !nav.pos) return;
   nav.seg = 0;
   nav.along = 0;
   nav.offCount = 0;
   nav.spoken = {};
   nav.follow = true;
-  nav.trip = { startedAt: Date.now(), m: 0, last: [nav.pos.lat, nav.pos.lng] };
+  // (o data-click passa o botão aqui: Partiu numa viagem que voltou sem rota usa nav.resuming)
+  const back = resumed && resumed.trip ? resumed : nav.resuming;
+  nav.resuming = null;
+  const trip = back && back.trip ? back.trip : null;
+  nav.trip = trip
+    ? { ...trip, last: [nav.pos.lat, nav.pos.lng], resumed: true, lastTick: 0 }
+    : { startedAt: Date.now(), m: 0, last: [nav.pos.lat, nav.pos.lng] };
   nav.lastTrafficCheck = Date.now();
-  nav.trip.etaS = Math.round(nav.route.duration || 0); // previsão no Partiu (conquistas de tempo)
+  if (!trip) nav.trip.etaS = Math.round(nav.route.duration || 0); // previsão no Partiu (conquistas de tempo)
   driveKeepAwake(true);
+  driveNativeKeepAlive(true);
+  saveActiveTrip(true);
   setMode("nav").then(() => {
     gameStart();
     if (nav.map) nav.map.setView([nav.pos.lat, nav.pos.lng], 17);
+    drawCar(); // v1.77: carango já na pista (sem esperar a próxima leitura do GPS)
+    if (trip) {
+      const eta = driveFormatClock(Date.now() + nav.route.duration * 1000);
+      driveSpeak(`Voltei! Seguindo pra ${nav.dest?.name || "o destino"}. Chegada às ${eta.replace(":", " e ")}.`);
+      tobaToast("🔄 Rota de volta, piloto!");
+      navTick();
+      return;
+    }
     const first = nav.route.steps.find((s) => s.type === "depart");
     const eta = driveFormatClock(Date.now() + nav.route.duration * 1000);
     // A 1ª manobra longe já entra no "Partiu" (senão a fala de longe cortava ele)
@@ -799,6 +887,7 @@ function navTick() {
   renderNav(next, left, total);
   speakNext(next);
   gameTick(next, left, total);
+  saveActiveTrip();
 
   if (nav.follow && nav.map) {
     const z = pos.speed > 22 ? 15 : pos.speed > 12 ? 16 : 17;
@@ -953,7 +1042,9 @@ async function checkTraffic(total) {
 function finishTrip(arrived) {
   const trip = nav.trip;
   nav.trip = null;
+  clearActiveTrip();
   driveKeepAwake(false);
+  driveNativeKeepAlive(false);
   if (!trip) return { arrived, m: 0, s: 0 };
   const s = (Date.now() - trip.startedAt) / 1000;
   nav.trip = trip; // gameTripExtras lê daqui
@@ -1153,6 +1244,7 @@ tobaActions({
   startNav,
   endNav,
   arriveHere,
+  nextVehicle,
   recenter,
   toggleVoice,
   toggleMapStyle,
@@ -1173,10 +1265,135 @@ tobaActions({
   testVoice,
 });
 
-// Saiu da página no meio da viagem: guarda o que rodou
+// Saiu da página no meio da viagem: até a v1.76 encerrava a viagem aqui (e a rota
+// sumia quando o Android recarregava o app com a tela bloqueada). v1.77: só guarda
+// onde parou; abrindo de novo, a rota volta (resumeActiveTrip).
 window.addEventListener("pagehide", () => {
-  if (nav.mode === "nav") finishTrip(false);
+  if (nav.mode === "nav") saveActiveTrip(true);
 });
+
+// v1.77: tela de volta (desbloqueou): GPS de novo, guarda a viagem e redesenha
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    if (nav.mode === "nav") saveActiveTrip(true);
+    return;
+  }
+  if (nav.mode !== "nav") return;
+  wakeGps();
+  driveKeepAwake(true);
+  setTimeout(() => {
+    if (nav.mode !== "nav") return;
+    nav.map?.resize();
+    drawCar();
+    navTick();
+  }, 300);
+});
+
+/* ---------------------------------------------------------------------
+ * v1.77: viagem em andamento guardada (sobrevive ao app recarregar)
+ * Só o necessário: destino, começo, km, caminho e os números do modo jogo.
+ * Nunca entra no TOBA_DRIVE_DB (lá só vai a viagem terminada, pelo finishTrip).
+ * ------------------------------------------------------------------- */
+function saveActiveTrip(force = false) {
+  if (nav.mode !== "nav" && !force) return;
+  if (!nav.trip || !nav.dest) return;
+  if (!force && Date.now() - nav.activeSavedAt < DRIVE_ACTIVE_SAVE_MS) return;
+  nav.activeSavedAt = Date.now();
+  const t = nav.trip;
+  const keep = { ...t };
+  delete keep.lastTick;
+  delete keep.resumed;
+  if (Array.isArray(keep.path) && keep.path.length > 4000) keep.path = keep.path.slice(-4000);
+  try {
+    localStorage.setItem(DRIVE_ACTIVE_KEY, JSON.stringify({ v: 1, savedAt: Date.now(), dest: nav.dest, trip: keep }));
+  } catch (err) {
+    /* storage cheio: segue sem salvar */
+  }
+}
+
+function readActiveTrip() {
+  try {
+    const a = JSON.parse(localStorage.getItem(DRIVE_ACTIVE_KEY) || "null");
+    if (!a || !a.dest || !a.trip || !driveValidPoint({ lat: Number(a.dest.lat), lng: Number(a.dest.lng) })) return null;
+    if (!Number.isFinite(Number(a.trip.startedAt))) return null;
+    return a;
+  } catch (err) {
+    return null;
+  }
+}
+
+function clearActiveTrip() {
+  try {
+    localStorage.removeItem(DRIVE_ACTIVE_KEY);
+  } catch (err) {
+    /* nada */
+  }
+}
+
+// Viagem guardada que não vai voltar (velha ou trocou de destino): entra no
+// histórico como "encerrada" com os km que rodou, igual o ✕ Encerrar
+function closeActiveTrip(a) {
+  clearActiveTrip();
+  const t = a.trip;
+  if (!t || !(Number(t.m) >= 300)) return;
+  const endedAt = Math.min(Date.now(), Number(a.savedAt) || Date.now());
+  driveAddTrip({
+    date: toIsoDate(new Date(Number(t.startedAt))),
+    startedAt: Number(t.startedAt),
+    endedAt,
+    name: a.dest.name || "Destino",
+    lat: Number(a.dest.lat),
+    lng: Number(a.dest.lng),
+    km: Math.round(Number(t.m) / 100) / 10,
+    arrived: false,
+    etaS: Number(t.etaS) || 0,
+    ...(Number.isFinite(Number(t.startLat)) ? { startLat: Math.round(t.startLat * 1e6) / 1e6, startLng: Math.round(t.startLng * 1e6) / 1e6 } : {}),
+    maxKmh: Math.round(Number(t.maxKmh) || 0),
+    radars: Number(t.radars) || 0,
+    ...(t.placeId ? { placeId: String(t.placeId) } : {}),
+  });
+  if (typeof tobaPlayerCheck === "function") tobaPlayerCheck({ reason: "drive" });
+}
+
+// Abriu a página com viagem guardada: volta pra rota (rota nova daqui até o destino)
+async function resumeActiveTrip(a) {
+  nav.dest = { ...a.dest, lat: Number(a.dest.lat), lng: Number(a.dest.lng) };
+  nav.route = null;
+  nav.routeError = "";
+  nav.loading = true;
+  nav.resuming = a;
+  await setMode("preview");
+  drawRoute();
+  const target = nav.dest;
+  const pos = await waitForFix(20000);
+  if (nav.dest !== target) return;
+  try {
+    if (!pos) throw new Error("sem gps");
+    const route = await driveFetchRoute(pos, target, { heading: pos.heading, speed: pos.speed });
+    if (nav.dest !== target) return;
+    nav.route = route;
+    nav.routeId += 1;
+    nav.loading = false;
+    nav.resuming = null;
+    drawRoute();
+    startNav(a);
+  } catch (err) {
+    // sem GPS ou sem rota: fica na prévia (🚀 Partiu continua a MESMA viagem)
+    nav.loading = false;
+    nav.routeError = !pos ? nav.gpsError || "Não achei tua posição no GPS." : navigator.onLine === false ? "Sem internet pra montar a rota." : "O servidor de rotas não respondeu. Tenta de novo ou vai pelo Maps/Waze.";
+    renderRoute();
+  }
+}
+
+// v1.77: APK 1.6+ segura o GPS e a voz com a tela apagada (serviço em primeiro plano)
+function driveNativeKeepAlive(on) {
+  if (!TOBA_NATIVE || typeof TOBA_NATIVE.navKeepAlive !== "function") return;
+  try {
+    TOBA_NATIVE.navKeepAlive(Boolean(on), on ? `Indo pra ${nav.dest?.name || "o destino"}` : "");
+  } catch (err) {
+    /* APK sem a ponte: segue só com a tela acesa */
+  }
+}
 
 (function initNavegar() {
   syncPrefInputs();
@@ -1191,7 +1408,20 @@ window.addEventListener("pagehide", () => {
   const qs = new URLSearchParams(location.search);
   const lat = Number(qs.get("lat"));
   const lng = Number(qs.get("lng"));
-  if (qs.get("lat") && qs.get("lng") && driveValidPoint({ lat, lng })) {
+  const hasQs = Boolean(qs.get("lat") && qs.get("lng") && driveValidPoint({ lat, lng }));
+  // v1.77: viagem que ficou no meio (celular bloqueou, app recarregou)
+  const active = readActiveTrip();
+  if (active) {
+    const fresh = Date.now() - Number(active.savedAt || 0) <= DRIVE_RESUME_MAX_MS;
+    const same = !hasQs || driveDist([lat, lng], [Number(active.dest.lat), Number(active.dest.lng)]) < 60;
+    if (fresh && same) {
+      startGps();
+      resumeActiveTrip(active);
+      return;
+    }
+    closeActiveTrip(active);
+  }
+  if (hasQs) {
     setDestination({ name: qs.get("name") || "Destino", address: qs.get("address") || "", lat, lng, ...(qs.get("place") ? { placeId: qs.get("place") } : {}) });
   } else {
     setMode("pick");
