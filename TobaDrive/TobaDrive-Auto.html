@@ -28,17 +28,27 @@
       </div>
       <div class="am-lanes" id="amLanes" hidden></div>
       <div class="am-radar" id="amRadar" hidden></div>
+      <div class="am-cloba" id="amCloba" hidden></div>
     </div>
 
-    <div class="am-bottom">
-      <div class="am-speed" id="amSpeed"><b id="amSpeedNum">0</b><small>km/h</small></div>
-      <div class="am-limit" id="amLimit" hidden><b id="amLimitNum"></b></div>
-      <div class="am-eta" id="amEta" hidden>
-        <b id="amEtaClock"></b>
-        <span id="amEtaRest"></span>
+    <div class="am-bottom" id="amBottom">
+      <!-- v1.81: velocidade + placa num bloco só (placa grudada na bolinha, tipo Waze) -->
+      <div class="am-gauge">
+        <div class="am-speed" id="amSpeed"><b id="amSpeedNum">0</b><small>km/h</small></div>
+        <div class="am-limit" id="amLimit" hidden><b id="amLimitNum"></b></div>
       </div>
-      <div class="am-road" id="amRoad" hidden></div>
+      <!-- v1.81: minutos grandes, km e hora de chegada pequenos, barrinha até o destino -->
+      <div class="am-eta" id="amEta" hidden>
+        <div class="am-eta-row">
+          <b id="amEtaClock"></b>
+          <span id="amEtaRest"></span>
+        </div>
+        <div class="am-eta-bar"><i id="amEtaBar"></i></div>
+      </div>
     </div>
+
+    <!-- v1.81: rua atual no meio, embaixo da seta -->
+    <div class="am-road" id="amRoad" hidden></div>
 
     <div class="am-note" id="amNote" hidden></div>
   </div>

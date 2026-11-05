@@ -194,7 +194,7 @@ function amRenderHud() {
   const limit = am.overview ? 0 : Math.round(Number(h.limit) || 0);
   document.getElementById("amSpeedNum").textContent = String(speed);
   document.getElementById("amSpeed").classList.toggle("is-over", limit > 0 && speed > limit + 3);
-  document.getElementById("amSpeed").parentElement.hidden = Boolean(am.overview);
+  document.getElementById("amBottom").hidden = Boolean(am.overview);
   const lim = document.getElementById("amLimit");
   lim.hidden = !(limit > 0);
   document.getElementById("amLimitNum").textContent = limit > 0 ? String(limit) : "";
@@ -207,15 +207,40 @@ function amRenderHud() {
   const road = document.getElementById("amRoad");
   road.hidden = Boolean(am.overview) || !h.road;
   road.textContent = h.road || "";
+  amPlaceRoad();
   amRenderRadar();
   const eta = document.getElementById("amEta");
   eta.hidden = !navOn || !h.eta;
   if (navOn && h.eta) {
+    // v1.81: minutos grandes (cor do trânsito); km e hora de chegada pequenos
     const clock = document.getElementById("amEtaClock");
-    clock.textContent = h.eta;
+    clock.textContent = `${h.min} min`;
     clock.className = `is-t${Number(h.traffic) || 1}`;
-    document.getElementById("amEtaRest").textContent = `${h.min} min · ${h.left || ""}`;
+    document.getElementById("amEtaRest").textContent = `${h.left || ""} · chega ${h.eta}`;
   }
+  amRenderBar();
+  amJokeCheck(h);
+}
+
+// v1.81: rua atual no meio embaixo; se bater na pílula da chegada, desliza pra direita dela
+function amPlaceRoad() {
+  const road = document.getElementById("amRoad");
+  if (!road || road.hidden) return;
+  road.style.left = "";
+  const hud = document.getElementById("amHud").getBoundingClientRect();
+  const r = road.getBoundingClientRect();
+  const bottom = document.getElementById("amBottom").getBoundingClientRect();
+  const minLeft = bottom.right + 10;
+  if (r.left < minLeft) road.style.left = `${minLeft - hud.left + r.width / 2}px`;
+}
+
+// v1.81: barrinha de progresso até o destino (rodado ÷ tamanho da rota)
+function amRenderBar() {
+  const bar = document.getElementById("amEtaBar");
+  if (!bar) return;
+  const r = am.route;
+  const f = r && r.len > 0 ? Math.max(0, Math.min(1, am.along / r.len)) : 0;
+  bar.style.width = `${(f * 100).toFixed(1)}%`;
 }
 
 /* ---------- camadas ---------- */
@@ -729,6 +754,124 @@ function amRenderRadar() {
   el.innerHTML = `<span class="am-radar-ic">📸</span>${r.lim ? `<b>${r.lim}</b>` : "<b>Radar</b>"}<span>${m}</span>`;
 }
 
+
+/* ---------- 🤡 Cloba no carro (v1.81): piadinha nos marcos da viagem ----------
+ * Uma vez por viagem cada marco. Aparece numa pílula e fala (respeita o 🔇 do carro).
+ * Nunca fala em cima de manobra: espera a próxima ficar a mais de 400 m.
+ * {min}, {km}, {limit} trocados na hora.
+ */
+const AM_JOKES = {
+  start: [
+    "Partiu! Cinto no peito e fé no Cloba.",
+    "{min} minutos de viagem. Playlist no talo e bora!",
+    "Bora que bora, piloto. O copiloto aqui nem tem carta, mas tem opinião.",
+    "Motor ligado. Já foi no banheiro? Depois não adianta chorar.",
+  ],
+  half: [
+    "Metade do caminho! Daqui pra frente é ladeira abaixo. Modo de dizer, não solta o freio.",
+    "Cinquenta por cento concluído. Barra de loading do Toba tá orgulhosa.",
+    "Metade já foi. A outra metade tá te esperando com um café.",
+    "Meio caminho andado. Literalmente. O Cloba não perde uma.",
+  ],
+  ten: [
+    "Faltam 10 minutos. Segura o xixi que tá chegando!",
+    "Dez minutinhos. Já pode ir pensando onde vai estacionar.",
+    "10 minutos pra chegar. Se tá com fome, segura que é logo ali.",
+    "Faltam dez. Hora de ensaiar a cara de quem não se atrasou.",
+  ],
+  five: [
+    "Cinco minutos! Avisa o povo que tá chegando. Por áudio não, tá dirigindo!",
+    "Faltam 5. Arruma o cabelo no retrovisor no próximo sinal vermelho.",
+    "Cinco minutos. O xixi agradece a paciência.",
+  ],
+  last: [
+    "Último quilômetro! Nunca foi sorte, Cloba.",
+    "Tá logo ali. Olho na vaga, piloto!",
+    "Chegando! Pode tirar o pé que o Cloba assume. Mentira, não assume.",
+  ],
+  jam: [
+    "Trânsito parado na frente. Respira e coloca um pagodinho.",
+    "Vai ter fila. Mais parado que fila de banco no quinto dia útil.",
+    "Lentidão pesada. Dá tempo de pensar na vida. Ou não.",
+  ],
+  speeding: [
+    "Ô Max Tobasten, aqui é {limit}! Multa não dá XP.",
+    "Calma, Velozes e Furiosos 47. O limite é {limit}.",
+    "Pé no freio, piloto! {limit} aqui, não é Interlagos.",
+  ],
+  long: [
+    "Mais de uma hora de estrada. Se bater o sono, para num posto. O Cloba espera.",
+    "Viagem longa, hein. Água do lado e pausa a cada duas horas, combinado?",
+  ],
+};
+const amJoke = { id: null, done: new Set(), pending: null, shownAt: 0, lastSpeed: 0, timer: null, startMin: 0 };
+
+function amJokeLine(kind, vars) {
+  const list = AM_JOKES[kind] || [];
+  if (!list.length) return "";
+  const line = list[Math.floor(Math.random() * list.length)];
+  return line.replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined ? String(vars[k]) : m));
+}
+
+// manobra perto? (h.dist = "170 m" / "1,2 km")
+function amTurnNear(h) {
+  const d = String(h.dist || "");
+  const m = d.match(/^([0-9]+)\s*m$/);
+  return Boolean(m) && Number(m[1]) < 400;
+}
+
+function amJokeCheck(h) {
+  if (!h || !h.nav || am.overview || !am.route) return;
+  if (amJoke.id !== am.route.id) {
+    amJoke.id = am.route.id;
+    amJoke.done = new Set();
+    amJoke.pending = null;
+    amJoke.startMin = Number(h.min) || 0;
+  }
+  const min = Number(h.min) || 0;
+  const frac = am.route.len > 0 ? am.along / am.route.len : 0;
+  const left = (1 - frac) * am.route.len;
+  const want = (kind, vars = {}) => {
+    if (amJoke.done.has(kind) || amJoke.pending) return;
+    amJoke.done.add(kind);
+    amJoke.pending = amJokeLine(kind, { min, ...vars });
+  };
+  // um marco por vez, do mais urgente pro menos
+  if (frac < 0.05 && amJoke.startMin >= 8) want("start");
+  if (amJoke.startMin >= 60 && frac > 0.08) want("long");
+  if (Number(h.traffic) === 3 && frac < 0.9) want("jam");
+  if (frac >= 0.5 && frac < 0.7 && amJoke.startMin >= 12) want("half");
+  if (min <= 10 && min > 5 && amJoke.startMin >= 16) want("ten");
+  if (min <= 5 && min > 2 && amJoke.startMin >= 9) want("five");
+  if (left <= 1000 && left > 250 && am.route.len > 4000) want("last");
+  const kmh = Number(h.speed) || 0;
+  const lim = Number(h.limit) || 0;
+  if (lim > 0 && kmh > lim + 12 && !amJoke.pending && Date.now() - amJoke.lastSpeed > 300000) {
+    amJoke.lastSpeed = Date.now();
+    amJoke.done.delete("speeding");
+    want("speeding", { limit: lim });
+  }
+  if (amJoke.pending && !amTurnNear(h) && !h.rerouting) {
+    const text = amJoke.pending;
+    amJoke.pending = null;
+    amJokeShow(text);
+  }
+}
+
+function amJokeShow(text) {
+  const el = document.getElementById("amCloba");
+  if (el) {
+    el.textContent = `🤡 ${text}`;
+    el.hidden = false;
+    clearTimeout(amJoke.timer);
+    amJoke.timer = setTimeout(() => {
+      el.hidden = true;
+    }, 7000);
+  }
+  const n = amNative();
+  if (n && typeof n.say === "function") n.say(text);
+}
+
 /* ---------- API do Java (window.tobaAuto) ---------- */
 window.tobaAuto = {
   config(c) {
@@ -741,6 +884,7 @@ window.tobaAuto = {
     root.setProperty("--am-r", `${p.r}px`);
     root.setProperty("--am-b", `${p.b}px`);
     root.setProperty("--am-l", `${p.l}px`);
+    amPlaceRoad();
     if (skinBefore !== am.cfg.skin) amApplySkin();
     else amApplyLook();
     if (am.overview) amShowOverview();
@@ -768,6 +912,7 @@ window.tobaAuto = {
   progress(p) {
     am.along = p && Number.isFinite(p.along) ? p.along : 0;
     if (!am.overview) amUpdateTrim();
+    amRenderBar();
   },
   overview(o) {
     const r = o ? amPrepRoute(o.route) : null;

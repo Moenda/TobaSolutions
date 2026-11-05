@@ -25,6 +25,8 @@ const DRIVE_MAPBOX_JS = `https://cdn.jsdelivr.net/npm/mapbox-gl@${DRIVE_MAPBOX_V
 const DRIVE_MAPBOX_CSS = `https://cdn.jsdelivr.net/npm/mapbox-gl@${DRIVE_MAPBOX_VERSION}/dist/mapbox-gl.css`;
 const DRIVE_MAPBOX_STYLE = "mapbox://styles/mapbox/standard";
 const DRIVE_MAPBOX_TRAFFIC = "mapbox://mapbox.mapbox-traffic-v1";
+// v1.81: rota e trânsito aparecem meio transparentes atrás dos prédios (igual o Android Auto)
+const DRIVE_SEE_THROUGH = 0.55;
 const DRIVE_MAPBOX_WAIT_MS = 15000;
 const DRIVE_TRAFFIC_RELOAD_MS = 3 * 60 * 1000;
 const DRIVE_CAR_GLIDE_MS = 850;
@@ -352,7 +354,7 @@ async function driveMapboxMap(box, center, zoom) {
     slot: "top",
     filter: ["==", ["get", "k"], "jam"],
     layout: { "line-cap": "round", "line-join": "round" },
-    paint: { "line-color": ["get", "color"], "line-width": DRIVE_TRAFFIC_WIDTH, "line-opacity": 0.95, "line-emissive-strength": 1 },
+    paint: { "line-color": ["get", "color"], "line-width": DRIVE_TRAFFIC_WIDTH, "line-opacity": 0.95, "line-emissive-strength": 1, "line-occlusion-opacity": DRIVE_SEE_THROUGH },
   });
   // v1.73: trânsito casado com a rota (driveRouteTrafficRuns), faixa larga embaixo do risco
   map.addSource("dv-route-traffic", { type: "geojson", data: empty });
@@ -367,6 +369,7 @@ async function driveMapboxMap(box, center, zoom) {
       "line-width": DRIVE_TRAFFIC_WIDTH,
       "line-opacity": 0.95,
       "line-emissive-strength": 1,
+      "line-occlusion-opacity": DRIVE_SEE_THROUGH,
     },
   }, "dv-route-jam");
   map.addLayer({
@@ -376,7 +379,7 @@ async function driveMapboxMap(box, center, zoom) {
     slot: "top",
     filter: ["==", ["get", "k"], "base"],
     layout: { "line-cap": "round", "line-join": "round" },
-    paint: { "line-color": "#0d1117", "line-opacity": 0.75, "line-width": ["interpolate", ["linear"], ["zoom"], 12, 4.5, 16, 8, 19, 16], "line-emissive-strength": 1 },
+    paint: { "line-color": "#0d1117", "line-opacity": 0.75, "line-width": ["interpolate", ["linear"], ["zoom"], 12, 4.5, 16, 8, 19, 16], "line-emissive-strength": 1, "line-occlusion-opacity": DRIVE_SEE_THROUGH },
   });
   map.addLayer({
     id: "dv-route-line",
@@ -385,7 +388,7 @@ async function driveMapboxMap(box, center, zoom) {
     slot: "top",
     filter: ["==", ["get", "k"], "base"],
     layout: { "line-cap": "round", "line-join": "round" },
-    paint: { "line-color": ["get", "color"], "line-width": ["interpolate", ["linear"], ["zoom"], 12, 2.5, 16, 5, 19, 11], "line-emissive-strength": 1 },
+    paint: { "line-color": ["get", "color"], "line-width": ["interpolate", ["linear"], ["zoom"], 12, 2.5, 16, 5, 19, 11], "line-emissive-strength": 1, "line-occlusion-opacity": DRIVE_SEE_THROUGH },
   });
 
   // 🚦 Trânsito ao vivo (Mapbox Traffic): verde livre, amarelo lento, vermelho pesado, vinho parado.
@@ -413,6 +416,7 @@ async function driveMapboxMap(box, center, zoom) {
         "line-offset": trafficOffset,
         "line-opacity": 0.7,
         "line-emissive-strength": 1,
+        "line-occlusion-opacity": DRIVE_SEE_THROUGH,
       },
     }, "dv-route-traffic");
   } catch (err) {

@@ -1895,3 +1895,26 @@ Depois Generate Signed APK (mesma chave) e `adb install -r`. Sem o APK novo o si
 **Como testar:** DHU › Toba: ícones em cima; ⭐ lista os favoritos do Navegar. 🔍 › destino: 2–3 caminhos, tocar troca a rota no mapa. Simular: limite da rua, rua atual embaixo, faixas antes das saídas, 📸 nos radares, ruas lentas em amarelo/vermelho em volta, 🏁 no destino. Parado sem rota: a placa do limite aparece.
 
 **Commit sugerido:** `v1.80 - Android Auto: previa com 2-3 rotas, favoritos do Navegar, botoes em icone, limite da rua sempre, rua atual, faixas, radares, transito em volta e rota por tras dos predios (APK 1.8)`
+
+## v1.81 — 🚘 Android Auto: parte de baixo do mapa repaginada (minutos grandes, barrinha, placa grudada, rua no meio) e 🤡 piadinhas do Cloba na viagem
+
+**Arquivos que mudaram:** `TobaDrive/TobaDrive-Auto.html`, `TobaDrive/css/auto-map.css`, `TobaDrive/js/auto-map.js`, `TobaDrive/js/drive-map.js`, `sw.js` (cache `toba-v41`), `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **Chegada mais clara:** em vez da hora grandona (que parecia cronômetro), agora vem **32 min** grande, na cor do trânsito, e "28 km · chega 01:21" pequeno do lado.
+2. **Barrinha de progresso:** embaixo da chegada, enchendo até o destino.
+3. **Velocidade + placa num bloco só:** a plaquinha do limite fica grudada em cima da bolinha da velocidade, tipo Waze.
+4. **Rua atual no meio:** a pílula da rua foi pro meio, embaixo da seta. Em tela estreita ela desliza pro lado da chegada pra não encavalar.
+
+5. **🤡 Cloba no carro:** piadinha falada (e num balão embaixo da manobra) nos marcos da viagem, uma vez cada: partiu, metade do caminho, faltam 10 min ("segura o xixi que tá chegando!"), faltam 5, último quilômetro, trânsito parado, viagem de mais de 1 h e, se passar 12 km/h do limite, uma bronca (no máximo a cada 5 min). Nunca fala em cima de manobra (espera ela ficar a mais de 400 m) e o 🔇 cala ele também.
+
+6. **🧭 Navegar do celular igual ao carro:** a rota e o trânsito também aparecem meio transparentes atrás dos prédios no mapa 3D do celular.
+
+O velocímetro continua na esquerda: os botões do Android Auto ficam sempre na direita e ele ficaria por baixo deles.
+
+**Dados:** Nenhuma mudança.
+
+**APK:** não precisa, é só o site (a voz usa a ponte `say` que já veio no APK 1.8). Depois do push, fechar o Toba no celular e abrir de novo pro carro pegar a página nova.
+
+**Como testar:** DHU › Toba › 🔍 › destino › Simular: embaixo à esquerda a bolinha com a placa grudada, "XX min" grande e a barrinha andando; a rua atual no meio embaixo.
+
+**Commit sugerido:** `v1.81 - Android Auto: chegada com minutos grandes e barrinha de progresso, placa do limite grudada na velocidade, rua atual no meio, piadinhas do Cloba nos marcos da viagem e rota aparecendo atras dos predios no Navegar do celular`
