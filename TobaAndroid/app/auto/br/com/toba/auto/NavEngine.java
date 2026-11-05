@@ -194,6 +194,8 @@ final class NavEngine implements LocationListener {
     /* ------------------------------------------------------------ rota */
 
     void computeRoute(Place to, RouteCallback cb) {
+        // v1.76: liberou a localização no celular depois de abrir o carro? liga o GPS agora
+        if (!locationOn) startLocation();
         Location from = last;
         if (from == null) {
             main.post(() -> cb.fail(hasPermission()

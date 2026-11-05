@@ -79,7 +79,9 @@ function startGps() {
 
 function onGpsError(err) {
   if (err && err.code === 1) {
-    nav.gpsError = "Sem permissão de localização. Libera no cadeado da barra de endereço (Chrome › Permissões › Local).";
+    nav.gpsError = tobaIsApp()
+      ? "Sem permissão de localização. No celular: Configurações › Apps › Toba › Permissões › Localização › Permitir durante o uso."
+      : "Sem permissão de localização. Libera no cadeado da barra de endereço (Chrome › Permissões › Local).";
     if (nav.watchId !== null) navigator.geolocation.clearWatch(nav.watchId);
     nav.watchId = null;
   } else if (!nav.pos) {
@@ -1179,11 +1181,6 @@ window.addEventListener("pagehide", () => {
 (function initNavegar() {
   syncPrefInputs();
   renderPickVehicle();
-  if (tobaIsApp()) {
-    const notice = document.getElementById("apkNotice");
-    notice.hidden = false;
-    notice.innerHTML = "📱 No app Toba (APK) o GPS ainda não tá liberado. Abre o Navegar pelo <b>Chrome</b> (ou pelo Toba instalado pelo Chrome) que funciona. O Maps/Waze do ↗️ funciona daqui mesmo.";
-  }
   renderGpsStatus();
   // Já deu permissão antes? liga o GPS de cara pra ordenar por distância
   if (navigator.permissions?.query) {

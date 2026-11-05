@@ -1799,3 +1799,19 @@ Categoria nova no Perfil com 14 conquistas (receita feita não dá XP sozinha; o
 **Como testar:** gerar o APK 1.4 assinado (README do TobaAndroid, seção 1) e instalar por cima. No celular: Android Auto → tocar 10× em "Versão" → ⋮ → Configurações do desenvolvedor → **Fontes desconhecidas**. **No PC:** SDK Manager → SDK Tools → "Android Auto Desktop Head Unit Emulator"; Android Auto → ⋮ → Iniciar servidor da unidade principal; `adb forward tcp:5277 tcp:5277` e abrir o `desktop-head-unit.exe` (passo a passo na seção 6.2 do README). No DHU: Toba → libera a localização no celular → Buscar "padaria" → escolher → Simular: o carango anda, a voz fala as manobras e no fim chega com o 🏁. **No Peugeot:** plugar o celular, Toba no menu de apps, Buscar parado → Bora!.
 
 **Commit sugerido:** `v1.75 - Android Auto no APK 1.4: Navegar na tela do carro com busca TomTom, recentes, previa da rota com transito, manobra com voz, recalculo, chegada, simulador e mapa Mapbox dia/noite`
+
+---
+
+## v1.76 — 📍 GPS liberado no app Toba (APK 1.5)
+
+**Arquivos que mudaram:** `TobaAndroid/app/src/main/java/br/com/toba/app/MainActivity.java`, `TobaAndroid/app/build.gradle` (versionCode 6 / versionName 1.5), `TobaAndroid/app/auto/br/com/toba/auto/NavEngine.java`, `TobaDrive/js/navegar.js`, `TobaDrive/TobaDrive-Navegar.html`, `sw.js` (cache `toba-v36`), `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **GPS dentro do app:** o Navegar e o Toba Places agora pegam a localização no APK. Antes o WebView negava calado e aparecia "Sem permissão de localização" mesmo com a permissão do Android liberada. Agora o app libera o GPS pro site do Toba (só pro nosso endereço) e, se a permissão do Android faltar, pede na hora.
+2. **Tchau aviso do APK:** o "No app Toba (APK) o GPS ainda não tá liberado" saiu de vez do Navegar. No app, o erro de permissão ensina o caminho certo (Configurações › Apps › Toba › Permissões), não o cadeado do Chrome.
+3. **Android Auto:** se a localização foi liberada no celular com o carro já aberto, o GPS liga sozinho na hora de traçar a rota (antes só ligava ao reabrir a tela).
+
+**Dados:** Nenhuma mudança nos bancos nem nas chaves. Nada é apagado.
+
+**Como testar:** gerar o APK 1.5 assinado e instalar por cima (`adb install -r`). Abrir o Toba › Racing › 🧭 Navegar: o carango aparece onde você está, sem o aviso amarelo. Toba Places › mapa: o ponto azul aparece. No carro: Android Auto › Toba › Buscar › destino › Bora!.
+
+**Commit sugerido:** `v1.76 - GPS liberado no app Toba (APK 1.5): WebView libera a localizacao pro Navegar e pro Places, aviso do APK so em versao antiga e Android Auto liga o GPS ao tracar a rota`

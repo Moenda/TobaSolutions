@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.WindowManager;
+import android.webkit.GeolocationPermissions;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -26,9 +27,13 @@ public class MainActivity extends Activity {
     static volatile boolean visible = false;
     private static final int REQ_FILE = 10;
     private static final int REQ_NOTIFY = 11;
+    private static final int REQ_LOCATION = 12;
 
     private WebView web;
     private ValueCallback<Uri[]> fileCallback;
+    // v1.76 (APK 1.5): pedido de GPS do site esperando o "Permitir" do Android
+    private String geoOrigin;
+    private GeolocationPermissions.Callback geoCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +48,8 @@ public class MainActivity extends Activity {
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setDatabaseEnabled(true);
+        // v1.76: GPS liberado pro site (Navegar, Places...). Sem isso o WebView nega calado.
+        s.setGeolocationEnabled(true);
         s.setUserAgentString(s.getUserAgentString() + " TobaApp/" + BuildConfig.VERSION_NAME);
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
 
@@ -80,6 +87,30 @@ public class MainActivity extends Activity {
                     return false;
                 }
                 return true;
+            }
+
+            // v1.76: o site pediu o GPS (navigator.geolocation). Só o nosso site ganha.
+            @Override
+            public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
+                if (!isOwnSite(Uri.parse(origin))) {
+                    callback.invoke(origin, false, false);
+                    return;
+                }
+                if (hasLocationPermission()) {
+                    callback.invoke(origin, true, false);
+                    return;
+                }
+                if (geoCallback != null) geoCallback.invoke(geoOrigin, false, false);
+                geoOrigin = origin;
+                geoCallback = callback;
+                requestPermissions(new String[] {
+                        Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, REQ_LOCATION);
+            }
+
+            @Override
+            public void onGeolocationPermissionsHidePrompt() {
+                geoOrigin = null;
+                geoCallback = null;
             }
         });
 
@@ -133,6 +164,21 @@ public class MainActivity extends Activity {
             fileCallback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data));
             fileCallback = null;
         }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQ_LOCATION && geoCallback != null) {
+            geoCallback.invoke(geoOrigin, hasLocationPermission(), false);
+            geoOrigin = null;
+            geoCallback = null;
+        }
+    }
+
+    boolean hasLocationPermission() {
+        return checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                || checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
 
     void askNotificationPermission() {
