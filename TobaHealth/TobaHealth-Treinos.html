@@ -168,6 +168,10 @@
       <form id="workoutForm" data-submit="saveWorkout" hidden>
         <button type="button" class="back-nav-btn workout-back-types" data-click="backToWorkoutTypes">‹ Tipos de treino</button>
         <div id="workoutFormFields"></div>
+        <label class="live-check" id="workoutWatchRow" hidden>
+          <input type="checkbox" id="workout-watch-pending" />
+          <span>⌚ Completar com o relógio<small class="watch-pending-hint">Tempo, kcal e batimento vêm sozinhos no próximo 🔄 do 🩻 Raio-X. Pode deixar em branco.</small></span>
+        </label>
         <div class="toba-sheet-footer">
           <button type="submit" class="btn btn-primary">Salvar treino 💪</button>
         </div>
@@ -221,6 +225,10 @@
           <label for="live-notes">Observações (opcional)</label>
           <input id="live-notes" class="form-control" type="text" maxlength="160" placeholder="Como foi o treino?" />
         </div>
+        <label class="live-check" id="liveWatchRow" hidden>
+          <input type="checkbox" id="live-watch-pending" />
+          <span>⌚ Vai mesclar com o relógio?<small class="watch-pending-hint">As kcal e o batimento vêm sozinhos no próximo 🔄 do 🩻 Raio-X.</small></span>
+        </label>
         <label class="live-check" id="liveSaveRoutineRow">
           <input type="checkbox" id="live-save-routine" />
           <span id="liveSaveRoutineText">💾 Salvar como modelo</span>

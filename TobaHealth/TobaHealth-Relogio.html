@@ -32,11 +32,13 @@
       </div>
     </header>
 
+    <div class="app-view active" id="viewWatchMain">
     <div id="watchConnect" hidden></div>
 
     <div class="card" id="watchToday"></div>
     <div class="card" id="watchSleep"></div>
     <div id="watchCloba"></div>
+    <div id="watchGone" hidden></div>
     <div id="watchInbox" hidden></div>
 
     <div class="section-title">📊 Evolução</div>
@@ -55,16 +57,21 @@
       <div class="toba-stats is-3 watch-chart-stats" id="watchChartStats"></div>
     </div>
 
-    <div class="section-title">📜 Dia a dia</div>
+    <div class="section-title">📜 Mês a mês</div>
     <div id="watchList" class="toba-list"></div>
     <p class="watch-sync-line" id="watchSyncLine"></p>
+    </div>
+
+    <div class="app-view" id="viewWatchMetric">
+      <div id="watchMetricBody"></div>
+    </div>
   </div>
 
   <div id="tobaSettingsExtra" hidden>
     <div class="toba-settings-section">
       <div class="toba-settings-label">⌚ Relógio</div>
       <div class="toba-menu">
-        <button type="button" class="toba-menu-btn" data-click="openWatchGoals">
+        <button type="button" class="toba-menu-btn" id="watchGoalsMenuBtn" data-click="openWatchGoals">
           <span class="toba-menu-icon">🎯</span>
           <span class="toba-menu-text">
             <span class="toba-menu-title">Metas</span>
@@ -72,19 +79,11 @@
           </span>
           <span class="toba-hub-chevron">›</span>
         </button>
-        <button type="button" class="toba-menu-btn" data-click="watchPullFull">
-          <span class="toba-menu-icon">🔄</span>
+        <button type="button" class="toba-menu-btn" data-click="openWatchIgnored">
+          <span class="toba-menu-icon">🙈</span>
           <span class="toba-menu-text">
-            <span class="toba-menu-title">Puxar os últimos 30 dias</span>
-            <span class="toba-menu-desc">Lê tudo de novo do Health Connect</span>
-          </span>
-          <span class="toba-hub-chevron">›</span>
-        </button>
-        <button type="button" class="toba-menu-btn" data-click="openSamsungImport">
-          <span class="toba-menu-icon">📥</span>
-          <span class="toba-menu-text">
-            <span class="toba-menu-title">Importar histórico do Samsung Health</span>
-            <span class="toba-menu-desc">Os anos antigos de passos, sono, batimento e treinos</span>
+            <span class="toba-menu-title">Treinos do relógio ignorados</span>
+            <span class="toba-menu-desc">Ignorou sem querer? Volta pra lista daqui</span>
           </span>
           <span class="toba-hub-chevron">›</span>
         </button>
@@ -101,6 +100,14 @@
           <span class="toba-menu-text">
             <span class="toba-menu-title">Permissões do Health Connect</span>
             <span class="toba-menu-desc">O que o Toba pode ler (só no app)</span>
+          </span>
+          <span class="toba-hub-chevron">›</span>
+        </button>
+        <button type="button" class="toba-menu-btn" id="samsungMenuBtn" data-click="openSamsungImport">
+          <span class="toba-menu-icon">📥</span>
+          <span class="toba-menu-text">
+            <span class="toba-menu-title">Importar histórico do Samsung Health</span>
+            <span class="toba-menu-desc">Os anos antigos de passos, sono, batimento e treinos</span>
           </span>
           <span class="toba-hub-chevron">›</span>
         </button>
@@ -170,6 +177,19 @@
     </div>
   </div>
 
+  <div class="toba-modal" id="watchIgnoredModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🙈 Treinos ignorados</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="watchIgnoredBody"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-secondary" data-close>Fechar 👍</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toba-modal" id="watchGoalsModal">
     <div class="toba-sheet">
       <div class="toba-sheet-header">
@@ -191,6 +211,7 @@
   <script src="js/health-core.js"></script>
   <script src="js/relogio.js"></script>
   <script src="js/relogio-samsung.js"></script>
+  <script src="js/relogio-analise.js"></script>
   <script src="../assets/pwa-register.js"></script>
 </body>
 

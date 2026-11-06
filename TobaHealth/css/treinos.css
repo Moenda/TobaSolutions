@@ -1425,3 +1425,12 @@
 .wv-watch .btn {
   margin-top: 0;
 }
+
+/* ⌚ Completar com o relógio (v1.90) */
+.watch-pending-hint {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+  margin-top: 2px;
+}

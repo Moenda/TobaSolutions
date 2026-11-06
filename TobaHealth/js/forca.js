@@ -431,6 +431,13 @@ function registerStrengthWorkout() {
   if (editingWorkoutId) {
     const index = healthDb.workouts.findIndex((item) => String(item.id) === String(editingWorkoutId));
     if (index === -1) return;
+    // v1.90: mantém o que o formulário de força não mostra (⌚ relógio, horário...), igual ao treinos.js
+    const original = healthDb.workouts[index];
+    if (typeof WORKOUT_KEEP_ON_EDIT !== "undefined") {
+      WORKOUT_KEEP_ON_EDIT.forEach((key) => {
+        if (original[key] !== undefined) workout[key] = original[key];
+      });
+    }
     healthDb.workouts[index] = workout;
   } else {
     healthDb.workouts.push(workout);

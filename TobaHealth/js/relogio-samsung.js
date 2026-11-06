@@ -18,7 +18,8 @@
  * Nada é apagado. Vai pro mesmo TOBA_HEALTH_DB.watch.days (mesmo formato do relogio.js),
  * e TOBA_HEALTH_DB.watch.samsungImport = { at, from, to, days } guarda o resumo.
  * Exercício importado com mais de 30 dias não aparece na caixinha de "Treinos do relógio",
- * nem a caminhada detectada sozinha pelo relógio (ex.auto = 1).
+ * nem a caminhada detectada sozinha pelo relógio (ex.auto = 1). ex.imp = 1 marca que veio
+ * daqui: o 🔄 do Health Connect não tira ele do dia (só se tiver um do relógio no mesmo horário).
  */
 
 const SAMSUNG_FILES = [
@@ -226,7 +227,7 @@ async function samsungParse(files) {
       const start = samsungUtc(r[cS]), end = samsungUtc(r[cE]);
       if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
       const map = SAMSUNG_EX_TYPES[Number(r[cT])] || { type: 58 };
-      const x = { start, end, type: map.type };
+      const x = { start, end, type: map.type, imp: 1 };
       const title = (cTitle >= 0 && r[cTitle]) || map.title;
       if (title) x.title = String(title).slice(0, 80);
       const kcal = samsungNum(r[cK]), dist = samsungNum(r[cD]), ha = samsungNum(r[cHa]), hm = samsungNum(r[cHm]);

@@ -97,6 +97,7 @@ function renderWorkoutRecord(workout) {
   if (workout.calories) chips.push(`🔥 ${formatWorkoutNumber(workout.calories, 0)} kcal`);
   chips.push(...getWalkChips(workout)); // v1.84: ritmo, GPS, esteira, relógio
   if (workout.watch && !chips.includes("⌚ Relógio")) chips.push("⌚ Relógio"); // v1.89: mesclado com o relógio
+  if (workout.watchPending && !workout.watch) chips.push("⌚ esperando o relógio"); // v1.90
   if (workout.sets) chips.push(`${formatWorkoutNumber(workout.sets, 0)} séries`);
   if (workout.reps) chips.push(`${formatWorkoutNumber(workout.reps, 0)} repetições`);
   if (workout.weightKg) chips.push(`🏋️ ${formatWorkoutNumber(workout.weightKg, 1)} kg`);
@@ -770,6 +771,42 @@ function selectWorkoutType(type) {
   document.getElementById("workoutTypePicker").hidden = true;
   document.getElementById("workoutFormFields").innerHTML = form.fields;
   document.getElementById("workoutForm").hidden = false;
+  workoutWatchRowSetup(null);
+}
+
+/* v1.90 (ideia do Rafa): "⌚ Completar com o relógio" ao salvar. Marcado = workout.watchPending
+ * e pode salvar sem número; no próximo 🔄 do Raio-X o relogio.js (watchAutoMerge) mescla
+ * sozinho com o exercício do relógio daquele dia/horário. Só aparece pra quem já usa o relógio.
+ * A última escolha fica lembrada neste aparelho (toba_health_watch_pending_pref). */
+const WORKOUT_WATCH_PREF = "toba_health_watch_pending_pref";
+
+function workoutWatchPref() {
+  try {
+    return localStorage.getItem(WORKOUT_WATCH_PREF) === "1";
+  } catch (err) {
+    return false;
+  }
+}
+
+function workoutWatchRemember(on) {
+  try {
+    localStorage.setItem(WORKOUT_WATCH_PREF, on ? "1" : "0");
+  } catch (err) {
+    /* só conveniência */
+  }
+}
+
+function workoutWatchUsable() {
+  return !!(healthDb.watch && typeof healthDb.watch === "object");
+}
+
+function workoutWatchRowSetup(workout, rowId = "workoutWatchRow", inputId = "workout-watch-pending") {
+  const row = document.getElementById(rowId);
+  const input = document.getElementById(inputId);
+  if (!row || !input) return;
+  const already = workout && workout.watch;
+  row.hidden = !workoutWatchUsable() || !!already;
+  input.checked = workout ? !!workout.watchPending : workoutWatchPref();
 }
 
 function editWorkout(workoutId) {
@@ -786,6 +823,7 @@ function editWorkout(workoutId) {
     return;
   }
   selectWorkoutType(workout.type);
+  workoutWatchRowSetup(workout);
   document.getElementById("workoutModalTitle").innerText = "✏️ Editar treino";
   document.getElementById("workout-date").value = workout.date || "";
 
@@ -824,7 +862,7 @@ function readWorkoutNumber(id) {
 
 // Campos que o formulário não mostra (trajeto do GPS, origem, alongamento...):
 // editar um treino mantém o que estava gravado (v1.84).
-const WORKOUT_KEEP_ON_EDIT = ["mode", "source", "track", "splits", "startTime", "incline", "stretch", "home", "externalId", "watch"];
+const WORKOUT_KEEP_ON_EDIT = ["mode", "source", "track", "splits", "startTime", "incline", "stretch", "home", "externalId", "watch", "watchPending"];
 
 function saveWorkout() {
   if (!selectedWorkoutType) return;
@@ -872,6 +910,11 @@ function saveWorkout() {
   }
   if (selectedWorkoutType === "stretch") Object.assign(workout, readStretchFormExtras(original));
   if (selectedWorkoutType === "home") Object.assign(workout, readHomeFormExtras(original));
+  const watchRow = document.getElementById("workoutWatchRow");
+  const wantsWatch = !!(watchRow && !watchRow.hidden && document.getElementById("workout-watch-pending").checked);
+  if (watchRow && !watchRow.hidden) workoutWatchRemember(wantsWatch);
+  if (wantsWatch && !workout.watch) workout.watchPending = workout.watchPending || { at: Date.now() };
+  else delete workout.watchPending;
   const measurements = [
     workout.durationMinutes,
     workout.calories,
@@ -888,7 +931,7 @@ function saveWorkout() {
     showPageMessage("Preencha o nome da atividade e a data do treino.", { title: "Falta um detalhe" });
     return;
   }
-  if (!measurements.some((value) => value !== null && value > 0)) {
+  if (!workout.watchPending && !measurements.some((value) => value !== null && value > 0)) {
     showPageMessage("Informe pelo menos uma quantidade maior que zero para registrar o treino.", { title: "Falta um número" });
     return;
   }

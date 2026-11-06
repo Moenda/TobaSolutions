@@ -1209,6 +1209,7 @@ function openLiveFinish() {
     ? (healthDb.strengthRoutines || []).find((item) => item.id === liveSession.routineId)
     : null;
   document.getElementById("live-save-routine").checked = false;
+  if (typeof workoutWatchRowSetup === "function") workoutWatchRowSetup(null, "liveWatchRow", "live-watch-pending"); // v1.90
   document.getElementById("liveSaveRoutineText").textContent = routine
     ? `💾 Atualizar o modelo "${routine.name}" com o que fiz hoje`
     : "💾 Salvar como modelo (vira seu Treino A, B, C...)";
@@ -1270,6 +1271,15 @@ function finishLiveSession() {
     routineId: routineId || "",
     exercises,
   };
+  // v1.90: "⌚ Vai mesclar com o relógio?" (o Raio-X completa kcal/batimento no próximo 🔄)
+  const startedAt = new Date(liveSession.startedAt);
+  if (Number.isFinite(startedAt.getTime())) workout.startTime = `${String(startedAt.getHours()).padStart(2, "0")}:${String(startedAt.getMinutes()).padStart(2, "0")}`;
+  const liveWatchRow = document.getElementById("liveWatchRow");
+  if (liveWatchRow && !liveWatchRow.hidden) {
+    const on = document.getElementById("live-watch-pending").checked;
+    if (typeof workoutWatchRemember === "function") workoutWatchRemember(on);
+    if (on) workout.watchPending = { at: Date.now() };
+  }
   healthDb.workouts.push(workout);
   saveHealthDb();
 

@@ -442,3 +442,336 @@
   padding: 3px 0;
   font-size: 0.85rem;
 }
+
+.watch-ex.is-gone {
+  border-color: rgba(248, 81, 73, 0.45);
+}
+
+.watch-inbox-hint {
+  margin: -0.2rem 0 0.6rem;
+}
+
+.watch-undo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--surface-2);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 0.45rem 0.7rem;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+}
+
+.watch-ignored-row {
+  gap: 8px;
+}
+
+.watch-ignored-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.85rem;
+}
+
+/* v1.90: Metas e Importar histórico entram nas seções da ⚙️ (Conta / Dados) */
+#settingsModal .toba-settings-section > .toba-menu-btn + .toba-menu-btn {
+  margin-top: 8px;
+}
+
+/* 📜 Mês a mês (v1.90) */
+#watchList {
+  gap: 10px;
+}
+
+.watch-month {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.2rem 0.8rem 0.8rem;
+}
+
+.watch-month-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  padding: 0.6rem 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.watch-month-title {
+  font-weight: 800;
+  font-size: 1rem;
+  flex: 1 1 auto;
+}
+
+.watch-month-meta {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.watch-month-head .toba-hub-chevron {
+  transition: transform 0.2s;
+}
+
+.watch-month.is-open .watch-month-head .toba-hub-chevron {
+  transform: rotate(90deg);
+}
+
+.watch-month-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.watch-month-stat {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 0.4rem 0.55rem;
+  min-width: 0;
+}
+
+.watch-month-stat b {
+  font-size: 0.92rem;
+}
+
+.watch-month-stat small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.watch-month-days {
+  margin-top: 0.7rem;
+}
+
+/* 🔬 Análise de cada quadrado (v1.90) */
+.watch-tap {
+  cursor: pointer;
+  position: relative;
+}
+
+.toba-stat.watch-tap::after {
+  content: "›";
+  position: absolute;
+  top: 6px;
+  right: 9px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.watch-tap:active {
+  transform: scale(0.98);
+}
+
+.watch-tap-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.watch-tap-more {
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.watch-an-periods {
+  margin-bottom: 0.8rem;
+}
+
+.watch-an-stats {
+  margin-bottom: 0.9rem;
+}
+
+.watch-chart-avg {
+  stroke: var(--text-2);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  opacity: 0.7;
+}
+
+.watch-an-legend {
+  display: flex;
+  gap: 12px;
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.watch-an-legend i {
+  display: inline-block;
+  width: 14px;
+  height: 0;
+  border-top: 2px dashed var(--gold-2);
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+.watch-an-legend i.is-avg {
+  border-top: 2px dotted var(--text-2);
+}
+
+.watch-an-goal {
+  margin-top: 0.9rem;
+}
+
+.watch-an-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  height: 140px;
+  margin-bottom: 0.5rem;
+}
+
+.watch-an-wd {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.watch-an-wd-val {
+  font-size: 0.58rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.watch-an-wd-bar {
+  flex: 1 1 auto;
+  width: 70%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.watch-an-wd-bar span {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+}
+
+.watch-an-wd-name {
+  font-size: 0.7rem;
+  color: var(--text-2);
+}
+
+.watch-an-wd.is-top .watch-an-wd-name {
+  color: var(--gold-2);
+  font-weight: 800;
+}
+
+.watch-an-recs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.watch-an-rec {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.7rem;
+  min-width: 0;
+}
+
+.watch-an-rec span {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.watch-an-rec b {
+  font-size: 1.05rem;
+  margin: 2px 0;
+}
+
+.watch-an-rec small {
+  font-size: 0.7rem;
+  color: var(--text-2);
+}
+
+#viewWatchMetric .section-title {
+  margin-top: 1.1rem;
+}
+
+.watch-an-insights {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.watch-an-insight {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.8rem;
+}
+
+.watch-an-insight.is-good {
+  border-color: rgba(63, 185, 80, 0.45);
+}
+
+.watch-an-insight.is-bad {
+  border-color: rgba(255, 123, 114, 0.45);
+}
+
+.watch-an-ititle {
+  font-weight: 800;
+  margin-bottom: 0.45rem;
+}
+
+.watch-an-ibar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "label val" "track track";
+  gap: 2px 8px;
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.watch-an-ilabel {
+  grid-area: label;
+  color: var(--text-2);
+}
+
+.watch-an-ilabel small {
+  color: var(--muted);
+}
+
+.watch-an-ibar b {
+  grid-area: val;
+}
+
+.watch-an-itrack {
+  grid-area: track;
+  height: 8px;
+  background: var(--surface-3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.watch-an-itrack span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+}
+
+.watch-an-itrack .is-yes {
+  background: var(--accent);
+}
+
+.watch-an-itrack .is-no {
+  background: var(--muted);
+}

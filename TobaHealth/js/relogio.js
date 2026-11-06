@@ -20,7 +20,6 @@ const WATCH_SLEEP_GOALS = [360, 390, 420, 450, 480, 510];
 const WATCH_FIRST_DAYS = 30;  // 1ª vez: o Health Connect só deixa ler ~30 dias antes da 1ª permissão
 const WATCH_MAX_DAYS = 120;
 const WATCH_AUTO_MIN = 10;    // puxa sozinho ao abrir/voltar se faz mais que isso
-const WATCH_LIST_STEP = 14;
 
 // Grupos do Health Connect (nome da permissão no APK -> campos do dia)
 const WATCH_GROUPS = {
@@ -48,7 +47,7 @@ const WATCH_EXERCISE_NAMES = {
   60: "🌀 Elíptico", 61: "🚣 Remo ergométrico",
 };
 
-const watchUi = { chart: "steps", range: 7, listShown: WATCH_LIST_STEP, pulling: false, reqId: "", timer: null, status: null };
+const watchUi = { chart: "steps", range: 7, listShown: 12, pulling: false, reqId: "", timer: null, status: null };
 
 /* ---------------- Dados ---------------- */
 
@@ -132,6 +131,10 @@ function watchPullRange(full) {
   if (!full && dates.length) {
     const last = dates[dates.length - 1] < today ? dates[dates.length - 1] : today;
     from = watchAddDays(last, -2);
+    // v1.90: sempre relê a última semana (sem o "Puxar 30 dias" na ⚙️, é assim que o
+    // treino apagado no relógio nos últimos dias some daqui também)
+    const week = watchAddDays(today, -6);
+    if (week < from) from = week;
   }
   const min = watchAddDays(today, -(WATCH_MAX_DAYS - 1));
   if (from < min) from = min;
@@ -189,9 +192,11 @@ window.onTobaHealthData = function (reqId, data) {
     return;
   }
   const changed = watchMerge(data);
+  const auto = watchAutoMerge();
   watchSetState({ pulledAt: Date.now(), diag: watchBuildDiag(data) });
-  if (changed) saveHealthDb();
+  if (changed || auto) saveHealthDb();
   renderWatch();
+  if (auto) tobaToast(`⌚ ${auto === 1 ? "1 treino completado" : `${auto} treinos completados`} com o relógio`);
 };
 
 // Resposta do pedido de permissão (TobaBridge.healthAsk)
@@ -289,6 +294,7 @@ function watchMerge(data) {
   }
   const w = watchDb();
   const before = JSON.stringify(w.days);
+  const vanished = [];
   // Grupo que deu pra ler (permissão + sem erro): o número que veio substitui o antigo.
   const readable = Object.keys(WATCH_GROUPS).filter((g) => granted.has(g) && !WATCH_GROUPS[g].some((f) => errors[f]) && !errors[g]);
 
@@ -300,7 +306,7 @@ function watchMerge(data) {
       WATCH_GROUPS[g].forEach((f) => {
         let v;
         if (f === "sleep") v = sleep[date];
-        else if (f === "ex") v = ex[date];
+        else if (f === "ex") v = watchSyncExercises(old.ex, ex[date], vanished); // v1.89: apagou no relógio, some aqui
         else v = Number.isFinite(Number(src[f])) && src[f] !== null ? Math.round(Number(src[f])) : undefined;
         // Sumiu do Health Connect? Fica o que já estava (dado nunca some calado).
         if (v !== undefined) next[f] = v;
@@ -312,7 +318,116 @@ function watchMerge(data) {
     next.at = sameAsOld && old.at ? old.at : Date.now();
     w.days[date] = next;
   }
-  return JSON.stringify(w.days) !== before;
+  const goneChanged = watchNoteVanished(vanished);
+  return JSON.stringify(w.days) !== before || goneChanged;
+}
+
+/* v1.89: exercício que SUMIU do Health Connect (apagado no relógio/Samsung Health).
+ * No dia lido, a lista do Health Connect manda: o que não veio sai do dia. O que veio do
+ * 📥 import do Samsung (imp: 1) fica, a não ser que o Health Connect tenha um no mesmo horário.
+ * Treino do Toba que nasceu dele (➕ Virar treino ou 🔗 Mesclar) NÃO é apagado calado:
+ * vai pra watch.gone e o Raio-X pergunta (🗑️ Apagar / 🔗 Desmesclar / Manter). */
+function watchSyncExercises(oldList, incoming, vanished) {
+  const fresh = Array.isArray(incoming) ? incoming : [];
+  const prev = Array.isArray(oldList) ? oldList : [];
+  const freshKeys = new Set(fresh.map(watchExKey));
+  const near = (x) => fresh.some((y) => Math.abs(Number(y.start) - Number(x.start)) < 3 * 60000);
+  const keep = [];
+  prev.forEach((x) => {
+    if (!x || freshKeys.has(watchExKey(x))) return;
+    if (x.imp) {
+      if (!near(x)) keep.push(x);
+      return;
+    }
+    vanished.push(watchExKey(x));
+  });
+  const list = [...fresh, ...keep].sort((a, b) => a.start - b.start);
+  return list.length ? list : undefined;
+}
+
+function watchNoteVanished(keys) {
+  if (!keys.length) return false;
+  const w = watchEnsureDb();
+  if (!w.gone || typeof w.gone !== "object" || Array.isArray(w.gone)) w.gone = {};
+  let changed = false;
+  keys.forEach((key) => {
+    const h = w.handled[key];
+    if (!h) return;
+    const workout = h.workoutId ? (healthDb.workouts || []).find((item) => String(item.id) === String(h.workoutId)) : null;
+    if (h.action === "ignored" || !workout) {
+      delete w.handled[key];
+    } else {
+      w.gone[key] = { action: h.action, workoutId: String(h.workoutId), at: Date.now() };
+    }
+    changed = true;
+  });
+  return changed;
+}
+
+function watchGoneList() {
+  const w = healthDb.watch;
+  const gone = w && w.gone && typeof w.gone === "object" && !Array.isArray(w.gone) ? w.gone : {};
+  return Object.keys(gone).map((key) => {
+    const g = gone[key];
+    const workout = (healthDb.workouts || []).find((item) => String(item.id) === String(g.workoutId));
+    return workout ? { key, g, workout } : null;
+  }).filter(Boolean);
+}
+
+function renderWatchGone() {
+  const el = document.getElementById("watchGone");
+  if (!el) return;
+  const list = watchGoneList();
+  el.hidden = !list.length;
+  if (!list.length) {
+    el.innerHTML = "";
+    return;
+  }
+  el.innerHTML = `<div class="section-title">🗑️ Sumiu do relógio</div>
+    <div class="watch-inbox-list">${list.map(({ key, g, workout }) => {
+      const id = escapeHtml(key);
+      const created = g.action === "created";
+      return `<div class="watch-ex is-gone">
+        <div class="watch-ex-name">${escapeHtml(workout.title || "Treino")}</div>
+        <div class="watch-ex-when">${escapeHtml(watchDayLabel(workout.date))}${workout.startTime ? ` · ${escapeHtml(workout.startTime)}` : ""} · ${created ? "virou treino daqui" : "tava mesclado com um treino teu"}</div>
+        <p class="watch-muted">Apagaram esse exercício no relógio. ${created ? "Apaga o treino do Toba também?" : "Tira os dados do relógio desse treino? Tuas séries e kg ficam."}</p>
+        <div class="watch-ex-actions">
+          <button type="button" class="btn ${created ? "btn-danger" : "btn-primary"} btn-sm" data-click="watchGoneApply" data-id="${id}">${created ? "🗑️ Apagar do Toba" : "🔗 Desmesclar"}</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-click="watchGoneKeep" data-id="${id}">👍 Manter</button>
+        </div>
+      </div>`;
+    }).join("")}</div>`;
+}
+
+function watchGoneApply(el) {
+  const w = watchEnsureDb();
+  const key = el.dataset.id;
+  const item = watchGoneList().find((x) => x.key === key);
+  if (item) {
+    const { g, workout } = item;
+    if (g.action === "created") {
+      healthDb.workouts = healthDb.workouts.filter((x) => String(x.id) !== String(workout.id));
+      tobaToast("🗑️ Treino apagado");
+    } else {
+      const wd = workout.watch || {};
+      (Array.isArray(wd.filled) ? wd.filled : []).forEach((field) => {
+        if (["durationMinutes", "calories", "distanceKm"].includes(field)) workout[field] = null;
+      });
+      delete workout.watch;
+      tobaToast("🔗 Desmesclado");
+    }
+  }
+  delete w.handled[key];
+  if (w.gone) delete w.gone[key];
+  saveHealthDb();
+  renderWatch();
+}
+
+function watchGoneKeep(el) {
+  const w = watchEnsureDb();
+  if (w.gone) delete w.gone[el.dataset.id];
+  saveHealthDb();
+  renderWatch();
 }
 
 /* ---------------- 🩺 Diagnóstico (v1.88) ---------------- */
@@ -566,13 +681,23 @@ function renderWatchInbox() {
   const el = document.getElementById("watchInbox");
   if (!el) return;
   const list = watchInbox();
-  if (!list.length) {
+  // v1.89: logo depois de ignorar, dá pra desfazer (o Rafa tocou sem querer e sumiu direto)
+  const undo = watchUi.lastIgnored && watchHandled()[watchUi.lastIgnored.key]
+    ? `<div class="watch-undo"><span>🙈 ${escapeHtml(watchUi.lastIgnored.name)} ignorado</span><button type="button" class="chip-btn" data-click="watchUndoIgnore">↩️ Desfazer</button></div>`
+    : "";
+  if (!list.length && !undo) {
     el.innerHTML = "";
     el.hidden = true;
     return;
   }
   el.hidden = false;
+  if (!list.length) {
+    el.innerHTML = `<div class="section-title">⌚ Treinos do relógio</div>${undo}`;
+    return;
+  }
   el.innerHTML = `<div class="section-title">⌚ Treinos do relógio <span class="watch-inbox-count">${list.length}</span></div>
+    <p class="watch-muted watch-inbox-hint">O relógio gravou e o Toba ainda não sabe o que fazer: junta com um treino teu, vira treino novo, ou ignora (não conta em nada).</p>
+    ${undo}
     <div class="watch-inbox-list">${list.slice(0, 10).map((x) => {
       const key = escapeHtml(watchExKey(x));
       const cands = watchCandidates(x);
@@ -583,23 +708,55 @@ function renderWatchInbox() {
       return `<div class="watch-ex">
         <div class="watch-ex-top">
           <span class="watch-ex-name">${escapeHtml(watchExName(x))}${x.title ? ` · ${escapeHtml(x.title)}` : ""}</span>
-          <button type="button" class="watch-ex-x" data-click="watchIgnoreEx" data-id="${key}" aria-label="Ignorar">🙈</button>
         </div>
         <div class="watch-ex-when">${when}</div>
         <div class="watch-ex-stats">${watchExStats(x)}</div>
         <div class="watch-ex-actions">
           ${merge}
           <button type="button" class="btn ${cands.length ? "btn-secondary" : "btn-primary"} btn-sm" data-click="watchCreateEx" data-id="${key}">➕ Virar treino</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-click="watchIgnoreEx" data-id="${key}">🙈 Ignorar</button>
         </div>
       </div>`;
     }).join("")}</div>
     ${list.length > 10 ? `<p class="watch-muted">+ ${list.length - 10} mais antigos</p>` : ""}`;
 }
 
+/* v1.90: treino salvo com "⌚ Completar com o relógio" (workout.watchPending) mescla sozinho.
+ * Acha o exercício do relógio do mesmo dia: horário batendo (startTime do treino) ou o único
+ * do dia / o único do mesmo tipo. Empate sem horário = deixa pra caixinha (o 🔗 Mesclar pergunta). */
+function watchAutoMerge() {
+  const pending = (Array.isArray(healthDb.workouts) ? healthDb.workouts : []).filter((w) => w && w.watchPending && !w.watch);
+  if (!pending.length) return 0;
+  let merged = 0;
+  pending.forEach((workout) => {
+    const exs = watchInbox().filter((x) => toIsoDate(new Date(x.start)) === workout.date);
+    if (!exs.length) return;
+    const t = watchHhmmToMin(workout.startTime);
+    const fam = WATCH_FAMILY[workout.type] || "";
+    const scored = exs.map((x) => {
+      const d = new Date(x.start);
+      const s0 = d.getHours() * 60 + d.getMinutes();
+      const s1 = s0 + watchExMinutes(x);
+      let score = 0;
+      if (t !== null) score += t >= s0 - 40 && t <= s1 + 10 ? 10 : -100;
+      if (fam && WATCH_EX_FAMILY[x.type] === fam) score += 5;
+      return { x, score };
+    }).filter((c) => c.score > -50).sort((a, b) => b.score - a.score);
+    if (!scored.length) return;
+    const tie = scored.length > 1 && scored[0].score === scored[1].score;
+    if (tie && t === null) return;
+    watchMergeInto(scored[0].x, workout);
+    delete workout.watchPending;
+    merged++;
+  });
+  return merged;
+}
+
 let watchMergeKey = "";
 
 function watchDoMerge(x, workout) {
   watchMergeInto(x, workout);
+  delete workout.watchPending;
   saveHealthDb();
   renderWatch();
   tobaToast(`🔗 Mesclado com ${workout.title || "o treino"}`);
@@ -638,13 +795,64 @@ function watchCreateEx(el) {
   tobaToast(`➕ ${w.title} no Treinos (vale XP e troféu)`);
 }
 
-function watchIgnoreEx(el) {
+async function watchIgnoreEx(el) {
   const x = watchFindEx(el.dataset.id);
   if (!x) return renderWatch();
+  const ok = await showPageMessage(
+    `${watchExName(x)} de ${watchDayLabel(toIsoDate(new Date(x.start)))} (${watchClock(x.start)}) sai da lista e não vira treino: não conta XP nem troféu. Os números dele continuam no dia do Raio-X.\n\nSe mudar de ideia: ⚙️ › 🙈 Treinos do relógio ignorados.`,
+    { title: "Ignorar esse treino?", confirm: true, confirmLabel: "🙈 Ignorar" },
+  );
+  if (!ok) return;
   watchEnsureDb().handled[watchExKey(x)] = { action: "ignored", at: Date.now() };
+  watchUi.lastIgnored = { key: watchExKey(x), name: watchExName(x).replace(/^\S+\s/, "") };
   saveHealthDb();
   renderWatch();
-  tobaToast("🙈 Ignorado");
+}
+
+function watchUndoIgnore() {
+  const last = watchUi.lastIgnored;
+  watchUi.lastIgnored = null;
+  const h = watchHandled();
+  if (last && h[last.key] && h[last.key].action === "ignored") {
+    delete h[last.key];
+    saveHealthDb();
+  }
+  renderWatch();
+}
+
+// ⚙️ › 🙈 Treinos ignorados: volta qualquer um pra caixinha
+function watchIgnoredList() {
+  const h = watchHandled();
+  const out = [];
+  Object.values(watchDays()).forEach((d) => {
+    (Array.isArray(d && d.ex) ? d.ex : []).forEach((x) => {
+      const k = watchExKey(x);
+      if (h[k] && h[k].action === "ignored") out.push(x);
+    });
+  });
+  return out.sort((a, b) => b.start - a.start);
+}
+
+function openWatchIgnored() {
+  const list = watchIgnoredList();
+  document.getElementById("watchIgnoredBody").innerHTML = list.length
+    ? `<div class="toba-list">${list.slice(0, 60).map((x) => `
+      <div class="toba-list-item watch-ignored-row">
+        <span class="watch-ignored-text"><b>${escapeHtml(watchExName(x))}</b><br><span class="watch-muted">${escapeHtml(watchDayLabel(toIsoDate(new Date(x.start))))} · ${watchClock(x.start)} · ${watchExStats(x)}</span></span>
+        <button type="button" class="chip-btn" data-click="watchUnignore" data-id="${escapeHtml(watchExKey(x))}">↩️ Voltar</button>
+      </div>`).join("")}</div>`
+    : tobaEmpty("🙈", "Nenhum ignorado", "O que você ignorar aparece aqui pra poder voltar.", { compact: true });
+  openTobaModal("watchIgnoredModal");
+}
+
+function watchUnignore(el) {
+  const h = watchHandled();
+  if (h[el.dataset.id] && h[el.dataset.id].action === "ignored") {
+    delete h[el.dataset.id];
+    saveHealthDb();
+  }
+  renderWatch();
+  openWatchIgnored();
 }
 
 /* ---------------- Formatos ---------------- */
@@ -694,10 +902,12 @@ function watchAgo(ms) {
 /* ---------------- Tela ---------------- */
 
 function renderWatch() {
+  if (typeof watchMetricOpen === "function" && watchMetricOpen()) renderWatchMetric();
   renderWatchConnect();
   renderWatchToday();
   renderWatchSleep();
   renderWatchCloba();
+  renderWatchGone();
   renderWatchInbox();
   renderWatchChart();
   renderWatchList();
@@ -775,14 +985,14 @@ function renderWatchToday() {
   const goal = watchGoals().steps;
   const steps = Number(day.steps) || 0;
   const done = steps >= goal;
-  const stat = (label, value, sub = "") => `<div class="toba-stat is-center">
+  const stat = (label, value, sub = "", metric = "") => `<div class="toba-stat is-center${metric ? " watch-tap" : ""}"${metric ? ` role="button" tabindex="0" data-click="openWatchMetric" data-metric="${metric}"` : ""}>
       <span class="toba-stat-label">${label}</span>
       <span class="toba-stat-value">${value}</span>
       ${sub ? `<span class="toba-stat-sub">${sub}</span>` : ""}
     </div>`;
   el.innerHTML = `
     <div class="watch-hero">
-      <div class="watch-ring-wrap">
+      <div class="watch-ring-wrap watch-tap" role="button" tabindex="0" data-click="openWatchMetric" data-metric="steps" aria-label="Análise dos passos">
         ${watchRing(steps, goal, done ? "var(--gold-2)" : "var(--green)")}
         <div class="watch-ring-text">
           <span class="watch-ring-num">${day.steps !== undefined ? watchInt(steps) : "--"}</span>
@@ -792,11 +1002,11 @@ function renderWatchToday() {
       </div>
     </div>
     <div class="toba-stats watch-stats">
-      ${stat("🔥 Calorias", day.kcal !== undefined ? watchInt(day.kcal) : "--", "kcal no dia")}
-      ${stat("⚡ Ativas", day.activeKcal !== undefined ? watchInt(day.activeKcal) : "--", "kcal mexendo")}
-      ${stat("📏 Distância", day.distanceM !== undefined ? watchKm(day.distanceM) : "--")}
+      ${stat("🔥 Calorias", day.kcal !== undefined ? watchInt(day.kcal) : "--", "kcal no dia", "kcal")}
+      ${stat("⚡ Ativas", day.activeKcal !== undefined ? watchInt(day.activeKcal) : "--", "kcal mexendo", "active")}
+      ${stat("📏 Distância", day.distanceM !== undefined ? watchKm(day.distanceM) : "--", "", "distance")}
       ${stat("❤️ Coração", day.restHr !== undefined ? `${watchInt(day.restHr)}` : day.hrAvg !== undefined ? `${watchInt(day.hrAvg)}` : "--",
-        day.restHr !== undefined ? "bpm em repouso" : "bpm médio")}
+        day.restHr !== undefined ? "bpm em repouso" : "bpm médio", "heart")}
     </div>`;
 }
 
@@ -832,7 +1042,11 @@ function renderWatchSleep() {
   const s = last.sleep;
   const goal = watchGoals().sleepMin;
   const pct = Math.min(100, Math.round((s.min / goal) * 100));
-  el.innerHTML = `<div class="card-title">😴 Sono · ${escapeHtml(watchDayLabel(last.date).toLowerCase())}</div>
+  // v1.90: o card inteiro abre a 🔬 análise do sono
+  el.dataset.click = "openWatchMetric";
+  el.dataset.metric = "sleep";
+  el.classList.add("watch-tap");
+  el.innerHTML = `<div class="card-title watch-tap-title">😴 Sono · ${escapeHtml(watchDayLabel(last.date).toLowerCase())}<span class="watch-tap-more">Análise ›</span></div>
     <div class="watch-sleep-main">
       <span class="watch-sleep-num">${watchHours(s.min)}</span>
       <span class="watch-sleep-time">🛏️ ${watchClock(s.start)} › ⏰ ${watchClock(s.end)}</span>
@@ -937,6 +1151,38 @@ function renderWatchChart() {
     <div class="toba-stat is-center"><span class="toba-stat-label">${hits !== null ? "Na meta" : "Dias"}</span><span class="toba-stat-value">${hits !== null ? `${hits}/${vals.length}` : vals.length}</span></div>`;
 }
 
+// v1.90 (pedido do Rafa): 📜 Mês a mês. Cada mês mostra o total consolidado; tocar abre o dia a dia.
+const WATCH_MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+const WATCH_MONTH_STEP = 12;
+
+function watchDayRow(date, goals) {
+  const d = watchDay(date);
+  const bits = [];
+  if (d.steps !== undefined) bits.push(`${d.steps >= goals.steps ? "🏆" : "👟"} ${watchInt(d.steps)}`);
+  if (d.sleep) bits.push(`😴 ${watchHours(d.sleep.min)}`);
+  if (d.kcal !== undefined) bits.push(`🔥 ${watchInt(d.kcal)}`);
+  else if (d.activeKcal !== undefined) bits.push(`⚡ ${watchInt(d.activeKcal)}`);
+  if (Array.isArray(d.ex) && d.ex.length) bits.push(`🏃 ${d.ex.length}`);
+  return `<div class="toba-list-item watch-row" role="button" tabindex="0" data-click="openWatchDay" data-id="${date}">
+      <span class="watch-row-date">${escapeHtml(watchDayLabel(date))}</span>
+      <span class="watch-row-bits">${bits.join(" · ")}</span>
+      <span class="toba-hub-chevron">›</span>
+    </div>`;
+}
+
+function watchMonthSummary(dates, goals) {
+  let steps = 0, stepDays = 0, hit = 0, sleep = 0, sleepDays = 0, kcal = 0, ex = 0;
+  dates.forEach((date) => {
+    const d = watchDay(date);
+    if (d.steps !== undefined) { steps += d.steps; stepDays++; if (d.steps >= goals.steps) hit++; }
+    if (d.sleep && d.sleep.min > 0) { sleep += d.sleep.min; sleepDays++; }
+    if (d.kcal !== undefined) kcal += d.kcal;
+    else if (d.activeKcal !== undefined) kcal += d.activeKcal;
+    if (Array.isArray(d.ex)) ex += d.ex.filter((x) => !x.auto && watchExMinutes(x) >= 3).length;
+  });
+  return { steps, stepDays, hit, sleepAvg: sleepDays ? sleep / sleepDays : 0, kcal, ex, days: dates.length };
+}
+
 function renderWatchList() {
   const el = document.getElementById("watchList");
   const dates = Object.keys(watchDays()).filter((d) => watchHasData(watchDay(d))).sort().reverse();
@@ -945,21 +1191,33 @@ function renderWatchList() {
     return;
   }
   const goals = watchGoals();
-  const shown = dates.slice(0, watchUi.listShown);
-  el.innerHTML = shown.map((date) => {
-    const d = watchDay(date);
-    const bits = [];
-    if (d.steps !== undefined) bits.push(`${d.steps >= goals.steps ? "🏆" : "👟"} ${watchInt(d.steps)}`);
-    if (d.sleep) bits.push(`😴 ${watchHours(d.sleep.min)}`);
-    if (d.kcal !== undefined) bits.push(`🔥 ${watchInt(d.kcal)}`);
-    else if (d.activeKcal !== undefined) bits.push(`⚡ ${watchInt(d.activeKcal)}`);
-    if (Array.isArray(d.ex) && d.ex.length) bits.push(`🏃 ${d.ex.length}`);
-    return `<div class="toba-list-item watch-row" role="button" tabindex="0" data-click="openWatchDay" data-id="${date}">
-      <span class="watch-row-date">${escapeHtml(watchDayLabel(date))}</span>
-      <span class="watch-row-bits">${bits.join(" · ")}</span>
-      <span class="toba-hub-chevron">›</span>
+  const months = [];
+  dates.forEach((date) => {
+    const ym = date.slice(0, 7);
+    if (!months.length || months[months.length - 1].ym !== ym) months.push({ ym, dates: [] });
+    months[months.length - 1].dates.push(date);
+  });
+  if (watchUi.openMonth === undefined) watchUi.openMonth = months[0].ym;
+  const shown = months.slice(0, watchUi.listShown);
+  el.innerHTML = shown.map(({ ym, dates: md }) => {
+    const sum = watchMonthSummary(md, goals);
+    const open = watchUi.openMonth === ym;
+    const name = `${WATCH_MONTH_NAMES[Number(ym.slice(5, 7)) - 1]} ${ym.slice(0, 4)}`;
+    const stats = [];
+    if (sum.stepDays) stats.push(`<span class="watch-month-stat"><b>👟 ${watchInt(sum.steps)}</b><small>passos · ${watchInt(sum.steps / sum.stepDays)}/dia</small></span>`);
+    if (sum.sleepAvg) stats.push(`<span class="watch-month-stat"><b>😴 ${watchHours(sum.sleepAvg)}</b><small>sono por noite</small></span>`);
+    if (sum.kcal) stats.push(`<span class="watch-month-stat"><b>🔥 ${watchInt(sum.kcal)}</b><small>kcal no mês</small></span>`);
+    stats.push(`<span class="watch-month-stat"><b>🏃 ${sum.ex}</b><small>treinos do relógio</small></span>`);
+    return `<div class="watch-month${open ? " is-open" : ""}">
+      <button type="button" class="watch-month-head" data-click="watchToggleMonth" data-id="${ym}" aria-expanded="${open}">
+        <span class="watch-month-title">${escapeHtml(name)}</span>
+        <span class="watch-month-meta">${sum.hit ? `🏆 ${sum.hit} na meta · ` : ""}${sum.days} dias</span>
+        <span class="toba-hub-chevron">›</span>
+      </button>
+      <div class="watch-month-stats">${stats.join("")}</div>
+      ${open ? `<div class="toba-list watch-month-days">${md.map((date) => watchDayRow(date, goals)).join("")}</div>` : ""}
     </div>`;
-  }).join("") + (dates.length > shown.length ? `<button type="button" class="btn btn-secondary" data-click="watchMore">Mostrar mais (${dates.length - shown.length})</button>` : "");
+  }).join("") + (months.length > shown.length ? `<button type="button" class="btn btn-secondary" data-click="watchMore">Mostrar meses mais antigos (${months.length - shown.length})</button>` : "");
 }
 
 function renderWatchSync() {
@@ -1040,6 +1298,21 @@ function setWatchGoal(el) {
 
 /* ---------------- Ações ---------------- */
 
+
+// v1.90 (pedido do Rafa), ordem da ⚙️ do Raio-X:
+//   ☁️ Conta: Conta Toba, 🎯 Metas  ·  ⌚ Relógio: ignorados, diagnóstico, permissões, puxar 30 dias
+//   💾 Dados: 📥 Importar histórico do Samsung, Dados & Backup
+// A Conta Toba entra depois do DOMContentLoaded (toba-cloud.js); sem ela, fica tudo no ⌚ Relógio.
+function watchArrangeSettings() {
+  const goals = document.getElementById("watchGoalsMenuBtn");
+  const conta = document.getElementById("tobaCloudSettingsItem");
+  if (goals && conta && goals.parentElement !== conta) conta.appendChild(goals);
+  const imp = document.getElementById("samsungMenuBtn");
+  const backup = document.querySelector('#settingsModal [data-open="tobaDataModal"]');
+  if (imp && backup && imp.nextElementSibling !== backup) backup.parentElement.insertBefore(imp, backup);
+}
+document.addEventListener("DOMContentLoaded", () => setTimeout(watchArrangeSettings, 60));
+
 tobaActions({
   watchAsk,
   watchPull() {
@@ -1062,8 +1335,12 @@ tobaActions({
     watchUi.range = [7, 30, 365].includes(Number(el.dataset.range)) ? Number(el.dataset.range) : 7;
     renderWatchChart();
   },
+  watchToggleMonth(el) {
+    watchUi.openMonth = watchUi.openMonth === el.dataset.id ? "" : el.dataset.id;
+    renderWatchList();
+  },
   watchMore() {
-    watchUi.listShown += WATCH_LIST_STEP;
+    watchUi.listShown += WATCH_MONTH_STEP;
     renderWatchList();
   },
   openWatchDay,
@@ -1074,6 +1351,11 @@ tobaActions({
   watchMergePick,
   watchCreateEx,
   watchIgnoreEx,
+  watchGoneApply,
+  watchUndoIgnore,
+  openWatchIgnored,
+  watchUnignore,
+  watchGoneKeep,
 });
 
 function onHealthDataReplaced() {

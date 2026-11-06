@@ -2154,3 +2154,30 @@ O Samsung não reenvia o passado pro Health Connect, então agora dá pra puxar 
 **Como testar:** Toba Health: o 1º card é 🩻 Raio-X. Faz um treino com o relógio e anota o mesmo no Treinos › Raio-X › 🔄 › ⌚ Treinos do relógio › 🔗 Mesclar › abre o treino no Treinos: aparece ⌚ Dados do relógio com o batimento, e tuas séries/kg iguais. 🔗 Desmesclar: volta como era. Raio-X › ⚙️ › 📥 Importar › escolhe os CSVs › 📥 Importar: o gráfico de 1 ano e o Dia a dia mostram os anos antigos.
 
 **Commit sugerido:** `v1.89 - Toba Health: Relogio vira Raio-X, treinos do relogio com mesclar/virar treino/ignorar sem duplicar (desmesclar na pagina do treino), importar historico do Samsung Health (CSV) e grafico de 1 ano + APK 2.3 (stats por exercicio do Health Connect e escolher varios arquivos)`
+
+## v1.90 — 🩻 Raio-X: 🙈 Ignorar com confirmação e desfazer, e apagou no relógio o Toba segue
+
+1. **🙈 Ignorar agora é um botão escrito** (era só o macaquinho) e **pergunta antes** ("Ignorar esse treino? sai da lista e não conta XP nem troféu"). Logo depois aparece **↩️ Desfazer**, e o ⚙️ ganhou **🙈 Treinos do relógio ignorados** pra voltar qualquer um.
+2. **Apagou no relógio, o Toba segue:** no 🔄, exercício que sumiu do Health Connect sai do dia no Raio-X. Se ele já tinha virado treino (ou estava mesclado), aparece **🗑️ Sumiu do relógio** perguntando: 🗑️ Apagar do Toba (ou 🔗 Desmesclar) / 👍 Manter. Nunca apaga treino sem perguntar. Só vale pros dias que o 🔄 leu (o normal é os últimos dias; ⚙️ › Puxar os últimos 30 dias confere o mês).
+3. **Hub do Toba Health em ordem nova:** 🩻 Raio-X, 🏋️ Treinos & Cargas, ⚖️ Pesagem & Bioimpedância.
+4. **⚙️ do Raio-X organizada:** ☁️ Conta (Conta Toba, 🎯 Metas) · ⌚ Relógio (🙈 Treinos ignorados, 🩺 Diagnóstico, 🔐 Permissões do Health Connect, 🔄 Puxar os últimos 30 dias) · 💾 Dados (📥 Importar histórico do Samsung Health, Dados & Backup).
+5. **📜 Mês a mês** no lugar do Dia a dia: cada mês mostra o consolidado (👟 passos no mês e por dia, 😴 sono médio por noite, 🔥 kcal no mês, 🏃 treinos do relógio, 🏆 dias na meta). Toca no mês e abre o dia a dia dele (o mês atual já vem aberto).
+6. **🔬 CLOBA RAIO LASER X:** cada quadrado da tela (👟 passos no anel, 😴 sono, 🔥 calorias, ⚡ ativas, 📏 distância, ❤️ coração) abre uma análise própria, igual a da balança:
+   - período 7 / 30 / 90 dias / 1 ano, com **média**, **vs período anterior** (▲▼ %) e **total** ou **melhor dia**;
+   - gráfico por dia (até 30 dias), por semana (90) ou por mês (1 ano), com linha da meta e da média;
+   - 🤡 Papo reto do Cloba daquele assunto (subiu/caiu, quanto falta pra meta, alerta de sono curto, batimento subindo...);
+   - 🎯 dias na meta e sequência atual (passos e sono);
+   - 🛏️ **Como você dorme**: horário médio de deitar e acordar, regularidade (± min), cochilos e fases médias (profundo, leve, REM, acordado);
+   - 💓 **Batimento**: base (menor do dia), pico e pico por dia;
+   - 🔬 **Raio laser** (último ano): cruza um assunto com o outro. Ex.: quantos passos você dá depois de dormir 7h+ x menos de 6h, quanto dorme depois de dia com treino ou na meta de passos, fim de semana x semana, kcal em dia de treino;
+   - 📅 média por dia da semana (melhor e pior dia), 🏆 recordes da vida toda (melhor dia, melhor mês, maior sequência) e a lista dos dias do período.
+7. **⌚ "Vai mesclar com o relógio?" no fim do treino** (ideia do Rafa): no ▶ treino ao vivo (Salvar treino) e no ➕ registrar treino aparece **⌚ Completar com o relógio**. Marcou, pode salvar sem tempo/kcal: o treino fica "⌚ esperando o relógio" e no próximo 🔄 do Raio-X ele **mescla sozinho** com o exercício do relógio daquele horário (mesmas regras do 🔗 Mesclar: teus dados mandam). Se tiver dois iguais no dia e não der pra saber qual, ele espera e o 🔗 Mesclar da lista pergunta. A escolha fica lembrada no aparelho. Só aparece pra quem já usa o relógio.
+8. **🐛 Editar um treino de força** (💪 formulário de força) não perde mais o ⌚ dos dados do relógio nem o horário.
+
+**Dados:** novos e opcionais: `TOBA_HEALTH_DB.watch.gone` (treino cujo exercício sumiu do relógio, esperando tua resposta), `ex[].imp` (exercício que veio do 📥 import do Samsung, o 🔄 não tira) e `workouts[].watchPending` (`{ at }`, treino esperando o relógio). Treino ao vivo de força agora grava `startTime`. Chave local nova `toba_health_watch_pending_pref` (só a última escolha do ⌚, neste aparelho). Nada renomeado. Sem APK novo (o 2.3 da v1.89 serve). O 🔄 agora relê sempre a última semana (era a partir de 2 dias antes do último dia). `sw` toba-v49.
+
+**Arquivos:** `TobaHealth/js/relogio.js`, `TobaHealth/js/relogio-samsung.js`, `TobaHealth/js/relogio-analise.js` (novo), `TobaHealth/TobaHealth-Relogio.html`, `TobaHealth/css/relogio.css`, `TobaHealth/TobaHealth-Index.html`, `TobaHealth/TobaHealth-Treinos.html`, `TobaHealth/js/treinos.js`, `TobaHealth/js/sessao.js`, `TobaHealth/js/forca.js`, `TobaHealth/css/treinos.css`, `assets/toba-common.js`, `sw.js`, `CLAUDE.md`, `PATCH-NOTES.md`.
+
+**Como testar:** Raio-X › ⌚ Treinos do relógio › 🙈 Ignorar: pergunta antes; confirma e aparece ↩️ Desfazer. ⚙️ › 🙈 Treinos do relógio ignorados › ↩️ Voltar. Vira um treino do relógio, apaga ele no Samsung Health, 🔄 no Raio-X: aparece 🗑️ Sumiu do relógio com Apagar do Toba / Manter. Toca no anel de passos, no card do sono ou em qualquer quadrado: abre a 🔬 análise. Treinos › ➕ › marca ⌚ Completar com o relógio › salva sem número › Raio-X › 🔄: o treino ganha tempo, kcal e batimento sozinho.
+
+**Commit sugerido:** `v1.90 - Raio-X: ignorar treino do relogio com confirmacao, desfazer e lista de ignorados + treino apagado no relogio some do Raio-X e pergunta se apaga o treino do Toba + hub do Health na ordem Raio-X, Treinos, Pesagem + configuracoes do Raio-X organizadas (Conta, Relogio, Dados) + mes a mes com total consolidado + analise aprofundada de cada quadrado (Cloba Raio Laser X) + completar treino com o relogio ao salvar (mescla sozinho no sync)`
