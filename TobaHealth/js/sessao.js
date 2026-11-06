@@ -24,6 +24,7 @@
  * O treino do Saitama ao vivo (sessao-saitama.js) usa a mesma chave, o
  * mesmo cronômetro e o mesmo descanso, com exercises: [] e kind "saitama";
  * ao finalizar vira um treino "saitama" normal.
+ * v1.87: kind "home" (🏠 treino em casa: HIIT, Tabata, força..., sessao-casa.js)
  * v1.84: kind "stretch" (🧘 alongamento, sessao-alongamento.js) e kind "walk"
  * (🚶 caminhada com GPS, sessao-caminhada.js), também com exercises: [].
  * Cada um tem tique, tela e fim próprios; aqui só os ganchos.
@@ -150,10 +151,11 @@ function normalizeLiveSession(raw) {
   session.routineId = String(session.routineId || "");
   session.date = /^\d{4}-\d{2}-\d{2}$/.test(session.date) ? session.date : toIsoDate(new Date(session.startedAt));
   session.restDefault = Number(session.restDefault) || LIVE_REST_DEFAULT;
-  session.kind = ["saitama", "stretch", "walk"].includes(session.kind) ? session.kind : "strength";
+  session.kind = ["saitama", "stretch", "walk", "home"].includes(session.kind) ? session.kind : "strength";
   if (session.kind === "saitama") session.saitama = normalizeSaitamaLive(session.saitama);
   if (session.kind === "stretch") session.stretch = normalizeStretchLive(session.stretch);
   if (session.kind === "walk") session.walk = normalizeWalkLive(session.walk);
+  if (session.kind === "home") session.home = normalizeHomeLive(session.home);
   session.exercises = session.exercises
     .filter((entry) => entry && entry.exerciseId)
     .map((entry) => ({
@@ -386,7 +388,8 @@ function openLiveStart() {
         <span class="toba-hub-chevron">›</span>
       </button>`;
   }).join("");
-  document.getElementById("liveStartList").innerHTML = renderStretchLiveStartCard() + renderWalkLiveStartCard() + renderSaitamaLiveStartCard() + (cards
+  // v1.87: Saitama e alongamento moram dentro da seção 🏠 Treinos em casa (sessao-casa.js)
+  document.getElementById("liveStartList").innerHTML = renderHomeLiveStartSection() + renderWalkLiveStartCard() + (cards
     ? `<div class="hub-title">Seus treinos</div><div class="toba-menu">${cards}</div><div class="section-divider"></div>`
     : '<p class="toba-sheet-text">Treino de força: você ainda não tem treino salvo. Comece um livre e, no fim, salve como modelo (Treino A, B, C...).</p>');
   openTobaModal("liveStartModal");
@@ -427,6 +430,7 @@ function openLiveSessionView() {
     openModule("viewTraining");
     return;
   }
+  if (document.getElementById("homeStartModal")) closeTobaModal("homeStartModal"); // v1.87: começou pela folha 🏠
   openModule("viewSession");
   renderLiveSession();
   startLiveTicker();
@@ -477,9 +481,11 @@ function renderLiveSessionLaunch() {
       ? describeSaitamaLive(session.saitama)
       : session.kind === "stretch"
         ? describeStretchLive(session)
-        : session.kind === "walk"
-          ? describeWalkLive(session)
-          : `${counts.done} ${counts.done === 1 ? "série feita" : "séries feitas"} · ${counts.completed}/${counts.exercises} exercícios`;
+        : session.kind === "home"
+          ? describeHomeLive(session)
+          : session.kind === "walk"
+            ? describeWalkLive(session)
+            : `${counts.done} ${counts.done === 1 ? "série feita" : "séries feitas"} · ${counts.completed}/${counts.exercises} exercícios`;
     box.innerHTML = `
       <div class="live-resume">
         <div class="live-resume-title">⏸ ${escapeHtml(session.title)} em andamento</div>
@@ -496,11 +502,11 @@ function renderLiveSessionLaunch() {
       <span class="live-launch-icon" aria-hidden="true">▶</span>
       <span class="live-launch-copy">
         <span class="live-launch-title">Iniciar treino</span>
-        <span class="live-launch-detail">Força, Saitama, 🧘 alongamento com timer ou 🚶 caminhada com GPS</span>
+        <span class="live-launch-detail">Força, 🏠 treinos em casa (HIIT, Saitama, alongamento) ou 🚶 caminhada com GPS</span>
       </span>
     </button>
     <div class="live-quick">
-      <button type="button" class="live-chip" data-click="openLiveStart">🧘 Alongar</button>
+      <button type="button" class="live-chip" data-click="openHomeStart">🏠 Em casa</button>
       <button type="button" class="live-chip" data-click="openWalkHistory">🚶 Caminhadas</button>
     </div>`;
 }
@@ -585,6 +591,11 @@ function renderLiveSession() {
   }
   if (session.kind === "stretch") {
     box.innerHTML = renderStretchLive(session);
+    renderLiveRest();
+    return;
+  }
+  if (session.kind === "home") {
+    box.innerHTML = renderHomeLive(session);
     renderLiveRest();
     return;
   }
@@ -969,6 +980,10 @@ function liveTick() {
     stretchTick(now);
     return;
   }
+  if (liveSession.kind === "home") {
+    homeTick(now);
+    return;
+  }
   if (liveSession.kind === "walk") {
     walkTick(now);
     return;
@@ -1115,6 +1130,10 @@ function openLiveFinish() {
   }
   if (liveSession.kind === "stretch") {
     stretchFinishNow();
+    return;
+  }
+  if (liveSession.kind === "home") {
+    homeFinishNow();
     return;
   }
   if (liveSession.kind === "walk") {

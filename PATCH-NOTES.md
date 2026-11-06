@@ -2036,3 +2036,43 @@ O velocímetro continua na esquerda: os botões do Android Auto ficam sempre na 
 **Como testar:** Gastos › 📜 Meses › abrir um mês com parcela › tocar na categoria da parcela: aparece só ela + as compras à vista dela, e o Total soma tudo. ✕ Limpar filtro volta tudo. Abre a ⚙️ de qualquer app: embaixo do backup tem "APK 2.1 · Patch v1.86" (se aparecer APK 2.0, o APK novo ainda não foi instalado).
 
 **Commit sugerido:** `v1.86 - Gastos: filtro de categoria tambem no historico dos meses (lancamentos + parcelas, total e media somando as parcelas) + versao do APK e do patch na engrenagem`
+
+---
+
+## v1.87 — 🏠 Treinos em casa: HIIT, Tabata, cardio sem pulo, força e abdômen (junto com Saitama e alongamento)
+
+**Arquivos novos/alterados:** `TobaHealth/js/sessao-casa.js` (NOVO), `TobaHealth/css/casa.css` (NOVO), `TobaHealth/TobaHealth-Treinos.html`, `TobaHealth/js/health-metrics.js`, `TobaHealth/js/sessao.js`, `TobaHealth/js/treinos.js`, `TobaHealth/js/hall-shared.js`, `assets/toba-player.js`, `assets/toba-common.js` (Patch v1.87), `sw.js` (arquivos novos no PRECACHE, versão toba-v47), `CLAUDE.md`
+
+1. **🏠 Seção Treinos em casa:** no ▶ Iniciar treino agora tem um bloco só pra treino sem equipamento, separado em 🔥 HIIT e cardio, 💪 Força e abdômen (com o Treino do Saitama) e 🧘 Alongamento (10 e 20 min). O atalho embaixo do ▶ virou **🏠 Em casa** e abre só essa seção. No + Treino os tipos também ficaram em grupos: 💪 Força, 🏠 Treinos em casa e 🚶 Cardio.
+2. **5 treinos novos montados:** 🔥 HIIT 10 min (40 s / 20 s: polichinelo, agachamento com salto, escalador, skipping e burpee, 2 voltas), ⚡ Tabata 4 min (8 tiros de 20 s / 10 s), 🤫 Cardio sem pulo 15 min (zero impacto, dá pra fazer de madrugada no apê), 💪 Força em casa 20 min (agachamento, flexão, afundo, mergulho na cadeira, ponte e prancha, 3 voltas) e 🍫 Abdômen 10 min.
+3. **Treino ao vivo com timer de intervalo:** timer redondo laranja no 🔥 Vai!, azul no 😮‍💨 Descansa (já mostrando o próximo), "Volta 1/2", como fazer e dica de cada exercício, e um **bonequinho que se mexe** (alterna as duas posições do movimento). 🔊 Voz falando "Vai! Agachamento", "Descansa, próximo..." e o **3-2-1** antes de cada tiro (dá pra fazer sem olhar a tela), vibração, ⏸ Pausar, ‹ Voltar, Pular ⏭, 🏁 Terminar agora. Fechou o app no meio? Volta de onde parou.
+4. **Vale igual treino:** XP, sequência 🔥, Hall e **mapa de calor por exercício** (flexão pinta peito/tríceps, ponte pinta glúteo...). Calorias estimadas pelo seu peso e pela intensidade do treino. Dá pra anotar um que fez fora do app em + Treino › 🏠 HIIT, Tabata e circuitos.
+5. **4 troféus novos:** 🏠 Academia na sala (1), 🛋️ O vizinho de baixo reclamou (10), 🏡 Personal de si mesmo (30, com título 🏠 Rato de Sala) e 🎛️ Cardápio completo (fez os 5 treinos em casa).
+
+**Dados:** Treino novo `type: "home"` com `home: { plan, done }` (segundos feitos por exercício; anotado na mão não tem `done`). Treino em andamento (`TOBA_HEALTH_ACTIVE_SESSION`) ganhou `kind: "home"`; `toba_health_live_prefs` ganhou `homeVoice`. Editar o treino mantém o `home`. Nada renomeado, alongamento/Saitama antigos e backups antigos continuam iguais.
+
+**Como testar:** Treinos › 🏠 Em casa › Tabata 4 min: confere o Prepara de 10 s, o 3-2-1 falado, o boneco mexendo no Vai!, o descanso azul mostrando o próximo, pausar/pular/voltar, e salvar no fim (abre a página com os exercícios e o mapa de calor; o Perfil dá o troféu Academia na sala). Fecha o app no meio de um treino e abre de novo: aparece "em andamento" e o ▶ Continuar volta no ponto. + Treino › 🏠 HIIT, Tabata e circuitos › anota um Força em casa 20 min e edita depois: continua com o plano. ⚙️ mostra "Patch v1.87".
+
+### ⌚ ⌚ Toba Health › Relógio: passos, sono e calorias do Galaxy Watch (APK 2.2)
+
+**Arquivos novos/alterados:** `TobaHealth/TobaHealth-Relogio.html` (NOVO), `TobaHealth/js/relogio.js` (NOVO), `TobaHealth/css/relogio.css` (NOVO), `TobaHealth/TobaHealth-Index.html`, `TobaHealth/js/health-core.js`, `TobaAndroid/app/auto/br/com/toba/app/HealthReader.java` (NOVO), `TobaAndroid/app/auto/br/com/toba/app/TobaBridge.java`, `TobaAndroid/app/auto/br/com/toba/app/MainActivity.java`, `TobaAndroid/app/src/main/AndroidManifest.xml`, `TobaAndroid/app/build.gradle` (**APK 2.2, versionCode 13**), `TobaAndroid/README.md`, `assets/toba-common.js` (Patch v1.87), `sw.js` (toba-v47), `CLAUDE.md`
+
+1. **Módulo novo ⌚ Relógio no Toba Health:** o Galaxy Watch manda pro Samsung Health, que manda pro Health Connect do Android, e o Toba lê de lá. Na tela: anel dos 👟 passos de hoje com a meta, 🔥 calorias do dia, ⚡ calorias ativas, 📏 distância e ❤️ batimento em repouso.
+2. **😴 Sono da última noite:** quanto dormiu, que horas deitou e acordou, % da meta, cochilos e a barrinha das fases (profundo, leve, REM, acordado).
+3. **🤡 Papo reto do Cloba** comentando o sono e os passos do dia.
+4. **📊 Evolução** de 7 ou 30 dias (passos, sono ou calorias) com a linha da meta, média, melhor dia e quantos dias bateu a meta (barra dourada = meta batida).
+5. **📜 Dia a dia:** toca num dia e vê tudo dele, inclusive os exercícios que o relógio registrou (caminhada, corrida, musculação...).
+6. **🎯 Metas** (⚙️ › Metas): passos por dia e horas de sono, tocando nos botões prontos. Padrão 8.000 passos e 7h30.
+7. **Puxa sozinho** ao abrir o Relógio e ao voltar pro app (se fez mais de 10 min), ou no 🔄 do cabeçalho. Na 1ª vez pega os últimos 30 dias. ⚙️ › Puxar os últimos 30 dias relê tudo; ⚙️ › 🔐 Permissões do Health Connect abre as chavinhas do Toba.
+8. **Só leitura:** o Toba nunca escreve nada no Health Connect. No navegador (PC) o Relógio mostra o que já veio do celular pela ☁️ Conta.
+
+**Dados:** campo novo **opcional** `watch` dentro do `TOBA_HEALTH_DB` (`{ v, goals, days: { "AAAA-MM-DD": { steps, kcal, activeKcal, distanceM, hrAvg, hrMin, hrMax, restHr, sleep, ex, at } } }`), então vai junto no backup do Health e na ☁️. Banco e backups antigos continuam iguais (sem o campo = Relógio vazio). Puxar de novo troca os números do dia pelos do Health Connect; o que não veio fica como estava. Chave nova só deste aparelho: `toba_health_watch_state` (`{ pulledAt }`, quando puxou). Ponte do APK `version()` = 10.
+
+**Como testar:**
+1. Android Studio: **Sync Gradle** › Build › **Generate Signed APK** (chave de sempre) e confere no `TobaAndroid\app\release\output-metadata.json` o **versionCode 13 / versionName 2.2**.
+2. Instala **pelo KingInstaller** por cima (nunca desinstalar, senão perde os dados do app).
+3. No **Samsung Health** › ⋮ › Configurações › **Health Connect**: libera ele **escrever** passos, sono, calorias, frequência cardíaca e exercícios.
+4. Toba › Health › ⌚ Relógio › **Ligar o Health Connect** › marca tudo › Permitir. Em uns segundos aparecem os passos de hoje, a noite de ontem e os últimos 30 dias.
+5. ⚙️ de qualquer app tem que mostrar "APK 2.2 · Patch v1.87".
+
+**Commit sugerido:** `v1.87 - Treinos em casa: secao nova com HIIT, Tabata, cardio sem pulo, forca e abdomen ao vivo (timer de intervalo, voz 3-2-1, bonequinho que se mexe, mapa de calor e 4 trofeus) junto com Saitama e alongamento + Toba Health: modulo Relogio (passos, sono, calorias e coracao do Galaxy Watch pelo Health Connect, APK 2.2)`

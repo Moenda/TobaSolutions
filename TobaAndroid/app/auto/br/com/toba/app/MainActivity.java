@@ -42,6 +42,9 @@ import br.com.toba.auto.NavService;
  * no site por window.onTobaAutoRoute; a do site vai pro carro por TobaNative.autoRoute.
  * v1.85 (APK 2.1): Compartilhar › Toba (ACTION_SEND) abre o Toba Places com o texto
  * no ?title=&text= (mesmo formato do share_target do site instalado pelo Chrome).
+ * v1.87 (APK 2.2): ⌚ Relógio do Toba Health. Pedido de permissão do Health Connect
+ * (askHealthPermissions -> window.onTobaHealthPerms) e resposta das leituras (healthJs).
+ * O "Política de privacidade" da tela do Health Connect abre o Relógio (activity-alias no manifest).
  */
 public class MainActivity extends Activity {
     static final String EXTRA_URL = "url";
@@ -49,6 +52,8 @@ public class MainActivity extends Activity {
     private static final int REQ_FILE = 10;
     private static final int REQ_NOTIFY = 11;
     private static final int REQ_LOCATION = 12;
+    private static final int REQ_HEALTH = 13;
+    static final String RELOGIO_PAGE = "TobaHealth/TobaHealth-Relogio.html";
 
     private WebView web;
     private ValueCallback<Uri[]> fileCallback;
@@ -181,6 +186,10 @@ public class MainActivity extends Activity {
             web.loadUrl(shared);
             return;
         }
+        if (isHealthRationale(intent) && web != null) {
+            web.loadUrl(BuildConfig.START_URL + RELOGIO_PAGE);
+            return;
+        }
         String url = intent.getStringExtra(EXTRA_URL);
         if (url != null && isOwnSite(Uri.parse(url))) web.loadUrl(url);
     }
@@ -239,6 +248,11 @@ public class MainActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQ_HEALTH) {
+            // v1.87: a resposta volta pro ⌚ Relógio com o que ficou liberado
+            healthJs("window.onTobaHealthPerms&&window.onTobaHealthPerms(" + new TobaBridge(this).healthStatus() + ")");
+            return;
+        }
         if (requestCode == REQ_LOCATION && geoCallback != null) {
             geoCallback.invoke(geoOrigin, hasLocationPermission(), false);
             geoOrigin = null;
@@ -256,6 +270,30 @@ public class MainActivity extends Activity {
                 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[] {Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIFY);
         }
+    }
+
+    /* ---------------- v1.87 (APK 2.2): ⌚ Relógio (Health Connect) ---------------- */
+
+    // No Android 14+ as permissões do Health Connect são pedidas como qualquer outra:
+    // o sistema abre a tela do Health Connect com as caixinhas.
+    void askHealthPermissions(String[] perms) {
+        runOnUiThread(() -> {
+            if (perms == null || perms.length == 0) {
+                healthJs("window.onTobaHealthPerms&&window.onTobaHealthPerms(" + new TobaBridge(this).healthStatus() + ")");
+                return;
+            }
+            try {
+                requestPermissions(perms, REQ_HEALTH);
+            } catch (Exception e) {
+                healthJs("window.onTobaHealthPerms&&window.onTobaHealthPerms(" + new TobaBridge(this).healthStatus() + ")");
+            }
+        });
+    }
+
+    void healthJs(String js) {
+        runOnUiThread(() -> {
+            if (web != null) web.evaluateJavascript(js, null);
+        });
     }
 
     void keepScreenOn(boolean on) {
@@ -375,7 +413,13 @@ public class MainActivity extends Activity {
         return b.build().toString();
     }
 
+    // v1.87: "Política de privacidade" do Toba na tela do Health Connect
+    static boolean isHealthRationale(Intent intent) {
+        return intent != null && Intent.ACTION_VIEW_PERMISSION_USAGE.equals(intent.getAction());
+    }
+
     private static String startUrl(Intent intent) {
+        if (isHealthRationale(intent)) return BuildConfig.START_URL + RELOGIO_PAGE;
         String url = intent == null ? null : intent.getStringExtra(EXTRA_URL);
         return url != null && isOwnSite(Uri.parse(url)) ? url : BuildConfig.START_URL;
     }

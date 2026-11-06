@@ -44,7 +44,57 @@ final class TobaBridge {
 
     @JavascriptInterface
     public int version() {
-        return 9; // 9 = APK 2.1 (clipboardText: 📋 Colar do Maps no Places); 8 = APK 1.8 (autoFavorites: ⭐ no Android Auto); 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
+        return 10; // 10 = APK 2.2 (healthStatus/healthAsk/healthRead: ⌚ Relógio do Toba Health); 9 = APK 2.1 (clipboardText: 📋 Colar do Maps no Places); 8 = APK 1.8 (autoFavorites: ⭐ no Android Auto); 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
+    }
+
+    /* ---------------- v1.87 (APK 2.2): ⌚ Relógio (Health Connect) ---------------- */
+
+    // {ok, sdk, granted: ["steps", "sleep", ...], missing: [...]}. ok false = Android sem
+    // Health Connect embutido (só Android 14+; o Toba não usa o app antigo do Health Connect).
+    @JavascriptInterface
+    public String healthStatus() {
+        if (Build.VERSION.SDK_INT < 34) return "{\"ok\":false,\"sdk\":" + Build.VERSION.SDK_INT + ",\"granted\":[],\"missing\":[]}";
+        return HealthReader.status(app).toString();
+    }
+
+    // Abre a tela do Health Connect pedindo o que falta. Resposta: window.onTobaHealthPerms(status)
+    @JavascriptInterface
+    public void healthAsk() {
+        if (Build.VERSION.SDK_INT < 34) {
+            activity.healthJs("window.onTobaHealthPerms&&window.onTobaHealthPerms(" + healthStatus() + ")");
+            return;
+        }
+        activity.askHealthPermissions(HealthReader.missingPerms(app));
+    }
+
+    // Lê do dia from ao dia to ("AAAA-MM-DD", inclusive) em segundo plano. Resposta:
+    // window.onTobaHealthData(reqId, { ok, days: { "AAAA-MM-DD": { steps, kcal, ... } }, sleep: [], exercises: [], errors: {} })
+    @JavascriptInterface
+    public boolean healthRead(String from, String to, String reqId) {
+        if (Build.VERSION.SDK_INT < 34 || from == null || to == null) return false;
+        final String id = JSONObject.quote(reqId == null ? "" : reqId);
+        HealthReader.read(app, from, to, json -> activity.healthJs(
+                "window.onTobaHealthData&&window.onTobaHealthData(" + id + "," + json + ")"));
+        return true;
+    }
+
+    // Permissões do Toba dentro do Health Connect (quando o Android já não mostra mais o pedido)
+    @JavascriptInterface
+    public void healthOpenSettings() {
+        activity.runOnUiThread(() -> {
+            Intent i = new Intent("android.health.connect.action.MANAGE_HEALTH_PERMISSIONS");
+            i.putExtra(Intent.EXTRA_PACKAGE_NAME, app.getPackageName());
+            try {
+                activity.startActivity(i);
+            } catch (Exception e) {
+                try {
+                    activity.startActivity(new Intent("android.health.connect.action.HEALTH_HOME_SETTINGS"));
+                } catch (Exception e2) {
+                    activity.startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.parse("package:" + app.getPackageName())));
+                }
+            }
+        });
     }
 
     /* ---------------- v1.85 (APK 2.1): área de transferência ---------------- */

@@ -144,6 +144,10 @@ function normalizeHealthDb(db) {
     if (!m || typeof m !== "object") return;
     if (!healthDigitsOk(m.digits, 4)) m.digits = DEFAULT_METRIC_DIGITS[m.key] || 2;
   });
+  // ⌚ Relógio (v1.87): campo opcional, só existe depois do 1º "Puxar do relógio".
+  if (db.watch && typeof db.watch === "object" && !Array.isArray(db.watch)) {
+    if (!db.watch.days || typeof db.watch.days !== "object" || Array.isArray(db.watch.days)) db.watch.days = {};
+  }
   const wf = db.weightFormat && typeof db.weightFormat === "object" && !Array.isArray(db.weightFormat) ? db.weightFormat : {};
   db.weightFormat = {
     type: wf.type === "dec1" ? "dec1" : DEFAULT_WEIGHT_FORMAT.type,

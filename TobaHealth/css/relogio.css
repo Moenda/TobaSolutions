@@ -1,0 +1,314 @@
+/* Toba Health · ⌚ Relógio (v1.87) */
+
+.watch-connect {
+  text-align: center;
+  margin-bottom: 0.9rem;
+}
+
+.watch-connect-icon {
+  font-size: 2.2rem;
+  line-height: 1;
+  margin-bottom: 0.4rem;
+}
+
+.watch-connect-title {
+  font-weight: 800;
+  font-size: 1.05rem;
+  margin-bottom: 0.3rem;
+}
+
+.watch-connect-text {
+  color: var(--text-2);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  margin: 0 0 0.8rem;
+}
+
+.watch-howto {
+  margin-top: 0.8rem;
+  text-align: left;
+  font-size: 0.8rem;
+  color: var(--text-2);
+}
+
+.watch-howto summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.watch-howto ol {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+  line-height: 1.5;
+}
+
+#watchConnect > .hint-box + .hint-box {
+  margin-top: 0.6rem;
+}
+
+#watchConnect > .hint-box:last-child {
+  margin-bottom: 0.9rem;
+}
+
+.watch-missing {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Anel dos passos */
+.watch-hero {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.9rem;
+}
+
+.watch-ring-wrap {
+  position: relative;
+  width: 190px;
+  height: 190px;
+}
+
+.watch-ring {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.watch-ring circle {
+  fill: none;
+  stroke-width: 11;
+}
+
+.watch-ring-bg {
+  stroke: var(--surface-3);
+}
+
+.watch-ring-fg {
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.watch-ring-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.watch-ring-num {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.watch-ring-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.watch-ring-goal {
+  font-size: 0.72rem;
+  color: var(--gold-2);
+  font-weight: 700;
+}
+
+.watch-stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Sono */
+.watch-sleep-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0.4rem 0 0.5rem;
+  flex-wrap: wrap;
+}
+
+.watch-sleep-num {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--blue);
+}
+
+.watch-sleep-time {
+  font-size: 0.82rem;
+  color: var(--text-2);
+}
+
+.watch-sleep-goal {
+  margin-top: 0.35rem;
+}
+
+.watch-muted {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin: 0.3rem 0 0;
+}
+
+.watch-sleep-bar {
+  display: flex;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 0.8rem;
+  gap: 2px;
+}
+
+.watch-sleep-bar span {
+  display: block;
+  min-width: 3px;
+}
+
+.is-deep {
+  background: #3b5bdb;
+}
+
+.is-light {
+  background: #74c0fc;
+}
+
+.is-rem {
+  background: #b197fc;
+}
+
+.is-awake {
+  background: #f0883e;
+}
+
+.watch-sleep-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  color: var(--text-2);
+}
+
+.watch-sleep-legend i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  margin-right: 4px;
+  vertical-align: -1px;
+}
+
+/* Papo reto do Cloba */
+.watch-cloba {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 0.9rem;
+  background: rgba(210, 153, 34, 0.08);
+  border: 1px solid rgba(210, 153, 34, 0.35);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+.watch-cloba-face {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.watch-cloba p {
+  margin: 0.2rem 0 0;
+  color: var(--text-2);
+  line-height: 1.45;
+}
+
+/* Gráfico */
+.watch-range {
+  margin-bottom: 0.7rem;
+}
+
+.watch-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.watch-chart-label {
+  font-size: 9px;
+  fill: var(--muted);
+  text-anchor: middle;
+}
+
+.watch-chart-goal {
+  stroke: var(--gold-2);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  opacity: 0.8;
+}
+
+.watch-chart-stats {
+  margin-top: 0.7rem;
+}
+
+/* Lista */
+.watch-row {
+  cursor: pointer;
+}
+
+.watch-row-date {
+  font-weight: 700;
+  white-space: nowrap;
+  min-width: 78px;
+}
+
+.watch-row-bits {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: right;
+  font-size: 0.8rem;
+  color: var(--text-2);
+}
+
+.watch-sync-line {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.watch-sync-btn.is-spinning {
+  animation: watch-spin 1s linear infinite;
+}
+
+@keyframes watch-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Metas */
+.watch-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0.5rem 0 1rem;
+}
+
+.watch-chips .chip-btn {
+  height: 36px;
+  padding: 0 12px;
+  font-size: 0.85rem;
+}
+
+.watch-chips .chip-btn.is-on {
+  color: var(--text);
+  border-color: var(--accent);
+  background: rgba(63, 185, 80, 0.15);
+}
+
+#watchDayBody .section-title {
+  margin-top: 1rem;
+}

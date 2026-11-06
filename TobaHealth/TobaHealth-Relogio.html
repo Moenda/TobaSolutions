@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
+  <title>Toba Health | ⌚ Relógio</title>
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="icon" href="../icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="css/health-base.css" />
+  <link rel="stylesheet" href="css/relogio.css" />
+</head>
+
+<body>
+  <div class="container">
+    <header class="toba-header">
+      <a class="toba-back" href="TobaHealth-Index.html" data-label="Voltar para o Toba Health" aria-label="Voltar para o Toba Health">‹</a>
+      <a class="toba-titles" href="TobaHealth-Index.html">
+        <span class="toba-app">🥗 Toba Health</span>
+        <span class="toba-page">⌚ Relógio</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-icon-btn watch-sync-btn" id="watchSyncBtn" data-click="watchPull" aria-label="Puxar do relógio" hidden>🔄</button>
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
+      </div>
+    </header>
+
+    <div id="watchConnect" hidden></div>
+
+    <div class="card" id="watchToday"></div>
+    <div class="card" id="watchSleep"></div>
+    <div id="watchCloba"></div>
+
+    <div class="section-title">📊 Evolução</div>
+    <div class="period-selector" id="watchChartTabs" role="group" aria-label="O que mostrar">
+      <button type="button" class="period-btn active" data-click="watchChart" data-chart="steps">👟 Passos</button>
+      <button type="button" class="period-btn" data-click="watchChart" data-chart="sleep">😴 Sono</button>
+      <button type="button" class="period-btn" data-click="watchChart" data-chart="kcal">🔥 Calorias</button>
+    </div>
+    <div class="card watch-chart-card">
+      <div class="period-selector watch-range" id="watchRangeTabs" role="group" aria-label="Período">
+        <button type="button" class="period-btn active" data-click="watchRange" data-range="7">7 dias</button>
+        <button type="button" class="period-btn" data-click="watchRange" data-range="30">30 dias</button>
+      </div>
+      <div id="watchChart"></div>
+      <div class="toba-stats is-3 watch-chart-stats" id="watchChartStats"></div>
+    </div>
+
+    <div class="section-title">📜 Dia a dia</div>
+    <div id="watchList" class="toba-list"></div>
+    <p class="watch-sync-line" id="watchSyncLine"></p>
+  </div>
+
+  <div id="tobaSettingsExtra" hidden>
+    <div class="toba-settings-section">
+      <div class="toba-settings-label">⌚ Relógio</div>
+      <div class="toba-menu">
+        <button type="button" class="toba-menu-btn" data-click="openWatchGoals">
+          <span class="toba-menu-icon">🎯</span>
+          <span class="toba-menu-text">
+            <span class="toba-menu-title">Metas</span>
+            <span class="toba-menu-desc">Passos por dia e horas de sono</span>
+          </span>
+          <span class="toba-hub-chevron">›</span>
+        </button>
+        <button type="button" class="toba-menu-btn" data-click="watchPullFull">
+          <span class="toba-menu-icon">🔄</span>
+          <span class="toba-menu-text">
+            <span class="toba-menu-title">Puxar os últimos 30 dias</span>
+            <span class="toba-menu-desc">Lê tudo de novo do Health Connect</span>
+          </span>
+          <span class="toba-hub-chevron">›</span>
+        </button>
+        <button type="button" class="toba-menu-btn" data-click="watchOpenSettings">
+          <span class="toba-menu-icon">🔐</span>
+          <span class="toba-menu-text">
+            <span class="toba-menu-title">Permissões do Health Connect</span>
+            <span class="toba-menu-desc">O que o Toba pode ler (só no app)</span>
+          </span>
+          <span class="toba-hub-chevron">›</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="watchDayModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="watchDayTitle">⌚ Dia</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="watchDayBody"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-secondary" data-close>Fechar 👍</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="watchGoalsModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🎯 Metas do relógio</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div class="card-title">👟 Passos por dia</div>
+      <div class="watch-chips" id="watchGoalSteps"></div>
+      <div class="card-title">😴 Sono por noite</div>
+      <div class="watch-chips" id="watchGoalSleep"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-primary" data-close>Concluído 👍</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/toba-common.js"></script>
+  <script src="../assets/toba-cloud.js"></script>
+  <script src="js/health-core.js"></script>
+  <script src="js/relogio.js"></script>
+  <script src="../assets/pwa-register.js"></script>
+</body>
+
+</html>

@@ -79,6 +79,7 @@ const WORKOUT_TYPE_ICONS = {
   strength: "💪",
   custom: "🏋️",
   stretch: "🧘",
+  home: "🏠",
 };
 
 const WORKOUT_ICON_EDIT =
@@ -143,6 +144,7 @@ const WORKOUT_TYPE_NAMES = {
   strength: "Treino de força",
   custom: "Treino personalizado",
   stretch: "Alongamento",
+  home: "Treino em casa",
 };
 
 let selectedWorkoutId = "";
@@ -243,6 +245,7 @@ function renderWorkoutView() {
     ${exercisesHtml}
     ${renderWalkWorkoutDetail(workout)}
     ${renderStretchWorkoutDetail(workout)}
+    ${renderHomeWorkoutDetail(workout)}
     ${renderMuscleSection([workout], "workout", "🔥 Músculos do treino", { teaseLazy: false })}
     ${workout.notes ? `<div class="workout-record-note wv-note">📝 ${escapeHtml(workout.notes)}</div>` : ""}
     <div class="wv-actions">
@@ -664,6 +667,10 @@ function selectWorkoutType(type) {
       title: "🧘 Alongamento",
       fields: renderStretchFormFields(),
     },
+    home: {
+      title: "🏠 Treino em casa",
+      fields: renderHomeFormFields(),
+    },
     bike: {
       title: "🚴 Bike",
       fields: cardioFields("Data do pedal"),
@@ -731,6 +738,7 @@ function editWorkout(workoutId) {
   }
   if (workout.type === "walking") fillWalkForm(workout);
   if (workout.type === "stretch") fillStretchForm(workout);
+  if (workout.type === "home") fillHomeForm(workout);
 
   [
     "durationMinutes",
@@ -759,7 +767,7 @@ function readWorkoutNumber(id) {
 
 // Campos que o formulário não mostra (trajeto do GPS, origem, alongamento...):
 // editar um treino mantém o que estava gravado (v1.84).
-const WORKOUT_KEEP_ON_EDIT = ["mode", "source", "track", "splits", "startTime", "incline", "stretch", "externalId"];
+const WORKOUT_KEEP_ON_EDIT = ["mode", "source", "track", "splits", "startTime", "incline", "stretch", "home", "externalId"];
 
 function saveWorkout() {
   if (!selectedWorkoutType) return;
@@ -781,7 +789,9 @@ function saveWorkout() {
               ? "Elíptico"
               : selectedWorkoutType === "stretch"
                 ? "Alongamento"
-                : document.getElementById("workout-title").value.trim(),
+                : selectedWorkoutType === "home"
+                  ? "Treino em casa"
+                  : document.getElementById("workout-title").value.trim(),
     date: document.getElementById("workout-date").value,
     durationMinutes: readWorkoutNumber("durationMinutes"),
     calories: readWorkoutNumber("calories"),
@@ -804,6 +814,7 @@ function saveWorkout() {
     if (workout.mode !== "treadmill") delete workout.incline;
   }
   if (selectedWorkoutType === "stretch") Object.assign(workout, readStretchFormExtras(original));
+  if (selectedWorkoutType === "home") Object.assign(workout, readHomeFormExtras(original));
   const measurements = [
     workout.durationMinutes,
     workout.calories,

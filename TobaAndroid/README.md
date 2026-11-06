@@ -105,9 +105,20 @@ O Toba aparece no Android Auto como app de **navegação**: tela do carro com ma
 3. Parado: **Buscar** → destino → **Bora!**. Andando, só **Recentes** e os botões grandes.
 4. Deu ruim? O aviso aparece na própria tela do carro (sem internet, chave recusada, cota do dia). A rota tem trava de 300 por dia.
 
+## 7. ⌚ Relógio / Health Connect (APK 2.2+)
+
+O Toba Health › ⌚ Relógio lê passos, sono, calorias, distância, batimentos e exercícios do **Health Connect** (já vem dentro do Android 14+). Só leitura.
+
+1. **Samsung Health** › ⋮ › **Configurações** › **Health Connect** (Conexão Saúde): libera o Samsung Health a **escrever** passos, sono, calorias, frequência cardíaca e exercícios. O Galaxy Watch sincroniza com o Samsung Health sozinho.
+2. Toba › Health › ⌚ Relógio › **Ligar o Health Connect** › marca tudo › **Permitir**.
+3. Não abriu a tela das permissões (negou 2 vezes, o Android para de perguntar)? ⚙️ do Relógio › **🔐 Permissões do Health Connect** e liga as chavinhas na mão.
+4. O Health Connect só deixa ler uns 30 dias antes da 1ª permissão: o Relógio começa com esse mês e vai guardando daí pra frente.
+
 ---
 
 ## Para quem for mexer no código
+
+- `HealthReader.java` (APK 2.2, v1.87): ⌚ Relógio. Usa a API do próprio Android 14 (`android.health.connect`), sem biblioteca no Gradle; só carrega com `SDK_INT >= 34`. Números por dia via `aggregateGroupByPeriod` (o Health Connect tira a duplicata celular + relógio), sono e exercícios via `readRecords`. Ponte: `healthStatus`, `healthAsk` (→ `window.onTobaHealthPerms`), `healthRead(from, to, reqId)` (→ `window.onTobaHealthData`), `healthOpenSettings`. Permissão nova = `uses-permission` no manifest **e** `HealthReader.PERMS`. O `activity-alias` `ViewPermissionUsageActivity` no manifest é obrigatório (sem ele o Health Connect nem lista o Toba); ele abre o Relógio.
 
 - `MainActivity.java`: o WebView. Só abre páginas de `SITE_HOST`; links de fora vão para o navegador. Chama `window.onTobaAppResume()` ao voltar para a frente. Desde o APK 2.1 (v1.85) recebe o **Compartilhar** do Android (`ACTION_SEND` `text/plain`, ex.: Google Maps › Compartilhar › Toba) e abre `TobaTurism/TobaTurism-Places.html?title=&text=` com o Lugar novo preenchido.
 - `TobaBridge.java`: vira `window.TobaNative` no site. O site testa `TOBA_NATIVE` / `tobaIsApp()` (toba-common.js); no navegador é `null`. `clipboardText()` (ponte 9, APK 2.1) devolve o texto copiado, pro 📋 Colar do Maps do Places (o WebView bloqueia o `navigator.clipboard.readText` do site).

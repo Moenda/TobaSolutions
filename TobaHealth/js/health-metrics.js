@@ -605,3 +605,143 @@ function calcStretchMuscleItems(workout) {
   });
   return items;
 }
+
+/* =====================================================================
+ * 🏠 TREINOS EM CASA (v1.87): HIIT, Tabata, força e core sem equipamento.
+ * Mora aqui (e não em sessao-casa.js) pelo mesmo motivo do alongamento:
+ * o mapa de calor do portal, do Perfil e do Toba-Amigos precisa saber que
+ * músculo cada exercício trabalha.
+ * - Os `id` de HOME_EXERCISES e HOME_PLANS ficam gravados no treino
+ *   (workout.home.plan / workout.home.done): nunca renomeie nem apague.
+ *   Pode mudar nome, texto e tempo à vontade.
+ * - groups: fatia de cada grupo do STRENGTH_GROUPS (somam 1).
+ * - rpm: repetições "equivalentes" por minuto (só pro mapa de calor).
+ * - effort: intensidade de cada rep no mapa de calor (peso do corpo ~0,5–0,8).
+ * - jump: true = tem pulo (o plano "sem pulo" não usa nenhum desses).
+ * ===================================================================== */
+const HOME_PREP_SECONDS = 10; // "Prepara..." antes do 1º exercício
+
+const HOME_EXERCISES = [
+  { id: "polichinelo", name: "Polichinelo", how: "Pula abrindo pernas e braços ao mesmo tempo, volta fechando. Ritmo constante.", tip: "Aterrissa na ponta do pé, joelho macio.", groups: { panturrilha: 0.35, ombros: 0.25, quadriceps: 0.2, gluteos: 0.2 }, rpm: 50, effort: 0.4, jump: true },
+  { id: "polichinelo-passo", name: "Polichinelo sem pulo", how: "Abre uma perna pro lado subindo os braços, volta e troca de perna. Sem pular.", tip: "Vizinho de baixo agradece 🙏", groups: { ombros: 0.3, quadriceps: 0.3, gluteos: 0.2, panturrilha: 0.2 }, rpm: 40, effort: 0.35 },
+  { id: "agachamento", name: "Agachamento", how: "Pés na largura do ombro. Leva o quadril pra trás e pra baixo como se fosse sentar, sobe empurrando o chão.", tip: "Joelho acompanha a ponta do pé, calcanhar no chão.", groups: { quadriceps: 0.5, gluteos: 0.35, posterior: 0.15 }, rpm: 22, effort: 0.7 },
+  { id: "agachamento-salto", name: "Agachamento com salto", how: "Agacha e sobe explodindo num salto. Aterrissa já descendo pro próximo.", tip: "Cansou? Vira agachamento normal, sem vergonha.", groups: { quadriceps: 0.45, gluteos: 0.35, panturrilha: 0.2 }, rpm: 16, effort: 0.9, jump: true },
+  { id: "flexao", name: "Flexão", how: "Mãos um pouco mais abertas que o ombro, corpo reto da cabeça ao pé. Desce o peito até perto do chão e sobe.", tip: "Pesou? Apoia os joelhos no chão. Vale igual.", groups: { peito: 0.55, triceps: 0.25, ombros: 0.2 }, rpm: 16, effort: 0.8 },
+  { id: "prancha", name: "Prancha", how: "Antebraços no chão, cotovelo embaixo do ombro, corpo reto. Segura firme.", tip: "Bumbum nem lá em cima nem caído. Respira!", groups: { abdomen: 0.7, ombros: 0.15, gluteos: 0.15 }, rpm: 12, effort: 0.6 },
+  { id: "afundo", name: "Afundo alternado", how: "Dá um passo grande pra frente e desce até o joelho de trás quase encostar no chão. Volta e troca a perna.", tip: "Tronco reto, joelho da frente não passa muito do pé.", groups: { quadriceps: 0.5, gluteos: 0.35, posterior: 0.15 }, rpm: 18, effort: 0.7 },
+  { id: "ponte", name: "Ponte de glúteo", how: "Deitado de barriga pra cima, joelhos dobrados. Sobe o quadril apertando o bumbum e desce devagar.", tip: "Empurra pelo calcanhar, sem arquear a lombar.", groups: { gluteos: 0.6, posterior: 0.3, abdomen: 0.1 }, rpm: 22, effort: 0.6 },
+  { id: "abdominal", name: "Abdominal", how: "Deitado, joelhos dobrados, mãos no peito ou atrás da orelha. Tira os ombros do chão contraindo a barriga.", tip: "Não puxa o pescoço: olha pro teto.", groups: { abdomen: 1 }, rpm: 25, effort: 0.5 },
+  { id: "bicicleta", name: "Abdominal bicicleta", how: "Deitado, ombros fora do chão. Leva o cotovelo no joelho do outro lado, pedalando as pernas.", tip: "Devagar vale mais que rápido e torto.", groups: { abdomen: 0.85, quadriceps: 0.15 }, rpm: 30, effort: 0.5 },
+  { id: "escalador", name: "Escalador", how: "Na posição de flexão, traz um joelho no peito e troca rápido, como se corresse no chão.", tip: "Ombro em cima da mão, quadril baixo.", groups: { abdomen: 0.45, quadriceps: 0.25, ombros: 0.3 }, rpm: 50, effort: 0.45 },
+  { id: "skipping", name: "Skipping (joelho alto)", how: "Corre no lugar subindo os joelhos na altura do quadril e mexendo os braços.", tip: "No plano sem pulo vira marcha alta, sem impacto.", groups: { quadriceps: 0.4, panturrilha: 0.3, abdomen: 0.3 }, rpm: 60, effort: 0.35 },
+  { id: "burpee", name: "Burpee", how: "Agacha, mãos no chão, joga os pés pra trás (prancha), volta os pés e sobe com um pulinho.", tip: "O exercício mais odiado do mundo. Vai no teu ritmo.", groups: { quadriceps: 0.3, peito: 0.25, ombros: 0.15, abdomen: 0.15, gluteos: 0.15 }, rpm: 10, effort: 1, jump: true },
+  { id: "mergulho-cadeira", name: "Mergulho na cadeira", how: "De costas pra uma cadeira firme, mãos no assento. Dobra os cotovelos descendo o quadril e sobe.", tip: "Cadeira encostada na parede! Sem rodinha, pelo amor.", groups: { triceps: 0.7, ombros: 0.2, peito: 0.1 }, rpm: 18, effort: 0.7 },
+  { id: "superman", name: "Super-Homem", how: "Deitado de barriga pra baixo, braços esticados pra frente. Tira braços e pernas do chão e segura 1 segundo.", tip: "Olha pro chão, pescoço reto.", groups: { costas: 0.7, gluteos: 0.3 }, rpm: 20, effort: 0.5 },
+  { id: "boxe", name: "Boxe de sombra", how: "Base de luta, guarda alta. Solta jab e direto alternando, girando o quadril em cada soco.", tip: "Soco no ar, nunca no Killua 🐈", groups: { ombros: 0.45, abdomen: 0.25, triceps: 0.15, costas: 0.15 }, rpm: 70, effort: 0.3 },
+  { id: "panturrilha-pe", name: "Elevação de panturrilha", how: "Em pé, sobe na ponta dos pés o mais alto que der e desce devagar.", tip: "Apoia a mão na parede pra não balançar.", groups: { panturrilha: 1 }, rpm: 30, effort: 0.5 },
+  { id: "cadeira-parede", name: "Cadeirinha na parede", how: "Costas na parede, desce até a coxa ficar paralela ao chão, como se sentasse numa cadeira invisível. Segura.", tip: "Queimou? É a coxa ficando forte. Segura mais 5.", groups: { quadriceps: 0.75, gluteos: 0.25 }, rpm: 14, effort: 0.7 },
+];
+
+// list: exercícios de cada volta; work/rest em segundos; roundRest = descanso
+// entre as voltas (no lugar do rest normal). met = gasto pra estimar kcal.
+// cat = bloco da seção 🏠 do ▶ Iniciar treino ("cardio" ou "forca").
+const HOME_PLANS = [
+  {
+    id: "hiit10", cat: "cardio", name: "HIIT 10 min", short: "HIIT 10", icon: "🔥", met: 8,
+    desc: "40 s pegado, 20 s respira. Sobe o coração rapidinho.",
+    work: 40, rest: 20, rounds: 2, roundRest: 20,
+    list: ["polichinelo", "agachamento-salto", "escalador", "skipping", "burpee"],
+  },
+  {
+    id: "tabata4", cat: "cardio", name: "Tabata 4 min", short: "Tabata 4", icon: "⚡", met: 8.5,
+    desc: "8 tiros de 20 s com 10 s de folga. Curto e cruel.",
+    work: 20, rest: 10, rounds: 4, roundRest: 10,
+    list: ["agachamento", "escalador"],
+  },
+  {
+    id: "silencioso15", cat: "cardio", name: "Cardio sem pulo 15 min", short: "Sem pulo 15", icon: "🤫", met: 5.5,
+    desc: "Sem impacto nenhum: dá pra fazer de madrugada no apê.",
+    work: 40, rest: 20, rounds: 3, roundRest: 20,
+    list: ["polichinelo-passo", "boxe", "agachamento", "skipping", "panturrilha-pe"],
+  },
+  {
+    id: "forca20", cat: "forca", name: "Força em casa 20 min", short: "Força 20", icon: "💪", met: 5,
+    desc: "Circuito de peso do corpo: perna, peito, braço e core.",
+    work: 45, rest: 15, rounds: 3, roundRest: 90,
+    list: ["agachamento", "flexao", "afundo", "mergulho-cadeira", "ponte", "prancha"],
+  },
+  {
+    id: "core10", cat: "forca", name: "Abdômen 10 min", short: "Abdômen 10", icon: "🍫", met: 4,
+    desc: "Tanquinho em construção: barriga, lombar e prancha.",
+    work: 40, rest: 20, rounds: 2, roundRest: 20,
+    list: ["abdominal", "prancha", "bicicleta", "superman", "cadeira-parede"],
+  },
+];
+
+function getHomeExercise(id) {
+  return HOME_EXERCISES.find((item) => item.id === id) || null;
+}
+
+function getHomePlan(id) {
+  return HOME_PLANS.find((plan) => plan.id === id) || null;
+}
+
+// Linha do tempo: [{ kind: "prep"|"work"|"rest", exerciseId, secs, round }]
+// O "rest" já mostra o PRÓXIMO exercício (exerciseId = o que vem depois).
+function buildHomeSteps(planId) {
+  const plan = getHomePlan(planId);
+  if (!plan) return [];
+  const list = plan.list.filter((id) => getHomeExercise(id));
+  if (!list.length) return [];
+  const steps = [{ kind: "prep", exerciseId: list[0], secs: HOME_PREP_SECONDS, round: 1 }];
+  for (let round = 1; round <= plan.rounds; round += 1) {
+    list.forEach((exerciseId, index) => {
+      steps.push({ kind: "work", exerciseId, secs: plan.work, round });
+      const lastOfRound = index === list.length - 1;
+      if (lastOfRound && round === plan.rounds) return; // acabou: sem descanso no fim
+      const secs = lastOfRound ? plan.roundRest : plan.rest;
+      const next = lastOfRound ? list[0] : list[index + 1];
+      if (secs > 0) steps.push({ kind: "rest", exerciseId: next, secs, round: lastOfRound ? round + 1 : round });
+    });
+  }
+  return steps;
+}
+
+function getHomePlanSeconds(planId) {
+  return buildHomeSteps(planId).reduce((sum, step) => sum + step.secs, 0);
+}
+
+// Segundos trabalhados por exercício. Ao vivo grava `home.done`; anotado na
+// mão (sem done) conta o plano inteiro como se tivesse feito tudo.
+function getHomeDone(workout) {
+  const home = workout && workout.home && typeof workout.home === "object" ? workout.home : {};
+  if (home.done && typeof home.done === "object" && !Array.isArray(home.done)) return home.done;
+  const done = {};
+  buildHomeSteps(home.plan || "").forEach((step) => {
+    if (step.kind === "work") done[step.exerciseId] = (done[step.exerciseId] || 0) + step.secs;
+  });
+  return done;
+}
+
+// Mapa de calor do treino em casa: [[grupo, reps equivalentes, pts]].
+// Treino em casa anotado como "Outro" (sem plano) espalha leve no corpo todo.
+function calcHomeMuscleItems(workout) {
+  if (!workout || workout.type !== "home") return [];
+  const items = [];
+  const done = getHomeDone(workout);
+  Object.entries(done).forEach(([exerciseId, secs]) => {
+    const exercise = getHomeExercise(exerciseId);
+    if (!exercise) return;
+    const reps = ((Number(secs) || 0) / 60) * (exercise.rpm || 20);
+    Object.entries(exercise.groups || {}).forEach(([group, share]) => {
+      const value = Math.round(reps * share * 10) / 10;
+      if (value > 0) items.push([group, value, Math.round(value * (exercise.effort || 0.5) * 10) / 10]);
+    });
+  });
+  if (!items.length) {
+    const minutes = Number(workout.durationMinutes) || 0;
+    const each = Math.max(1, Math.round(minutes / 2));
+    if (minutes > 0) STRENGTH_GROUPS.forEach((group) => items.push([group.id, each, each * MUSCLE_CARDIO_INTENSITY]));
+  }
+  return items;
+}

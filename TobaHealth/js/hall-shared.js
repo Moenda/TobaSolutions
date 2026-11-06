@@ -184,6 +184,7 @@ const MUSCLE_SHAPES = {
 // Cardio também pinta, mas leve: cada km vira "reps equivalentes" por grupo.
 // Sem distância, estima pelo tempo (km por minuto de cada atividade).
 // Alongamento (v1.84) não está aqui: pinta pelo que esticou (calcStretchMuscleItems).
+// Treino em casa (v1.87) também não: pinta por exercício (calcHomeMuscleItems).
 const CARDIO_MUSCLES = {
   walking: { kmPerMin: 0.1, perKm: { panturrilha: 12, quadriceps: 6, gluteos: 4, posterior: 3 } },
   bike: { kmPerMin: 0.3, perKm: { quadriceps: 5, panturrilha: 2, gluteos: 2 } },
@@ -219,6 +220,10 @@ function getMuscleExtras(workout) {
   // v1.84: alongamento pinta de leve o que esticou (catálogo em health-metrics.js)
   if (workout.type === "stretch" && typeof calcStretchMuscleItems === "function") {
     calcStretchMuscleItems(workout).forEach(([group, reps]) => items.push([group, reps, reps * MUSCLE_CARDIO_INTENSITY]));
+  }
+  // v1.87: treino em casa (HIIT, Tabata, força...) pinta pelo que cada exercício trabalhou
+  if (workout.type === "home" && typeof calcHomeMuscleItems === "function") {
+    calcHomeMuscleItems(workout).forEach((item) => items.push(item));
   }
   return items;
 }

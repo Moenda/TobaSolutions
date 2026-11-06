@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="css/treinos.css" />
   <link rel="stylesheet" href="css/sessao.css" />
   <link rel="stylesheet" href="css/alongamento.css" />
+  <link rel="stylesheet" href="css/casa.css" />
   <link rel="stylesheet" href="css/caminhada.css" />
 </head>
 
@@ -92,13 +93,24 @@
       </div>
 
       <div id="workoutTypePicker">
-        <div class="hub-title">Treinos prontos</div>
+        <div class="hub-title">💪 Força</div>
         <div class="toba-menu">
           <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="strength">
             <span class="toba-menu-icon">💪</span>
             <span class="toba-menu-text">
               <span class="toba-menu-title">Treino de força</span>
               <span class="toba-menu-desc">Monte por grupo muscular, salve como Treino A, B, C e repita.</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="hub-title">🏠 Treinos em casa</div>
+        <div class="toba-menu">
+          <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="home">
+            <span class="toba-menu-icon">🔥</span>
+            <span class="toba-menu-text">
+              <span class="toba-menu-title">HIIT, Tabata e circuitos</span>
+              <span class="toba-menu-desc">Sem equipamento: HIIT, Tabata, cardio sem pulo, força e abdômen.</span>
             </span>
           </button>
           <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="saitama">
@@ -115,6 +127,10 @@
               <span class="toba-menu-desc">10 ou 20 min em casa, com timer e bonequinho de cada posição.</span>
             </span>
           </button>
+        </div>
+
+        <div class="hub-title">🚶 Cardio</div>
+        <div class="toba-menu">
           <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="walking">
             <span class="toba-menu-icon">🚶</span>
             <span class="toba-menu-text">
@@ -176,6 +192,16 @@
         </span>
         <span class="toba-hub-chevron">›</span>
       </button>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="homeStartModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🏠 Treinos em casa</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="homeStartList"></div>
     </div>
   </div>
 
@@ -394,6 +420,7 @@
   <script src="js/sessao-saitama.js"></script>
   <script src="../assets/toba-maps.js"></script>
   <script src="js/sessao-alongamento.js"></script>
+  <script src="js/sessao-casa.js"></script>
   <script src="js/sessao-caminhada.js"></script>
   <script src="js/treinos.js"></script>
   <script src="../assets/pwa-register.js"></script>

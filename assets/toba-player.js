@@ -314,6 +314,11 @@ function buildPlayerAchievements() {
     { id: "al-1", cat: "treinos", tier: "bronze", icon: "🧘", name: "Elástico de escritório", desc: "Primeiro alongamento. A cadeira gamer sentiu sua falta.", hint: "Faça 1 alongamento (▶ Iniciar treino › 🧘).", metric: (s) => s.stretch, goal: 1 },
     { id: "al-10", cat: "treinos", tier: "prata", icon: "🪢", name: "Borracha escolar", desc: "10 alongamentos. Estica, mas não arrebenta.", hint: "Faça 10 alongamentos.", metric: (s) => s.stretch, goal: 10 },
     { id: "al-30", cat: "treinos", tier: "ouro", icon: "🦒", name: "Homem-elástico", desc: "30 alongamentos. O Senhor Fantástico pediu umas dicas.", hint: "Faça 30 alongamentos.", metric: (s) => s.stretch, goal: 30, title: "🧘 Elástico Lendário" },
+    // v1.87: 🏠 treinos em casa (HIIT, Tabata, força, abdômen, sem pulo)
+    { id: "tc-1", cat: "treinos", tier: "bronze", icon: "🏠", name: "Academia na sala", desc: "Primeiro treino em casa. O tapete virou tatame.", hint: "Faça 1 treino em casa (▶ Iniciar treino › 🏠).", metric: (s) => s.homeWorkouts, goal: 1 },
+    { id: "tc-10", cat: "treinos", tier: "prata", icon: "🛋️", name: "O vizinho de baixo reclamou", desc: "10 treinos em casa. O síndico já sabe seu nome.", hint: "Faça 10 treinos em casa.", metric: (s) => s.homeWorkouts, goal: 10 },
+    { id: "tc-30", cat: "treinos", tier: "ouro", icon: "🏡", name: "Personal de si mesmo", desc: "30 treinos em casa. Mensalidade de academia: R$ 0,00.", hint: "Faça 30 treinos em casa.", metric: (s) => s.homeWorkouts, goal: 30, title: "🏠 Rato de Sala" },
+    { id: "tc-todos", cat: "treinos", tier: "prata", icon: "🎛️", name: "Cardápio completo", desc: "Fez todos os 5 treinos em casa (HIIT, Tabata, sem pulo, força e abdômen).", hint: "Faça cada um dos 5 treinos em casa pelo menos 1 vez.", metric: (s) => s.homePlans, goal: 5 },
     { id: "cm-gps", cat: "distancia", tier: "bronze", icon: "🛰️", name: "Rastreado pelo satélite", desc: "Primeira caminhada gravada com GPS no Toba.", hint: "Grave 1 caminhada/corrida ao vivo com GPS.", metric: (s) => s.gpsWalks, goal: 1 },
     { id: "cm-gps10", cat: "distancia", tier: "prata", icon: "🗺️", name: "Cartógrafo de bairro", desc: "10 rolês com GPS. Já dá pra desenhar o mapa da vila.", hint: "Grave 10 caminhadas/corridas com GPS.", metric: (s) => s.gpsWalks, goal: 10 },
   ];
@@ -824,7 +829,7 @@ function setPlayerPrefs(prefs) {
 /* ---------------------------------------------------------------------
  * Cálculo (só leitura)
  * ------------------------------------------------------------------- */
-const PLAYER_WORKOUT_ICONS = { saitama: "👊", walking: "🚶", bike: "🚴", elliptical: "🏃", strength: "💪", custom: "🏋️", stretch: "🧘" };
+const PLAYER_WORKOUT_ICONS = { saitama: "👊", walking: "🚶", bike: "🚴", elliptical: "🏃", strength: "💪", custom: "🏋️", stretch: "🧘", home: "🏠" };
 
 function playerNum(value) {
   return Number(value) || 0;
@@ -1008,6 +1013,7 @@ function computePlayer(options = {}) {
     turismKinds: 0, turismSameDay: 0, turismAgain: 0, turismValue: 0, turismZerou: 0,
     socialOn: 0, socialFriends: 0, socialDuels: 0, socialBeat: 0, socialGhost: 0,
     stretch: 0, gpsWalks: 0, // v1.84
+    homeWorkouts: 0, homePlans: 0, // v1.87
   };
   const activeDays = new Set(); // dias com alguma coisa feita (pras temporadas)
   const checkAchievements = (date, active = true) => {
@@ -1029,6 +1035,7 @@ function computePlayer(options = {}) {
   let bestKm = 0;
   let bestReps = 0;
   const types = new Set();
+  const homePlans = new Set(); // v1.87: planos diferentes do 🏠 Treinos em casa
   const groups = new Set();
   const monthGroups = {};
   const weekendDays = {};
@@ -1089,6 +1096,11 @@ function computePlayer(options = {}) {
       }
     }
     if (workout.type === "stretch") stats.stretch += 1;
+    if (workout.type === "home") {
+      stats.homeWorkouts += 1;
+      if (workout.home && workout.home.plan) homePlans.add(String(workout.home.plan));
+      stats.homePlans = homePlans.size;
+    }
     if (workout.type === "walking" && workout.mode === "gps") stats.gpsWalks += 1;
     if (workout.type) types.add(workout.type);
     stats.types = types.size;

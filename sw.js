@@ -7,7 +7,7 @@
  *   cota grátis do TomTom e o mapa já visto abre offline. Trânsito NÃO entra.
  * - NUNCA mexe no localStorage: seus dados não passam por aqui.
  * Mudou a lista de arquivos? Aumente a versão abaixo. */
-const VERSION = "toba-v46";
+const VERSION = "toba-v47";
 const TILE_CACHE = "toba-tiles-v1";
 const TILE_MAX = 3000;
 const NETWORK_TIMEOUT_MS = 4000;
@@ -53,12 +53,16 @@ const PRECACHE = [
   "./TobaBank/js/raxador.js",
   "./TobaHealth/TobaHealth-Index.html",
   "./TobaHealth/TobaHealth-Pesagem.html",
+  "./TobaHealth/TobaHealth-Relogio.html",
+  "./TobaHealth/css/relogio.css",
+  "./TobaHealth/js/relogio.js",
   "./TobaHealth/TobaHealth-Treinos.html",
   "./TobaHealth/css/health-base.css",
   "./TobaHealth/css/pesagem.css",
   "./TobaHealth/css/treinos.css",
   "./TobaHealth/css/sessao.css",
   "./TobaHealth/css/alongamento.css",
+  "./TobaHealth/css/casa.css",
   "./TobaHealth/css/caminhada.css",
   "./TobaHealth/js/health-core.js",
   "./TobaHealth/js/health-metrics.js",
@@ -69,6 +73,7 @@ const PRECACHE = [
   "./TobaHealth/js/sessao.js",
   "./TobaHealth/js/sessao-saitama.js",
   "./TobaHealth/js/sessao-alongamento.js",
+  "./TobaHealth/js/sessao-casa.js",
   "./TobaHealth/js/sessao-caminhada.js",
   "./TobaHealth/js/treinos.js",
   "./TobaRoutine/TobaRoutine-Index.html",

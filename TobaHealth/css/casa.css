@@ -1,0 +1,148 @@
+/* =====================================================================
+ * Toba Health · 🏠 Treinos em casa ao vivo (js/sessao-casa.js, v1.87)
+ * Reaproveita o palco, o timer e o bonequinho do alongamento
+ * (alongamento.css, carregado antes); aqui só as cores das fases
+ * (🔥 trabalho laranja, 😮‍💨 descanso azul, Prepara dourado) e o boneco
+ * que se mexe.
+ * ===================================================================== */
+
+:root {
+  --home-work: #f0883e;
+}
+
+/* ---------- Seção "🏠 Treinos em casa" do ▶ Iniciar treino ---------- */
+.home-section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 4px;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgba(240, 136, 62, 0.45);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(240, 136, 62, 0.16), rgba(240, 136, 62, 0.03));
+}
+
+/* Na folha própria (atalho 🏠 Em casa) o título já está no cabeçalho */
+#homeStartModal .home-section-head {
+  display: none;
+}
+
+.home-section-title {
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--text);
+}
+
+.home-section-sub {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* ---------- Bonequinho ---------- */
+.home-fig .sf-hl {
+  stroke: var(--home-work);
+}
+
+.home-fig .sf-prop {
+  fill: none;
+  stroke: #6e7681;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Duas poses: fora do trabalho fica parado na 1ª */
+.home-fig.is-lg .hf-1 {
+  opacity: 0;
+}
+
+.home-stage.is-work:not(.is-paused) .home-fig.is-moving .hf-0 {
+  animation: home-pose-a 1.2s steps(1, end) infinite;
+}
+
+.home-stage.is-work:not(.is-paused) .home-fig.is-moving .hf-1 {
+  animation: home-pose-b 1.2s steps(1, end) infinite;
+}
+
+@keyframes home-pose-a {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes home-pose-b {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-stage .home-fig .hf {
+    animation: none !important;
+  }
+}
+
+/* ---------- Palco por fase ---------- */
+.home-stage.is-work {
+  border-color: rgba(240, 136, 62, 0.65);
+}
+
+.home-stage.is-work .stretch-phase {
+  color: var(--home-work);
+}
+
+.home-stage.is-work .stretch-ring-fg {
+  stroke: var(--home-work);
+}
+
+.home-stage.is-rest {
+  border-color: rgba(88, 166, 255, 0.55);
+}
+
+.home-stage.is-rest .stretch-phase {
+  color: var(--blue);
+}
+
+.home-stage.is-rest .stretch-ring-fg {
+  stroke: var(--blue);
+}
+
+.home-stage.is-rest .home-fig,
+.home-stage.is-prep .home-fig {
+  opacity: 0.6;
+}
+
+.home-stage.is-prep .sf-hl {
+  stroke: var(--gold);
+}
+
+.home-stage.is-paused {
+  border-color: var(--border);
+}
+
+.home-stage.is-paused .stretch-phase {
+  color: var(--muted);
+}
+
+.home-stage.is-paused .stretch-ring-fg {
+  stroke: var(--muted);
+}
+
+.home-stage .stretch-name small {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ---------- Formulário (anotar treino em casa feito) ---------- */
+.home-form-start {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.home-form-start .btn {
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
