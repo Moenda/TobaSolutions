@@ -1404,3 +1404,24 @@
   font-size: 0.8rem;
   line-height: 1.5;
 }
+
+/* ⌚ Dados do relógio na página do treino (v1.89) */
+.wv-watch .wv-stats {
+  margin-bottom: 0.6rem;
+}
+
+.wv-watch-when {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.wv-watch-note {
+  color: var(--text-2);
+  font-size: 0.82rem;
+  margin: 0 0 0.6rem;
+}
+
+.wv-watch .btn {
+  margin-top: 0;
+}

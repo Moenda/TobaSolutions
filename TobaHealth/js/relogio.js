@@ -1,5 +1,5 @@
 /* =====================================================================
- * Toba Health · ⌚ Relógio (v1.87)
+ * Toba Health · 🩻 Raio-X (v1.87 "⌚ Relógio"; nome novo na v1.89)
  * - Passos, sono, calorias, distância e coração do Galaxy Watch.
  *   Caminho: relógio -> Samsung Health -> Health Connect (Android 14+) ->
  *   APK 2.2 (TobaNative.healthRead) -> aqui.
@@ -263,6 +263,10 @@ function watchGroupExercises(list) {
     if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
     const item = { start, end, type: Number(x.type) || 0 };
     if (x.title) item.title = String(x.title).slice(0, 80);
+    // v1.89 (APK 2.3): números da sessão (o APK 2.2 não manda, aí fica só o tempo)
+    WATCH_EX_FIELDS.forEach((f) => {
+      if (Number(x[f]) > 0) item[f] = Math.round(Number(x[f]));
+    });
     const date = toIsoDate(new Date(start));
     (out[date] = out[date] || []).push(item);
   });
@@ -383,6 +387,266 @@ function openWatchDiag() {
 
 const WATCH_SAMSUNG_STEPS = "abre <b>Conexão Saúde › Seus apps › Samsung Health</b> e liga a permissão de <b>escrever</b> passos, distância, calorias ativas, sono e exercícios (ou dentro do Samsung Health › ☰ › Configurações › Health Connect). Depois abre o Samsung Health uma vez, espera sincronizar e toca no 🔄.";
 
+/* ---------------- ⌚ Treinos do relógio (v1.89) ----------------
+ * Cada exercício do relógio aparece uma vez na caixinha do Raio-X:
+ *   🔗 Mesclar  = junta com um treino já anotado no Toba (o teu manda; o relógio
+ *                 só completa o que estava vazio e guarda os números dele em workout.watch)
+ *   ➕ Virar treino = cria um treino novo (source "health-connect", externalId = chave)
+ *   🙈 Ignorar
+ * TOBA_HEALTH_DB.watch.handled[chave] = { action, workoutId?, at } impede de voltar,
+ * mesmo puxando os 30 dias de novo. Chave = "início-fim-tipo" (ms do Health Connect).
+ * Desmesclar (página do treino, treinos.js) apaga o handled e o treino volta pra caixinha.
+ * ------------------------------------------------------------------- */
+const WATCH_EX_FIELDS = ["kcal", "activeKcal", "distanceM", "steps", "hrAvg", "hrMax"];
+const WATCH_INBOX_DAYS = 30;
+// Tipo do relógio (ExerciseSessionType do Android) -> treino do Toba
+const WATCH_TO_TOBA = {
+  53: { type: "walking", title: "Caminhada / Corrida", mode: "manual" },
+  33: { type: "walking", title: "Caminhada / Corrida", mode: "manual" },
+  34: { type: "walking", title: "Caminhada / Corrida", mode: "treadmill" },
+  21: { type: "walking", title: "Caminhada / Corrida", mode: "manual" },
+  4: { type: "bike", title: "Bike" },
+  5: { type: "bike", title: "Bike" },
+  60: { type: "elliptical", title: "Elíptico" },
+};
+// Família pra achar o par certo (caminhada com caminhada, academia com força...)
+const WATCH_FAMILY = { walking: "walk", bike: "bike", elliptical: "cardio", strength: "gym", custom: "gym", saitama: "home", home: "home", stretch: "stretch" };
+const WATCH_EX_FAMILY = { 53: "walk", 33: "walk", 34: "walk", 21: "walk", 4: "bike", 5: "bike", 60: "cardio", 45: "gym", 55: "gym", 8: "home", 20: "home", 46: "stretch", 57: "stretch", 27: "stretch" };
+
+function watchHandled() {
+  const w = healthDb.watch;
+  if (!w || typeof w !== "object" || Array.isArray(w)) return {};
+  return w.handled && typeof w.handled === "object" && !Array.isArray(w.handled) ? w.handled : {};
+}
+
+function watchExKey(x) {
+  return `${Math.round(Number(x.start))}-${Math.round(Number(x.end))}-${Number(x.type) || 0}`;
+}
+
+function watchExName(x) {
+  return WATCH_EXERCISE_NAMES[x.type] || WATCH_EXERCISE_NAMES[0];
+}
+
+function watchExMinutes(x) {
+  return Math.max(1, Math.round((Number(x.end) - Number(x.start)) / 60000));
+}
+
+// Exercícios ainda sem destino, mais novo primeiro (só dos últimos 30 dias)
+function watchInbox() {
+  const handled = watchHandled();
+  const min = watchAddDays(toIsoDate(), -(WATCH_INBOX_DAYS - 1));
+  const out = [];
+  Object.keys(watchDays()).forEach((date) => {
+    if (date < min) return;
+    const d = watchDay(date);
+    (Array.isArray(d && d.ex) ? d.ex : []).forEach((x) => {
+      if (!x || !Number.isFinite(Number(x.start)) || !Number.isFinite(Number(x.end))) return;
+      if (watchExMinutes(x) < 3) return; // sessão de 1-2 min é ruído do relógio
+      if (x.auto) return; // caminhada que o relógio detectou sozinho (import do Samsung)
+      if (!handled[watchExKey(x)]) out.push(x);
+    });
+  });
+  return out.sort((a, b) => b.start - a.start);
+}
+
+function watchHhmmToMin(hhmm) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(hhmm || ""));
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+}
+
+// Treinos do Toba do mesmo dia, ainda sem relógio, o mais provável primeiro
+function watchCandidates(x) {
+  const date = toIsoDate(new Date(x.start));
+  const startD = new Date(x.start);
+  const exStart = startD.getHours() * 60 + startD.getMinutes();
+  const exEnd = exStart + watchExMinutes(x);
+  const fam = WATCH_EX_FAMILY[x.type] || "";
+  const sameDay = (Array.isArray(healthDb.workouts) ? healthDb.workouts : []).filter((w) => w && w.date === date && !w.watch);
+  // Só um treino no dia = é ele (se o horário não brigar). Com vários, precisa bater horário ou tipo.
+  const minScore = sameDay.length > 1 ? 5 : 1;
+  return sameDay
+    .map((w) => {
+      let score = 1;
+      const t = watchHhmmToMin(w.startTime);
+      if (t !== null) {
+        if (t >= exStart - 40 && t <= exEnd + 10) score += 10;
+        else score -= 3;
+      }
+      if (fam && WATCH_FAMILY[w.type] === fam) score += 5;
+      return { w, score };
+    })
+    .filter((c) => c.score >= minScore)
+    .sort((a, b) => b.score - a.score)
+    .map((c) => c.w);
+}
+
+function watchExSnapshot(x, extra) {
+  const snap = { key: watchExKey(x), start: Math.round(x.start), end: Math.round(x.end), type: Number(x.type) || 0, minutes: watchExMinutes(x) };
+  if (x.title) snap.title = String(x.title).slice(0, 80);
+  WATCH_EX_FIELDS.forEach((f) => {
+    if (Number(x[f]) > 0) snap[f] = Math.round(Number(x[f]));
+  });
+  return Object.assign(snap, extra);
+}
+
+function watchExKcal(x) {
+  return Number(x.kcal) > 0 ? Math.round(x.kcal) : Number(x.activeKcal) > 0 ? Math.round(x.activeKcal) : null;
+}
+
+function watchEnsureDb() {
+  if (!healthDb.watch || typeof healthDb.watch !== "object" || Array.isArray(healthDb.watch)) healthDb.watch = { v: 1, days: {}, goals: {} };
+  if (!healthDb.watch.handled || typeof healthDb.watch.handled !== "object" || Array.isArray(healthDb.watch.handled)) healthDb.watch.handled = {};
+  return healthDb.watch;
+}
+
+function watchFindEx(key) {
+  return watchInbox().find((x) => watchExKey(x) === key) || null;
+}
+
+// O teu manda: só preenche o que estava vazio e anota o que preencheu (pra desmesclar)
+function watchMergeInto(x, workout) {
+  const filled = [];
+  if (!(Number(workout.durationMinutes) > 0)) {
+    workout.durationMinutes = watchExMinutes(x);
+    filled.push("durationMinutes");
+  }
+  const kcal = watchExKcal(x);
+  if (!(Number(workout.calories) > 0) && kcal) {
+    workout.calories = kcal;
+    filled.push("calories");
+  }
+  if (!(Number(workout.distanceKm) > 0) && Number(x.distanceM) >= 50) {
+    workout.distanceKm = Math.round(Number(x.distanceM) / 10) / 100;
+    filled.push("distanceKm");
+  }
+  workout.watch = watchExSnapshot(x, { filled, mergedAt: Date.now() });
+  watchEnsureDb().handled[watchExKey(x)] = { action: "merged", workoutId: String(workout.id), at: Date.now() };
+}
+
+function watchCreateWorkout(x) {
+  const map = WATCH_TO_TOBA[x.type];
+  const start = new Date(x.start);
+  const name = watchExName(x).replace(/^\S+\s/, "");
+  const workout = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    type: map ? map.type : "custom",
+    title: map ? map.title : (x.title ? String(x.title).slice(0, 60) : name),
+    date: toIsoDate(start),
+    durationMinutes: watchExMinutes(x),
+    calories: watchExKcal(x),
+    distanceKm: Number(x.distanceM) >= 50 ? Math.round(Number(x.distanceM) / 10) / 100 : null,
+    pushups: null, situps: null, squats: null, sets: null, reps: null, weightKg: null,
+    notes: "",
+    source: "health-connect",
+    externalId: watchExKey(x),
+    startTime: `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`,
+  };
+  if (map && map.mode) workout.mode = map.mode;
+  workout.watch = watchExSnapshot(x, { filled: [], created: true, mergedAt: Date.now() });
+  if (!Array.isArray(healthDb.workouts)) healthDb.workouts = [];
+  healthDb.workouts.push(workout);
+  watchEnsureDb().handled[watchExKey(x)] = { action: "created", workoutId: workout.id, at: Date.now() };
+  return workout;
+}
+
+function watchExStats(x) {
+  const bits = [`⏱️ ${watchHours(watchExMinutes(x))}`];
+  const kcal = watchExKcal(x);
+  if (kcal) bits.push(`🔥 ${watchInt(kcal)} kcal`);
+  if (Number(x.distanceM) >= 50) bits.push(`📏 ${watchKm(x.distanceM)}`);
+  if (Number(x.hrAvg) > 0) bits.push(`❤️ ${watchInt(x.hrAvg)}${Number(x.hrMax) > 0 ? `/${watchInt(x.hrMax)}` : ""} bpm`);
+  return bits.join(" · ");
+}
+
+function watchWorkoutLabel(w) {
+  return `${escapeHtml(w.title || "Treino")}${w.startTime ? ` · ${escapeHtml(w.startTime)}` : ""}`;
+}
+
+function renderWatchInbox() {
+  const el = document.getElementById("watchInbox");
+  if (!el) return;
+  const list = watchInbox();
+  if (!list.length) {
+    el.innerHTML = "";
+    el.hidden = true;
+    return;
+  }
+  el.hidden = false;
+  el.innerHTML = `<div class="section-title">⌚ Treinos do relógio <span class="watch-inbox-count">${list.length}</span></div>
+    <div class="watch-inbox-list">${list.slice(0, 10).map((x) => {
+      const key = escapeHtml(watchExKey(x));
+      const cands = watchCandidates(x);
+      const when = `${escapeHtml(watchDayLabel(toIsoDate(new Date(x.start))))} · ${watchClock(x.start)}–${watchClock(x.end)}`;
+      const merge = cands.length
+        ? `<button type="button" class="btn btn-primary btn-sm" data-click="watchMergeAsk" data-id="${key}">🔗 Mesclar com ${watchWorkoutLabel(cands[0])}${cands.length > 1 ? " ▾" : ""}</button>`
+        : "";
+      return `<div class="watch-ex">
+        <div class="watch-ex-top">
+          <span class="watch-ex-name">${escapeHtml(watchExName(x))}${x.title ? ` · ${escapeHtml(x.title)}` : ""}</span>
+          <button type="button" class="watch-ex-x" data-click="watchIgnoreEx" data-id="${key}" aria-label="Ignorar">🙈</button>
+        </div>
+        <div class="watch-ex-when">${when}</div>
+        <div class="watch-ex-stats">${watchExStats(x)}</div>
+        <div class="watch-ex-actions">
+          ${merge}
+          <button type="button" class="btn ${cands.length ? "btn-secondary" : "btn-primary"} btn-sm" data-click="watchCreateEx" data-id="${key}">➕ Virar treino</button>
+        </div>
+      </div>`;
+    }).join("")}</div>
+    ${list.length > 10 ? `<p class="watch-muted">+ ${list.length - 10} mais antigos</p>` : ""}`;
+}
+
+let watchMergeKey = "";
+
+function watchDoMerge(x, workout) {
+  watchMergeInto(x, workout);
+  saveHealthDb();
+  renderWatch();
+  tobaToast(`🔗 Mesclado com ${workout.title || "o treino"}`);
+}
+
+function watchMergeAsk(el) {
+  const x = watchFindEx(el.dataset.id);
+  if (!x) return renderWatch();
+  const cands = watchCandidates(x);
+  if (!cands.length) return renderWatch();
+  if (cands.length === 1) return watchDoMerge(x, cands[0]);
+  watchMergeKey = watchExKey(x);
+  document.getElementById("watchMergeBody").innerHTML = `
+    <p class="toba-sheet-text">${escapeHtml(watchExName(x))} · ${watchClock(x.start)}–${watchClock(x.end)}<br>${watchExStats(x)}</p>
+    <div class="toba-list">${cands.map((w) => `
+      <button type="button" class="toba-list-item watch-merge-pick" data-click="watchMergePick" data-id="${escapeHtml(String(w.id))}">
+        <span>${watchWorkoutLabel(w)}</span><span class="toba-hub-chevron">›</span>
+      </button>`).join("")}</div>`;
+  openTobaModal("watchMergeModal");
+}
+
+function watchMergePick(el) {
+  const x = watchFindEx(watchMergeKey);
+  const w = (healthDb.workouts || []).find((item) => String(item.id) === el.dataset.id && !item.watch);
+  closeTobaModal("watchMergeModal");
+  if (!x || !w) return renderWatch();
+  watchDoMerge(x, w);
+}
+
+function watchCreateEx(el) {
+  const x = watchFindEx(el.dataset.id);
+  if (!x) return renderWatch();
+  const w = watchCreateWorkout(x);
+  saveHealthDb();
+  renderWatch();
+  tobaToast(`➕ ${w.title} no Treinos (vale XP e troféu)`);
+}
+
+function watchIgnoreEx(el) {
+  const x = watchFindEx(el.dataset.id);
+  if (!x) return renderWatch();
+  watchEnsureDb().handled[watchExKey(x)] = { action: "ignored", at: Date.now() };
+  saveHealthDb();
+  renderWatch();
+  tobaToast("🙈 Ignorado");
+}
+
 /* ---------------- Formatos ---------------- */
 
 function watchInt(n) {
@@ -434,6 +698,7 @@ function renderWatch() {
   renderWatchToday();
   renderWatchSleep();
   renderWatchCloba();
+  renderWatchInbox();
   renderWatchChart();
   renderWatchList();
   renderWatchSync();
@@ -618,12 +883,26 @@ function watchChartRows() {
   return rows;
 }
 
+function watchMonthRows(dayRows) {
+  const names = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  const buckets = [];
+  dayRows.forEach((r) => {
+    const ym = r.date.slice(0, 7);
+    let b = buckets[buckets.length - 1];
+    if (!b || b.ym !== ym) buckets.push((b = { ym, sum: 0, n: 0 }));
+    if (r.v !== null) { b.sum += r.v; b.n++; }
+  });
+  return buckets.slice(-12).map((b) => ({ date: `${b.ym}-01`, v: b.n ? b.sum / b.n : null, label: names[Number(b.ym.slice(5, 7)) - 1] }));
+}
+
 function renderWatchChart() {
   document.querySelectorAll("#watchChartTabs .period-btn").forEach((b) => b.classList.toggle("active", b.dataset.chart === watchUi.chart));
   document.querySelectorAll("#watchRangeTabs .period-btn").forEach((b) => b.classList.toggle("active", Number(b.dataset.range) === watchUi.range));
   const el = document.getElementById("watchChart");
-  const rows = watchChartRows();
-  const vals = rows.filter((r) => r.v !== null).map((r) => r.v);
+  const dayRows = watchChartRows();
+  const vals = dayRows.filter((r) => r.v !== null).map((r) => r.v);
+  // v1.89: 1 ano = 12 barras com a média de cada mês (os números de baixo continuam por dia)
+  const rows = watchUi.range > 31 ? watchMonthRows(dayRows) : dayRows;
   const goals = watchGoals();
   const goal = watchUi.chart === "steps" ? goals.steps : watchUi.chart === "sleep" ? goals.sleepMin : null;
   if (!vals.length) {
@@ -640,7 +919,7 @@ function renderWatchChart() {
   const color = watchUi.chart === "steps" ? "var(--green)" : watchUi.chart === "sleep" ? "var(--blue)" : "var(--coral)";
   const bars = rows.map((r, i) => {
     const x = i * slot + (slot - bw) / 2;
-    const label = n <= 7 ? watchWeekday(r.date) : (i % 5 === 4 || i === n - 1 ? r.date.slice(8, 10) : "");
+    const label = r.label !== undefined ? r.label : n <= 7 ? watchWeekday(r.date) : (i % 5 === 4 || i === n - 1 ? r.date.slice(8, 10) : "");
     const hit = goal && r.v !== null && r.v >= goal;
     const bar = r.v === null ? "" : `<rect x="${x.toFixed(1)}" y="${y(r.v).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, H - padB - y(r.v)).toFixed(1)}" rx="3" style="fill:${hit ? "var(--gold-2)" : color}" />`;
     return `${bar}${label ? `<text x="${(i * slot + slot / 2).toFixed(1)}" y="${H - 4}" class="watch-chart-label">${label}</text>` : ""}`;
@@ -780,7 +1059,7 @@ tobaActions({
     renderWatchChart();
   },
   watchRange(el) {
-    watchUi.range = Number(el.dataset.range) === 30 ? 30 : 7;
+    watchUi.range = [7, 30, 365].includes(Number(el.dataset.range)) ? Number(el.dataset.range) : 7;
     renderWatchChart();
   },
   watchMore() {
@@ -791,6 +1070,10 @@ tobaActions({
   openWatchGoals,
   setWatchGoal,
   openWatchDiag,
+  watchMergeAsk,
+  watchMergePick,
+  watchCreateEx,
+  watchIgnoreEx,
 });
 
 function onHealthDataReplaced() {

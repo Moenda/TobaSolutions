@@ -2116,3 +2116,41 @@ O Rafa não tem insta nem TikTok, só YouTube: agora o "Por que entrou na lista?
 **Como testar:** Relógio › 🔄 › ⚙️ › 🩺 Diagnóstico: cada linha diz ✅ N dias, 🤷 nada no Health Connect, 🔒 sem permissão ou 💥 o erro.
 
 **Commit sugerido:** `v1.88 - Toba Places: chip Vi no Shorts (YouTube) no por que entrou na lista + Treinos: Iniciar treino com 3 portas (em casa, caminhada, customizados) + Relogio: diagnostico do que veio do Health Connect e aviso quando o Samsung Health nao manda passos e sono`
+
+## v1.89 — 🩻 Raio-X: treinos do relógio sem duplicar, 📥 histórico do Samsung Health e APK 2.3
+
+O ⌚ Relógio virou **🩻 Raio-X** (primeiro card do Toba Health, que ficou com 3 módulos: Raio-X, Pesagem & Bioimpedância, Treinos & Cargas).
+
+### ⌚ Treinos do relógio sem duplicar
+
+Fez a academia, anotou no Toba, e o relógio também gravou? Agora não duplica:
+
+1. No Raio-X aparece **⌚ Treinos do relógio** com cada exercício dos últimos 30 dias que ainda não tem destino:
+   - **🔗 Mesclar com [treino]**: o Toba acha o treino do mesmo dia (horário perto ou mesmo tipo; se for o único do dia, é ele; se tiver vários, você escolhe).
+   - **➕ Virar treino**: cria o treino no Treinos (caminhada, bike, elíptico ou "outro"), e vale XP e troféu.
+   - **🙈 Ignorar**.
+2. **O teu treino manda.** Mesclar nunca mexe em nome, tipo, séries, kg, reps, nota nem trilha do GPS. O relógio só completa o que estava **vazio** (tempo, kcal, km) e guarda o batimento.
+3. Na página do treino aparece **⌚ Dados do relógio** (FC média e máx., tempo e kcal do relógio, passos) e o botão **🔗 Desmesclar**, que devolve o treino como era e o exercício volta pra lista.
+4. Exercício resolvido não volta nunca, nem com "Puxar os últimos 30 dias". O treino conta uma vez só.
+
+### 📥 Histórico do Samsung Health
+
+O Samsung não reenvia o passado pro Health Connect, então agora dá pra puxar pelo export dele: Samsung Health › ☰ › Configurações › **Baixar dados pessoais**, e no Raio-X › ⚙️ › **📥 Importar histórico do Samsung Health** › escolhe os CSVs (pode marcar a pasta toda, o resto é ignorado).
+
+- Entra passos, distância, calorias (repouso + ativas), batimento do dia (média, mín., máx.), sono com fases (profundo, leve, REM, acordado) e os treinos (com kcal, km e FC).
+- O que já veio do relógio pelo Health Connect **continua mandando**: o histórico só preenche dia e campo vazio. Importar de novo não muda nada. Nada é apagado.
+- Caminhada que o relógio detectou sozinho fica no dia, mas não enche a lista de ⌚ Treinos do relógio.
+- Gráfico ganhou **1 ano** (média de cada mês).
+
+### 📱 APK 2.3 (versionCode 14)
+
+- Cada exercício do Health Connect vem com kcal, km, passos e FC média/máx. do horário dele (é isso que o 🔗 Mesclar usa). Com o APK 2.2 o mesclar funciona, mas só com o tempo.
+- O "Escolher arquivos" deixa marcar **vários** de uma vez (pro histórico do Samsung).
+
+**Dados:** tudo opcional e novo, nada renomeado nem apagado. `TOBA_HEALTH_DB.watch.days[].ex[]` ganhou `kcal`, `activeKcal`, `distanceM`, `steps`, `hrAvg`, `hrMax` e `auto`; `watch.handled` (o que já foi mesclado/criado/ignorado) e `watch.samsungImport` (resumo). Treino ganhou `watch` (o que o relógio mediu + `filled`, os campos que ele completou). Celular com versão velha só ignora esses campos; se editar um treino mesclado por lá, perde o selo ⌚ (os números do treino ficam). `sw` toba-v48.
+
+**Arquivos:** `TobaHealth/js/relogio.js`, `TobaHealth/js/relogio-samsung.js` (novo), `TobaHealth/TobaHealth-Relogio.html`, `TobaHealth/css/relogio.css`, `TobaHealth/TobaHealth-Index.html`, `TobaHealth/js/treinos.js`, `TobaHealth/css/treinos.css`, `TobaAndroid/app/auto/br/com/toba/app/HealthReader.java`, `TobaAndroid/app/auto/br/com/toba/app/MainActivity.java`, `TobaAndroid/app/auto/br/com/toba/app/TobaBridge.java`, `TobaAndroid/app/build.gradle`, `TobaAndroid/README.md`, `assets/toba-common.js`, `sw.js`, `CLAUDE.md`, `PATCH-NOTES.md`.
+
+**Como testar:** Toba Health: o 1º card é 🩻 Raio-X. Faz um treino com o relógio e anota o mesmo no Treinos › Raio-X › 🔄 › ⌚ Treinos do relógio › 🔗 Mesclar › abre o treino no Treinos: aparece ⌚ Dados do relógio com o batimento, e tuas séries/kg iguais. 🔗 Desmesclar: volta como era. Raio-X › ⚙️ › 📥 Importar › escolhe os CSVs › 📥 Importar: o gráfico de 1 ano e o Dia a dia mostram os anos antigos.
+
+**Commit sugerido:** `v1.89 - Toba Health: Relogio vira Raio-X, treinos do relogio com mesclar/virar treino/ignorar sem duplicar (desmesclar na pagina do treino), importar historico do Samsung Health (CSV) e grafico de 1 ano + APK 2.3 (stats por exercicio do Health Connect e escolher varios arquivos)`

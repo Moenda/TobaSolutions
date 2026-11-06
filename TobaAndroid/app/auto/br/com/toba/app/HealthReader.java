@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.health.connect.AggregateRecordsGroupedByPeriodResponse;
 import android.health.connect.AggregateRecordsRequest;
+import android.health.connect.AggregateRecordsResponse;
 import android.health.connect.HealthConnectException;
 import android.health.connect.HealthConnectManager;
 import android.health.connect.LocalTimeRangeFilter;
@@ -53,6 +54,7 @@ import java.util.function.Function;
  *
  * Números por dia vêm da soma do próprio Health Connect (aggregateGroupByPeriod), que já
  * tira a duplicata quando celular e relógio contam os mesmos passos.
+ * v1.89 (APK 2.3): cada exercício vem com kcal/km/passos/FC do horário dele (sessionStats).
  */
 @TargetApi(34)
 final class HealthReader {
@@ -213,6 +215,8 @@ final class HealthReader {
                     CharSequence title = r.getTitle();
                     if (title != null && title.length() > 0) x.put("title", title.toString());
                     x.put("origin", origin(r));
+                    // v1.89 (APK 2.3): números da sessão pro mesclar com o treino do Toba
+                    sessionStats(c, hc, r, x);
                     exercises.put(x);
                 }
             } catch (Exception e) {
@@ -294,6 +298,45 @@ final class HealthReader {
             if (token == -1) break;
         }
         return all;
+    }
+
+    // v1.89 (APK 2.3): soma do Health Connect só dentro do horário do treino
+    // (kcal, kcal ativas, km, passos, FC média/máx). Falhou um? Fica sem aquele número.
+    private static void sessionStats(Context c, HealthConnectManager hc, ExerciseSessionRecord r, JSONObject x) {
+        TimeInstantRangeFilter t = new TimeInstantRangeFilter.Builder()
+                .setStartTime(r.getStartTime()).setEndTime(r.getEndTime()).build();
+        if (has(c, PERMS, "kcal")) putOne(hc, t, TotalCaloriesBurnedRecord.ENERGY_TOTAL, x, "kcal", HealthReader::kcal);
+        if (has(c, PERMS, "activeKcal")) putOne(hc, t, ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL, x, "activeKcal", HealthReader::kcal);
+        if (has(c, PERMS, "distance")) putOne(hc, t, DistanceRecord.DISTANCE_TOTAL, x, "distanceM", HealthReader::meters);
+        if (has(c, PERMS, "steps")) putOne(hc, t, StepsRecord.STEPS_COUNT_TOTAL, x, "steps", v -> v > 0 ? v : null);
+        if (has(c, PERMS, "heart")) {
+            putOne(hc, t, HeartRateRecord.BPM_AVG, x, "hrAvg", v -> v > 0 ? v : null);
+            putOne(hc, t, HeartRateRecord.BPM_MAX, x, "hrMax", v -> v > 0 ? v : null);
+        }
+    }
+
+    private static <T> void putOne(HealthConnectManager hc, TimeInstantRangeFilter t, AggregationType<T> type, JSONObject x,
+            String field, Function<T, Object> conv) {
+        try {
+            AggregateRecordsRequest<T> req = new AggregateRecordsRequest.Builder<T>(t).addAggregationType(type).build();
+            CompletableFuture<AggregateRecordsResponse<T>> f = new CompletableFuture<>();
+            hc.aggregate(req, Runnable::run, new OutcomeReceiver<AggregateRecordsResponse<T>, HealthConnectException>() {
+                @Override
+                public void onResult(AggregateRecordsResponse<T> result) {
+                    f.complete(result);
+                }
+
+                @Override
+                public void onError(HealthConnectException error) {
+                    f.completeExceptionally(error);
+                }
+            });
+            T v = f.get(WAIT_S, TimeUnit.SECONDS).get(type);
+            Object val = v == null ? null : conv.apply(v);
+            if (val != null) x.put(field, val);
+        } catch (Exception ignored) {
+            // sem esse número
+        }
     }
 
     // {start, end (ms), min (dormindo), deep, light, rem, awake, origin}. Sem fases = tudo "dormindo".

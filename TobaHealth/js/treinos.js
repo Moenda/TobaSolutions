@@ -96,6 +96,7 @@ function renderWorkoutRecord(workout) {
   if (workout.durationMinutes) chips.push(`⏱️ ${formatWorkoutNumber(workout.durationMinutes, 0)} min`);
   if (workout.calories) chips.push(`🔥 ${formatWorkoutNumber(workout.calories, 0)} kcal`);
   chips.push(...getWalkChips(workout)); // v1.84: ritmo, GPS, esteira, relógio
+  if (workout.watch && !chips.includes("⌚ Relógio")) chips.push("⌚ Relógio"); // v1.89: mesclado com o relógio
   if (workout.sets) chips.push(`${formatWorkoutNumber(workout.sets, 0)} séries`);
   if (workout.reps) chips.push(`${formatWorkoutNumber(workout.reps, 0)} repetições`);
   if (workout.weightKg) chips.push(`🏋️ ${formatWorkoutNumber(workout.weightKg, 1)} kg`);
@@ -246,6 +247,7 @@ function renderWorkoutView() {
     ${renderWalkWorkoutDetail(workout)}
     ${renderStretchWorkoutDetail(workout)}
     ${renderHomeWorkoutDetail(workout)}
+    ${renderWorkoutWatchDetail(workout)}
     ${renderMuscleSection([workout], "workout", "🔥 Músculos do treino", { teaseLazy: false })}
     ${workout.notes ? `<div class="workout-record-note wv-note">📝 ${escapeHtml(workout.notes)}</div>` : ""}
     <div class="wv-actions">
@@ -258,6 +260,61 @@ function renderWorkoutView() {
   `;
   return true;
 }
+
+/* ⌚ Dados do relógio (v1.89)
+ * workout.watch = o que o relógio mediu (gravado pelo Raio-X, relogio.js):
+ * { key, start, end, type, minutes, kcal?, activeKcal?, distanceM?, steps?, hrAvg?, hrMax?,
+ *   filled: ["durationMinutes"|"calories"|"distanceKm"], created?, mergedAt }
+ * "filled" = campos do treino que estavam vazios e o relógio completou: desmesclar zera só eles. */
+function renderWorkoutWatchDetail(workout) {
+  const w = workout.watch;
+  if (!w || typeof w !== "object") return "";
+  const tile = (label, value) => `<div class="toba-stat"><span class="toba-stat-label">${label}</span><span class="toba-stat-value">${value}</span></div>`;
+  const tiles = [];
+  if (Number(w.hrAvg) > 0) tiles.push(tile("❤️ FC média", `${formatWorkoutNumber(w.hrAvg, 0)} bpm`));
+  if (Number(w.hrMax) > 0) tiles.push(tile("💓 FC máx.", `${formatWorkoutNumber(w.hrMax, 0)} bpm`));
+  if (Number(w.minutes) > 0) tiles.push(tile("⏱️ No relógio", `${formatWorkoutNumber(w.minutes, 0)} min`));
+  const kcal = Number(w.kcal) > 0 ? w.kcal : Number(w.activeKcal) > 0 ? w.activeKcal : 0;
+  if (kcal) tiles.push(tile("🔥 No relógio", `${formatWorkoutNumber(kcal, 0)} kcal`));
+  if (Number(w.steps) > 0) tiles.push(tile("👟 Passos", formatWorkoutNumber(w.steps, 0)));
+  if (Number(w.distanceM) >= 50) tiles.push(tile("📏 No relógio", `${formatWorkoutNumber(w.distanceM / 1000, 2)} km`));
+  const clock = (ms) => new Date(Number(ms)).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const when = Number(w.start) > 0 && Number(w.end) > 0 ? `${clock(w.start)}–${clock(w.end)}` : "";
+  const filled = Array.isArray(w.filled) ? w.filled : [];
+  const filledNames = { durationMinutes: "tempo", calories: "kcal", distanceKm: "km" };
+  const note = w.created
+    ? "Esse treino veio do relógio."
+    : filled.length
+      ? `O relógio completou: ${filled.map((f) => filledNames[f] || f).join(", ")}. O resto é teu.`
+      : "Teus números ficaram como estavam; o relógio só somou o batimento.";
+  return `
+    <div class="section-title">⌚ Dados do relógio${when ? ` <span class="wv-watch-when">${when}</span>` : ""}</div>
+    <div class="card wv-watch">
+      ${tiles.length ? `<div class="toba-stats wv-stats">${tiles.join("")}</div>` : ""}
+      <p class="wv-watch-note">${escapeHtml(note)}</p>
+      ${w.created ? "" : `<button type="button" class="btn btn-secondary btn-sm" data-click="unmergeWorkoutWatch" data-id="${escapeHtml(workout.id)}">🔗 Desmesclar</button>`}
+    </div>`;
+}
+
+// Desfaz o "Mesclar" do Raio-X: tira só o que o relógio preencheu e o exercício volta pra caixinha
+async function unmergeWorkoutWatch(workoutId) {
+  const workout = healthDb.workouts.find((item) => String(item.id) === String(workoutId));
+  if (!workout || !workout.watch || workout.watch.created) return;
+  const confirmed = await showPageMessage("O treino volta a ser só o que você anotou, e o exercício do relógio volta pra lista do 🩻 Raio-X.", { title: "Desmesclar do relógio?", confirm: true, confirmLabel: "Desmesclar" });
+  if (!confirmed) return;
+  const w = workout.watch;
+  (Array.isArray(w.filled) ? w.filled : []).forEach((field) => {
+    if (["durationMinutes", "calories", "distanceKm"].includes(field)) workout[field] = null;
+  });
+  const handled = healthDb.watch && healthDb.watch.handled;
+  if (handled && w.key && handled[w.key] && String(handled[w.key].workoutId) === String(workout.id)) delete handled[w.key];
+  delete workout.watch;
+  saveHealthDb();
+  renderWorkoutView();
+  tobaToast("🔗 Desmesclado");
+}
+
+tobaActions({ unmergeWorkoutWatch: (el) => unmergeWorkoutWatch(el.dataset.id) });
 
 // Conta em hall-shared.js (o Perfil usa a mesma)
 function getWorkoutLifetimeStats(workouts = healthDb.workouts) {
@@ -767,7 +824,7 @@ function readWorkoutNumber(id) {
 
 // Campos que o formulário não mostra (trajeto do GPS, origem, alongamento...):
 // editar um treino mantém o que estava gravado (v1.84).
-const WORKOUT_KEEP_ON_EDIT = ["mode", "source", "track", "splits", "startTime", "incline", "stretch", "home", "externalId"];
+const WORKOUT_KEEP_ON_EDIT = ["mode", "source", "track", "splits", "startTime", "incline", "stretch", "home", "externalId", "watch"];
 
 function saveWorkout() {
   if (!selectedWorkoutType) return;

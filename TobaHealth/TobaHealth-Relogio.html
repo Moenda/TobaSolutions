@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="color-scheme" content="dark" />
   <meta name="supported-color-schemes" content="dark" />
-  <title>Toba Health | ⌚ Relógio</title>
+  <title>Toba Health | 🩻 Raio-X</title>
   <meta name="theme-color" content="#0d1117" />
   <link rel="manifest" href="../manifest.webmanifest" />
   <link rel="icon" href="../icons/icon-192.png" />
@@ -24,7 +24,7 @@
       <a class="toba-back" href="TobaHealth-Index.html" data-label="Voltar para o Toba Health" aria-label="Voltar para o Toba Health">‹</a>
       <a class="toba-titles" href="TobaHealth-Index.html">
         <span class="toba-app">🥗 Toba Health</span>
-        <span class="toba-page">⌚ Relógio</span>
+        <span class="toba-page">🩻 Raio-X</span>
       </a>
       <div class="toba-header-actions">
         <button type="button" class="toba-icon-btn watch-sync-btn" id="watchSyncBtn" data-click="watchPull" aria-label="Puxar do relógio" hidden>🔄</button>
@@ -37,6 +37,7 @@
     <div class="card" id="watchToday"></div>
     <div class="card" id="watchSleep"></div>
     <div id="watchCloba"></div>
+    <div id="watchInbox" hidden></div>
 
     <div class="section-title">📊 Evolução</div>
     <div class="period-selector" id="watchChartTabs" role="group" aria-label="O que mostrar">
@@ -48,6 +49,7 @@
       <div class="period-selector watch-range" id="watchRangeTabs" role="group" aria-label="Período">
         <button type="button" class="period-btn active" data-click="watchRange" data-range="7">7 dias</button>
         <button type="button" class="period-btn" data-click="watchRange" data-range="30">30 dias</button>
+        <button type="button" class="period-btn" data-click="watchRange" data-range="365">1 ano</button>
       </div>
       <div id="watchChart"></div>
       <div class="toba-stats is-3 watch-chart-stats" id="watchChartStats"></div>
@@ -75,6 +77,14 @@
           <span class="toba-menu-text">
             <span class="toba-menu-title">Puxar os últimos 30 dias</span>
             <span class="toba-menu-desc">Lê tudo de novo do Health Connect</span>
+          </span>
+          <span class="toba-hub-chevron">›</span>
+        </button>
+        <button type="button" class="toba-menu-btn" data-click="openSamsungImport">
+          <span class="toba-menu-icon">📥</span>
+          <span class="toba-menu-text">
+            <span class="toba-menu-title">Importar histórico do Samsung Health</span>
+            <span class="toba-menu-desc">Os anos antigos de passos, sono, batimento e treinos</span>
           </span>
           <span class="toba-hub-chevron">›</span>
         </button>
@@ -124,6 +134,42 @@
     </div>
   </div>
 
+  <div class="toba-modal" id="watchMergeModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🔗 Mesclar com qual treino?</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="watchMergeBody"></div>
+      <p class="watch-muted">O teu treino continua mandando: o relógio só completa o que tava vazio (tempo, kcal, km) e guarda o batimento. Dá pra desmesclar na página do treino.</p>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="samsungModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>📥 Histórico do Samsung Health</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <ol class="samsung-steps">
+        <li>No <b>Samsung Health</b>: ☰ › ⚙️ Configurações › <b>Baixar dados pessoais</b>.</li>
+        <li>Ele cria a pasta <b>Download › Samsung Health</b> no celular.</li>
+        <li>Aqui embaixo, toca em <b>Escolher arquivos</b>, entra na pasta e marca os CSVs (segura o dedo pra marcar vários; pode marcar tudo que o resto é ignorado).</li>
+      </ol>
+      <label class="btn btn-secondary samsung-pick">
+        📂 Escolher arquivos
+        <input type="file" id="samsungInput" multiple accept=".csv,text/csv,text/comma-separated-values,*/*" hidden data-change="samsungPick" />
+      </label>
+      <div class="card-title">O que achei</div>
+      <div id="samsungFiles"></div>
+      <p class="watch-muted">O que já veio do relógio pelo Health Connect continua mandando: o histórico só preenche os dias e campos vazios. Nada é apagado.</p>
+      <p class="watch-muted" id="samsungLast"></p>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-primary" id="samsungGo" data-click="samsungGo" disabled>📥 Importar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toba-modal" id="watchGoalsModal">
     <div class="toba-sheet">
       <div class="toba-sheet-header">
@@ -144,6 +190,7 @@
   <script src="../assets/toba-cloud.js"></script>
   <script src="js/health-core.js"></script>
   <script src="js/relogio.js"></script>
+  <script src="js/relogio-samsung.js"></script>
   <script src="../assets/pwa-register.js"></script>
 </body>
 

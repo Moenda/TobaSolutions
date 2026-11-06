@@ -133,6 +133,10 @@ public class MainActivity extends Activity {
                 Intent pick = new Intent(Intent.ACTION_GET_CONTENT);
                 pick.addCategory(Intent.CATEGORY_OPENABLE);
                 pick.setType("*/*"); // .json às vezes aparece como "arquivo genérico"
+                // v1.89 (APK 2.3): <input multiple> (📥 histórico do Samsung Health = vários CSVs)
+                if (params != null && params.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE) {
+                    pick.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                }
                 try {
                     startActivityForResult(pick, REQ_FILE);
                 } catch (Exception e) {
@@ -240,7 +244,16 @@ public class MainActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQ_FILE && fileCallback != null) {
-            fileCallback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data));
+            Uri[] picked = null;
+            // v1.89: vários arquivos voltam no ClipData (o parseResult só pega um)
+            if (resultCode == RESULT_OK && data != null && data.getClipData() != null) {
+                android.content.ClipData clip = data.getClipData();
+                picked = new Uri[clip.getItemCount()];
+                for (int i = 0; i < picked.length; i++) picked[i] = clip.getItemAt(i).getUri();
+            } else {
+                picked = WebChromeClient.FileChooserParams.parseResult(resultCode, data);
+            }
+            fileCallback.onReceiveValue(picked);
             fileCallback = null;
         }
     }

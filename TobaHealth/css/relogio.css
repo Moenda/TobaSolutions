@@ -337,3 +337,108 @@
 .watch-starved .chip-btn {
   margin-top: 0.5rem;
 }
+
+/* ⌚ Treinos do relógio (v1.89) */
+.watch-inbox-count {
+  background: var(--accent);
+  color: #0d1117;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 0.75rem;
+}
+
+.watch-inbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.watch-ex {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.8rem;
+}
+
+.watch-ex-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.watch-ex-name {
+  font-weight: 800;
+}
+
+.watch-ex-x {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.watch-ex-when {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin-top: 2px;
+}
+
+.watch-ex-stats {
+  font-size: 0.82rem;
+  color: var(--text-2);
+  margin: 0.4rem 0 0.6rem;
+}
+
+.watch-ex-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.watch-ex-actions .btn {
+  margin-top: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: normal;
+}
+
+.watch-merge-pick {
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.watch-merge-pick + .watch-merge-pick {
+  margin-top: 6px;
+}
+
+/* 📥 Histórico do Samsung Health (v1.89) */
+.samsung-steps {
+  margin: 0 0 0.9rem;
+  padding-left: 1.2rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.samsung-pick {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 0.9rem;
+  cursor: pointer;
+}
+
+#samsungFiles {
+  margin-bottom: 0.6rem;
+}
+
+.samsung-file {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: 0.85rem;
+}
