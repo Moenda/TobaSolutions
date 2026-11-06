@@ -2076,3 +2076,43 @@ O velocímetro continua na esquerda: os botões do Android Auto ficam sempre na 
 5. ⚙️ de qualquer app tem que mostrar "APK 2.2 · Patch v1.87".
 
 **Commit sugerido:** `v1.87 - Treinos em casa: secao nova com HIIT, Tabata, cardio sem pulo, forca e abdomen ao vivo (timer de intervalo, voz 3-2-1, bonequinho que se mexe, mapa de calor e 4 trofeus) junto com Saitama e alongamento + Toba Health: modulo Relogio (passos, sono, calorias e coracao do Galaxy Watch pelo Health Connect, APK 2.2)`
+
+---
+
+## v1.88 — ▶️ "Vi no Shorts" no Toba Places
+
+O Rafa não tem insta nem TikTok, só YouTube: agora o "Por que entrou na lista?" tem o chip **▶️ Vi no Shorts**, e ele vem **primeiro** na fileira (um toque e pronto).
+
+- Vale no ➕ lugar novo, no ✏️ editar, no filtro da lista (aparece quando algum lugar da lista tiver ele) e no 📤 Mandar / 📥 Colar lista (a linha "▶️ Vi no Shorts" é reconhecida).
+- O exemplo do campo de nota agora fala "o Cloba viu no Shorts". 😎
+- ⚙️ de qualquer app mostra "Patch v1.88".
+
+**Dados:** só uma key nova `shorts` em `TURISM_TAGS` (turism-metrics.js). Nada foi renomeado nem apagado: lugares, listas e backups antigos continuam iguais. Celular com versão velha que receber um lugar com `shorts` só não mostra o chip (key desconhecida é ignorada, sem regravar).
+
+**Arquivos:** `TobaTurism/js/turism-metrics.js`, `TobaTurism/TobaTurism-Places.html`, `assets/toba-common.js`, `CLAUDE.md`, `PATCH-NOTES.md`. Sem APK novo.
+
+**Como testar:** Toba Tourism › Places › abre uma lista › ➕ › o primeiro chip do "Por que entrou" é ▶️ Vi no Shorts › salva › o lugar mostra o chip e o filtro da lista ganha ele.
+
+### ▶ Treinos: Iniciar treino com 3 portas
+
+**Arquivos:** `TobaHealth/js/sessao.js`, `TobaHealth/js/sessao-casa.js`, `TobaHealth/css/casa.css`, `TobaHealth/TobaHealth-Treinos.html`, `CLAUDE.md`
+
+1. **Menos lotado:** o ▶ Iniciar treino agora abre só com 3 portas: 🏠 Treinos em casa, 🚶 Caminhada / Corrida e 💪 Treinos customizados (os teus Treino A, B, C + o Treino livre). Toca numa e a lista dela aparece ali mesmo, com **‹ Iniciar treino** pra voltar. Quem só usa o customizado não precisa mais descer a lista inteira.
+2. Dentro do 🏠 continua tudo da v1.87 (HIIT e cardio, Força e abdômen com o Saitama, Alongamento). O atalho **🏠 Em casa** embaixo do ▶ abre direto essa porta.
+
+**Dados:** nenhuma mudança no banco (só tela).
+
+**Como testar:** Treinos › ▶ Iniciar treino: aparecem as 3 portas. 💪 Customizados mostra teus treinos salvos e o Treino livre; ‹ volta. 🚶 mostra Caminhada / Corrida ao vivo. 🏠 Em casa (atalho) abre já na porta de casa.
+
+### ⌚ Relógio: 🩺 diagnóstico e aviso quando o Samsung Health não manda os dados
+
+**Arquivos:** `TobaHealth/js/relogio.js`, `TobaHealth/TobaHealth-Relogio.html`, `TobaHealth/css/relogio.css`, `CLAUDE.md`. Sem APK novo.
+
+1. **🩺 Diagnóstico** (⚙️ do Relógio): mostra, de cada tipo (passos, sono, calorias, ativas, distância, batimentos, repouso, exercícios), se tá liberado, quantos dias vieram na última leitura ou o erro, e de qual app veio o sono/treino.
+2. **Aviso na tela:** quando chega só o ❤️ e a 🔥 (aquele 1.565 kcal igual todo dia, que é só o basal que o próprio Health Connect calcula), aparece o passo a passo pra liberar o **Samsung Health** a escrever passos e sono no Health Connect, com o botão 🩺 Ver o que veio.
+
+**Dados:** nada no `TOBA_HEALTH_DB`. O `toba_health_watch_state` (só deste aparelho) ganhou `diag` com o resumo da última leitura.
+
+**Como testar:** Relógio › 🔄 › ⚙️ › 🩺 Diagnóstico: cada linha diz ✅ N dias, 🤷 nada no Health Connect, 🔒 sem permissão ou 💥 o erro.
+
+**Commit sugerido:** `v1.88 - Toba Places: chip Vi no Shorts (YouTube) no por que entrou na lista + Treinos: Iniciar treino com 3 portas (em casa, caminhada, customizados) + Relogio: diagnostico do que veio do Health Connect e aviso quando o Samsung Health nao manda passos e sono`

@@ -78,6 +78,14 @@
           </span>
           <span class="toba-hub-chevron">›</span>
         </button>
+        <button type="button" class="toba-menu-btn" data-click="openWatchDiag">
+          <span class="toba-menu-icon">🩺</span>
+          <span class="toba-menu-text">
+            <span class="toba-menu-title">Diagnóstico</span>
+            <span class="toba-menu-desc">O que veio de cada tipo na última leitura</span>
+          </span>
+          <span class="toba-hub-chevron">›</span>
+        </button>
         <button type="button" class="toba-menu-btn" data-click="watchOpenSettings">
           <span class="toba-menu-icon">🔐</span>
           <span class="toba-menu-text">
@@ -97,6 +105,19 @@
         <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
       </div>
       <div id="watchDayBody"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-secondary" data-close>Fechar 👍</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="watchDiagModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🩺 Diagnóstico do relógio</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="watchDiagBody"></div>
       <div class="toba-sheet-footer">
         <button type="button" class="btn btn-secondary" data-close>Fechar 👍</button>
       </div>

@@ -8,6 +8,7 @@
 
 // "Por que entrou na lista?" (vários por lugar)
 const TURISM_TAGS = [
+  { key: "shorts", icon: "▶️", label: "Vi no Shorts" }, // v1.88: YouTube Shorts (Rafa só tem YouTube)
   { key: "insta", icon: "📸", label: "Vi no insta" },
   { key: "tiktok", icon: "🎵", label: "Vi no TikTok" },
   { key: "indicacao", icon: "🗣️", label: "Indicação" },

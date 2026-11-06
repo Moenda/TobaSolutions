@@ -312,3 +312,28 @@
 #watchDayBody .section-title {
   margin-top: 1rem;
 }
+
+/* 🩺 Diagnóstico (v1.88) */
+.watch-diag-row {
+  padding: 4px 0;
+  font-size: 0.85rem;
+}
+
+.watch-diag-row > :last-child {
+  text-align: right;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.watch-diag-hint {
+  margin-top: 0.8rem;
+}
+
+.watch-starved {
+  margin-bottom: 0.9rem;
+  line-height: 1.5;
+}
+
+.watch-starved .chip-btn {
+  margin-top: 0.5rem;
+}

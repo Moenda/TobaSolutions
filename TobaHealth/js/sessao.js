@@ -364,14 +364,60 @@ function newLiveExercise(exerciseId, fallbackSets) {
   };
 }
 
-function openLiveStart() {
+// v1.87 (pedido do Rafa): o ▶ Iniciar treino abre com 3 portas
+// (🏠 Em casa, 🚶 Caminhada / Corrida, 💪 Customizados) e cada uma mostra a
+// sua lista ali mesmo, com ‹ pra voltar. Assim quem só usa o customizado
+// não precisa descer a lista inteira.
+function openLiveStart(page = "hub") {
   const { session } = readLiveSession();
   if (session) {
     liveSession = session;
     openLiveSessionView();
     return;
   }
+  renderLiveStartPage(typeof page === "string" ? page : "hub");
+  openTobaModal("liveStartModal");
+}
+
+function liveStartBack() {
+  return '<button type="button" class="back-nav-btn" data-click="openLiveStartPage" data-page="hub">‹ Iniciar treino</button>';
+}
+
+function renderLiveStartPage(page) {
+  const list = document.getElementById("liveStartList");
+  const title = document.getElementById("liveStartTitle");
+  const workouts = healthDb.workouts || [];
   const routines = healthDb.strengthRoutines || [];
+  const pages = { home: "🏠 Treinos em casa", walk: "🚶 Caminhada / Corrida", custom: "💪 Treinos customizados" };
+  if (title) title.textContent = pages[page] || "▶ Iniciar treino";
+  if (page === "home") {
+    list.innerHTML = liveStartBack() + renderHomeLiveStartSection();
+  } else if (page === "walk") {
+    list.innerHTML = liveStartBack() + renderWalkLiveStartCard();
+  } else if (page === "custom") {
+    list.innerHTML = liveStartBack() + renderLiveCustomList(routines);
+  } else {
+    const homeCount = workouts.filter((w) => ["home", "stretch", "saitama"].includes(w.type)).length;
+    const walkCount = workouts.filter((w) => w.type === "walking").length;
+    const door = (id, icon, name, desc) => `
+      <button type="button" class="toba-menu-btn live-door" data-click="openLiveStartPage" data-page="${id}">
+        <span class="toba-menu-icon">${icon}</span>
+        <span class="toba-menu-text">
+          <span class="toba-menu-title">${name}</span>
+          <span class="toba-menu-desc">${desc}</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </button>`;
+    list.innerHTML = `<div class="toba-menu">
+      ${door("home", "🏠", "Treinos em casa", `HIIT, Tabata, força, abdômen, Saitama e alongamento${homeCount ? ` · feito ${homeCount}×` : ""}`)}
+      ${door("walk", "🚶", "Caminhada / Corrida", `Ao vivo com GPS e mapa${walkCount ? ` · feito ${walkCount}×` : ""}`)}
+      ${door("custom", "💪", "Treinos customizados", routines.length ? `Os seus (${routines.length}) ou um treino livre` : "Monte o seu ou comece um livre")}
+    </div>`;
+  }
+  list.closest(".toba-sheet")?.scrollTo?.(0, 0);
+}
+
+function renderLiveCustomList(routines) {
   const cards = routines.map((routine) => {
     const stats = getStrengthRoutineStats(routine.id);
     const groups = [...new Set((routine.exercises || [])
@@ -388,11 +434,18 @@ function openLiveStart() {
         <span class="toba-hub-chevron">›</span>
       </button>`;
   }).join("");
-  // v1.87: Saitama e alongamento moram dentro da seção 🏠 Treinos em casa (sessao-casa.js)
-  document.getElementById("liveStartList").innerHTML = renderHomeLiveStartSection() + renderWalkLiveStartCard() + (cards
+  const free = `
+    <button type="button" class="toba-menu-btn" data-click="startLiveFree">
+      <span class="toba-menu-icon">➕</span>
+      <span class="toba-menu-text">
+        <span class="toba-menu-title">Treino livre</span>
+        <span class="toba-menu-desc">Vai escolhendo os exercícios do catálogo na hora.</span>
+      </span>
+      <span class="toba-hub-chevron">›</span>
+    </button>`;
+  return (cards
     ? `<div class="hub-title">Seus treinos</div><div class="toba-menu">${cards}</div><div class="section-divider"></div>`
-    : '<p class="toba-sheet-text">Treino de força: você ainda não tem treino salvo. Comece um livre e, no fim, salve como modelo (Treino A, B, C...).</p>');
-  openTobaModal("liveStartModal");
+    : '<p class="toba-sheet-text">Você ainda não tem treino salvo. Comece um livre e, no fim, salve como modelo (Treino A, B, C...).</p>') + free;
 }
 
 function startLiveSession(routineId) {
@@ -430,7 +483,6 @@ function openLiveSessionView() {
     openModule("viewTraining");
     return;
   }
-  if (document.getElementById("homeStartModal")) closeTobaModal("homeStartModal"); // v1.87: começou pela folha 🏠
   openModule("viewSession");
   renderLiveSession();
   startLiveTicker();
@@ -1241,7 +1293,8 @@ function finishLiveSession() {
 }
 
 tobaActions({
-  openLiveStart,
+  openLiveStart: () => openLiveStart("hub"),
+  openLiveStartPage: (el) => renderLiveStartPage(el.dataset.page || "hub"),
   startLiveRoutine: (el) => startLiveSession(el.dataset.routine),
   startLiveFree: () => startLiveSession(""),
   resumeLiveSession: () => {

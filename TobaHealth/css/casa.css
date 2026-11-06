@@ -10,7 +10,7 @@
   --home-work: #f0883e;
 }
 
-/* ---------- Seção "🏠 Treinos em casa" do ▶ Iniciar treino ---------- */
+/* ---------- Porta "🏠 Treinos em casa" do ▶ Iniciar treino ---------- */
 .home-section-head {
   display: flex;
   flex-direction: column;
@@ -20,11 +20,6 @@
   border: 1px solid rgba(240, 136, 62, 0.45);
   border-radius: var(--radius-lg);
   background: linear-gradient(135deg, rgba(240, 136, 62, 0.16), rgba(240, 136, 62, 0.03));
-}
-
-/* Na folha própria (atalho 🏠 Em casa) o título já está no cabeçalho */
-#homeStartModal .home-section-head {
-  display: none;
 }
 
 .home-section-title {

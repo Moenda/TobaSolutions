@@ -309,10 +309,7 @@ function renderHomeLiveStartSection() {
   })).join("");
   return `
     <div class="home-section">
-      <div class="home-section-head">
-        <span class="home-section-title">🏠 Treinos em casa</span>
-        <span class="home-section-sub">Sem equipamento, no tapete da sala${total ? ` · feito ${total}×` : ""}</span>
-      </div>
+      <p class="toba-sheet-text home-section-sub">Sem equipamento, no tapete da sala${total ? ` · feito ${total}×` : ""}</p>
       <div class="hub-title">🔥 HIIT e cardio</div>
       <div class="toba-menu">${plans(["cardio"])}</div>
       <div class="hub-title">💪 Força e abdômen</div>
@@ -322,21 +319,13 @@ function renderHomeLiveStartSection() {
       </div>
       <div class="hub-title">🧘 Alongamento${count("stretch") ? ` · feito ${count("stretch")}×` : ""}</div>
       <div class="toba-menu">${stretch}</div>
-    </div>
-    <div class="section-divider"></div>`;
+    </div>`;
 }
 
-// Atalho "🏠 Em casa" da tela de Treinos: folha só com a seção.
-// Treino em andamento? Volta pra ele (igual o ▶ Iniciar treino).
+// Atalho "🏠 Em casa" da tela de Treinos: abre o ▶ Iniciar treino já na
+// porta 🏠 (treino em andamento? volta pra ele, igual o ▶).
 function openHomeStart() {
-  const { session } = readLiveSession();
-  if (session) {
-    liveSession = session;
-    openLiveSessionView();
-    return;
-  }
-  document.getElementById("homeStartList").innerHTML = renderHomeLiveStartSection();
-  openTobaModal("homeStartModal");
+  openLiveStart("home");
 }
 
 /* ---------------------------------------------------------------------

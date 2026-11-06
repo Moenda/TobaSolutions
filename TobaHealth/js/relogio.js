@@ -10,7 +10,8 @@
  *   O Health Connect é a fonte: puxar de novo regrava os números do dia. Campo
  *   sem permissão, com erro ou que não veio mantém o valor antigo.
  * - No navegador (PC) só mostra o que já veio pela ☁️ Conta.
- * - toba_health_watch_state (só deste aparelho): { pulledAt } = quando puxou.
+ * - toba_health_watch_state (só deste aparelho): { pulledAt, diag } = quando puxou
+ *   e o resumo da última leitura (v1.88, 🩺 Diagnóstico: o que veio de cada tipo).
  * ===================================================================== */
 const WATCH_STATE_KEY = "toba_health_watch_state";
 const WATCH_DEFAULT_GOALS = { steps: 8000, sleepMin: 450 };
@@ -188,7 +189,7 @@ window.onTobaHealthData = function (reqId, data) {
     return;
   }
   const changed = watchMerge(data);
-  watchSetState({ pulledAt: Date.now() });
+  watchSetState({ pulledAt: Date.now(), diag: watchBuildDiag(data) });
   if (changed) saveHealthDb();
   renderWatch();
 };
@@ -310,6 +311,78 @@ function watchMerge(data) {
   return JSON.stringify(w.days) !== before;
 }
 
+/* ---------------- 🩺 Diagnóstico (v1.88) ---------------- */
+
+// Resumo da última leitura: quantos dias vieram de cada tipo, erros e de que app veio o sono/exercício
+function watchBuildDiag(data) {
+  const days = data.days && typeof data.days === "object" ? data.days : {};
+  const count = (f) => Object.values(days).filter((d) => d && d[f] !== undefined && d[f] !== null).length;
+  const origins = {};
+  [...(Array.isArray(data.sleep) ? data.sleep : []), ...(Array.isArray(data.exercises) ? data.exercises : [])].forEach((x) => {
+    if (x && x.origin) origins[String(x.origin).slice(0, 80)] = true;
+  });
+  const errors = {};
+  Object.entries(data.errors && typeof data.errors === "object" ? data.errors : {}).forEach(([k, v]) => {
+    errors[k] = String(v).slice(0, 160);
+  });
+  return {
+    at: Date.now(),
+    from: String(data.from || ""),
+    to: String(data.to || ""),
+    granted: data.status && Array.isArray(data.status.granted) ? data.status.granted : watchGranted(),
+    errors,
+    counts: {
+      steps: count("steps"), kcal: count("kcal"), activeKcal: count("activeKcal"), distance: count("distanceM"),
+      heart: count("hrAvg"), restHr: count("restHr"),
+      sleep: Array.isArray(data.sleep) ? data.sleep.length : 0,
+      exercise: Array.isArray(data.exercises) ? data.exercises.length : 0,
+    },
+    origins: Object.keys(origins).slice(0, 6),
+  };
+}
+
+function watchDiag() {
+  const d = watchState().diag;
+  return d && typeof d === "object" && d.counts ? d : null;
+}
+
+// Liberou tudo mas o Samsung Health não entregou passos nem sono (só a conta do basal e o coração)
+function watchLooksStarved() {
+  const d = watchDiag();
+  return Boolean(d && !d.counts.steps && !d.counts.sleep && !d.counts.activeKcal);
+}
+
+function openWatchDiag() {
+  closeTobaModal("settingsModal");
+  const d = watchDiag();
+  const el = document.getElementById("watchDiagBody");
+  if (!d) {
+    el.innerHTML = tobaEmpty("🩺", "Ainda não puxou nada", TOBA_NATIVE ? "Toca no 🔄 lá em cima e volta aqui." : "Só no app do Toba no celular.", { compact: true });
+    openTobaModal("watchDiagModal");
+    return;
+  }
+  const granted = new Set(Array.isArray(d.granted) ? d.granted : []);
+  const unit = { sleep: "noite(s)", exercise: "treino(s)" };
+  const rows = Object.keys(WATCH_GROUP_LABELS).map((g) => {
+    const err = d.errors[g] || WATCH_GROUPS[g].map((f) => d.errors[f]).find(Boolean);
+    const n = Number(d.counts[g]) || 0;
+    let state;
+    if (!granted.has(g)) state = `<span class="text-red">🔒 sem permissão</span>`;
+    else if (err) state = `<span class="text-red">💥 ${escapeHtml(err)}</span>`;
+    else if (!n) state = `<span class="text-gold">🤷 nada no Health Connect</span>`;
+    else state = `<span class="text-green">✅ ${n} ${unit[g] || "dia(s)"}</span>`;
+    return `<div class="kv-row watch-diag-row"><span>${WATCH_GROUP_LABELS[g]}</span>${state}</div>`;
+  }).join("");
+  const at = new Date(d.at);
+  el.innerHTML = `<p class="toba-sheet-text">Última leitura: ${escapeHtml(watchDayLabel(toIsoDate(at)).toLowerCase())} às ${watchClock(d.at)}, de ${escapeHtml(d.from.slice(8, 10))}/${escapeHtml(d.from.slice(5, 7))} até ${escapeHtml(d.to.slice(8, 10))}/${escapeHtml(d.to.slice(5, 7))}.</p>
+    <div class="kv-list">${rows}</div>
+    ${d.origins.length ? `<p class="watch-muted">Sono/treino vieram de: ${d.origins.map(escapeHtml).join(", ")}</p>` : ""}
+    ${watchLooksStarved() ? `<div class="hint-box watch-diag-hint">🕵️ O Toba tá lendo certinho, mas o Health Connect não tem passos nem sono. As 🔥 calorias iguais todo dia são só o basal que o próprio Health Connect calcula. Quem precisa mandar é o <b>Samsung Health</b>: ${WATCH_SAMSUNG_STEPS}</div>` : ""}`;
+  openTobaModal("watchDiagModal");
+}
+
+const WATCH_SAMSUNG_STEPS = "abre <b>Conexão Saúde › Seus apps › Samsung Health</b> e liga a permissão de <b>escrever</b> passos, distância, calorias ativas, sono e exercícios (ou dentro do Samsung Health › ☰ › Configurações › Health Connect). Depois abre o Samsung Health uma vez, espera sincronizar e toca no 🔄.";
+
 /* ---------------- Formatos ---------------- */
 
 function watchInt(n) {
@@ -406,6 +479,10 @@ function renderWatchConnect() {
       if (missing.length) {
         html = `<div class="hint-box watch-missing">🔒 Faltou liberar: ${missing.map((m) => WATCH_GROUP_LABELS[m]).join(", ")}.
           <button type="button" class="chip-btn" data-click="watchAsk">Liberar</button></div>`;
+      }
+      if (hasAny && !watchUi.pulling && watchLooksStarved()) {
+        html += `<div class="hint-box watch-starved">🕵️ Chegou só o ❤️ e a 🔥 do basal: o Samsung Health não tá mandando passos nem sono pro Health Connect. ${WATCH_SAMSUNG_STEPS}
+          <button type="button" class="chip-btn" data-click="openWatchDiag">🩺 Ver o que veio</button></div>`;
       }
       if (!hasAny && !watchUi.pulling && watchState().pulledAt) {
         html += `<div class="hint-box">🤷 O Health Connect não tem nada ainda. No <b>Samsung Health</b> › Configurações › <b>Health Connect</b>, libera ele escrever os dados, depois toca no 🔄.</div>`;
@@ -713,6 +790,7 @@ tobaActions({
   openWatchDay,
   openWatchGoals,
   setWatchGoal,
+  openWatchDiag,
 });
 
 function onHealthDataReplaced() {
