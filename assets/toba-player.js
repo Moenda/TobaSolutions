@@ -338,8 +338,10 @@ function buildPlayerAchievements() {
   WORKOUT_DISTANCE_DESTINATIONS.forEach((item, i) => list.push({
     id: item.id, cat: "distancia", tier: kmTier(i), icon: item.icon, name: item.label,
     desc: `Você ${item.done}. ${item.note}`,
-    hint: `Some ${Number(item.size).toLocaleString("pt-BR")} km.`,
-    metric: (s) => s.km, goal: item.size, title: item.id === "km-mundo" ? "🌍 Magalhães de Tênis" : undefined,
+    hint: `Some ${Number(item.size).toLocaleString("pt-BR")} km (treinos + o dia a dia do relógio).`,
+    // v1.91: km dos treinos + km do dia a dia do relógio (só conquista, sem XP)
+    metric: (s) => s.km + s.watchKm, goal: item.size,
+    title: item.id === "km-mundo" ? "🌍 Magalhães de Tênis" : item.id === "km-lua" ? "🌕 Astronauta de Chinelo" : undefined,
   }));
   list.push(
     { id: "kcal-1k", cat: "energia", tier: "bronze", icon: "🕯️", name: "Fogareiro", desc: "1.000 kcal queimadas. Já dá pra uma pizza (fatia, hein).", hint: "Queime 1.000 kcal.", metric: (s) => s.kcal, goal: 1000 },
@@ -1001,7 +1003,7 @@ function computePlayer(options = {}) {
   const unlockedAt = {}; // { achievementId: "AAAA-MM-DD" }
 
   const stats = {
-    workouts: 0, kcal: 0, km: 0, liftKg: 0, saitamaReps: 0, saitamaWorkouts: 0,
+    workouts: 0, kcal: 0, km: 0, watchKm: 0, liftKg: 0, saitamaReps: 0, saitamaWorkouts: 0,
     carecaDay: 0, carecaFull: 0, groups: 0, monthGroups: 0, records: 0,
     weekend: 0, types: 0, weighIns: 0, streakBest: 0,
     routineTasks: 0, routineHard: 0, routineBestSeq: 0, routineSleepSeq: 0, routinePerfect: 0,
@@ -1034,6 +1036,16 @@ function computePlayer(options = {}) {
   const bestSets = {};
   let bestKm = 0;
   let bestReps = 0;
+  // v1.91: km do dia a dia do relógio entram na ordem das datas (só conquistas)
+  const watchKmDays = typeof calcWatchExtraKm === "function" ? calcWatchExtraKm(health, today) : [];
+  let watchKmIndex = 0;
+  const flushWatchKm = (untilDate) => {
+    while (watchKmIndex < watchKmDays.length && (!untilDate || watchKmDays[watchKmIndex].date <= untilDate)) {
+      const step = watchKmDays[watchKmIndex++];
+      stats.watchKm += step.km;
+      checkAchievements(step.date, false);
+    }
+  };
   const types = new Set();
   const homePlans = new Set(); // v1.87: planos diferentes do 🏠 Treinos em casa
   const groups = new Set();
@@ -1044,6 +1056,7 @@ function computePlayer(options = {}) {
   const carecaDays = {};
   workouts.forEach((workout) => {
     const date = workout.date;
+    flushWatchKm(date);
     const icon = PLAYER_WORKOUT_ICONS[workout.type] || "🏅";
     const xp = calcPlayerWorkoutXp(workout).total;
     const used = dayXp[date] || 0;
@@ -1128,6 +1141,7 @@ function computePlayer(options = {}) {
     }
     checkAchievements(date);
   });
+  flushWatchKm();
 
   /* ---------- Pesagens ---------- */
   // A pesagem grava data E hora ("AAAA-MM-DDTHH:MM", campo datetime-local):

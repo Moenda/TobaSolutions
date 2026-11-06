@@ -326,7 +326,30 @@ const WORKOUT_DISTANCE_DESTINATIONS = [
   { id: "km-pequim", icon: "🥢", size: 17750, label: "São Paulo → Pequim", done: "foi de São Paulo a Pequim", note: "Com pato laqueado de recompensa." },
   { id: "km-toquio", icon: "🍣", size: 18550, label: "São Paulo → Tóquio", done: "foi de São Paulo a Tóquio", note: "Lá o temaki é de verdade, sem mini." },
   { id: "km-mundo", icon: "🌍", size: 40075, label: "Uma volta ao mundo", done: "deu a volta ao mundo", note: "Magalhães ficaria com inveja." },
+  // v1.91: só pra zueira (com o dia a dia do relógio contando, um dia chega)
+  { id: "km-lua", icon: "🌕", size: 384400, label: "Até a Lua", done: "foi andando até a Lua", note: "A NASA quer saber qual é o teu tênis." },
 ];
+
+/* v1.91: km do dia a dia do relógio (🩻 Raio-X) pras conquistas de distância.
+ * Só conquista, NUNCA XP de treino (andar até a padaria não é treino).
+ * Por dia: o que o relógio mediu MENOS os km de caminhada/corrida que já
+ * viraram treino nesse dia (esses já contam pelo treino), nunca negativo.
+ * Bike e elíptico não são passo: seguem contando só pelo treino.
+ * Devolve [{ date, km }] em ordem de data. */
+function calcWatchExtraKm(healthData, today) {
+  const days = healthData && healthData.watch && healthData.watch.days;
+  if (!days || typeof days !== "object") return [];
+  const walked = {};
+  (Array.isArray(healthData.workouts) ? healthData.workouts : []).forEach((workout) => {
+    if (!workout || (workout.type !== "walking" && workout.type !== "saitama")) return;
+    walked[workout.date] = (walked[workout.date] || 0) + (Number(workout.distanceKm) || 0);
+  });
+  return Object.keys(days)
+    .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date) && (!today || date <= today))
+    .sort()
+    .map((date) => ({ date, km: Math.max(0, (Number(days[date] && days[date].distanceM) || 0) / 1000 - (walked[date] || 0)) }))
+    .filter((item) => item.km > 0);
+}
 
 const WORKOUT_LIFT_EQUIVALENTS = [
   { id: "lift-gato", icon: "🐈", one: "gato", name: "gatos", size: 4, note: "Levantado sem ele aprovar." },

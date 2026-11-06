@@ -21,13 +21,10 @@ const WATCH_METRICS = {
     get: (d) => (d.sleep && d.sleep.min > 0 ? d.sleep.min : undefined), fmt: (v) => watchHours(v), unit: "", per: "por noite",
     goal: () => watchGoals().sleepMin,
   },
+  // v1.91: ⚡ ativas por padrão; com "➕ Somar o basal" ligado, o total (watchKcalOf em relogio.js)
   kcal: {
     icon: "🔥", name: "Calorias", color: "var(--coral)", sum: true, better: "up",
-    get: (d) => d.kcal, fmt: (v) => watchInt(v), unit: "kcal",
-  },
-  active: {
-    icon: "⚡", name: "Calorias ativas", color: "var(--gold-2)", sum: true, better: "up",
-    get: (d) => d.activeKcal, fmt: (v) => watchInt(v), unit: "kcal",
+    get: (d) => watchKcalOf(d), fmt: (v) => watchInt(v), unit: "kcal",
   },
   distance: {
     icon: "📏", name: "Distância", color: "var(--blue)", sum: true, better: "up",
@@ -349,7 +346,7 @@ function watchAnInsights(key) {
     add("😴", "Sono x coração", watchAnSplit("heart", (date) => goodSleep(date)), "depois de dormir 7h+", "depois de menos de 6h", m.fmt, "down");
     add("🏋️", "Treino x coração", watchAnSplit("heart", (date, d) => watchAnTrained(d)), "em dia de treino", "em dia sem treino", m.fmt, "none"); // treinar sobe o batimento do dia: não é ruim
   }
-  if (key === "kcal" || key === "active" || key === "distance") {
+  if (key === "kcal" || key === "distance") {
     add("🏋️", "Treino faz diferença?", watchAnSplit(key, (date, d) => watchAnTrained(d)), "em dia de treino", "em dia sem treino", m.fmt);
     add("😴", "Sono x energia", watchAnSplit(key, (date) => goodSleep(date)), "depois de dormir 7h+", "depois de menos de 6h", m.fmt);
   }
@@ -426,6 +423,7 @@ function renderWatchMetric() {
     <div class="period-selector watch-an-periods" role="group" aria-label="Período">
       ${WATCH_PERIODS.map((p) => `<button type="button" class="period-btn${p.days === watchAn.days ? " active" : ""}" data-click="watchMetricPeriod" data-days="${p.days}">${p.label}</button>`).join("")}
     </div>
+    ${key === "kcal" ? watchAnBasalToggle() : ""}
     <div class="toba-stats is-3 watch-an-stats">${tiles.join("")}</div>
     <div class="card">
       <div class="card-title">📈 Evolução <span class="watch-muted">· ${grain}</span></div>
@@ -447,6 +445,15 @@ function renderWatchMetric() {
       </div>`).join("") : tobaEmpty(m.icon, "Nenhum dia com dado", "", { compact: true })}
     </div>
     ${list.length > shown.length ? `<button type="button" class="btn btn-secondary" data-click="watchMetricMore">Mostrar mais (${list.length - shown.length})</button>` : ""}`;
+}
+
+// v1.91: botão do basal (só na análise das calorias)
+function watchAnBasalToggle() {
+  const on = watchKcalBasal();
+  return `<div class="watch-an-basal">
+      <button type="button" class="chip-btn${on ? " is-on" : ""}" data-click="watchToggleBasal" aria-pressed="${on}">${on ? "✅ Somando o basal" : "➕ Somar o basal"}</button>
+      <span class="watch-muted">${on ? "Total do dia: ativas + o que o corpo gasta parado." : "Só ⚡ ativas, o que você queimou se mexendo. O basal (corpo parado) é quase igual todo dia."}</span>
+    </div>`;
 }
 
 function openWatchMetric(el) {
@@ -485,5 +492,9 @@ tobaActions({
   watchMetricMore() {
     watchAn.listShown += 31;
     renderWatchMetric();
+  },
+  watchToggleBasal() {
+    watchSetKcalBasal(!watchKcalBasal());
+    renderWatch(); // já refaz a análise aberta
   },
 });

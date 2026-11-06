@@ -2181,3 +2181,21 @@ O Samsung não reenvia o passado pro Health Connect, então agora dá pra puxar 
 **Como testar:** Raio-X › ⌚ Treinos do relógio › 🙈 Ignorar: pergunta antes; confirma e aparece ↩️ Desfazer. ⚙️ › 🙈 Treinos do relógio ignorados › ↩️ Voltar. Vira um treino do relógio, apaga ele no Samsung Health, 🔄 no Raio-X: aparece 🗑️ Sumiu do relógio com Apagar do Toba / Manter. Toca no anel de passos, no card do sono ou em qualquer quadrado: abre a 🔬 análise. Treinos › ➕ › marca ⌚ Completar com o relógio › salva sem número › Raio-X › 🔄: o treino ganha tempo, kcal e batimento sozinho.
 
 **Commit sugerido:** `v1.90 - Raio-X: ignorar treino do relogio com confirmacao, desfazer e lista de ignorados + treino apagado no relogio some do Raio-X e pergunta se apaga o treino do Toba + hub do Health na ordem Raio-X, Treinos, Pesagem + configuracoes do Raio-X organizadas (Conta, Relogio, Dados) + mes a mes com total consolidado + analise aprofundada de cada quadrado (Cloba Raio Laser X) + completar treino com o relogio ao salvar (mescla sozinho no sync)`
+
+## v1.91 — 🌍 Troféus de distância contam o dia a dia do relógio (e agora dá pra ir até a 🌕 Lua) + 🔥 Calorias sem o basal
+
+1. **Os km do dia a dia do 🩻 Raio-X entram nos troféus de distância** (São Paulo → Rio ... volta ao mundo), inclusive o histórico importado do Samsung. Ninguém ia chegar no Japão só com treino lançado.
+2. **Só troféu, nunca XP:** andar até a padaria não é treino. O XP por km continua só dos treinos.
+3. **Sem contar duas vezes:** no dia que tem treino de 🚶 caminhada/corrida (ou km antigo no Saitama), conta o maior dos dois: o relógio menos os km desse treino, nunca negativo. 🚴 Bike e elíptico não são passo, então seguem contando por fora, só pelo treino.
+4. **🌕 Até a Lua** (384.400 km, lendária, título 🌕 Astronauta de Chinelo), só pra zueira.
+5. A data de desbloqueio respeita o dia em que a soma passou da meta (quem tem o histórico importado ganha os troféus com a data antiga certa).
+6. **🔥 Calorias do Raio-X agora são as ⚡ ativas** (pedido do Rafa: com o basal, uns 1.700 kcal parado todo dia, o gráfico ficava reto). Os quadrados 🔥 Calorias e ⚡ Ativas viraram **um só**, na linha toda: número grande = ativas, embaixo "⚡ ativas · total 2.450". O gráfico 📊 Evolução, o 📜 Mês a mês ("kcal ativas no mês") e o dia a dia seguem a mesma conta.
+7. **➕ Somar o basal** na 🔬 análise das calorias: liga e tudo (quadrado, gráficos, média, vs anterior, recordes, raio laser) volta pro total com basal; desliga e volta pras ativas. Fica lembrado no aparelho. A folha do dia continua mostrando as duas.
+
+**Dados:** nada novo gravado. A conta lê `TOBA_HEALTH_DB.watch.days[].distanceM` na hora (`calcWatchExtraKm` em health-metrics.js) e soma em `stats.watchKm` do `computePlayer`; a métrica dos destinos virou `s.km + s.watchKm`. Ids das conquistas antigas iguais. Telas de treino (Hall do mês, 📍 Distância) continuam só com km de treino. Chave local nova `toba_health_watch_kcal_basal` ("1" = somando o basal; só a escolha, neste aparelho). A análise `data-metric="active"` saiu (virou a `kcal`). Sem APK novo, sem `sw` novo.
+
+**Arquivos:** `TobaHealth/js/health-metrics.js`, `assets/toba-player.js`, `TobaHealth/js/relogio.js`, `TobaHealth/js/relogio-analise.js`, `TobaHealth/css/relogio.css`, `assets/toba-common.js`, `CLAUDE.md`, `PATCH-NOTES.md`.
+
+**Como testar:** Perfil › troféus 🌍 Distância: a barrinha do Rio em diante já soma os km do relógio (com o histórico do Samsung importado, vários destinos devem estar liberados). O XP não muda. A última da lista é 🌕 Até a Lua. Raio-X: o quadrado 🔥 Calorias mostra as ativas e o total embaixo; toca nele › ➕ Somar o basal: os números sobem pro total; toca de novo e volta.
+
+**Commit sugerido:** `v1.91 - Trofeus de distancia contam os km do dia a dia do relogio (Raio-X e historico do Samsung), so trofeu sem XP, sem contar duas vezes a caminhada do treino + trofeu Ate a Lua + Raio-X: calorias mostram so as ativas (um quadrado so) com botao Somar o basal na analise`

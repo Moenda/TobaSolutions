@@ -1002,8 +1002,7 @@ function renderWatchToday() {
       </div>
     </div>
     <div class="toba-stats watch-stats">
-      ${stat("🔥 Calorias", day.kcal !== undefined ? watchInt(day.kcal) : "--", "kcal no dia", "kcal")}
-      ${stat("⚡ Ativas", day.activeKcal !== undefined ? watchInt(day.activeKcal) : "--", "kcal mexendo", "active")}
+      ${stat("🔥 Calorias", watchKcalOf(day) !== undefined ? watchInt(watchKcalOf(day)) : "--", watchKcalSub(day), "kcal")}
       ${stat("📏 Distância", day.distanceM !== undefined ? watchKm(day.distanceM) : "--", "", "distance")}
       ${stat("❤️ Coração", day.restHr !== undefined ? `${watchInt(day.restHr)}` : day.hrAvg !== undefined ? `${watchInt(day.hrAvg)}` : "--",
         day.restHr !== undefined ? "bpm em repouso" : "bpm médio", "heart")}
@@ -1091,7 +1090,7 @@ function watchChartRows() {
     let v = null;
     if (watchUi.chart === "steps") v = d.steps;
     else if (watchUi.chart === "sleep") v = d.sleep ? d.sleep.min : undefined;
-    else v = d.kcal !== undefined ? d.kcal : d.activeKcal;
+    else v = watchKcalOf(d);
     rows.push({ date, v: v === undefined || v === null ? null : Number(v) });
   }
   return rows;
@@ -1160,8 +1159,7 @@ function watchDayRow(date, goals) {
   const bits = [];
   if (d.steps !== undefined) bits.push(`${d.steps >= goals.steps ? "🏆" : "👟"} ${watchInt(d.steps)}`);
   if (d.sleep) bits.push(`😴 ${watchHours(d.sleep.min)}`);
-  if (d.kcal !== undefined) bits.push(`🔥 ${watchInt(d.kcal)}`);
-  else if (d.activeKcal !== undefined) bits.push(`⚡ ${watchInt(d.activeKcal)}`);
+  if (watchKcalOf(d) !== undefined) bits.push(`🔥 ${watchInt(watchKcalOf(d))}`);
   if (Array.isArray(d.ex) && d.ex.length) bits.push(`🏃 ${d.ex.length}`);
   return `<div class="toba-list-item watch-row" role="button" tabindex="0" data-click="openWatchDay" data-id="${date}">
       <span class="watch-row-date">${escapeHtml(watchDayLabel(date))}</span>
@@ -1170,14 +1168,33 @@ function watchDayRow(date, goals) {
     </div>`;
 }
 
+/* v1.91: 🔥 Calorias = ⚡ ativas (o que muda de um dia pro outro). O basal
+ * (o corpo gastando parado, quase igual todo dia) deixava tudo reto: só entra
+ * se ligar o "➕ Somar o basal" na análise das calorias (lembra no aparelho). */
+const WATCH_BASAL_KEY = "toba_health_watch_kcal_basal";
+function watchKcalBasal() {
+  try { return localStorage.getItem(WATCH_BASAL_KEY) === "1"; } catch (err) { return false; }
+}
+function watchSetKcalBasal(on) {
+  try { localStorage.setItem(WATCH_BASAL_KEY, on ? "1" : "0"); } catch (err) { /* sem storage: fica só nesta tela */ }
+}
+function watchKcalOf(d) {
+  if (!d) return undefined;
+  if (watchKcalBasal()) return d.kcal !== undefined ? d.kcal : d.activeKcal;
+  return d.activeKcal;
+}
+function watchKcalSub(d) {
+  if (watchKcalBasal()) return d && d.activeKcal !== undefined ? `com basal · ⚡ ${watchInt(d.activeKcal)} ativas` : "kcal com basal";
+  return d && d.kcal !== undefined ? `⚡ ativas · total ${watchInt(d.kcal)}` : "⚡ kcal ativas";
+}
+
 function watchMonthSummary(dates, goals) {
   let steps = 0, stepDays = 0, hit = 0, sleep = 0, sleepDays = 0, kcal = 0, ex = 0;
   dates.forEach((date) => {
     const d = watchDay(date);
     if (d.steps !== undefined) { steps += d.steps; stepDays++; if (d.steps >= goals.steps) hit++; }
     if (d.sleep && d.sleep.min > 0) { sleep += d.sleep.min; sleepDays++; }
-    if (d.kcal !== undefined) kcal += d.kcal;
-    else if (d.activeKcal !== undefined) kcal += d.activeKcal;
+    if (watchKcalOf(d) !== undefined) kcal += watchKcalOf(d);
     if (Array.isArray(d.ex)) ex += d.ex.filter((x) => !x.auto && watchExMinutes(x) >= 3).length;
   });
   return { steps, stepDays, hit, sleepAvg: sleepDays ? sleep / sleepDays : 0, kcal, ex, days: dates.length };
@@ -1206,7 +1223,7 @@ function renderWatchList() {
     const stats = [];
     if (sum.stepDays) stats.push(`<span class="watch-month-stat"><b>👟 ${watchInt(sum.steps)}</b><small>passos · ${watchInt(sum.steps / sum.stepDays)}/dia</small></span>`);
     if (sum.sleepAvg) stats.push(`<span class="watch-month-stat"><b>😴 ${watchHours(sum.sleepAvg)}</b><small>sono por noite</small></span>`);
-    if (sum.kcal) stats.push(`<span class="watch-month-stat"><b>🔥 ${watchInt(sum.kcal)}</b><small>kcal no mês</small></span>`);
+    if (sum.kcal) stats.push(`<span class="watch-month-stat"><b>🔥 ${watchInt(sum.kcal)}</b><small>${watchKcalBasal() ? "kcal no mês (com basal)" : "kcal ativas no mês"}</small></span>`);
     stats.push(`<span class="watch-month-stat"><b>🏃 ${sum.ex}</b><small>treinos do relógio</small></span>`);
     return `<div class="watch-month${open ? " is-open" : ""}">
       <button type="button" class="watch-month-head" data-click="watchToggleMonth" data-id="${ym}" aria-expanded="${open}">
