@@ -705,11 +705,25 @@ function applyParsed(parsed) {
   return parsed;
 }
 
+/* v1.85: no APK a janela não deixa o site ler a área de transferência; o APK 2.1
+ * (ponte 9) lê pelo Android em TOBA_NATIVE.clipboardText(). */
+async function readClipboardForPlaces() {
+  if (TOBA_NATIVE && typeof TOBA_NATIVE.clipboardText === "function") {
+    try {
+      const native = String(TOBA_NATIVE.clipboardText() || "");
+      if (native.trim()) return native;
+    } catch (err) {
+      /* cai no do navegador */
+    }
+  }
+  if (!navigator.clipboard || !navigator.clipboard.readText) throw new Error("sem clipboard");
+  return navigator.clipboard.readText();
+}
+
 async function pasteFromMaps() {
   const area = document.getElementById("placePaste");
   try {
-    if (!navigator.clipboard || !navigator.clipboard.readText) throw new Error("sem clipboard");
-    const text = await navigator.clipboard.readText();
+    const text = await readClipboardForPlaces();
     if (!text.trim()) throw new Error("vazio");
     area.value = text;
     const parsed = applyParsed(turismParseShared(text));
@@ -725,7 +739,9 @@ async function pasteFromMaps() {
     }
   } catch (err) {
     area.focus();
-    tobaToast("Segura o dedo no campo › Colar 👆");
+    // APK antigo (antes do 2.1) não tem a ponte: avisa que o novo cola com 1 toque
+    const oldApk = TOBA_NATIVE && typeof TOBA_NATIVE.clipboardText !== "function";
+    tobaToast(oldApk ? "Segura o dedo no campo › Colar 👆 (APK 2.1 cola sozinho)" : "Segura o dedo no campo › Colar 👆");
   }
 }
 
@@ -1225,7 +1241,8 @@ window.addEventListener("pageshow", (event) => {
     if (fuiPlace.status !== "been") openRate({ dataset: { id: fuiPlace.id } });
     else tobaToast("✅ Esse lugar já tava marcado como visitado");
   }
-  // Compartilhar do Google Maps direto pro Toba (app instalado pelo Chrome: share_target do manifest)
+  // Compartilhar do Google Maps direto pro Toba (app instalado pelo Chrome: share_target do manifest;
+  // APK 2.1+: o MainActivity recebe o ACTION_SEND e abre esta página com os mesmos ?title=&text=)
   const shared = [params.get("title"), params.get("text"), params.get("url")].filter(Boolean).join("\n");
   if (shared.trim()) {
     try {

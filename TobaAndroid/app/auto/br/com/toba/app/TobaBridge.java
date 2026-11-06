@@ -1,6 +1,8 @@
 package br.com.toba.app;
 
 import android.app.NotificationManager;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -20,6 +22,8 @@ import org.json.JSONObject;
 
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import br.com.toba.auto.DriveSync;
 
@@ -40,7 +44,37 @@ final class TobaBridge {
 
     @JavascriptInterface
     public int version() {
-        return 8; // 8 = APK 1.8 (autoFavorites: ⭐ no Android Auto); 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
+        return 9; // 9 = APK 2.1 (clipboardText: 📋 Colar do Maps no Places); 8 = APK 1.8 (autoFavorites: ⭐ no Android Auto); 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
+    }
+
+    /* ---------------- v1.85 (APK 2.1): área de transferência ---------------- */
+
+    // 📋 Colar do Maps (Toba Places): a janela do app não deixa o site ler a área de
+    // transferência (navigator.clipboard.readText falha calado), então lê pelo Android.
+    // Android 12+ mostra o aviso "Toba colou da área de transferência". Vazio = nada copiado.
+    @JavascriptInterface
+    public String clipboardText() {
+        final String[] out = {""};
+        final CountDownLatch done = new CountDownLatch(1);
+        activity.runOnUiThread(() -> {
+            try {
+                ClipboardManager cm = (ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE);
+                ClipData clip = cm == null ? null : cm.getPrimaryClip();
+                if (clip != null && clip.getItemCount() > 0) {
+                    CharSequence t = clip.getItemAt(0).coerceToText(activity);
+                    if (t != null) out[0] = t.toString();
+                }
+            } catch (Exception ignored) {
+                // sem permissão (app fora da tela) ou nada copiado
+            }
+            done.countDown();
+        });
+        try {
+            done.await(2, TimeUnit.SECONDS);
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        }
+        return out[0];
     }
 
     /* ---------------- Notificações do Toba ---------------- */

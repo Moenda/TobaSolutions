@@ -2007,3 +2007,16 @@ O velocímetro continua na esquerda: os botões do Android Auto ficam sempre na 
 **Como testar:** Treinos › ▶ Iniciar treino › Alongamento 10 min: confere o bonequinho, o "Prepara", a troca de lado, pausar/pular/voltar e salvar (aparece no histórico com 🧘, a sequência conta e o Perfil dá o troféu Elástico de escritório). Depois ▶ › Caminhada ao vivo no celular (GPS liberado), anda um quarteirão, ⏸/▶, 🏁 Finalizar e salva: abre a página com o mapa e o km por km. + Treino › 🚶 › 🏃 Esteira com inclinação e Origem ⌚. Atalho 🚶 Caminhadas mostra tudo com mapinha. Editar a caminhada do GPS e salvar: o mapa continua lá.
 
 **Commit sugerido:** `v1.84 - Alongamento de 10/20 min com timer e bonequinho (vale XP, sequencia e trofeu) + Caminhada/Corrida com GPS ao vivo, esteira, origem do relogio e historico com mapinha`
+
+## v1.85 — 📍 Compartilhar do Google Maps › Toba de volta (agora no APK 2.1) e 📋 Colar do Maps que cola de verdade no app
+
+**Arquivos alterados:** `TobaAndroid/app/src/main/AndroidManifest.xml`, `TobaAndroid/app/auto/br/com/toba/app/MainActivity.java`, `TobaAndroid/app/auto/br/com/toba/app/TobaBridge.java`, `TobaAndroid/app/build.gradle` (**APK 2.1, versionCode 12**), `TobaAndroid/README.md`, `TobaTurism/js/places.js`, `sw.js` (toba-v45), `CLAUDE.md`
+
+1. **Toba de volta no Compartilhar do Maps:** não tinha quebrado, o Compartilhar caía no Toba instalado pelo Chrome (share_target do site) e o APK nunca tinha se cadastrado ali. Agora o APK aparece em Maps › Compartilhar › **Toba** e abre direto o 📍 Lugar novo do Toba Places com nome, endereço e link preenchidos (mesmo esquema do Chrome). Funciona com o app aberto ou fechado; reabrir pelos Recentes não abre o Lugar novo de novo.
+2. **📋 Colar do Maps no app:** a janela do APK bloqueava a leitura da área de transferência (por isso só aparecia "Segura o dedo no campo › Colar"). A ponte ganhou `clipboardText()` e o botão cola com 1 toque. O Android 12+ mostra o aviso "Toba colou da área de transferência": é normal. No navegador segue igual; APK antigo avisa "APK 2.1 cola sozinho".
+
+**Dados:** nada muda no `TOBA_TURISM_DB`. Ponte `version()` = 9.
+
+**Como testar:** gerar o APK 2.1 (Generate Signed APK, chave de sempre) e instalar **pelo KingInstaller** por cima (nunca desinstalar). No Google Maps abre um lugar › Compartilhar › Toba: abre o Places com o Lugar novo preenchido, salva. Depois no Maps › Copiar link, abre o Toba › Places › + › 📋 Colar do Maps: o link entra e pede o nome ("Copiar link" só manda o link curto). Se o Toba não aparecer na lista do Compartilhar, toca em "Editar"/lápis da lista e procura o Toba (o Android às vezes esconde app novo).
+
+**Commit sugerido:** `v1.85 - Compartilhar do Google Maps pro Toba Places no APK 2.1 (ACTION_SEND) + Colar do Maps le a area de transferencia pelo app`

@@ -40,6 +40,13 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- v1.85 (APK 2.1): Compartilhar do Google Maps (ou de qualquer app) › Toba
+                 abre o 📍 Lugar novo do Toba Places já preenchido. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
         </activity>
 
         <!-- Lê as notificações de compra (o usuário liga em Configurações do Android). -->

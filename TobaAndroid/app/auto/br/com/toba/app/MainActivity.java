@@ -40,6 +40,8 @@ import br.com.toba.auto.NavService;
  * pra página (window.onTobaNativeFix), WebView sem pausar e voz do Android.
  * v1.78 (APK 1.7): rota junta com o Android Auto (DriveSync): rota do carro chega
  * no site por window.onTobaAutoRoute; a do site vai pro carro por TobaNative.autoRoute.
+ * v1.85 (APK 2.1): Compartilhar › Toba (ACTION_SEND) abre o Toba Places com o texto
+ * no ?title=&text= (mesmo formato do share_target do site instalado pelo Chrome).
  */
 public class MainActivity extends Activity {
     static final String EXTRA_URL = "url";
@@ -160,7 +162,10 @@ public class MainActivity extends Activity {
             }
         });
 
-        if (savedInstanceState == null || web.restoreState(savedInstanceState) == null) {
+        String shared = savedInstanceState == null ? sharedPlacesUrl(getIntent()) : null;
+        if (shared != null) {
+            web.loadUrl(shared);
+        } else if (savedInstanceState == null || web.restoreState(savedInstanceState) == null) {
             web.loadUrl(startUrl(getIntent()));
         }
         askNotificationPermission();
@@ -171,6 +176,11 @@ public class MainActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        String shared = sharedPlacesUrl(intent);
+        if (shared != null && web != null) {
+            web.loadUrl(shared);
+            return;
+        }
         String url = intent.getStringExtra(EXTRA_URL);
         if (url != null && isOwnSite(Uri.parse(url))) web.loadUrl(url);
     }
@@ -345,6 +355,24 @@ public class MainActivity extends Activity {
 
     static boolean isOwnSite(Uri url) {
         return url != null && "https".equals(url.getScheme()) && BuildConfig.SITE_HOST.equalsIgnoreCase(url.getHost());
+    }
+
+    // v1.85: Compartilhar › Toba. Texto do Maps = "Nome\nEndereço\nhttps://maps.app.goo.gl/..."
+    // (o assunto, quando vem, vira title). Reaberto pelos Recentes = não reabre o Lugar novo.
+    static String sharedPlacesUrl(Intent intent) {
+        if (intent == null || !Intent.ACTION_SEND.equals(intent.getAction())) return null;
+        if ((intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) return null;
+        CharSequence text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT);
+        String subject = intent.getStringExtra(Intent.EXTRA_SUBJECT);
+        String t = text == null ? "" : text.toString().trim();
+        String s = subject == null ? "" : subject.trim();
+        if (t.isEmpty() && s.isEmpty()) return null;
+        if (t.length() > 2000) t = t.substring(0, 2000);
+        if (s.length() > 300) s = s.substring(0, 300);
+        Uri.Builder b = Uri.parse(BuildConfig.START_URL + "TobaTurism/TobaTurism-Places.html").buildUpon();
+        if (!s.isEmpty() && !t.startsWith(s)) b.appendQueryParameter("title", s);
+        if (!t.isEmpty()) b.appendQueryParameter("text", t);
+        return b.build().toString();
     }
 
     private static String startUrl(Intent intent) {
