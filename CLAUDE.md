@@ -696,4 +696,5 @@ Abra `http://localhost:8080/`. Para testar migrações, cole um JSON antigo em `
 
 1. Acrescentar a entrada do patch no `PATCH-NOTES.md` (seção 0.1).
 2. Se mudou lista de arquivos: `PRECACHE` + `VERSION` no `sw.js`.
+   Desde v1.86: subir também `TOBA_PATCH_VERSION` no `assets/toba-common.js` pro número do patch (aparece na ⚙️ como "APK 2.1 · Patch v1.86"; APK = `TobaApp/x` do User-Agent, no navegador mostra "Site").
 3. Sugerir a mensagem de commit no padrão `vX.YY - descrição` — **quem commita e faz push é o usuário** (ver seção 0).

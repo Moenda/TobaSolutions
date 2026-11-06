@@ -1110,6 +1110,17 @@ button.toba-stat:hover,
   color: var(--red);
 }
 
+/* v1.86: "APK 2.1 · Patch v1.86" embaixo do backup na ⚙️ */
+.toba-version-line {
+  margin: 1rem 0 0;
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--gold);
+  opacity: 0.85;
+}
+
 /* Folha "🔔 Lembrete" (tobaOpenReminder): horários + dias da semana */
 .toba-reminder-msg {
   margin-bottom: 0.9rem;

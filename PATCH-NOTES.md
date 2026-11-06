@@ -2020,3 +2020,19 @@ O velocímetro continua na esquerda: os botões do Android Auto ficam sempre na 
 **Como testar:** gerar o APK 2.1 (Generate Signed APK, chave de sempre) e instalar **pelo KingInstaller** por cima (nunca desinstalar). No Google Maps abre um lugar › Compartilhar › Toba: abre o Places com o Lugar novo preenchido, salva. Depois no Maps › Copiar link, abre o Toba › Places › + › 📋 Colar do Maps: o link entra e pede o nome ("Copiar link" só manda o link curto). Se o Toba não aparecer na lista do Compartilhar, toca em "Editar"/lápis da lista e procura o Toba (o Android às vezes esconde app novo).
 
 **Commit sugerido:** `v1.85 - Compartilhar do Google Maps pro Toba Places no APK 2.1 (ACTION_SEND) + Colar do Maps le a area de transferencia pelo app`
+
+---
+
+## v1.86 — 📜 Gastos: filtro de categoria também no histórico dos meses
+**Arquivos:** `TobaBank/js/gastos.js`, `assets/toba-common.js`, `assets/toba-common.css`, `CLAUDE.md`, `sw.js` (versão toba-v46)
+
+1. **Meses passados filtram igual ao mês atual:** abre um mês na aba 📜 Meses e toca numa categoria do 📊 Categorias. A barra dela fica destacada (as outras apagadinhas) e o mês mostra só os 💸 Lançamentos e as 💳 Parcelas daquela categoria, com o contador "2/5" em cada seção.
+2. **Parcelas entram na conta:** a faixa do filtro do mês (💸 Total no mês + 📊 Média) soma as compras à vista **e** as parcelas daquele mês da categoria ("2 compras + 1 parcela", média "por lançamento"), mesma regra da v1.83 na tela inicial. As barras de categoria do histórico já somavam as parcelas desde antes.
+3. Cada mês tem o próprio filtro; tocar de novo na categoria ou em ✕ Limpar filtro tira. A sanfona do mês continua aberta quando filtra.
+4. **🏷️ Versão na ⚙️:** embaixo do Dados & Backup (em todo app) aparece em amarelinho pequeno "APK 2.1 · Patch v1.86". Assim dá pra ver na hora se o celular tá com o APK novo e o site atualizado. No navegador aparece "Site · Patch v1.86".
+
+**Dados:** nada gravado, é só tela (`historyCategoryFilter` em memória, um por mês).
+
+**Como testar:** Gastos › 📜 Meses › abrir um mês com parcela › tocar na categoria da parcela: aparece só ela + as compras à vista dela, e o Total soma tudo. ✕ Limpar filtro volta tudo. Abre a ⚙️ de qualquer app: embaixo do backup tem "APK 2.1 · Patch v1.86" (se aparecer APK 2.0, o APK novo ainda não foi instalado).
+
+**Commit sugerido:** `v1.86 - Gastos: filtro de categoria tambem no historico dos meses (lancamentos + parcelas, total e media somando as parcelas) + versao do APK e do patch na engrenagem`

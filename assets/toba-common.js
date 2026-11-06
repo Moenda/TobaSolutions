@@ -736,6 +736,16 @@ function tobaReadFile(input) {
 // App Android (TobaAndroid/): window.TobaNative existe; no navegador é null.
 const TOBA_NATIVE = window.TobaNative || null;
 
+// v1.86: versão do patch, mostrada embaixo do backup na ⚙️ ("APK 2.1 · Patch v1.86").
+// TODO patch novo sobe aqui junto da entrada do PATCH-NOTES (CLAUDE.md seção 7).
+const TOBA_PATCH_VERSION = "v1.86";
+
+// Versão do APK pelo User-Agent ("... TobaApp/2.1"); "" no navegador.
+function tobaApkVersion() {
+  const m = /TobaApp\/([\w.]+)/.exec(navigator.userAgent || "");
+  return m ? m[1] : "";
+}
+
 function tobaIsApp() {
   return Boolean(TOBA_NATIVE);
 }
@@ -1031,6 +1041,7 @@ const TOBA_SETTINGS_HTML = `
         <span class="toba-hub-chevron">›</span>
       </button>
     </div>
+    <p class="toba-version-line" id="tobaVersionLine"></p>
   </div>
 </div>
 <div class="toba-modal" id="tobaDataModal" role="dialog" aria-modal="true" aria-labelledby="tobaDataModalTitle">
@@ -1088,6 +1099,9 @@ function ensureTobaSettings() {
   document.getElementById("tobaDataHint").textContent = TOBA_APP.dataHint ||
     `O backup é um arquivo .json só com os dados do ${TOBA_APP.name}. Guarde no Drive de vez em quando, vai que...`;
   document.getElementById("tobaResetTitle").textContent = `Apagar tudo do ${TOBA_APP.name}`;
+  const apk = tobaApkVersion();
+  document.getElementById("tobaVersionLine").textContent =
+    `${apk ? `APK ${apk}` : "Site"} · Patch ${TOBA_PATCH_VERSION}`;
   // Sem resetData (ex.: portal), a zona de perigo nem aparece.
   if (!TOBA_APP.resetData) {
     document.getElementById("tobaDangerSection").hidden = true;

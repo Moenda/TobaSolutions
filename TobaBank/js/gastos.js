@@ -192,15 +192,22 @@ function renderDashboard() {
 // os "Lançamentos do mês" (null = todos). Só tela, nada é gravado.
 let expenseCategoryFilter = null;
 
+// v1.85: mesmo filtro nos meses do histórico, um por mês ({ "AAAA-MM": categoria }).
+// Só tela, nada é gravado.
+const historyCategoryFilter = {};
+
 function renderCategoryBars(
   transactions,
   totalSpent,
   containerId = "categoryBarsContainer",
+  filterOpts = null,
 ) {
   const container = document.getElementById(containerId);
   if (!container) return;
   container.innerHTML = "";
-  const canFilter = containerId === "categoryBarsContainer";
+  const isHome = containerId === "categoryBarsContainer";
+  const canFilter = isHome || !!filterOpts;
+  const selected = isHome ? expenseCategoryFilter : (filterOpts?.selected ?? null);
 
   if (!transactions || transactions.length === 0 || totalSpent <= 0) {
     container.innerHTML = tobaEmpty("📊", "Sem categorias por aqui", "Lance um gasto e o gráfico aparece.", { compact: true });
@@ -224,13 +231,14 @@ function renderCategoryBars(
       itemEl.className = "category-item";
       if (canFilter) {
         itemEl.classList.add("is-filter");
-        itemEl.classList.toggle("is-selected", expenseCategoryFilter === category);
-        itemEl.classList.toggle("is-dim", expenseCategoryFilter !== null && expenseCategoryFilter !== category);
+        itemEl.classList.toggle("is-selected", selected === category);
+        itemEl.classList.toggle("is-dim", selected !== null && selected !== category);
         itemEl.setAttribute("role", "button");
         itemEl.tabIndex = 0;
-        itemEl.dataset.click = "filterExpenseCategory";
+        itemEl.dataset.click = isHome ? "filterExpenseCategory" : "filterHistoryCategory";
         itemEl.dataset.category = category;
-        itemEl.setAttribute("aria-pressed", String(expenseCategoryFilter === category));
+        if (!isHome) itemEl.dataset.month = filterOpts.month;
+        itemEl.setAttribute("aria-pressed", String(selected === category));
       }
       itemEl.innerHTML = `
                 <div class="category-info">
@@ -296,11 +304,12 @@ function renderExpenseListWithInstallments(
   }
 }
 
-function renderExpenseFilterBar(filtered, filteredInst = []) {
-  const bar = document.getElementById("expenseFilterBar");
+function renderExpenseFilterBar(filtered, filteredInst = [], opts = {}) {
+  const bar = document.getElementById(opts.barId || "expenseFilterBar");
   if (!bar) return;
-  bar.hidden = expenseCategoryFilter === null;
-  if (expenseCategoryFilter === null) return;
+  const category = opts.barId ? opts.category : expenseCategoryFilter;
+  bar.hidden = category === null || category === undefined;
+  if (bar.hidden) return;
   // v1.83: total e média somam as compras à vista + as parcelas do mês da categoria
   const sumOf = (list) => list.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
   const total = sumOf(filtered) + sumOf(filteredInst);
@@ -320,9 +329,9 @@ function renderExpenseFilterBar(filtered, filteredInst = []) {
       </span>`;
   bar.innerHTML = `
     <span class="expense-filter-text">
-      <b>${escapeHtml(expenseCategoryFilter)}</b>
+      <b>${escapeHtml(category)}</b>
     </span>
-    <button type="button" class="chip-btn" data-click="clearExpenseFilter">✕ Limpar filtro</button>
+    <button type="button" class="chip-btn" data-click="${opts.month ? "clearHistoryFilter" : "clearExpenseFilter"}"${opts.month ? ` data-month="${escapeHtml(opts.month)}"` : ""}>✕ Limpar filtro</button>
     <span class="expense-filter-stats">
       ${tile("💸 Total no mês", formatCurrency(total), `em ${countNote || "0 compras"}`)}
       ${tile("📊 Média", count ? formatCurrency(total / count) : "--", parcels ? "por lançamento" : "por compra", " is-avg")}
@@ -840,33 +849,83 @@ function renderHistory() {
       <div class="acc-body">
         <div class="section-title is-first">📊 Categorias</div>
         <div id="catBars-${mKey}"></div>
-        <div class="section-title">💸 Lançamentos</div>
+        <div class="expense-filter-bar is-history" id="historyFilterBar-${mKey}" hidden></div>
+        <div class="section-title">💸 Lançamentos <span class="acc-count" id="historyTransCount-${mKey}">0</span></div>
         <div class="expense-list" id="historyTransList-${mKey}"></div>
-        <div class="section-title">💳 Parcelas</div>
+        <div class="section-title">💳 Parcelas <span class="acc-count" id="historyInstCount-${mKey}">0</span></div>
         <div class="expense-list" id="historyInstList-${mKey}"></div>
       </div>
     `;
     container.appendChild(card);
+    renderHistoryMonthBody(mKey, mTransactions, mActiveInstallments, totalSpent);
+  });
+}
 
-    const combined = [...mTransactions];
-    mActiveInstallments.forEach((p) =>
-      combined.push({ category: p.category, amount: p.amount }),
-    );
-    renderCategoryBars(combined, totalSpent, `catBars-${mKey}`);
+// v1.85: categorias + lançamentos + parcelas de um mês do histórico, com o
+// filtro de categoria daquele mês (igual à tela inicial: soma as parcelas).
+function renderHistoryMonthBody(mKey, mTransactions, mActiveInstallments, totalSpent) {
+  const inFilter = (t) => getCleanCategory(t.category) === historyCategoryFilter[mKey];
+  if (historyCategoryFilter[mKey] !== undefined && !mTransactions.some(inFilter) && !mActiveInstallments.some(inFilter)) {
+    delete historyCategoryFilter[mKey];
+  }
+  const selected = historyCategoryFilter[mKey] ?? null;
 
-    document.getElementById(`historyTransList-${mKey}`).innerHTML =
+  const combined = [...mTransactions];
+  mActiveInstallments.forEach((p) =>
+    combined.push({ category: p.category, amount: p.amount }),
+  );
+  renderCategoryBars(combined, totalSpent, `catBars-${mKey}`, { month: mKey, selected });
+
+  const filtered = selected === null ? mTransactions : mTransactions.filter(inFilter);
+  const filteredInst = selected === null ? mActiveInstallments : mActiveInstallments.filter(inFilter);
+  setText(`historyTransCount-${mKey}`, selected === null ? mTransactions.length : `${filtered.length}/${mTransactions.length}`);
+  setText(`historyInstCount-${mKey}`, selected === null ? mActiveInstallments.length : `${filteredInst.length}/${mActiveInstallments.length}`);
+  renderExpenseFilterBar(filtered, filteredInst, { barId: `historyFilterBar-${mKey}`, category: selected, month: mKey });
+
+  const transList = document.getElementById(`historyTransList-${mKey}`);
+  if (transList) {
+    transList.innerHTML =
       mTransactions.length === 0
         ? tobaEmpty("🧾", "Nenhum gasto à vista", "", { compact: true })
-        : [...mTransactions]
-          .sort((a, b) => new Date(b.date) - new Date(a.date))
-          .map(transactionItemHtml)
-          .join("");
+        : filtered.length === 0
+          ? tobaEmpty("🧾", "Só parcela nessa categoria", "Nenhuma compra à vista dela no mês.", { compact: true })
+          : [...filtered]
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .map(transactionItemHtml)
+            .join("");
+  }
 
-    document.getElementById(`historyInstList-${mKey}`).innerHTML =
+  const instList = document.getElementById(`historyInstList-${mKey}`);
+  if (instList) {
+    instList.innerHTML =
       mActiveInstallments.length === 0
         ? tobaEmpty("💳", "Nenhuma parcela", "", { compact: true })
-        : mActiveInstallments.map(installmentItemHtml).join("");
-  });
+        : filteredInst.length === 0
+          ? tobaEmpty("💳", "Nenhuma parcela dessa categoria", "Só compra à vista nela esse mês.", { compact: true })
+          : filteredInst.map(installmentItemHtml).join("");
+  }
+}
+
+// Recalcula só o mês tocado (a sanfona continua aberta)
+function refreshHistoryMonth(mKey) {
+  const mTransactions = db.transactions.filter((t) => t.date && t.date.startsWith(mKey));
+  const mActiveInstallments = getActiveInstallmentsForMonth(mKey);
+  const totalSpent =
+    mTransactions.reduce((acc, t) => acc + t.amount, 0) +
+    mActiveInstallments.reduce((acc, p) => acc + p.amount, 0) +
+    getFixedTotalForMonth(mKey);
+  renderHistoryMonthBody(mKey, mTransactions, mActiveInstallments, totalSpent);
+}
+
+function filterHistoryCategory(el) {
+  const mKey = el.dataset.month;
+  const category = el.dataset.category;
+  if (!mKey) return;
+  if (historyCategoryFilter[mKey] === category) delete historyCategoryFilter[mKey];
+  else historyCategoryFilter[mKey] = category;
+  refreshHistoryMonth(mKey);
+  if (historyCategoryFilter[mKey] === undefined) return;
+  document.getElementById(`historyFilterBar-${mKey}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function toggleInstallmentFields() {
@@ -1340,6 +1399,11 @@ tobaActions({
   clearExpenseFilter: () => {
     expenseCategoryFilter = null;
     renderDashboard();
+  },
+  filterHistoryCategory,
+  clearHistoryFilter: (el) => {
+    delete historyCategoryFilter[el.dataset.month];
+    refreshHistoryMonth(el.dataset.month);
   },
   openSobraHelp,
   openSettings: openGastosSettings,
