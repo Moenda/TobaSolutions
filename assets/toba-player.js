@@ -1039,11 +1039,21 @@ function computePlayer(options = {}) {
   // v1.91: km do dia a dia do relógio entram na ordem das datas (só conquistas)
   const watchKmDays = typeof calcWatchExtraKm === "function" ? calcWatchExtraKm(health, today) : [];
   let watchKmIndex = 0;
+  // v1.92: recorde do dia a dia (mais passos ou mais km num dia) conta pros
+  // troféus de recorde e aparece no histórico, mas sem os +30 XP do recorde de treino
+  const watchRecordDays = typeof calcWatchDayRecords === "function" ? calcWatchDayRecords(health, today) : [];
+  let watchRecordIndex = 0;
   const flushWatchKm = (untilDate) => {
     while (watchKmIndex < watchKmDays.length && (!untilDate || watchKmDays[watchKmIndex].date <= untilDate)) {
       const step = watchKmDays[watchKmIndex++];
       stats.watchKm += step.km;
       checkAchievements(step.date, false);
+    }
+    while (watchRecordIndex < watchRecordDays.length && (!untilDate || watchRecordDays[watchRecordIndex].date <= untilDate)) {
+      const rec = watchRecordDays[watchRecordIndex++];
+      events.push({ date: rec.date, kind: "record", xp: 0, icon: "⌚", label: rec.label });
+      stats.records += 1;
+      checkAchievements(rec.date, false);
     }
   };
   const types = new Set();

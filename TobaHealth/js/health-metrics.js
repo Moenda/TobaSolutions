@@ -351,6 +351,48 @@ function calcWatchExtraKm(healthData, today) {
     .filter((item) => item.km > 0);
 }
 
+/* v1.92: recordes do dia a dia do relógio (pedido do Rafa: quem não faz
+ * academia também bate recorde). Recorde = passou o melhor dia de passos (ou
+ * de distância) dos ÚLTIMOS 365 DIAS (escolha do Rafa): com anos de histórico,
+ * o "melhor da vida" travava num dia de 66 mil passos. Vale 1 por dia
+ * (passo e km andam juntos) e só se a janela tiver metade dos dias com dado.
+ * Devolve [{ date, label }] em ordem de data. */
+const WATCH_RECORD_WINDOW = 365;
+function calcWatchDayRecords(healthData, today) {
+  const days = healthData && healthData.watch && healthData.watch.days;
+  if (!days || typeof days !== "object") return [];
+  const dates = Object.keys(days)
+    .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date) && (!today || date <= today))
+    .sort();
+  const dayNum = (iso) => Math.round(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 86400000);
+  const out = [];
+  let start = 0;
+  dates.forEach((date, i) => {
+    const now = dayNum(date);
+    while (start < i && dayNum(dates[start]) < now - WATCH_RECORD_WINDOW) start++;
+    let bestSteps = 0;
+    let bestM = 0;
+    let filled = 0;
+    for (let k = start; k < i; k++) {
+      const prev = days[dates[k]] || {};
+      const steps = Number(prev.steps) || 0;
+      if (steps > 0) filled++;
+      bestSteps = Math.max(bestSteps, steps);
+      bestM = Math.max(bestM, Number(prev.distanceM) || 0);
+    }
+    if (filled < WATCH_RECORD_WINDOW / 2) return;
+    const day = days[date] || {};
+    const steps = Number(day.steps) || 0;
+    const meters = Number(day.distanceM) || 0;
+    if (steps > 0 && bestSteps > 0 && steps > bestSteps) {
+      out.push({ date, label: `Melhor dia de passos em 1 ano: ${Math.round(steps).toLocaleString("pt-BR")}` });
+    } else if (meters > 0 && bestM > 0 && meters > bestM) {
+      out.push({ date, label: `Maior distância em 1 ano: ${(meters / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} km` });
+    }
+  });
+  return out;
+}
+
 const WORKOUT_LIFT_EQUIVALENTS = [
   { id: "lift-gato", icon: "🐈", one: "gato", name: "gatos", size: 4, note: "Levantado sem ele aprovar." },
   { id: "lift-caramelo", icon: "🐕", one: "cachorro caramelo", name: "cachorros caramelo", size: 12, note: "O patrimônio nacional, no supino." },

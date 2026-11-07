@@ -738,7 +738,7 @@ const TOBA_NATIVE = window.TobaNative || null;
 
 // v1.86: versão do patch, mostrada embaixo do backup na ⚙️ ("APK 2.1 · Patch v1.86").
 // TODO patch novo sobe aqui junto da entrada do PATCH-NOTES (CLAUDE.md seção 7).
-const TOBA_PATCH_VERSION = "v1.91";
+const TOBA_PATCH_VERSION = "v1.92";
 
 // Versão do APK pelo User-Agent ("... TobaApp/2.1"); "" no navegador.
 function tobaApkVersion() {

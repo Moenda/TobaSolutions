@@ -2199,3 +2199,17 @@ O Samsung não reenvia o passado pro Health Connect, então agora dá pra puxar 
 **Como testar:** Perfil › troféus 🌍 Distância: a barrinha do Rio em diante já soma os km do relógio (com o histórico do Samsung importado, vários destinos devem estar liberados). O XP não muda. A última da lista é 🌕 Até a Lua. Raio-X: o quadrado 🔥 Calorias mostra as ativas e o total embaixo; toca nele › ➕ Somar o basal: os números sobem pro total; toca de novo e volta.
 
 **Commit sugerido:** `v1.91 - Trofeus de distancia contam os km do dia a dia do relogio (Raio-X e historico do Samsung), so trofeu sem XP, sem contar duas vezes a caminhada do treino + trofeu Ate a Lua + Raio-X: calorias mostram so as ativas (um quadrado so) com botao Somar o basal na analise`
+
+## v1.92 — 📈 Recorde do dia a dia do relógio conta pros troféus de recorde
+
+1. **Dia que você andou mais conta como recorde** (pedido do Rafa: "eu não faço academia"). Passou o **melhor dia de passos dos últimos 365 dias** = 1 recorde pro 📈 Superou a si mesmo, 🚀 Viciado em recorde e 🏆 Máquina de recordes. Se os passos não bateram mas a **distância do dia** bateu a melhor do último ano, também vale. Um recorde por dia no máximo (passo e km andam juntos).
+2. **Por que 365 dias e não "o melhor da vida"** (escolha do Rafa): com o histórico do Samsung, um dia de 66 mil passos de jan/2024 travava o recorde da vida toda pra sempre. Com 1 ano a régua anda, mas continua difícil (no teste com o export deram 3: ago, set e out/2025). Só conta se o último ano tiver metade dos dias com dado, pra não sair recorde do nada no começo.
+3. **Sem XP próprio:** recorde de treino continua +30 XP; o do relógio só soma na contagem dos troféus (o troféu dá o XP dele quando libera). Entra na ordem das datas, então o histórico importado libera com a data antiga certa.
+
+**Dados:** nada novo gravado. `calcWatchDayRecords` (health-metrics.js) lê `TOBA_HEALTH_DB.watch.days[].steps/distanceM` na hora; o `computePlayer` soma em `stats.records` e põe um evento `kind: "record"` com `xp: 0` e ícone ⌚ (fica fora da lista de XP do Perfil). Sem APK novo, sem `sw` novo.
+
+**Arquivos:** `TobaHealth/js/health-metrics.js`, `assets/toba-player.js`, `assets/toba-common.js`, `CLAUDE.md`, `PATCH-NOTES.md`.
+
+**Como testar:** Perfil › 📈 Recordes: com o histórico do Samsung importado, o 📈 Superou a si mesmo já deve estar liberado (3 recordes do relógio no teste com o teu export). Anda mais que o teu melhor dia do último ano, 🔄 no Raio-X: a barrinha do 🏆 Máquina de recordes sobe 1. O XP de treino não muda.
+
+**Commit sugerido:** `v1.92 - Recorde do dia a dia do relogio (melhor dia de passos ou distancia dos ultimos 365 dias) conta pros trofeus de recorde, sem XP proprio`
