@@ -806,3 +806,35 @@
 .watch-an-itrack .is-no {
   background: var(--muted);
 }
+
+/* v1.93: ‹ Agosto 2026 › (períodos fechados na análise) */
+.watch-an-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -0.3rem 0 0.8rem;
+}
+
+.watch-an-nav .toba-icon-btn {
+  flex: 0 0 auto;
+  font-size: 1.4rem;
+}
+
+.watch-an-nav .toba-icon-btn:disabled {
+  opacity: 0.3;
+}
+
+.watch-an-pick {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  text-align: center;
+  text-align-last: center;
+}

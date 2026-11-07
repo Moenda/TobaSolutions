@@ -14,6 +14,7 @@ import android.health.connect.ReadRecordsResponse;
 import android.health.connect.TimeInstantRangeFilter;
 import android.health.connect.datatypes.ActiveCaloriesBurnedRecord;
 import android.health.connect.datatypes.AggregationType;
+import android.health.connect.datatypes.DataOrigin;
 import android.health.connect.datatypes.DistanceRecord;
 import android.health.connect.datatypes.ExerciseSessionRecord;
 import android.health.connect.datatypes.HeartRateRecord;
@@ -35,7 +36,10 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -52,8 +56,12 @@ import java.util.function.Function;
  * sem biblioteca nova no Gradle. Só leitura: o Toba nunca grava nada lá.
  * Quem chama checa Build.VERSION.SDK_INT >= 34 antes (essa classe nem carrega antes disso).
  *
- * Números por dia vêm da soma do próprio Health Connect (aggregateGroupByPeriod), que já
- * tira a duplicata quando celular e relógio contam os mesmos passos.
+ * Números por dia vêm da soma do próprio Health Connect (aggregateGroupByPeriod).
+ * v1.93 (APK 2.4): ele NÃO tira a duplicata quando o Samsung Health grava o dia inteiro
+ * num registro só e o próprio celular ("S24+ de ...") grava os passos em pedacinhos:
+ * somava os dois (6.500 + 2.200). Agora passos, distância e calorias vêm de UMA fonte
+ * por dia: soma por app (filtro de origem) e fica com a MAIOR. Quem tem relógio fica com
+ * o Samsung Health (que já junta relógio + celular); quem não tem, com o celular.
  * v1.89 (APK 2.3): cada exercício vem com kcal/km/passos/FC do horário dele (sessionStats).
  */
 @TargetApi(34)
@@ -167,18 +175,37 @@ final class HealthReader {
         JSONObject days = new JSONObject();
         JSONObject errors = new JSONObject();
 
+        // v1.93: quem gravou cada tipo no período (pra não somar celular + Samsung Health)
+        ZoneId zone = ZoneId.systemDefault();
+        TimeInstantRangeFilter whole = new TimeInstantRangeFilter.Builder()
+                .setStartTime(start.atZone(zone).toInstant())
+                .setEndTime(end.atZone(zone).toInstant())
+                .build();
+        List<String> stepOrigins = new ArrayList<>();
+        List<String> kcalOrigins = new ArrayList<>();
+        List<String> activeOrigins = new ArrayList<>();
+        List<String> distOrigins = new ArrayList<>();
         if (has(c, PERMS, "steps")) {
-            byDay(hc, range, StepsRecord.STEPS_COUNT_TOTAL, "steps", v -> v, days, errors);
+            stepOrigins = origins(hc, StepsRecord.class, whole);
+            byDayOneSource(hc, range, StepsRecord.STEPS_COUNT_TOTAL, "steps", v -> v, stepOrigins, days, errors);
         }
         if (has(c, PERMS, "kcal")) {
-            byDay(hc, range, TotalCaloriesBurnedRecord.ENERGY_TOTAL, "kcal", HealthReader::kcal, days, errors);
+            kcalOrigins = origins(hc, TotalCaloriesBurnedRecord.class, whole);
+            byDayOneSource(hc, range, TotalCaloriesBurnedRecord.ENERGY_TOTAL, "kcal", HealthReader::kcal, kcalOrigins, days, errors);
         }
         if (has(c, PERMS, "activeKcal")) {
-            byDay(hc, range, ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL, "activeKcal", HealthReader::kcal, days, errors);
+            activeOrigins = origins(hc, ActiveCaloriesBurnedRecord.class, whole);
+            byDayOneSource(hc, range, ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL, "activeKcal", HealthReader::kcal, activeOrigins, days, errors);
         }
         if (has(c, PERMS, "distance")) {
-            byDay(hc, range, DistanceRecord.DISTANCE_TOTAL, "distanceM", HealthReader::meters, days, errors);
+            distOrigins = origins(hc, DistanceRecord.class, whole);
+            byDayOneSource(hc, range, DistanceRecord.DISTANCE_TOTAL, "distanceM", HealthReader::meters, distOrigins, days, errors);
         }
+        JSONObject sources = new JSONObject();
+        sources.put("steps", new JSONArray(stepOrigins));
+        sources.put("kcal", new JSONArray(kcalOrigins));
+        sources.put("activeKcal", new JSONArray(activeOrigins));
+        sources.put("distance", new JSONArray(distOrigins));
         if (has(c, PERMS, "heart")) {
             byDay(hc, range, HeartRateRecord.BPM_AVG, "hrAvg", v -> v, days, errors);
             byDay(hc, range, HeartRateRecord.BPM_MIN, "hrMin", v -> v, days, errors);
@@ -189,7 +216,6 @@ final class HealthReader {
         }
 
         // Sono: começa ao meio-dia da véspera (a noite que acorda no 1º dia entra).
-        ZoneId zone = ZoneId.systemDefault();
         TimeInstantRangeFilter instants = new TimeInstantRangeFilter.Builder()
                 .setStartTime(from.minusDays(1).atTime(12, 0).atZone(zone).toInstant())
                 .setEndTime(end.atZone(zone).toInstant())
@@ -216,7 +242,7 @@ final class HealthReader {
                     if (title != null && title.length() > 0) x.put("title", title.toString());
                     x.put("origin", origin(r));
                     // v1.89 (APK 2.3): números da sessão pro mesclar com o treino do Toba
-                    sessionStats(c, hc, r, x);
+                    sessionStats(c, hc, r, x, stepOrigins, kcalOrigins, activeOrigins, distOrigins);
                     exercises.put(x);
                 }
             } catch (Exception e) {
@@ -231,15 +257,73 @@ final class HealthReader {
         out.put("sleep", sleep);
         out.put("exercises", exercises);
         out.put("errors", errors);
+        out.put("sources", sources); // v1.93: apps que gravaram cada tipo (pro 🩺 Diagnóstico)
         out.put("status", status(c));
         return out;
     }
 
-    // Um número por dia. Falhou (permissão tirada no meio, Health Connect ocupado)? Vai pro errors e segue.
+    // v1.93: apps (pacotes) que gravaram esse tipo no período. Lê os registros (até
+    // 20 páginas de 500; deu erro? Lista vazia = conta como antes (soma do Health Connect).
+    private static <T extends Record> List<String> origins(HealthConnectManager hc, Class<T> cls, TimeInstantRangeFilter filter) {
+        Set<String> out = new LinkedHashSet<>();
+        try {
+            for (T r : readAll(hc, cls, filter)) {
+                String o = origin(r);
+                if (!o.isEmpty()) out.add(o);
+            }
+        } catch (Exception ignored) {
+            // sem a lista: cai na soma normal
+        }
+        return new ArrayList<>(out);
+    }
+
+    // v1.93: um número por dia vindo de UMA fonte só: soma de cada app separado e fica a
+    // maior do dia. Com 0 ou 1 app, é a soma normal do Health Connect (igual antes).
+    private static <T> void byDayOneSource(HealthConnectManager hc, LocalTimeRangeFilter range, AggregationType<T> type,
+            String field, Function<T, Object> conv, List<String> sources, JSONObject days, JSONObject errors) throws JSONException {
+        if (sources.size() <= 1) {
+            byDay(hc, range, type, field, conv, days, errors);
+            return;
+        }
+        JSONObject best = new JSONObject();
+        for (String pkg : sources) {
+            JSONObject one = new JSONObject();
+            JSONObject err = new JSONObject();
+            byDay(hc, range, type, field, conv, one, err, pkg);
+            if (err.length() > 0 && !errors.has(field)) errors.put(field, err.optString(field));
+            Iterator<String> keys = one.keys();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                Object val = one.getJSONObject(key).opt(field);
+                if (!(val instanceof Number)) continue;
+                Object had = best.opt(key);
+                if (!(had instanceof Number) || ((Number) val).doubleValue() > ((Number) had).doubleValue()) best.put(key, val);
+            }
+        }
+        Iterator<String> keys = best.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            JSONObject d = days.optJSONObject(key);
+            if (d == null) {
+                d = new JSONObject();
+                days.put(key, d);
+            }
+            d.put(field, best.get(key));
+        }
+    }
+
     private static <T> void byDay(HealthConnectManager hc, LocalTimeRangeFilter range, AggregationType<T> type, String field,
             Function<T, Object> conv, JSONObject days, JSONObject errors) throws JSONException {
+        byDay(hc, range, type, field, conv, days, errors, null);
+    }
+
+    // Um número por dia. Falhou (permissão tirada no meio, Health Connect ocupado)? Vai pro errors e segue.
+    private static <T> void byDay(HealthConnectManager hc, LocalTimeRangeFilter range, AggregationType<T> type, String field,
+            Function<T, Object> conv, JSONObject days, JSONObject errors, String pkg) throws JSONException {
         try {
-            AggregateRecordsRequest<T> req = new AggregateRecordsRequest.Builder<T>(range).addAggregationType(type).build();
+            AggregateRecordsRequest.Builder<T> rb = new AggregateRecordsRequest.Builder<T>(range).addAggregationType(type);
+            if (pkg != null) rb.addDataOriginsFilter(new DataOrigin.Builder().setPackageName(pkg).build());
+            AggregateRecordsRequest<T> req = rb.build();
             CompletableFuture<List<AggregateRecordsGroupedByPeriodResponse<T>>> f = new CompletableFuture<>();
             hc.aggregateGroupByPeriod(req, Period.ofDays(1), Runnable::run,
                     new OutcomeReceiver<List<AggregateRecordsGroupedByPeriodResponse<T>>, HealthConnectException>() {
@@ -302,23 +386,56 @@ final class HealthReader {
 
     // v1.89 (APK 2.3): soma do Health Connect só dentro do horário do treino
     // (kcal, kcal ativas, km, passos, FC média/máx). Falhou um? Fica sem aquele número.
-    private static void sessionStats(Context c, HealthConnectManager hc, ExerciseSessionRecord r, JSONObject x) {
+    // v1.93: kcal/km/passos também de uma fonte só (a maior), igual o dia.
+    private static void sessionStats(Context c, HealthConnectManager hc, ExerciseSessionRecord r, JSONObject x,
+            List<String> stepO, List<String> kcalO, List<String> activeO, List<String> distO) {
         TimeInstantRangeFilter t = new TimeInstantRangeFilter.Builder()
                 .setStartTime(r.getStartTime()).setEndTime(r.getEndTime()).build();
-        if (has(c, PERMS, "kcal")) putOne(hc, t, TotalCaloriesBurnedRecord.ENERGY_TOTAL, x, "kcal", HealthReader::kcal);
-        if (has(c, PERMS, "activeKcal")) putOne(hc, t, ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL, x, "activeKcal", HealthReader::kcal);
-        if (has(c, PERMS, "distance")) putOne(hc, t, DistanceRecord.DISTANCE_TOTAL, x, "distanceM", HealthReader::meters);
-        if (has(c, PERMS, "steps")) putOne(hc, t, StepsRecord.STEPS_COUNT_TOTAL, x, "steps", v -> v > 0 ? v : null);
+        if (has(c, PERMS, "kcal")) putOneSource(hc, t, TotalCaloriesBurnedRecord.ENERGY_TOTAL, x, "kcal", HealthReader::kcal, kcalO);
+        if (has(c, PERMS, "activeKcal")) putOneSource(hc, t, ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL, x, "activeKcal", HealthReader::kcal, activeO);
+        if (has(c, PERMS, "distance")) putOneSource(hc, t, DistanceRecord.DISTANCE_TOTAL, x, "distanceM", HealthReader::meters, distO);
+        if (has(c, PERMS, "steps")) putOneSource(hc, t, StepsRecord.STEPS_COUNT_TOTAL, x, "steps", v -> v > 0 ? v : null, stepO);
         if (has(c, PERMS, "heart")) {
             putOne(hc, t, HeartRateRecord.BPM_AVG, x, "hrAvg", v -> v > 0 ? v : null);
             putOne(hc, t, HeartRateRecord.BPM_MAX, x, "hrMax", v -> v > 0 ? v : null);
         }
     }
 
+    private static <T> void putOneSource(HealthConnectManager hc, TimeInstantRangeFilter t, AggregationType<T> type, JSONObject x,
+            String field, Function<T, Object> conv, List<String> sources) {
+        if (sources == null || sources.size() <= 1) {
+            putOne(hc, t, type, x, field, conv, null);
+            return;
+        }
+        double best = -1;
+        Object bestVal = null;
+        for (String pkg : sources) {
+            JSONObject one = new JSONObject();
+            putOne(hc, t, type, one, field, conv, pkg);
+            Object val = one.opt(field);
+            if (val instanceof Number && ((Number) val).doubleValue() > best) {
+                best = ((Number) val).doubleValue();
+                bestVal = val;
+            }
+        }
+        try {
+            if (bestVal != null) x.put(field, bestVal);
+        } catch (JSONException ignored) {
+            // chave fixa
+        }
+    }
+
     private static <T> void putOne(HealthConnectManager hc, TimeInstantRangeFilter t, AggregationType<T> type, JSONObject x,
             String field, Function<T, Object> conv) {
+        putOne(hc, t, type, x, field, conv, null);
+    }
+
+    private static <T> void putOne(HealthConnectManager hc, TimeInstantRangeFilter t, AggregationType<T> type, JSONObject x,
+            String field, Function<T, Object> conv, String pkg) {
         try {
-            AggregateRecordsRequest<T> req = new AggregateRecordsRequest.Builder<T>(t).addAggregationType(type).build();
+            AggregateRecordsRequest.Builder<T> rb = new AggregateRecordsRequest.Builder<T>(t).addAggregationType(type);
+            if (pkg != null) rb.addDataOriginsFilter(new DataOrigin.Builder().setPackageName(pkg).build());
+            AggregateRecordsRequest<T> req = rb.build();
             CompletableFuture<AggregateRecordsResponse<T>> f = new CompletableFuture<>();
             hc.aggregate(req, Runnable::run, new OutcomeReceiver<AggregateRecordsResponse<T>, HealthConnectException>() {
                 @Override

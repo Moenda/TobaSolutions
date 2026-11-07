@@ -2213,3 +2213,22 @@ O Samsung não reenvia o passado pro Health Connect, então agora dá pra puxar 
 **Como testar:** Perfil › 📈 Recordes: com o histórico do Samsung importado, o 📈 Superou a si mesmo já deve estar liberado (3 recordes do relógio no teste com o teu export). Anda mais que o teu melhor dia do último ano, 🔄 no Raio-X: a barrinha do 🏆 Máquina de recordes sobe 1. O XP de treino não muda.
 
 **Commit sugerido:** `v1.92 - Recorde do dia a dia do relogio (melhor dia de passos ou distancia dos ultimos 365 dias) conta pros trofeus de recorde, sem XP proprio`
+
+## v1.93 — 👟 Passos sem contar duas vezes (celular + relógio) + APK 2.4, 📅 análise por Semana/Mês/Semestre/Ano e 🗑️ Sumiu do relógio sem repetir
+
+1. **🐛 Passos a mais no Raio-X** (achado do Rafa: relógio e Samsung Health com 6.499, Toba com 8.698). O Samsung Health grava o dia inteiro num registro só (relógio + celular já juntos) e o próprio Android ("S24+ de Rafael") grava os passos do celular em pedacinhos. O Health Connect somava os dois.
+2. **APK 2.4: uma fonte só por dia.** Passos, distância, calorias e ativas agora são somados por app separado, e o Toba fica com **o maior do dia**. Com relógio, sai o Samsung Health; sem relógio, sai o celular. Funciona pra qualquer usuário sem mexer em nada no Health Connect. Vale também pros números de cada treino do relógio (kcal/km/passos da sessão).
+3. **Conserta o passado:** na primeira leitura com o APK novo, o 🔄 relê os últimos 30 dias, e os dias somados a mais voltam pro número certo.
+4. **🩺 Diagnóstico mostra de onde veio:** "👟 Passos: Samsung Health + o próprio celular" e o aviso de que o Toba usa só um.
+5. **🐛 🗑️ Sumiu do relógio voltava toda vez que abria** (print do Rafa, mesmo depois de responder). Agora respondeu (🔗 Desmesclar, 🗑️ Apagar ou 👍 Manter) = nunca mais pergunta daquele exercício, e o card só aparece se o treino ainda tá ligado a ele (mesclado com ele ou nascido dele). Treino já desmesclado não pergunta.
+6. **📅 Análise com períodos fechados** (pedido do Rafa: "quero escolher Agosto/26 ou 2025 inteiro"): na 🔬 análise de cada quadrado, os botões viraram **Semana · Mês · Semestre · Ano** (de calendário: semana de segunda a domingo, mês cheio, 1º/2º semestre, ano de janeiro a dezembro). Embaixo, **‹ Novembro 2026 ›** pra andar pra trás/frente, e tocando no nome abre a lista pra pular direto (vai até o 1º dia com dado). O **vs Anterior** compara com o período anterior do mesmo tipo (out/26, 1º sem/26, 2024...), pela média por dia, então o período atual ainda pela metade compara justo. Gráfico: por dia na semana e no mês, média por semana no semestre, média por mês no ano.
+
+**Dados:** nada novo no `TOBA_HEALTH_DB`; os dias relidos trocam o número de passos/km/kcal pelo certo. `TOBA_HEALTH_DB.watch.goneDone` (`{ chave: quando respondeu }`, opcional: 🗑️ Sumiu do relógio já respondido). `toba_health_watch_state` ganhou `oneSource: 1` (já releu os 30 dias com o APK 2.4) e `diag.sources`. Ponte: `version()` = 12 e o `healthRead` manda `sources` ({ steps, kcal, activeKcal, distance: [pacotes] }). APK antigo continua funcionando como antes (somando).
+
+**APK 2.4 (versionCode 15):** `TobaAndroid/app/auto/br/com/toba/app/HealthReader.java` (`origins`, `byDayOneSource`, `putOneSource` com `addDataOriginsFilter`), `TobaBridge.java` (version 12), `app/build.gradle`. Sync Gradle › Generate Signed APK › instala pelo **KingInstaller** por cima (nunca desinstalar).
+
+**Arquivos:** `TobaAndroid/app/auto/br/com/toba/app/HealthReader.java`, `TobaAndroid/app/auto/br/com/toba/app/TobaBridge.java`, `TobaAndroid/app/build.gradle`, `TobaHealth/js/relogio.js`, `TobaHealth/js/relogio-analise.js`, `TobaHealth/css/relogio.css`, `assets/toba-common.js`, `CLAUDE.md`, `PATCH-NOTES.md`.
+
+**Como testar:** Raio-X › responde os cards 🗑️ Sumiu do relógio › fecha e abre de novo: não voltam. Toca em 👟 passos › Mês › ‹ até Agosto 2026 (ou escolhe na lista) › Ano › ‹ 2025. Instala o APK 2.4 › ⚙️ mostra "APK 2.4 · Patch v1.93" › Raio-X › 🔄: os passos de hoje batem com o Samsung Health. ⚙️ › 🩺 Diagnóstico: aparece "👟 Passos: Samsung Health + o próprio celular".
+
+**Commit sugerido:** `v1.93 - Raio-X: passos, distancia e calorias de uma fonte so por dia (sem somar celular + Samsung Health), rele 30 dias na 1a vez e diagnostico mostra os apps + APK 2.4 + Sumiu do relogio nao repete depois de respondido + analise com Semana, Mes, Semestre e Ano fechados escolhendo o periodo`

@@ -128,6 +128,10 @@ function watchPullRange(full) {
   const today = toIsoDate();
   const dates = Object.keys(watchDays()).sort();
   let from = watchAddDays(today, -(WATCH_FIRST_DAYS - 1));
+  // v1.93 (APK 2.4): 1ª leitura com o APK novo relê 30 dias, pra consertar os dias em
+  // que celular + Samsung Health foram somados (passos/km/kcal a mais).
+  if (!watchState().oneSource && typeof TOBA_NATIVE !== "undefined" && TOBA_NATIVE
+    && typeof TOBA_NATIVE.version === "function" && Number(TOBA_NATIVE.version()) >= 12) full = true;
   if (!full && dates.length) {
     const last = dates[dates.length - 1] < today ? dates[dates.length - 1] : today;
     from = watchAddDays(last, -2);
@@ -193,7 +197,7 @@ window.onTobaHealthData = function (reqId, data) {
   }
   const changed = watchMerge(data);
   const auto = watchAutoMerge();
-  watchSetState({ pulledAt: Date.now(), diag: watchBuildDiag(data) });
+  watchSetState({ pulledAt: Date.now(), diag: watchBuildDiag(data), ...(data.sources ? { oneSource: 1 } : {}) });
   if (changed || auto) saveHealthDb();
   renderWatch();
   if (auto) tobaToast(`⌚ ${auto === 1 ? "1 treino completado" : `${auto} treinos completados`} com o relógio`);
@@ -345,16 +349,32 @@ function watchSyncExercises(oldList, incoming, vanished) {
   return list.length ? list : undefined;
 }
 
+// v1.93: o treino ainda tá ligado a esse exercício do relógio? (mesclado: workout.watch.key;
+// virou treino: externalId). Já desmesclou/apagou/editou = não pergunta de novo.
+function watchGoneLinked(key, action, workout) {
+  if (!workout) return false;
+  if (action === "created") return !workout.externalId || String(workout.externalId) === key;
+  return Boolean(workout.watch && workout.watch.key === key);
+}
+
+// v1.93: respondeu (🔗 Desmesclar / 🗑️ Apagar / 👍 Manter) = nunca mais pergunta desse exercício
+function watchGoneDone() {
+  const w = watchEnsureDb();
+  if (!w.goneDone || typeof w.goneDone !== "object" || Array.isArray(w.goneDone)) w.goneDone = {};
+  return w.goneDone;
+}
+
 function watchNoteVanished(keys) {
   if (!keys.length) return false;
   const w = watchEnsureDb();
   if (!w.gone || typeof w.gone !== "object" || Array.isArray(w.gone)) w.gone = {};
+  const done = watchGoneDone();
   let changed = false;
   keys.forEach((key) => {
     const h = w.handled[key];
-    if (!h) return;
+    if (!h || done[key] || w.gone[key]) return;
     const workout = h.workoutId ? (healthDb.workouts || []).find((item) => String(item.id) === String(h.workoutId)) : null;
-    if (h.action === "ignored" || !workout) {
+    if (h.action === "ignored" || !watchGoneLinked(key, h.action, workout)) {
       delete w.handled[key];
     } else {
       w.gone[key] = { action: h.action, workoutId: String(h.workoutId), at: Date.now() };
@@ -367,10 +387,12 @@ function watchNoteVanished(keys) {
 function watchGoneList() {
   const w = healthDb.watch;
   const gone = w && w.gone && typeof w.gone === "object" && !Array.isArray(w.gone) ? w.gone : {};
+  const done = w && w.goneDone && typeof w.goneDone === "object" ? w.goneDone : {};
   return Object.keys(gone).map((key) => {
     const g = gone[key];
+    if (done[key]) return null;
     const workout = (healthDb.workouts || []).find((item) => String(item.id) === String(g.workoutId));
-    return workout ? { key, g, workout } : null;
+    return watchGoneLinked(key, g.action, workout) ? { key, g, workout } : null;
   }).filter(Boolean);
 }
 
@@ -419,6 +441,7 @@ function watchGoneApply(el) {
   }
   delete w.handled[key];
   if (w.gone) delete w.gone[key];
+  watchGoneDone()[key] = Date.now();
   saveHealthDb();
   renderWatch();
 }
@@ -426,6 +449,7 @@ function watchGoneApply(el) {
 function watchGoneKeep(el) {
   const w = watchEnsureDb();
   if (w.gone) delete w.gone[el.dataset.id];
+  watchGoneDone()[el.dataset.id] = Date.now();
   saveHealthDb();
   renderWatch();
 }
@@ -457,7 +481,29 @@ function watchBuildDiag(data) {
       exercise: Array.isArray(data.exercises) ? data.exercises.length : 0,
     },
     origins: Object.keys(origins).slice(0, 6),
+    sources: watchDiagSources(data.sources), // v1.93 (APK 2.4)
   };
+}
+
+// v1.93 (APK 2.4): de que apps vieram passos/km/kcal. Com 2+, o APK usa um só por dia (o maior).
+function watchDiagSources(src) {
+  if (!src || typeof src !== "object") return null;
+  const out = {};
+  ["steps", "distance", "activeKcal", "kcal"].forEach((k) => {
+    if (Array.isArray(src[k])) out[k] = src[k].map((x) => String(x).slice(0, 80)).slice(0, 6);
+  });
+  return out;
+}
+
+function watchAppName(pkg) {
+  const names = {
+    "com.sec.android.app.shealth": "Samsung Health",
+    "com.google.android.apps.fitness": "Google Fit",
+    "com.google.android.healthconnect.controller": "o próprio celular",
+    "com.android.healthconnect.controller": "o próprio celular",
+    android: "o próprio celular",
+  };
+  return names[pkg] || pkg;
 }
 
 function watchDiag() {
@@ -496,6 +542,10 @@ function openWatchDiag() {
   el.innerHTML = `<p class="toba-sheet-text">Última leitura: ${escapeHtml(watchDayLabel(toIsoDate(at)).toLowerCase())} às ${watchClock(d.at)}, de ${escapeHtml(d.from.slice(8, 10))}/${escapeHtml(d.from.slice(5, 7))} até ${escapeHtml(d.to.slice(8, 10))}/${escapeHtml(d.to.slice(5, 7))}.</p>
     <div class="kv-list">${rows}</div>
     ${d.origins.length ? `<p class="watch-muted">Sono/treino vieram de: ${d.origins.map(escapeHtml).join(", ")}</p>` : ""}
+    ${d.sources ? `<p class="watch-muted">${[["steps", "👟 Passos"], ["distance", "📏 Distância"], ["activeKcal", "⚡ Ativas"], ["kcal", "🔥 Calorias"]]
+      .filter(([k]) => d.sources[k] && d.sources[k].length)
+      .map(([k, label]) => `${label}: ${d.sources[k].map((x) => escapeHtml(watchAppName(x))).join(" + ")}`).join("<br>")}</p>
+      ${Object.values(d.sources).some((l) => l.length > 1) ? `<p class="watch-muted">Mais de um app gravando o mesmo? O Toba usa um só por dia (o que mediu mais, normalmente o Samsung Health, que já junta relógio + celular), pra não contar duas vezes.</p>` : ""}` : ""}
     ${watchLooksStarved() ? `<div class="hint-box watch-diag-hint">🕵️ O Toba tá lendo certinho, mas o Health Connect não tem passos nem sono. As 🔥 calorias iguais todo dia são só o basal que o próprio Health Connect calcula. Quem precisa mandar é o <b>Samsung Health</b>: ${WATCH_SAMSUNG_STEPS}</div>` : ""}`;
   openTobaModal("watchDiagModal");
 }

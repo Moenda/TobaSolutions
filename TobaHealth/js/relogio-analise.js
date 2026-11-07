@@ -35,16 +35,64 @@ const WATCH_METRICS = {
     get: (d) => d.hrAvg, fmt: (v) => `${watchInt(v)} bpm`, unit: "", zoom: true,
   },
 };
+// v1.93 (pedido do Rafa): períodos FECHADOS de calendário, escolhendo qual com ‹ ›
+// (Agosto 2026, 2025 inteiro...) e comparando com o anterior do mesmo tamanho.
 const WATCH_PERIODS = [
-  { days: 7, label: "7 dias" },
-  { days: 30, label: "30 dias" },
-  { days: 90, label: "90 dias" },
-  { days: 365, label: "1 ano" },
+  { unit: "week", label: "Semana" },
+  { unit: "month", label: "Mês" },
+  { unit: "half", label: "Semestre" },
+  { unit: "year", label: "Ano" },
 ];
+const WATCH_MONTHS_LONG = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+const WATCH_MONTHS_SHORT = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const WATCH_WEEKDAYS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
 const WATCH_WEEKDAYS_LONG = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 
-const watchAn = { metric: "steps", days: 30, listShown: 31 };
+const watchAn = { metric: "steps", unit: "month", offset: 0, listShown: 31 };
+
+function watchAnIso(y, m, d) {
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
+// Período fechado: offset 0 = o atual, -1 = o anterior... { from, to, label, short }
+function watchAnPeriod(unit, offset) {
+  const today = toIsoDate();
+  const y = Number(today.slice(0, 4));
+  const mo = Number(today.slice(5, 7));
+  if (unit === "week") {
+    const wd = (new Date(`${today}T12:00:00`).getDay() + 6) % 7; // segunda = 0
+    const from = watchAddDays(today, -wd + offset * 7);
+    const to = watchAddDays(from, 6);
+    const f = (iso) => `${Number(iso.slice(8, 10))} ${WATCH_MONTHS_SHORT[Number(iso.slice(5, 7)) - 1]}`;
+    const label = offset === 0 ? "Esta semana" : offset === -1 ? "Semana passada" : `${f(from)} a ${f(to)}${from.slice(0, 4) !== today.slice(0, 4) ? ` ${from.slice(0, 4)}` : ""}`;
+    return { from, to, label, short: `${f(from)} a ${f(to)}` };
+  }
+  if (unit === "month") {
+    const idx = y * 12 + (mo - 1) + offset;
+    const yy = Math.floor(idx / 12);
+    const mm = (idx % 12) + 1;
+    const last = new Date(yy, mm, 0).getDate();
+    return { from: watchAnIso(yy, mm, 1), to: watchAnIso(yy, mm, last), label: `${WATCH_MONTHS_LONG[mm - 1]} ${yy}`, short: `${WATCH_MONTHS_SHORT[mm - 1]}/${String(yy).slice(2)}` };
+  }
+  if (unit === "half") {
+    const idx = y * 2 + (mo > 6 ? 1 : 0) + offset;
+    const yy = Math.floor(idx / 2);
+    const h = idx % 2;
+    return { from: watchAnIso(yy, h ? 7 : 1, 1), to: watchAnIso(yy, h ? 12 : 6, h ? 31 : 30), label: `${h + 1}º semestre ${yy}`, short: `${h + 1}º sem/${String(yy).slice(2)}` };
+  }
+  const yy = y + offset;
+  return { from: watchAnIso(yy, 1, 1), to: watchAnIso(yy, 12, 31), label: String(yy), short: String(yy) };
+}
+
+// Até onde dá pra voltar: o período do 1º dia com dado
+function watchAnMinOffset(unit) {
+  const dates = Object.keys(watchDays()).sort();
+  if (!dates.length) return 0;
+  const first = dates[0];
+  let o = 0;
+  while (o > -600 && watchAnPeriod(unit, o).from > first) o--;
+  return o;
+}
 
 function watchAnRows(key, from, to) {
   const m = WATCH_METRICS[key];
@@ -65,17 +113,18 @@ function watchAnStats(rows) {
   return { n: vals.length, sum, avg: vals.length ? sum / vals.length : null, best, worst };
 }
 
-// Agrupa pra caber no gráfico: até 31 dias = dia; 90 = semana; 1 ano = mês (média dos dias com dado)
-function watchAnBuckets(rows, days) {
-  if (days <= 31) return rows.map((r) => ({ ...r, label: days <= 7 ? watchWeekday(r.date) : r.date.slice(8, 10) }));
+// Agrupa pra caber no gráfico: semana e mês = dia; semestre = semana (de segunda); ano = mês (média dos dias com dado)
+function watchAnBuckets(rows, unit) {
+  if (unit === "week" || unit === "month") return rows.map((r) => ({ ...r, label: unit === "week" ? watchWeekday(r.date) : r.date.slice(8, 10) }));
   const out = [];
-  if (days <= 120) {
-    for (let i = rows.length; i > 0; i -= 7) {
-      const part = rows.slice(Math.max(0, i - 7), i);
-      const s = watchAnStats(part);
-      out.unshift({ date: part[0].date, v: s.avg, label: part[0].date.slice(8, 10) + "/" + part[0].date.slice(5, 7) });
-    }
-    return out;
+  if (unit === "half") {
+    rows.forEach((r) => {
+      const monday = new Date(`${r.date}T12:00:00`).getDay() === 1;
+      let b = out[out.length - 1];
+      if (!b || monday) out.push((b = { date: r.date, list: [], label: `${r.date.slice(8, 10)}/${r.date.slice(5, 7)}` }));
+      b.list.push(r);
+    });
+    return out.map((b) => ({ date: b.date, label: b.label, v: watchAnStats(b.list).avg }));
   }
   const names = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
   rows.forEach((r) => {
@@ -104,7 +153,7 @@ function watchAnChart(buckets, m, goal, avg) {
     const x = i * slot + (slot - bw) / 2;
     const label = every === 1 || (n - 1 - i) % every === 0 ? b.label : "";
     const bar = b.v === null ? "" : `<rect x="${x.toFixed(1)}" y="${y(b.v).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, H - padB - y(b.v)).toFixed(1)}" rx="3" style="fill:${better(b.v) ? "var(--gold-2)" : m.color}" />`;
-    return `${bar}${label ? `<text x="${(i * slot + slot / 2).toFixed(1)}" y="${H - 4}" class="watch-chart-label">${escapeHtml(label)}</text>` : ""}`;
+    return `${bar}${label ? `<text x="${(i === n - 1 && n > 12 ? W - 1 : i * slot + slot / 2).toFixed(1)}" y="${H - 4}" class="watch-chart-label"${i === n - 1 && n > 12 ? ' style="text-anchor:end"' : ""}>${escapeHtml(label)}</text>` : ""}`;
   }).join("");
   const line = (v, cls) => `<line x1="0" x2="${W}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="${cls}" />`;
   return `<svg class="watch-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfico de ${escapeHtml(m.name)}">
@@ -376,7 +425,7 @@ function watchAnCloba(key, m, s, prev, rows) {
     const big = Math.abs(pct) >= 10;
     const verb = pct > 0 ? (big ? "subiu" : "subiu um pouco") : big ? "caiu" : "deu uma leve caída";
     const tail = good ? (big ? "Tá voando, Cloba! 🚀" : "No caminho certo.") : big ? "Bora reagir, Cloba." : "Nada grave, só fica de olho.";
-    lines.push(`${good ? "📈" : "📉"} ${m.name}: ${verb} (${Math.abs(Math.round(pct))}%) em relação aos ${watchAn.days} dias antes. ${tail}`);
+    lines.push(`${good ? "📈" : "📉"} ${m.name}: ${verb} (${Math.abs(Math.round(pct))}%) em relação a ${watchAnPeriod(watchAn.unit, watchAn.offset - 1).label.toLowerCase()}. ${tail}`);
   } else if (pct !== null) {
     lines.push("➡️ Tudo parecido com o período anterior. Constância também é treino.");
   }
@@ -398,10 +447,15 @@ function renderWatchMetric() {
   const m = WATCH_METRICS[key];
   const el = document.getElementById("watchMetricBody");
   if (!m || !el) return;
-  const to = toIsoDate();
-  const from = watchAddDays(to, -(watchAn.days - 1));
-  const rows = watchAnRows(key, from, to);
-  const prevRows = watchAnRows(key, watchAddDays(from, -watchAn.days), watchAddDays(from, -1));
+  const today = toIsoDate();
+  const minOffset = watchAnMinOffset(watchAn.unit);
+  if (watchAn.offset < minOffset) watchAn.offset = minOffset;
+  const period = watchAnPeriod(watchAn.unit, watchAn.offset);
+  const before = watchAnPeriod(watchAn.unit, watchAn.offset - 1);
+  const from = period.from;
+  const to = period.to < today ? period.to : today; // período atual: até hoje
+  const rows = watchAnRows(key, from, period.to).map((r) => (r.date > today ? { ...r, v: null } : r));
+  const prevRows = watchAnRows(key, before.from, before.to);
   const s = watchAnStats(rows);
   const prev = watchAnStats(prevRows);
   const goal = m.goal ? m.goal() : 0;
@@ -410,18 +464,25 @@ function renderWatchMetric() {
   const bestDay = m.better === "down" ? s.worst : s.best;
   const tiles = [
     watchAnTile("Média", s.avg !== null ? escapeHtml(m.fmt(s.avg)) : "--", m.per || "por dia", "text-blue"),
-    watchAnTile("vs Anterior", pct === null ? "--" : Math.abs(pct) < 0.5 ? "= 0%" : `${pct > 0 ? "▲" : "▼"} ${Math.abs(Math.round(pct)) || "<1"}%`, prev.avg !== null ? `antes ${escapeHtml(m.fmt(prev.avg))}` : "sem dado antes", good === null ? "" : good ? "text-green" : "text-coral"),
+    watchAnTile("vs Anterior", pct === null ? "--" : Math.abs(pct) < 0.5 ? "= 0%" : `${pct > 0 ? "▲" : "▼"} ${Math.abs(Math.round(pct)) || "<1"}%`, prev.avg !== null ? `${escapeHtml(before.short)}: ${escapeHtml(m.fmt(prev.avg))}` : `sem dado em ${escapeHtml(before.short)}`, good === null ? "" : good ? "text-green" : "text-coral"),
     m.sum
       ? watchAnTile("Total", s.n ? escapeHtml(m.fmt(s.sum)) : "--", `${s.n} dias`)
       : watchAnTile(m.better === "down" ? "Menor" : "Melhor", bestDay ? escapeHtml(m.fmt(bestDay.v)) : "--", bestDay ? watchAnDate(bestDay.date) : ""),
   ];
-  const buckets = watchAnBuckets(rows, watchAn.days);
-  const grain = watchAn.days <= 31 ? "por dia" : watchAn.days <= 120 ? "média por semana" : "média por mês";
+  const buckets = watchAnBuckets(rows, watchAn.unit);
+  const grain = watchAn.unit === "week" || watchAn.unit === "month" ? "por dia" : watchAn.unit === "half" ? "média por semana" : "média por mês";
+  const options = [];
+  for (let o = 0; o >= minOffset; o--) options.push(`<option value="${o}"${o === watchAn.offset ? " selected" : ""}>${escapeHtml(watchAnPeriod(watchAn.unit, o).label)}</option>`);
   const list = rows.filter((r) => r.v !== null).reverse();
   const shown = list.slice(0, watchAn.listShown);
   el.innerHTML = `
     <div class="period-selector watch-an-periods" role="group" aria-label="Período">
-      ${WATCH_PERIODS.map((p) => `<button type="button" class="period-btn${p.days === watchAn.days ? " active" : ""}" data-click="watchMetricPeriod" data-days="${p.days}">${p.label}</button>`).join("")}
+      ${WATCH_PERIODS.map((p) => `<button type="button" class="period-btn${p.unit === watchAn.unit ? " active" : ""}" data-click="watchMetricPeriod" data-unit="${p.unit}">${p.label}</button>`).join("")}
+    </div>
+    <div class="watch-an-nav">
+      <button type="button" class="toba-icon-btn" data-click="watchMetricStep" data-step="-1" aria-label="Período anterior"${watchAn.offset <= minOffset ? " disabled" : ""}>‹</button>
+      <select class="watch-an-pick" data-change="watchMetricPick" aria-label="Escolher o período">${options.join("")}</select>
+      <button type="button" class="toba-icon-btn" data-click="watchMetricStep" data-step="1" aria-label="Próximo período"${watchAn.offset >= 0 ? " disabled" : ""}>›</button>
     </div>
     ${key === "kcal" ? watchAnBasalToggle() : ""}
     <div class="toba-stats is-3 watch-an-stats">${tiles.join("")}</div>
@@ -485,7 +546,18 @@ tobaActions({
   openWatchMetric,
   closeWatchMetric,
   watchMetricPeriod(el) {
-    watchAn.days = Number(el.dataset.days) || 30;
+    watchAn.unit = el.dataset.unit || "month";
+    watchAn.offset = 0;
+    watchAn.listShown = 31;
+    renderWatchMetric();
+  },
+  watchMetricStep(el) {
+    watchAn.offset = Math.min(0, watchAn.offset + (Number(el.dataset.step) || 0));
+    watchAn.listShown = 31;
+    renderWatchMetric();
+  },
+  watchMetricPick(el) {
+    watchAn.offset = Math.min(0, Number(el.value) || 0);
     watchAn.listShown = 31;
     renderWatchMetric();
   },

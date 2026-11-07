@@ -44,7 +44,7 @@ final class TobaBridge {
 
     @JavascriptInterface
     public int version() {
-        return 11; // 11 = APK 2.3 (exercícios do healthRead com kcal/km/passos/FC da sessão, pro mesclar); 10 = APK 2.2 (healthStatus/healthAsk/healthRead: ⌚ Relógio do Toba Health); 9 = APK 2.1 (clipboardText: 📋 Colar do Maps no Places); 8 = APK 1.8 (autoFavorites: ⭐ no Android Auto); 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
+        return 12; // 12 = APK 2.4 (healthRead: passos/km/kcal de UMA fonte por dia, sem somar celular + Samsung Health; manda "sources"); 11 = APK 2.3 (exercícios do healthRead com kcal/km/passos/FC da sessão, pro mesclar); 10 = APK 2.2 (healthStatus/healthAsk/healthRead: ⌚ Relógio do Toba Health); 9 = APK 2.1 (clipboardText: 📋 Colar do Maps no Places); 8 = APK 1.8 (autoFavorites: ⭐ no Android Auto); 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
     }
 
     /* ---------------- v1.87 (APK 2.2): ⌚ Relógio (Health Connect) ---------------- */
