@@ -35,28 +35,17 @@
     <div class="app-view active" id="viewWatchMain">
     <div id="watchConnect" hidden></div>
 
+    <!-- v1.95: a tela é o DIA escolhido (relogio-dia.js) -->
+    <div class="watch-daynav" id="watchDayNav"></div>
     <div class="card" id="watchToday"></div>
     <div class="card" id="watchSleep"></div>
     <div id="watchBody" hidden></div>
+    <div id="watchScale" hidden></div>
     <div id="watchCloba"></div>
     <div id="watchGone" hidden></div>
     <div id="watchInbox" hidden></div>
-
-    <div class="section-title">📊 Evolução</div>
-    <div class="period-selector" id="watchChartTabs" role="group" aria-label="O que mostrar">
-      <button type="button" class="period-btn active" data-click="watchChart" data-chart="steps">👟 Passos</button>
-      <button type="button" class="period-btn" data-click="watchChart" data-chart="sleep">😴 Sono</button>
-      <button type="button" class="period-btn" data-click="watchChart" data-chart="kcal">🔥 Calorias</button>
-    </div>
-    <div class="card watch-chart-card">
-      <div class="period-selector watch-range" id="watchRangeTabs" role="group" aria-label="Período">
-        <button type="button" class="period-btn active" data-click="watchRange" data-range="7">7 dias</button>
-        <button type="button" class="period-btn" data-click="watchRange" data-range="30">30 dias</button>
-        <button type="button" class="period-btn" data-click="watchRange" data-range="365">1 ano</button>
-      </div>
-      <div id="watchChart"></div>
-      <div class="toba-stats is-3 watch-chart-stats" id="watchChartStats"></div>
-    </div>
+    <div id="watchWeek"></div>
+    <div id="watchTrend"></div>
 
     <div class="section-title">📜 Mês a mês</div>
     <div id="watchList" class="toba-list"></div>
@@ -125,6 +114,20 @@
       <div id="watchDayBody"></div>
       <div class="toba-sheet-footer">
         <button type="button" class="btn btn-secondary" data-close>Fechar 👍</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="watchHelpModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="watchHelpTitle">❔ Entenda</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="watchHelpBody"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-secondary" data-close>Fechar 👍</button>
+        <button type="button" class="btn btn-primary" id="watchHelpGo" data-click="watchHelpAnalyse" data-metric="">🔬 Ver análise</button>
       </div>
     </div>
   </div>
@@ -213,6 +216,8 @@
   <script src="js/relogio.js"></script>
   <script src="js/relogio-samsung.js"></script>
   <script src="js/relogio-analise.js"></script>
+  <script src="js/relogio-balanca.js"></script>
+  <script src="js/relogio-dia.js"></script>
   <script src="../assets/pwa-register.js"></script>
 </body>
 

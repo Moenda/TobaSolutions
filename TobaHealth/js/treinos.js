@@ -366,6 +366,24 @@ function renderWorkoutHeroCards(stats, workoutCount, { monthKey = "", intro = ""
   const monthAttr = monthKey ? ` data-hero-month="${monthKey}"` : "";
   const earthPercentage = (stats.distance / 40075) * 100;
   const earthBar = Math.min(100, Math.max(0, earthPercentage));
+  // Hall de um mês (desde v1.95): a barra compara com o mês anterior.
+  const cmp = monthKey ? getMonthCompare(monthKey) : null;
+  const distBar = cmp
+    ? {
+        label: `🆚 Contra ${cmp.prevName} (${formatWorkoutNumber(cmp.prev.distance, 2)} km)`,
+        value: compareBadge(stats.distance, cmp.prev.distance),
+        width: Math.min(100, compareRatio(stats.distance, cmp.prev.distance) * 100),
+        aria: `${compareBadge(stats.distance, cmp.prev.distance)} da distância de ${cmp.prevName}`,
+        hint: `Toque para comparar com ${cmp.prevName}`,
+      }
+    : {
+        label: "Volta na Terra",
+        value: `${formatWorkoutNumber(earthPercentage, 2)}%`,
+        width: earthBar,
+        aria: `${formatWorkoutNumber(earthPercentage, 2)}% de uma volta ao redor da Terra`,
+        hint: "Toque para ver as cidades que essa distância alcança",
+      };
+  const prevSaitamaReps = cmp ? cmp.prev.situps + cmp.prev.pushups + cmp.prev.squats : 0;
   return `
     ${intro ? `<p class="workout-legacy-intro">${intro}</p>` : ""}
     <div class="workout-legacy-grid">
@@ -386,21 +404,21 @@ function renderWorkoutHeroCards(stats, workoutCount, { monthKey = "", intro = ""
           <div class="workout-distance-mode"><span class="workout-distance-mode-label">De bike</span><strong class="workout-distance-mode-value">${formatWorkoutNumber(stats.bikeDistance, 2)} km</strong></div>
           <div class="workout-distance-mode"><span class="workout-distance-mode-label">Elíptico</span><strong class="workout-distance-mode-value">${formatWorkoutNumber(stats.ellipticalDistance, 2)} km</strong></div>
         </div>
-        <div class="workout-earth-progress-label"><span>Volta na Terra</span><span>${formatWorkoutNumber(earthPercentage, 2)}%</span></div>
-        <div class="workout-earth-progress-track" role="progressbar" aria-label="${formatWorkoutNumber(earthPercentage, 2)}% de uma volta ao redor da Terra" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${earthBar}">
-          <div class="workout-earth-progress-fill" style="width: ${earthBar}%"></div>
+        <div class="workout-earth-progress-label"><span>${distBar.label}</span><span>${distBar.value}</span></div>
+        <div class="workout-earth-progress-track" role="progressbar" aria-label="${distBar.aria}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${distBar.width}">
+          <div class="workout-earth-progress-fill" style="width: ${distBar.width}%"></div>
         </div>
-        <span class="workout-legacy-detail">Toque para ver as cidades que essa distância alcança</span>
+        <span class="workout-legacy-detail">${distBar.hint}</span>
       </div>
       <div class="workout-legacy-stat workout-legacy-stat-wide workout-legacy-action" role="button" tabindex="0" data-click="openHallDetail" data-hero-detail="lifted"${monthAttr} aria-label="Ver equivalências do peso levantado">
         <span class="workout-legacy-label">🏋️ Peso levantado</span>
         <strong class="workout-legacy-value">${formatWorkoutNumber(stats.liftKg, 0)} kg em ${formatWorkoutNumber(stats.liftReps, 0)} repetições</strong>
         <span class="workout-legacy-detail">Toque para comparar com elefantes, Boeings e Titanics</span>
       </div>
-      <div class="workout-legacy-stat workout-legacy-stat-wide workout-legacy-action" role="button" tabindex="0" data-click="openHallDetail" data-hero-detail="saitama"${monthAttr} aria-label="Comparar repetições e distância com Saitama">
+      <div class="workout-legacy-stat workout-legacy-stat-wide workout-legacy-action" role="button" tabindex="0" data-click="openHallDetail" data-hero-detail="saitama"${monthAttr} aria-label="${cmp ? `Comparar o Saitama com ${cmp.prevName}` : "Comparar repetições e distância com Saitama"}">
         <span class="workout-legacy-label">👊 Treino Saitama</span>
         <strong class="workout-legacy-value">${formatWorkoutNumber(stats.situps, 0)} abd · ${formatWorkoutNumber(stats.pushups, 0)} flex · ${formatWorkoutNumber(stats.squats, 0)} agach</strong>
-        <span class="workout-legacy-detail">Toque para descobrir quanto falta para o careca fictício</span>
+        <span class="workout-legacy-detail">${cmp ? `${formatWorkoutNumber(prevSaitamaReps, 0)} reps em ${cmp.prevName}. Toque para comparar` : "Toque para descobrir quanto falta para o careca fictício"}</span>
       </div>
     </div>
   `;

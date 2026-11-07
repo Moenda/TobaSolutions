@@ -7,6 +7,7 @@
  *   que também atualiza o botão.
  * ===================================================================== */
 let categoryPickerTarget = null;
+let categoryPickerCallback = null; // v1.95: escolha sem campo (compras pra aprovar)
 
 function setCategoryField(inputId, value) {
   const input = document.getElementById(inputId);
@@ -46,19 +47,33 @@ function buildCategoryPicker() {
   document.body.appendChild(modal);
 }
 
+function showCategoryPicker(current) {
+  buildCategoryPicker();
+  document.querySelectorAll("#categoryPickerModal .category-tile").forEach((tile) => {
+    tile.classList.toggle("is-selected", tile.dataset.id === current);
+  });
+  openTobaModal("categoryPickerModal");
+}
+
+// Abre a gaveta e devolve a categoria escolhida pro callback (não mexe em campo nenhum).
+function openCategoryPickerFor(current, onPick) {
+  categoryPickerTarget = null;
+  categoryPickerCallback = onPick;
+  showCategoryPicker(current);
+}
+
 tobaActions({
   openCategoryPicker(el) {
-    buildCategoryPicker();
     categoryPickerTarget = el.dataset.target;
-    const current = document.getElementById(categoryPickerTarget)?.value;
-    document.querySelectorAll("#categoryPickerModal .category-tile").forEach((tile) => {
-      tile.classList.toggle("is-selected", tile.dataset.id === current);
-    });
-    openTobaModal("categoryPickerModal");
+    categoryPickerCallback = null;
+    showCategoryPicker(document.getElementById(categoryPickerTarget)?.value);
   },
   pickCategory(el) {
+    const onPick = categoryPickerCallback;
+    categoryPickerCallback = null;
     if (categoryPickerTarget) setCategoryField(categoryPickerTarget, el.dataset.id);
     closeTobaModal("categoryPickerModal");
+    if (onPick) onPick(el.dataset.id);
   },
 });
 

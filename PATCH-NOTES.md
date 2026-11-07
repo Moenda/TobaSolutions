@@ -2256,3 +2256,65 @@ Pedido do Rafa: "coloca as coisa que dá pra puxar: stress, HRV, oxigenação, t
 **Como testar:** Raio-X › ⚙️ › 📥 Histórico do Samsung › escolhe o ZIP de novo: a lista mostra ✅ stress, energy, oxigenação, temperatura, respiração, andares, ronco. Volta: aparece 🧬 Corpo por dentro. Toca no 😰 Stress › Ano: faixas, ⏰ Hora do aperto, raio laser. Toca no 💓 HRV: 📏 O teu normal. Instala o APK 2.5 › ⚙️ mostra "APK 2.5 · Patch v1.94" › Raio-X › 🔒 Faltou liberar › Liberar (HRV, oxigenação, respiração, andares) › 🔄 › 🩺 Diagnóstico mostra quantos dias vieram de cada.
 
 **Commit sugerido:** `v1.94 - Raio Ultra X: stress, Energy Score, HRV, oxigenacao, temperatura da pele, respiracao, andares e ronco (import do Samsung + APK 2.5 ao vivo), secao Corpo por dentro e analise de cada uma com faixas, hora do aperto, teu normal e raio laser`
+
+---
+
+## v1.95 — Commit com vários patches (cada um na sua seção abaixo)
+
+### 🏷️ Toba Bank: ajustar a categoria das compras pra aprovar
+
+**Arquivos alterados:** `TobaBank/js/gastos.js`, `TobaBank/js/categorias.js`, `TobaBank/css/gastos.css`, `assets/toba-common.js` (Patch v1.95 na ⚙️), `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **🏷️ Ajustar categoria:** na folha "🤖 compras pra aprovar", cada compra mostra a categoria num botão. Tocou, abrem chips das categorias que você mais usa (a atual em verde). Um toque troca e fecha. "🏷️ Todas…" abre a gaveta completa de categorias.
+2. **Mesma loja vai junto:** ajustou uma compra do "RAINHA DO MERCA"? As outras pendentes da mesma loja que você ainda não mexeu trocam junto (o aviso mostra "+1 da mesma loja").
+3. **Lançar e Lançar todas** gravam com a categoria que está em cada compra (antes o Lançar todas ia sempre com o palpite). E como antes, a próxima compra na mesma loja já vem com a categoria que você usou.
+
+**Dados:** Nenhuma mudança no banco. A categoria escolhida fica só na tela até lançar (a compra pendente continua morando só na fila do app).
+
+**Como testar:** no APK, com compras pendentes: Gastos › card 🤖 › toca "🏷️ Ajustar categoria" numa compra › toca 🛒 Mercado › a linha muda pra 🛒 Mercado / Feira › "Lançar todas" › no histórico a compra aparece em Mercado. "🏷️ Todas…" › escolhe qualquer uma › volta pra lista já trocada. ⚙️ mostra "Patch v1.95".
+
+**Commit sugerido:** `v1.95 - Compras do cartao pra aprovar com botao Ajustar categoria (chips rapidos, mesma loja vai junto) + Hall do mes compara km e Saitama com o mes anterior + Raio-X com visao do dia (hoje x ontem x 7 dias, semana x semana passada, ta melhorando?) e ajuda em cada metrica do Corpo por dentro + Raio-X escolhe o basal da balanca ou do relogio e mostra a balanca`
+
+### 🆚 Toba Health: histórico do mês compara com o mês passado
+
+**Arquivos alterados:** `TobaHealth/js/hall.js`, `TobaHealth/js/treinos.js`, `TobaHealth/css/treinos.css`, `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **🌍 Quilometragem x mês passado:** no Hall de um mês (Treinos › histórico › mês), a página de distância não mede mais as cidades (Rio, Buenos Aires, Manaus...), que num mês só não dá. Agora é você contra o mês anterior: total de km, e A pé / De bike / Elíptico quando tem mais de um tipo. Cada barra mostra a % do mês passado e "faltam X pra bater outubro"; bateu, fica verde com 🏆.
+2. **👊 Saitama x mês passado:** abdominais, flexões, agachamentos e distância contra o mês anterior, em vez da meta de 3 anos do careca (109.500 reps).
+3. **📆 Mesmo ponto do mês:** no mês que está rolando, aparece "No mesmo ponto de outubro (até o dia 7) você tinha X". Comparar mês pela metade com mês fechado era injusto.
+4. **Card do mês:** a barra "Volta na Terra" virou "🆚 Contra outubro", e o card do Saitama mostra quantas reps teve no mês passado.
+5. **Hall dos Heróis do Perfil não mudou:** lá continuam as cidades, a volta na Terra e a meta do careca, somando a vida toda.
+
+**Dados:** Nenhuma mudança no banco.
+
+**Como testar:** Treinos › histórico › Novembro › toca no card 🌍 Distância: título "Quilometragem x mês passado", barra contra outubro. Volta › card 👊 Treino Saitama: as 4 barras contra outubro. Abre Outubro: compara com setembro (se setembro foi zero, aparece "estreia"). Perfil › Hall dos Heróis: cidades e careca como antes.
+
+### 🩻 Toba Health: Raio-X remodelado com a visão do dia
+
+**Arquivos novos/alterados:** `TobaHealth/js/relogio-dia.js` (NOVO), `TobaHealth/js/relogio.js`, `TobaHealth/js/relogio-analise.js`, `TobaHealth/css/relogio.css`, `TobaHealth/TobaHealth-Relogio.html`, `sw.js` (PRECACHE + `toba-v50`), `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **📆 O Raio-X agora é o dia:** lá em cima tem ‹ Hoje ›. Volta pra ontem, anteontem ou qualquer dia (toca no nome do dia e abre o calendário, ou arrasta o anel pro lado). Tudo embaixo muda junto. "↩️ Voltar pra hoje" aparece quando você sai de hoje.
+2. **👟 Andamento:** dentro do anel aparece "ontem fechou X" (ou ✅ já passou ontem). Embaixo, hoje mostra o ritmo ("no ritmo de agora, fecha em ~9.800"); dia que já passou mostra a posição ("🏅 2º melhor dia dos últimos 30").
+3. **📊 Hoje x ontem x 7 dias:** ativas, distância, batimento e andares, cada um com uma barrinha e dois risquinhos (⎮ branco = ontem, ⎮ amarelo = tua média dos 7 dias). Embaixo, as duas comparações em verde (melhor) ou vermelho (pior), cada uma no sentido certo (batimento descer é bom). Hoje, que ainda tá rolando, mostra "faltam X pra ontem" em vez de % (comparar meio dia com dia inteiro era injusto).
+4. **😴 Sono do dia:** a noite que acabou naquele dia, com ▲▼ contra a noite anterior e contra as 7 noites, e "deitou 40 min mais tarde que o normal".
+5. **🧬 Corpo por dentro com ❔:** cada quadradinho tem um ❔. Abre a explicação do Cloba: 🤔 o que é, ↕️ se subir ou descer é bom (com as faixas), 🛠️ como melhorar e 📍 o teu número x o teu normal. O botão 🔬 Ver análise leva direto pra análise. Os quadrados mostram o dia escolhido.
+6. **🗓️ Tua semana:** os 7 dias da semana em barrinhas (amarelo = meta batida, risquinho = meta), o sono embaixo de cada dia, e a semana até agora contra a semana passada até o mesmo dia (passos por dia, sono por noite, dias na meta). Toca num dia e ele abre.
+7. **📈 Tá melhorando?:** passos, sono, ativas, batimento, HRV, stress, Energy e respiração: últimos 7 dias contra os 7 antes, com 📈 melhorando / ➡️ estável / 📉 piorando, a linhazinha das últimas 8 semanas e o aviso "3 semanas seguidas melhorando". O título resume ("😎 5 de 8 melhorando").
+8. **🔬 Análise com aba Dia:** Dia / Semana / Mês / Semestre / Ano. O Dia mostra o número grande, ▲▼ contra ontem, 7 dias e 30 dias, os 14 dias até ali com o dia aceso, o 🤡 do dia e os detalhes (a noite: deitou/acordou/profundo; stress: pico e horas no alto; batimento: repouso/menor/maior; oxigênio: menor da noite). Abre sempre no dia escolhido na tela, e trocar o dia ali muda a tela também.
+9. **Menos poluição:** o "📊 Evolução" (7 dias / 30 dias / 1 ano) saiu da tela principal (a análise de cada número faz isso melhor). No 📜 Mês a mês, tocar num dia abre ele na tela.
+
+**Dados:** Nenhuma mudança no banco. O dia escolhido fica só na tela.
+
+**Como testar:** Health › 🩻 Raio-X: aparece "Hoje" com ‹ ›. Toca ‹: vira "Ontem" e tudo muda (anel, comparações, sono, corpo, semana). Arrasta o anel pro lado. Toca no "Ontem ▾": abre o calendário. Toca no ❔ do 😰 Stress: explicação › 🔬 Ver análise: abre no Dia. Troca pra Semana/Mês: continua igual antes. Desce: 🗓️ Tua semana (toca num dia) e 📈 Tá melhorando?. Em 360 px (S24) nada pode quebrar linha feio. ⚙️ mostra "Patch v1.95".
+
+### ⚖️ Toba Health: Raio-X escolhe o basal da balança ou do relógio
+
+**Arquivos novos/alterados:** `TobaHealth/js/relogio-balanca.js` (NOVO), `sw.js` (PRECACHE), `CLAUDE.md`, `PATCH-NOTES.md`. (O `TobaHealth-Relogio.html`, o `#watchScale` e as chamadas já vieram no patch do Raio-X remodelado.)
+
+1. **🔥 Basal de onde?** Na análise das 🔥 Calorias, com o ✅ Somando o basal ligado, aparecem dois chips: **⚖️ Balança** e **⌚ Relógio**, cada um com o número. Com ⚖️, cada dia soma as ⚡ ativas do relógio + o basal da pesagem mais recente até aquele dia (o do Health Connect é uma conta genérica por peso e idade). O quadrado 🔥 mostra "⚡ 400 + ⚖️ basal 1.812". Fica lembrado no aparelho. Padrão: ⚖️ se tiver alguma pesagem com basal.
+2. **⚖️ Balança no Raio-X:** depois do 🧬 Corpo por dentro, a última pesagem com peso, gordura, músculo, basal, água e visceral, cada um com ▲▼ contra a pesagem anterior (verde = lado bom). Toca e abre a ⚖️ Pesagem. O 🤡 compara o basal da balança com o do relógio e cobra quando a balança fica 14+ dias parada.
+3. **Zepp Life:** não dá pra puxar automático (não exporta e não aparece no Health Connect, só Google Fit). A pesagem continua anotada à mão na ⚖️ Pesagem.
+
+**Dados:** Nenhuma mudança no banco: só lê as pesagens. Chave nova só no aparelho: `toba_health_basal_source`.
+
+**Como testar:** Health › 🩻 Raio-X: desce até ⚖️ Balança (aparece a pesagem de 01/11, 91,05 kg). Toca num quadrado: abre a Pesagem. Volta, toca no 🔥 Calorias › liga ➕ Somar o basal: aparecem ⚖️ Balança / ⌚ Relógio. Troca entre os dois: o gráfico e os números mudam. Com ⌚ fica igual era antes.

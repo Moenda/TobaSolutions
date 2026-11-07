@@ -56,7 +56,7 @@ const WATCH_EXERCISE_NAMES = {
   60: "🌀 Elíptico", 61: "🚣 Remo ergométrico",
 };
 
-const watchUi = { chart: "steps", range: 7, listShown: 12, pulling: false, reqId: "", timer: null, status: null };
+const watchUi = { date: "", listShown: 12, pulling: false, reqId: "", timer: null, status: null }; // date (v1.95) = dia escolhido na tela
 
 /* ---------------- Dados ---------------- */
 
@@ -984,16 +984,21 @@ function watchAgo(ms) {
 
 /* ---------------- Tela ---------------- */
 
+// v1.95: a tela é o DIA escolhido (relogio-dia.js): ‹ dia ›, herói + comparações, sono,
+// 🧬 corpo, ⚖️ balança (relogio-balanca.js, se existir), 🤡, caixinhas, 🗓️ semana, 📈 tendência, 📜 meses.
 function renderWatch() {
   if (typeof watchMetricOpen === "function" && watchMetricOpen()) renderWatchMetric();
   renderWatchConnect();
+  renderWatchDayNav();
   renderWatchToday();
   renderWatchSleep();
   renderWatchBody();
+  if (typeof renderWatchScale === "function") renderWatchScale();
   renderWatchCloba();
   renderWatchGone();
   renderWatchInbox();
-  renderWatchChart();
+  renderWatchWeek();
+  renderWatchTrend();
   renderWatchList();
   renderWatchSync();
 }
@@ -1062,45 +1067,6 @@ function watchRing(value, goal, color) {
   </svg>`;
 }
 
-function renderWatchToday() {
-  const el = document.getElementById("watchToday");
-  const today = toIsoDate();
-  const day = watchDay(today) || {};
-  const goal = watchGoals().steps;
-  const steps = Number(day.steps) || 0;
-  const done = steps >= goal;
-  const stat = (label, value, sub = "", metric = "") => `<div class="toba-stat is-center${metric ? " watch-tap" : ""}"${metric ? ` role="button" tabindex="0" data-click="openWatchMetric" data-metric="${metric}"` : ""}>
-      <span class="toba-stat-label">${label}</span>
-      <span class="toba-stat-value">${value}</span>
-      ${sub ? `<span class="toba-stat-sub">${sub}</span>` : ""}
-    </div>`;
-  el.innerHTML = `
-    <div class="watch-hero">
-      <div class="watch-ring-wrap watch-tap" role="button" tabindex="0" data-click="openWatchMetric" data-metric="steps" aria-label="Análise dos passos">
-        ${watchRing(steps, goal, done ? "var(--gold-2)" : "var(--green)")}
-        <div class="watch-ring-text">
-          <span class="watch-ring-num">${day.steps !== undefined ? watchInt(steps) : "--"}</span>
-          <span class="watch-ring-label">👟 passos hoje</span>
-          <span class="watch-ring-goal">${done ? "🏆 meta batida!" : `meta ${watchInt(goal)}`}</span>
-        </div>
-      </div>
-    </div>
-    <div class="toba-stats watch-stats">
-      ${stat("🔥 Calorias", watchKcalOf(day) !== undefined ? watchInt(watchKcalOf(day)) : "--", watchKcalSub(day), "kcal")}
-      ${stat("📏 Distância", day.distanceM !== undefined ? watchKm(day.distanceM) : "--", "", "distance")}
-      ${stat("❤️ Coração", day.restHr !== undefined ? `${watchInt(day.restHr)}` : day.hrAvg !== undefined ? `${watchInt(day.hrAvg)}` : "--",
-        day.restHr !== undefined ? "bpm em repouso" : "bpm médio", "heart")}
-    </div>`;
-}
-
-// Última noite = a do dia mais recente com sono (hoje ou antes)
-function watchLastSleep() {
-  const dates = Object.keys(watchDays()).filter((d) => watchDay(d).sleep).sort();
-  if (!dates.length) return null;
-  const date = dates[dates.length - 1];
-  return { date, sleep: watchDay(date).sleep };
-}
-
 function watchSleepBar(s) {
   const parts = [["deep", s.deep], ["light", s.light], ["rem", s.rem], ["awake", s.awake]].filter((p) => Number(p[1]) > 0);
   const total = parts.reduce((a, p) => a + Number(p[1]), 0);
@@ -1114,56 +1080,10 @@ function watchSleepBar(s) {
     </div>`;
 }
 
-function renderWatchSleep() {
-  const el = document.getElementById("watchSleep");
-  const last = watchLastSleep();
-  if (!last) {
-    el.innerHTML = `<div class="card-title">😴 Sono</div>
-      <p class="watch-muted">Nenhuma noite ainda. Dorme com o relógio que amanhã aparece aqui.</p>`;
-    return;
-  }
-  const s = last.sleep;
-  const goal = watchGoals().sleepMin;
-  const pct = Math.min(100, Math.round((s.min / goal) * 100));
-  // v1.90: o card inteiro abre a 🔬 análise do sono
-  el.dataset.click = "openWatchMetric";
-  el.dataset.metric = "sleep";
-  el.classList.add("watch-tap");
-  el.innerHTML = `<div class="card-title watch-tap-title">😴 Sono · ${escapeHtml(watchDayLabel(last.date).toLowerCase())}<span class="watch-tap-more">Análise ›</span></div>
-    <div class="watch-sleep-main">
-      <span class="watch-sleep-num">${watchHours(s.min)}</span>
-      <span class="watch-sleep-time">🛏️ ${watchClock(s.start)} › ⏰ ${watchClock(s.end)}</span>
-    </div>
-    <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${s.min >= goal ? "var(--gold-2)" : "var(--blue)"}"></div></div>
-    <div class="watch-muted watch-sleep-goal">${pct}% da meta de ${watchHours(goal)}${s.napMin ? ` · 💤 +${watchHours(s.napMin)} de cochilo` : ""}</div>
-    ${watchSleepBar(s)}`;
-}
-
-/* ---------------- 🧬 Corpo por dentro (v1.94, 🩻 RAIO ULTRA X) ---------------- */
-// Cada quadrado = último valor (até 3 dias atrás; ronco/oxigênio/temp/respiração que nem toda noite tem, mais) e a seta contra a média dos 30 dias antes.
-const WATCH_BODY_TILES = [
-  { metric: "stress", label: "😰 Stress", field: "stress" },
-  { metric: "energy", label: "🔋 Energy", field: "energy" },
-  { metric: "hrv", label: "💓 HRV", field: "hrv" },
-  { metric: "spo2", label: "🫁 Oxigênio", field: "spo2", back: 14 },
-  { metric: "resp", label: "😮‍💨 Respiração", field: "resp", back: 14 },
-  { metric: "temp", label: "🌡️ Temp. pele", field: "temp", back: 14 },
-  { metric: "snore", label: "😪 Ronco", field: "snoreMin", back: 60 },
-  { metric: "floors", label: "🪜 Andares", field: "floors" },
-];
-
+/* ---------------- 🧬 Corpo por dentro (v1.94, 🩻 RAIO ULTRA X) ----------------
+ * v1.95: os quadrados, o 😴 da noite, o herói do dia e o 🤡 moram no relogio-dia.js. */
 function watchDec(v) {
   return Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-}
-
-function watchLatest(field, maxBack = 3) {
-  const today = toIsoDate();
-  for (let i = 0; i <= maxBack; i++) {
-    const date = watchAddDays(today, -i);
-    const d = watchDay(date);
-    if (d && d[field] !== undefined && d[field] !== null) return { date, v: Number(d[field]) };
-  }
-  return null;
 }
 
 function watchAvgBefore(field, date, days = 30) {
@@ -1175,150 +1095,8 @@ function watchAvgBefore(field, date, days = 30) {
   return n >= 5 ? sum / n : null;
 }
 
-function renderWatchBody() {
-  const el = document.getElementById("watchBody");
-  if (!el) return;
-  const any = (field) => Object.values(watchDays()).some((d) => d && d[field] !== undefined && d[field] !== null);
-  const tiles = WATCH_BODY_TILES.filter((t) => any(t.field));
-  el.hidden = !tiles.length;
-  if (!tiles.length) {
-    el.innerHTML = "";
-    return;
-  }
-  const today = toIsoDate();
-  el.innerHTML = `<div class="section-title">🧬 Corpo por dentro</div>
-    <div class="watch-body-grid">${tiles.map((t) => {
-      const m = typeof WATCH_METRICS === "object" ? WATCH_METRICS[t.metric] : null;
-      const last = watchLatest(t.field, t.back || 3);
-      const base = last ? watchAvgBefore(t.field, last.date) : null;
-      let arrow = "";
-      if (last && base) {
-        const pct = ((last.v - base) / base) * 100;
-        const lim = t.metric === "temp" || t.metric === "spo2" ? 1 : 8;
-        if (Math.abs(pct) >= lim) {
-          const good = !m || m.better === "none" ? null : m.better === "up" ? pct > 0 : pct < 0;
-          arrow = `<span class="watch-body-arrow ${good === null ? "" : good ? "text-green" : "text-coral"}">${pct > 0 ? "▲" : "▼"}</span>`;
-        }
-      }
-      const when = !last ? "sem dado recente" : last.date === today ? "hoje" : last.date === watchAddDays(today, -1) ? "ontem" : watchAnDateShort(last.date);
-      const zone = last && m && m.zone ? m.zone(last.v, last.date) : null;
-      return `<div class="watch-body-tile watch-tap" role="button" tabindex="0" data-click="openWatchMetric" data-metric="${t.metric}">
-        <span class="watch-body-label">${t.label}</span>
-        <span class="watch-body-value">${last && m ? escapeHtml(m.fmt(last.v)) : "--"}${arrow}</span>
-        <span class="watch-body-sub">${zone ? `${zone.icon} ${escapeHtml(zone.label)} · ` : ""}${when}</span>
-      </div>`;
-    }).join("")}</div>`;
-}
-
 function watchAnDateShort(iso) {
   return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
-}
-
-// 🤡 Papo reto do Cloba: 1 ou 2 frases sobre hoje e a última noite
-function renderWatchCloba() {
-  const el = document.getElementById("watchCloba");
-  const day = watchDay(toIsoDate());
-  const last = watchLastSleep();
-  const goals = watchGoals();
-  const lines = [];
-  if (last) {
-    const m = last.sleep.min;
-    if (m >= goals.sleepMin) lines.push(`😎 ${watchHours(m)} de sono. Dormiu igual o Killua depois do sachê.`);
-    else if (m < 300) lines.push(`🧟 Só ${watchHours(m)} de sono? Hoje o café coado na V60 é dose dupla, e cama cedo.`);
-    else if (m < 360) lines.push(`🥱 ${watchHours(m)} de sono, dá pro gasto. Mas o Saitama não treinou dormindo pouco.`);
-    else lines.push(`🙂 ${watchHours(m)} de sono, quase lá. Mais ${watchHours(goals.sleepMin - m)} e era sono de rei.`);
-    if (Number(last.sleep.deep) >= 90) lines.push("🌊 Sono profundo caprichado, o corpo agradece.");
-  }
-  if (day && day.steps !== undefined) {
-    const s = Number(day.steps);
-    const hour = new Date().getHours();
-    if (s >= goals.steps * 1.5) lines.push(`🚀 ${watchInt(s)} passos! O Gon não consegue nem te acompanhar.`);
-    else if (s >= goals.steps) lines.push(`🏆 Meta de passos batida. Nunca foi sorte, Cloba. Nunca foi sorte. 🙏`);
-    else if (hour >= 18 && s < goals.steps * 0.4) lines.push(`🛋️ ${watchInt(s)} passos até agora... bora dar uma volta no quarteirão, parça.`);
-    else lines.push(`👟 Faltam ${watchInt(goals.steps - s)} passos pra meta. Dá tempo!`);
-  }
-  // v1.94: o corpo por dentro (stress de ontem/hoje, energy, HRV)
-  const today = toIsoDate();
-  const energy = watchLatest("energy", 1);
-  if (energy) {
-    if (energy.v >= 85) lines.push(`🔋 Energy ${watchInt(energy.v)}: bateria no talo. Dia de quebrar recorde.`);
-    else if (energy.v < 60) lines.push(`🪫 Energy ${watchInt(energy.v)}: corpo pedindo arrego. Treino leve e cama cedo.`);
-  }
-  const hrv = watchLatest("hrv", 1);
-  const hrvBase = hrv ? watchAvgBefore("hrv", hrv.date, 60) : null;
-  if (hrv && hrvBase && hrv.v < hrvBase * 0.8) lines.push(`💓 HRV ${watchInt(hrv.v)} ms, bem abaixo do teu normal (${watchInt(hrvBase)}). Recuperação tá devendo.`);
-  const stress = watchLatest("stress", 1);
-  if (stress && stress.v >= 50) lines.push(`😰 Stress médio ${watchInt(stress.v)} ${stress.date === today ? "hoje" : "ontem"}. Respira, Cloba: 4 segundos puxa, 4 segura, 6 solta.`);
-  el.innerHTML = lines.length ? `<div class="watch-cloba"><span class="watch-cloba-face">🤡</span><div><b>Papo reto do Cloba</b><p>${lines.slice(0, 4).join("<br>")}</p></div></div>` : "";
-}
-
-function watchChartRows() {
-  const today = toIsoDate();
-  const rows = [];
-  for (let i = watchUi.range - 1; i >= 0; i--) {
-    const date = watchAddDays(today, -i);
-    const d = watchDay(date) || {};
-    let v = null;
-    if (watchUi.chart === "steps") v = d.steps;
-    else if (watchUi.chart === "sleep") v = d.sleep ? d.sleep.min : undefined;
-    else v = watchKcalOf(d);
-    rows.push({ date, v: v === undefined || v === null ? null : Number(v) });
-  }
-  return rows;
-}
-
-function watchMonthRows(dayRows) {
-  const names = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
-  const buckets = [];
-  dayRows.forEach((r) => {
-    const ym = r.date.slice(0, 7);
-    let b = buckets[buckets.length - 1];
-    if (!b || b.ym !== ym) buckets.push((b = { ym, sum: 0, n: 0 }));
-    if (r.v !== null) { b.sum += r.v; b.n++; }
-  });
-  return buckets.slice(-12).map((b) => ({ date: `${b.ym}-01`, v: b.n ? b.sum / b.n : null, label: names[Number(b.ym.slice(5, 7)) - 1] }));
-}
-
-function renderWatchChart() {
-  document.querySelectorAll("#watchChartTabs .period-btn").forEach((b) => b.classList.toggle("active", b.dataset.chart === watchUi.chart));
-  document.querySelectorAll("#watchRangeTabs .period-btn").forEach((b) => b.classList.toggle("active", Number(b.dataset.range) === watchUi.range));
-  const el = document.getElementById("watchChart");
-  const dayRows = watchChartRows();
-  const vals = dayRows.filter((r) => r.v !== null).map((r) => r.v);
-  // v1.89: 1 ano = 12 barras com a média de cada mês (os números de baixo continuam por dia)
-  const rows = watchUi.range > 31 ? watchMonthRows(dayRows) : dayRows;
-  const goals = watchGoals();
-  const goal = watchUi.chart === "steps" ? goals.steps : watchUi.chart === "sleep" ? goals.sleepMin : null;
-  if (!vals.length) {
-    el.innerHTML = tobaEmpty("📊", "Sem dados nesse período", "Puxa do relógio no 🔄 lá em cima.", { compact: true });
-    document.getElementById("watchChartStats").innerHTML = "";
-    return;
-  }
-  const W = 340, H = 150, padB = 18, padT = 8;
-  const max = Math.max(...vals, goal || 0) * 1.08 || 1;
-  const n = rows.length;
-  const slot = W / n;
-  const bw = Math.max(2, Math.min(28, slot * 0.66));
-  const y = (v) => padT + (H - padT - padB) * (1 - v / max);
-  const color = watchUi.chart === "steps" ? "var(--green)" : watchUi.chart === "sleep" ? "var(--blue)" : "var(--coral)";
-  const bars = rows.map((r, i) => {
-    const x = i * slot + (slot - bw) / 2;
-    const label = r.label !== undefined ? r.label : n <= 7 ? watchWeekday(r.date) : (i % 5 === 4 || i === n - 1 ? r.date.slice(8, 10) : "");
-    const hit = goal && r.v !== null && r.v >= goal;
-    const bar = r.v === null ? "" : `<rect x="${x.toFixed(1)}" y="${y(r.v).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, H - padB - y(r.v)).toFixed(1)}" rx="3" style="fill:${hit ? "var(--gold-2)" : color}" />`;
-    return `${bar}${label ? `<text x="${(i * slot + slot / 2).toFixed(1)}" y="${H - 4}" class="watch-chart-label">${label}</text>` : ""}`;
-  }).join("");
-  const goalLine = goal ? `<line x1="0" x2="${W}" y1="${y(goal).toFixed(1)}" y2="${y(goal).toFixed(1)}" class="watch-chart-goal" />` : "";
-  el.innerHTML = `<svg class="watch-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfico">${goalLine}${bars}</svg>`;
-
-  const avg = vals.reduce((a, v) => a + v, 0) / vals.length;
-  const best = Math.max(...vals);
-  const hits = goal ? vals.filter((v) => v >= goal).length : null;
-  const fmt = (v) => (watchUi.chart === "sleep" ? watchHours(v) : watchInt(v));
-  document.getElementById("watchChartStats").innerHTML = `
-    <div class="toba-stat is-center"><span class="toba-stat-label">Média</span><span class="toba-stat-value">${fmt(avg)}</span></div>
-    <div class="toba-stat is-center"><span class="toba-stat-label">Melhor</span><span class="toba-stat-value">${fmt(best)}</span></div>
-    <div class="toba-stat is-center"><span class="toba-stat-label">${hits !== null ? "Na meta" : "Dias"}</span><span class="toba-stat-value">${hits !== null ? `${hits}/${vals.length}` : vals.length}</span></div>`;
 }
 
 // v1.90 (pedido do Rafa): 📜 Mês a mês. Cada mês mostra o total consolidado; tocar abre o dia a dia.
@@ -1332,7 +1110,7 @@ function watchDayRow(date, goals) {
   if (d.sleep) bits.push(`😴 ${watchHours(d.sleep.min)}`);
   if (watchKcalOf(d) !== undefined) bits.push(`🔥 ${watchInt(watchKcalOf(d))}`);
   if (Array.isArray(d.ex) && d.ex.length) bits.push(`🏃 ${d.ex.length}`);
-  return `<div class="toba-list-item watch-row" role="button" tabindex="0" data-click="openWatchDay" data-id="${date}">
+  return `<div class="toba-list-item watch-row${date === watchUi.date ? " is-sel" : ""}" role="button" tabindex="0" data-click="watchGoDay" data-id="${date}">
       <span class="watch-row-date">${escapeHtml(watchDayLabel(date))}</span>
       <span class="watch-row-bits">${bits.join(" · ")}</span>
       <span class="toba-hub-chevron">›</span>
@@ -1523,14 +1301,6 @@ tobaActions({
   watchOpenSettings() {
     if (!watchCanNative() || typeof TOBA_NATIVE.healthOpenSettings !== "function") return watchExplainBrowser();
     TOBA_NATIVE.healthOpenSettings();
-  },
-  watchChart(el) {
-    watchUi.chart = el.dataset.chart;
-    renderWatchChart();
-  },
-  watchRange(el) {
-    watchUi.range = [7, 30, 365].includes(Number(el.dataset.range)) ? Number(el.dataset.range) : 7;
-    renderWatchChart();
   },
   watchToggleMonth(el) {
     watchUi.openMonth = watchUi.openMonth === el.dataset.id ? "" : el.dataset.id;

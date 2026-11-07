@@ -645,6 +645,72 @@
   color: var(--text-2);
 }
 
+/* v1.95: 🏷️ Ajustar categoria nas compras pra aprovar */
+.pending-cat-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: transparent;
+}
+
+.pending-cat-btn .pending-cat {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pending-cat-btn.is-open {
+  border-style: solid;
+  border-color: var(--accent, var(--blue));
+}
+
+.pending-cat-edit {
+  flex: 0 0 auto;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--accent, var(--blue));
+}
+
+.pending-cat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  animation: pending-in 0.25s ease both;
+}
+
+.pending-chip {
+  padding: 0.4rem 0.65rem;
+  font: inherit;
+  font-size: 0.78rem;
+  color: var(--text);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.pending-chip.is-on {
+  font-weight: 700;
+  border-color: var(--green);
+  background: rgba(46, 160, 67, 0.18);
+}
+
+.pending-chip-more {
+  color: var(--accent, var(--blue));
+  border-style: dashed;
+}
+
 .pending-flag {
   padding: 0.35rem 0.5rem;
   font-size: 0.72rem;

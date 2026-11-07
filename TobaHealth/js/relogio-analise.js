@@ -100,7 +100,9 @@ const WATCH_METRICS = {
 };
 // v1.93 (pedido do Rafa): períodos FECHADOS de calendário, escolhendo qual com ‹ ›
 // (Agosto 2026, 2025 inteiro...) e comparando com o anterior do mesmo tamanho.
+// v1.95 (pedido do Rafa): Dia também, comparando com ontem, 7 dias e 30 dias.
 const WATCH_PERIODS = [
+  { unit: "day", label: "Dia" },
   { unit: "week", label: "Semana" },
   { unit: "month", label: "Mês" },
   { unit: "half", label: "Semestre" },
@@ -111,7 +113,7 @@ const WATCH_MONTHS_SHORT = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ag
 const WATCH_WEEKDAYS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
 const WATCH_WEEKDAYS_LONG = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 
-const watchAn = { metric: "steps", unit: "month", offset: 0, listShown: 31 };
+const watchAn = { metric: "steps", unit: "day", offset: 0, listShown: 31 }; // day: offset = dias antes de hoje (= watchUi.date)
 
 function watchAnIso(y, m, d) {
   return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
@@ -122,6 +124,10 @@ function watchAnPeriod(unit, offset) {
   const today = toIsoDate();
   const y = Number(today.slice(0, 4));
   const mo = Number(today.slice(5, 7));
+  if (unit === "day") {
+    const iso = watchAddDays(today, offset);
+    return { from: iso, to: iso, label: watchDayLabel(iso), short: watchAnDate(iso) };
+  }
   if (unit === "week") {
     const wd = (new Date(`${today}T12:00:00`).getDay() + 6) % 7; // segunda = 0
     const from = watchAddDays(today, -wd + offset * 7);
@@ -152,6 +158,7 @@ function watchAnMinOffset(unit) {
   const dates = Object.keys(watchDays()).sort();
   if (!dates.length) return 0;
   const first = dates[0];
+  if (unit === "day") return Math.min(0, watchDaysBetween(toIsoDate(), first));
   let o = 0;
   while (o > -600 && watchAnPeriod(unit, o).from > first) o--;
   return o;
@@ -199,7 +206,8 @@ function watchAnBuckets(rows, unit) {
   return out.map((b) => ({ date: b.date, label: b.label, v: watchAnStats(b.list).avg }));
 }
 
-function watchAnChart(buckets, m, goal, avg) {
+// opts.hi (v1.95) = data do dia escolhido: a barra dele fica acesa e as outras apagadinhas
+function watchAnChart(buckets, m, goal, avg, opts = {}) {
   const vals = buckets.filter((b) => b.v !== null).map((b) => b.v);
   if (!vals.length) return tobaEmpty("📊", "Sem dados nesse período", "Puxa do relógio no 🔄 ou importa o histórico na ⚙️.", { compact: true });
   const W = 340, H = 170, padB = 18, padT = 10;
@@ -210,18 +218,19 @@ function watchAnChart(buckets, m, goal, avg) {
   const slot = W / n;
   const bw = Math.max(2, Math.min(26, slot * 0.66));
   const y = (v) => padT + (H - padT - padB) * (1 - (v - base) / (max - base || 1));
-  const every = n <= 12 ? 1 : n <= 14 ? 3 : 5;
+  const every = n <= 14 ? 1 : 5;
   const better = (v) => (goal ? (m.better === "down" ? v <= goal : v >= goal) : false);
   const bars = buckets.map((b, i) => {
     const x = i * slot + (slot - bw) / 2;
     const label = every === 1 || (n - 1 - i) % every === 0 ? b.label : "";
-    const bar = b.v === null ? "" : `<rect x="${x.toFixed(1)}" y="${y(b.v).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, H - padB - y(b.v)).toFixed(1)}" rx="3" style="fill:${better(b.v) ? "var(--gold-2)" : m.color}" />`;
-    return `${bar}${label ? `<text x="${(i === n - 1 && n > 12 ? W - 1 : i * slot + slot / 2).toFixed(1)}" y="${H - 4}" class="watch-chart-label"${i === n - 1 && n > 12 ? ' style="text-anchor:end"' : ""}>${escapeHtml(label)}</text>` : ""}`;
+    const bar = b.v === null ? "" : `<rect x="${x.toFixed(1)}" y="${y(b.v).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, H - padB - y(b.v)).toFixed(1)}" rx="3" style="fill:${better(b.v) ? "var(--gold-2)" : m.color}${opts.hi && b.date !== opts.hi ? ";opacity:0.4" : ""}" />`;
+    const hiCls = opts.hi && b.date === opts.hi ? " is-hi" : "";
+    return `${bar}${label ? `<text x="${(i === n - 1 && n > 14 ? W - 1 : i * slot + slot / 2).toFixed(1)}" y="${H - 4}" class="watch-chart-label${hiCls}"${i === n - 1 && n > 14 ? ' style="text-anchor:end"' : ""}>${escapeHtml(label)}</text>` : ""}`;
   }).join("");
   const line = (v, cls) => `<line x1="0" x2="${W}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="${cls}" />`;
   return `<svg class="watch-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfico de ${escapeHtml(m.name)}">
     ${goal ? line(goal, "watch-chart-goal") : ""}${avg ? line(avg, "watch-chart-avg") : ""}${bars}</svg>
-    <div class="watch-an-legend">${goal ? `<span><i class="is-goal"></i>meta ${escapeHtml(m.fmt(goal))}</span>` : ""}${avg ? `<span><i class="is-avg"></i>média ${escapeHtml(m.fmt(avg))}</span>` : ""}</div>`;
+    <div class="watch-an-legend">${goal ? `<span><i class="is-goal"></i>meta ${escapeHtml(m.fmt(goal))}</span>` : ""}${avg ? `<span><i class="is-avg"></i>${escapeHtml(opts.avgLabel || "média")} ${escapeHtml(m.fmt(avg))}</span>` : ""}</div>`;
 }
 
 function watchAnPct(now, before) {
@@ -583,6 +592,10 @@ function renderWatchMetric() {
   const today = toIsoDate();
   const minOffset = watchAnMinOffset(watchAn.unit);
   if (watchAn.offset < minOffset) watchAn.offset = minOffset;
+  if (watchAn.unit === "day") {
+    el.innerHTML = watchAnNav(minOffset) + renderWatchMetricDay(key, m, watchAddDays(today, watchAn.offset));
+    return;
+  }
   const period = watchAnPeriod(watchAn.unit, watchAn.offset);
   const before = watchAnPeriod(watchAn.unit, watchAn.offset - 1);
   const from = period.from;
@@ -606,19 +619,10 @@ function renderWatchMetric() {
   ];
   const buckets = watchAnBuckets(rows, watchAn.unit);
   const grain = watchAn.unit === "week" || watchAn.unit === "month" ? "por dia" : watchAn.unit === "half" ? "média por semana" : "média por mês";
-  const options = [];
-  for (let o = 0; o >= minOffset; o--) options.push(`<option value="${o}"${o === watchAn.offset ? " selected" : ""}>${escapeHtml(watchAnPeriod(watchAn.unit, o).label)}</option>`);
   const list = rows.filter((r) => r.v !== null).reverse();
   const shown = list.slice(0, watchAn.listShown);
   el.innerHTML = `
-    <div class="period-selector watch-an-periods" role="group" aria-label="Período">
-      ${WATCH_PERIODS.map((p) => `<button type="button" class="period-btn${p.unit === watchAn.unit ? " active" : ""}" data-click="watchMetricPeriod" data-unit="${p.unit}">${p.label}</button>`).join("")}
-    </div>
-    <div class="watch-an-nav">
-      <button type="button" class="toba-icon-btn" data-click="watchMetricStep" data-step="-1" aria-label="Período anterior"${watchAn.offset <= minOffset ? " disabled" : ""}>‹</button>
-      <select class="watch-an-pick" data-change="watchMetricPick" aria-label="Escolher o período">${options.join("")}</select>
-      <button type="button" class="toba-icon-btn" data-click="watchMetricStep" data-step="1" aria-label="Próximo período"${watchAn.offset >= 0 ? " disabled" : ""}>›</button>
-    </div>
+    ${watchAnNav(minOffset)}
     ${key === "kcal" ? watchAnBasalToggle() : ""}
     <div class="toba-stats is-3 watch-an-stats">${tiles.join("")}</div>
     <div class="card">
@@ -633,13 +637,13 @@ function renderWatchMetric() {
     ${key === "stress" ? watchAnStressExtras(from, to) : ""}
     ${key === "hrv" || key === "temp" || key === "resp" ? watchAnBaseline(key, m, rows) : ""}
     ${key === "spo2" ? watchAnSpo2Extras(from, to) : ""}
-    ${m.about ? `<p class="watch-muted watch-an-about">ℹ️ ${escapeHtml(m.about)}</p>` : ""}
+    ${watchAnAbout(key, m)}
     ${watchAnInsights(key)}
     ${watchAnWeekdays(rows, m)}
     ${watchAnRecords(key, m)}
     <div class="section-title">🗓️ Dias do período</div>
     <div class="toba-list">${shown.length ? shown.map((r) => `
-      <div class="toba-list-item watch-row" role="button" tabindex="0" data-click="openWatchDay" data-id="${r.date}">
+      <div class="toba-list-item watch-row" role="button" tabindex="0" data-click="watchMetricGoDay" data-id="${r.date}">
         <span class="watch-row-date">${escapeHtml(watchDayLabel(r.date))}</span>
         <span class="watch-row-bits">${goal && r.v >= goal ? "🏆 " : ""}${escapeHtml(m.fmt(r.v))}</span>
         <span class="toba-hub-chevron">›</span>
@@ -759,7 +763,7 @@ function watchAnBasalToggle() {
   return `<div class="watch-an-basal">
       <button type="button" class="chip-btn${on ? " is-on" : ""}" data-click="watchToggleBasal" aria-pressed="${on}">${on ? "✅ Somando o basal" : "➕ Somar o basal"}</button>
       <span class="watch-muted">${on ? "Total do dia: ativas + o que o corpo gasta parado." : "Só ⚡ ativas, o que você queimou se mexendo. O basal (corpo parado) é quase igual todo dia."}</span>
-    </div>`;
+    </div>${typeof watchScaleBasalPicker === "function" ? watchScaleBasalPicker() : ""}`;
 }
 
 function openWatchMetric(el) {
@@ -767,6 +771,8 @@ function openWatchMetric(el) {
   if (!WATCH_METRICS[key]) return;
   watchAn.metric = key;
   watchAn.listShown = 31;
+  // v1.95: abre no período que contém o dia escolhido na tela (Dia = o próprio dia)
+  watchAn.offset = watchAnOffsetFor(watchAn.unit, watchSelDate());
   document.getElementById("viewWatchMain").classList.remove("active");
   document.getElementById("viewWatchMetric").classList.add("active");
   const m = WATCH_METRICS[key];
@@ -779,6 +785,7 @@ function closeWatchMetric() {
   document.getElementById("viewWatchMetric").classList.remove("active");
   document.getElementById("viewWatchMain").classList.add("active");
   tobaSetHeader({ page: "🩻 Raio-X" });
+  renderWatch(); // v1.95: volta no dia que ficou escolhido na análise
   window.scrollTo(0, 0);
 }
 
@@ -791,20 +798,47 @@ tobaActions({
   openWatchMetric,
   closeWatchMetric,
   watchMetricPeriod(el) {
-    watchAn.unit = el.dataset.unit || "month";
-    watchAn.offset = 0;
+    watchAn.unit = WATCH_PERIODS.some((p) => p.unit === el.dataset.unit) ? el.dataset.unit : "day";
+    watchAn.offset = watchAnOffsetFor(watchAn.unit, watchSelDate());
     watchAn.listShown = 31;
     renderWatchMetric();
   },
   watchMetricStep(el) {
     watchAn.offset = Math.min(0, watchAn.offset + (Number(el.dataset.step) || 0));
     watchAn.listShown = 31;
+    watchAnSyncDate();
     renderWatchMetric();
   },
   watchMetricPick(el) {
-    watchAn.offset = Math.min(0, Number(el.value) || 0);
+    if (watchAn.unit === "day") {
+      if (!el.value) return;
+      watchAn.offset = Math.min(0, watchDaysBetween(toIsoDate(), el.value));
+    } else watchAn.offset = Math.min(0, Number(el.value) || 0);
     watchAn.listShown = 31;
+    watchAnSyncDate();
     renderWatchMetric();
+  },
+  // v1.95: tocar num dia da lista abre o Dia dele (na análise)
+  watchMetricGoDay(el) {
+    watchAn.unit = "day";
+    watchAn.offset = Math.min(0, watchDaysBetween(toIsoDate(), el.dataset.id));
+    watchAnSyncDate();
+    renderWatchMetric();
+    window.scrollTo(0, 0);
+  },
+  watchAnOpenPicker() {
+    const input = document.getElementById("watchAnDateInput");
+    if (!input) return;
+    try {
+      if (typeof input.showPicker === "function") input.showPicker();
+      else input.click();
+    } catch (err) {
+      input.focus();
+      input.click();
+    }
+  },
+  watchAnDayAll(el) {
+    openWatchDay(el);
   },
   watchMetricMore() {
     watchAn.listShown += 31;
@@ -815,3 +849,164 @@ tobaActions({
     renderWatch(); // já refaz a análise aberta
   },
 });
+
+/* ---------- v1.95: 📆 Dia na análise ---------- */
+
+// Período (da unidade) que contém o dia `iso`
+function watchAnOffsetFor(unit, iso) {
+  if (unit === "day") return Math.min(0, watchDaysBetween(toIsoDate(), iso));
+  let o = 0;
+  while (o > -600 && watchAnPeriod(unit, o).from > iso) o--;
+  return o;
+}
+
+// Mexeu no dia dentro da análise: a tela principal acompanha
+function watchAnSyncDate() {
+  if (watchAn.unit === "day") watchUi.date = watchAddDays(toIsoDate(), watchAn.offset);
+}
+
+function watchAnNav(minOffset) {
+  const tabs = `<div class="period-selector watch-an-periods" role="group" aria-label="Período">
+      ${WATCH_PERIODS.map((p) => `<button type="button" class="period-btn${p.unit === watchAn.unit ? " active" : ""}" data-click="watchMetricPeriod" data-unit="${p.unit}">${p.label}</button>`).join("")}
+    </div>`;
+  let middle;
+  if (watchAn.unit === "day") {
+    const iso = watchAddDays(toIsoDate(), watchAn.offset);
+    middle = `<div class="watch-daynav-pick watch-an-pick" role="button" tabindex="0" data-click="watchAnOpenPicker" aria-label="Escolher o dia">
+        <span class="watch-daynav-main">${escapeHtml(watchDayLabel(iso))} <span class="watch-daynav-caret">▾</span></span>
+        <span class="watch-daynav-sub">${escapeHtml(watchDateLong(iso))}</span>
+        <input type="date" id="watchAnDateInput" class="watch-daynav-input" value="${iso}" max="${toIsoDate()}" min="${watchFirstDate()}" data-change="watchMetricPick" tabindex="-1" aria-hidden="true" />
+      </div>`;
+  } else {
+    const options = [];
+    for (let o = 0; o >= minOffset; o--) options.push(`<option value="${o}"${o === watchAn.offset ? " selected" : ""}>${escapeHtml(watchAnPeriod(watchAn.unit, o).label)}</option>`);
+    middle = `<select class="watch-an-pick" data-change="watchMetricPick" aria-label="Escolher o período">${options.join("")}</select>`;
+  }
+  return `${tabs}
+    <div class="watch-an-nav">
+      <button type="button" class="toba-icon-btn" data-click="watchMetricStep" data-step="-1" aria-label="Anterior"${watchAn.offset <= minOffset ? " disabled" : ""}>‹</button>
+      ${middle}
+      <button type="button" class="toba-icon-btn" data-click="watchMetricStep" data-step="1" aria-label="Próximo"${watchAn.offset >= 0 ? " disabled" : ""}>›</button>
+    </div>`;
+}
+
+// ℹ️ + ❔ Entenda (o que é, subir ou descer, como melhorar)
+function watchAnAbout(key, m) {
+  const help = typeof WATCH_HELP === "object" && WATCH_HELP[key];
+  if (!m.about && !help) return "";
+  return `<div class="watch-an-about">
+      ${m.about ? `<p class="watch-muted">ℹ️ ${escapeHtml(m.about)}</p>` : ""}
+      ${help ? `<button type="button" class="chip-btn watch-an-help" data-click="openWatchHelp" data-metric="${key}">❔ Entenda: subir ou descer é bom? Como melhorar?</button>` : ""}
+    </div>`;
+}
+
+// Extras do dia por assunto (sono da noite, batimento, stress, oxigênio)
+function watchAnDayExtras(key, date) {
+  const d = watchDay(date);
+  if (!d) return "";
+  if (key === "sleep" && d.sleep && d.sleep.min > 0) {
+    const s = d.sleep;
+    const bedU = watchUsualClock(date, "start", 15 * 60);
+    const wakeU = watchUsualClock(date, "end", 0);
+    const diffTxt = (now, usual) => {
+      if (usual === null) return "";
+      const diff = now - usual;
+      const t = watchClockDiff(diff);
+      return t ? `${t} ${diff > 0 ? "mais tarde" : "mais cedo"}` : "no horário de sempre";
+    };
+    const staged = s.deep + s.light + s.rem;
+    return `<div class="section-title">🛏️ A noite</div>
+      <div class="card">
+        <div class="toba-stats is-3">
+          ${watchAnTile("🛏️ Deitou", watchClock(s.start), escapeHtml(diffTxt(watchAnClockMin(s.start, 15 * 60), bedU)))}
+          ${watchAnTile("⏰ Acordou", watchClock(s.end), escapeHtml(diffTxt(watchAnClockMin(s.end, 0), wakeU)))}
+          ${watchAnTile("Profundo", staged ? `${Math.round((s.deep / (staged + (s.awake || 0))) * 100)}%` : "--", staged ? watchHours(s.deep) : "sem fases")}
+        </div>
+        ${watchSleepBar(s)}
+        ${s.napMin ? `<p class="watch-muted">💤 +${watchHours(s.napMin)} de cochilo nesse dia.</p>` : ""}
+      </div>`;
+  }
+  if (key === "heart" && (d.restHr || d.hrMin || d.hrMax)) {
+    return `<div class="card">
+        <div class="toba-stats is-3">
+          ${watchAnTile("💤 Repouso", d.restHr ? watchInt(d.restHr) : "--", "bpm")}
+          ${watchAnTile("📉 Menor", d.hrMin ? watchInt(d.hrMin) : "--", "bpm")}
+          ${watchAnTile("📈 Maior", d.hrMax ? watchInt(d.hrMax) : "--", "bpm")}
+        </div>
+      </div>`;
+  }
+  if (key === "stress" && d.stress !== undefined) {
+    return `<div class="card">
+        <div class="toba-stats is-3">
+          ${watchAnTile("💥 Pico", d.stressMax !== undefined ? watchInt(d.stressMax) : "--", Number.isFinite(Number(d.stressPeak)) ? `às ${d.stressPeak}h` : "")}
+          ${watchAnTile("🔥 Alto", d.stressHigh !== undefined ? `${watchInt(d.stressHigh)} h` : "--", "no 70+")}
+          ${watchAnTile("📊 Média", watchInt(d.stress), "do dia")}
+        </div>
+      </div>`;
+  }
+  if (key === "spo2" && d.spo2Min !== undefined) {
+    return `<div class="card">
+        <div class="toba-stats">
+          ${watchAnTile("📉 Menor da noite", `${d.spo2Min}%`, d.spo2Min < 88 ? "⚠️ caiu bastante" : "ok")}
+          ${watchAnTile("📊 Média", `${d.spo2}%`, "da noite")}
+        </div>
+      </div>`;
+  }
+  return "";
+}
+
+function renderWatchMetricDay(key, m, date) {
+  const isToday = date === toIsoDate();
+  const r = watchRefs(key, date);
+  const partial = watchIsPartial(key, date);
+  const goal = m.goal ? m.goal() : 0;
+  const zone = r.v !== null && m.zone ? m.zone(r.v, date) : null;
+  const subBits = [zone ? `${zone.icon} ${zone.label}` : "", partial ? "até agora" : "", m.per && r.v !== null ? m.per : ""].filter(Boolean);
+  const gpct = goal && r.v !== null ? Math.min(100, Math.round((r.v / goal) * 100)) : null;
+  const hero = `<div class="card watch-an-day">
+      <div class="watch-an-day-val" style="color:${m.color}">${r.v !== null ? escapeHtml(m.fmt(r.v)) : "--"}</div>
+      <div class="watch-an-day-sub">${r.v !== null ? escapeHtml(subBits.join(" · ")) : `Sem ${escapeHtml(m.name.toLowerCase())} nesse dia`}</div>
+      ${gpct !== null ? `<div class="progress-track"><div class="progress-fill" style="width:${gpct}%;background:${r.v >= goal ? "var(--gold-2)" : m.color}"></div></div>
+        <p class="watch-muted">${r.v >= goal ? "🏆 Meta batida" : `${gpct}% da meta de ${escapeHtml(m.fmt(goal))}`}</p>` : ""}
+    </div>`;
+  const tile = (label, ref, refLabel) => {
+    if (ref === null) return watchAnTile(label, "--", "sem dado");
+    const info = watchDeltaInfo(key, r.v, ref, partial);
+    if (partial) return watchAnTile(label, escapeHtml(m.fmt(ref)), info ? escapeHtml(info.txt) : "");
+    const cls = info && info.cls === "is-good" ? "text-green" : info && info.cls === "is-bad" ? "text-coral" : "";
+    return watchAnTile(label, info ? escapeHtml(info.txt) : "--", `${refLabel}: ${escapeHtml(m.fmt(ref))}`, cls);
+  };
+  const tiles = partial
+    ? [tile("Ontem", r.y), tile("Média 7d", r.w), tile("Média 30d", r.n30)]
+    : [tile("vs Ontem", r.y, "ontem"), tile("vs 7 dias", r.w, "média"), tile("vs 30 dias", r.n30, "média")];
+  // 🤡 do dia
+  const lines = [];
+  if (isToday && key === "steps") {
+    const pace = watchPaceText(r.v || 0, goal);
+    if (pace) lines.push(pace);
+  } else if (!partial) {
+    const rank = watchRankText(key, date);
+    if (rank) lines.push(rank);
+  }
+  if (!partial && r.v !== null && r.n30 !== null && m.better !== "none") {
+    const pct = ((r.v - r.n30) / r.n30) * 100;
+    const good = m.better === "up" ? pct > 0 : pct < 0;
+    if (Math.abs(pct) >= (m.zoom ? 5 : 10)) lines.push(good ? `😎 ${Math.abs(Math.round(pct))}% ${pct > 0 ? "acima" : "abaixo"} do teu normal dos últimos 30 dias. Dia bom!` : `🫠 ${Math.abs(Math.round(pct))}% ${pct > 0 ? "acima" : "abaixo"} do teu normal dos últimos 30 dias. Acontece, amanhã tem revanche.`);
+    else lines.push("➡️ Bem no teu normal dos últimos 30 dias.");
+  }
+  if (!partial && key === "temp" && r.v !== null && r.n30 !== null && Math.abs(r.v - r.n30) > 0.5) lines.push(`🌡️ ${r.v > r.n30 ? "Mais quente" : "Mais fria"} que o teu normal em mais de meio grau. Calor, cobertor, álcool ou começo de gripe?`);
+  const cloba = lines.length ? `<div class="watch-cloba"><span class="watch-cloba-face">🤡</span><div><b>Papo reto do Cloba</b>${lines.map((l) => `<p>${escapeHtml(l)}</p>`).join("")}</div></div>` : "";
+  const rows = watchAnRows(key, watchAddDays(date, -13), date).map((x) => ({ ...x, label: x.date.slice(8, 10) }));
+  return `
+    ${key === "kcal" ? watchAnBasalToggle() : ""}
+    ${hero}
+    <div class="toba-stats is-3 watch-an-stats">${tiles.join("")}</div>
+    <div class="card">
+      <div class="card-title">📈 Os 14 dias até ${escapeHtml(watchDayLabel(date).toLowerCase())}</div>
+      ${watchAnChart(rows, m, goal, r.w, { hi: date, avgLabel: "média 7 dias" })}
+    </div>
+    ${cloba}
+    ${watchAnDayExtras(key, date)}
+    ${watchAnAbout(key, m)}
+    ${watchHasData(watchDay(date)) ? `<button type="button" class="btn btn-secondary watch-an-dayall" data-click="watchAnDayAll" data-id="${date}">📋 Tudo desse dia</button>` : ""}`;
+}

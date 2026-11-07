@@ -813,6 +813,15 @@
   border-radius: 999px;
 }
 
+/* Bateu o mês passado (v1.95) */
+.eq-beat .eq-percent {
+  color: #3fb950;
+}
+
+.eq-beat .eq-bar-fill {
+  background: linear-gradient(90deg, #238636, #3fb950);
+}
+
 .eq-empty {
   color: #8b949e;
   font-size: 0.78rem;

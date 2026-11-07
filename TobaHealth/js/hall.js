@@ -6,6 +6,9 @@
  * Padrão das telas de equivalência:
  *   resumo (número grande + frase) → 🏅 Conquistado (cards compactos)
  *   → 🎯 Próximos desafios (3 barras; o resto fica recolhido)
+ * Distância e Saitama do mês (desde v1.95) comparam com o MÊS ANTERIOR
+ * (cidades e a meta de 3 anos do careca não cabem num mês só); as metas da
+ * vida toda seguem no Hall dos Heróis do Perfil (assets/perfil-hall.js).
  *
  * Carregado ANTES de treinos.js; usa funções dele só dentro de funções.
  * ===================================================================== */
@@ -106,20 +109,127 @@ function renderEnergyPage(stats) {
     <p class="eq-footer">Conta de guardanapo, chefia: não vira passe livre no rodízio, mas já dá pra comemorar sem inventar número.</p>`;
 }
 
-function renderDistancePage(stats) {
-  const km = stats.distance;
-  const tagline = pickTagline(km, HALL_TAGLINES.distance);
-  const sections = renderProgressSections(km, WORKOUT_DISTANCE_DESTINATIONS, {
-    emptyText: "Nenhuma cidade conquistada ainda. A primeira é o Rio, só 360 km. Bora?",
-    allDoneText: "Você deu a volta ao mundo e ainda sobrou perna. Respeito.",
-    doneTitle: (item, times) => `Você já ${item.done} ${formatWorkoutNumber(times, 0)} ${times === 1 ? "vez" : "vezes"}`,
-    challengeLabel: (item) => item.label,
-    remaining: (item, total) => `${formatWorkoutNumber(item.size - total, 1)} km (trecho de ~${formatWorkoutNumber(item.size, 0)} km)`,
-  });
+/* ------------- comparação com o mês anterior (desde v1.95) ------------- */
+function getPrevMonthKey(monthKey) {
+  const [year, month] = String(monthKey).split("-").map(Number);
+  const date = new Date(year, month - 2, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function formatMonthName(monthKey) {
+  const date = new Date(`${monthKey}-01T12:00:00`);
+  return Number.isNaN(date.getTime())
+    ? "mês passado"
+    : date.toLocaleDateString("pt-BR", { month: "long" });
+}
+
+// Totais do mês anterior (inteiro) e, se o mês escolhido é o atual, do mês
+// anterior só até o mesmo dia (comparar mês pela metade com mês fechado engana).
+function getMonthCompare(monthKey, today = new Date()) {
+  const prevKey = getPrevMonthKey(monthKey);
+  const prevWorkouts = getWorkoutMonthStats(healthDb.workouts || [], prevKey, today).workouts;
+  const isCurrent = monthKey === getWorkoutMonthKey(toIsoDate(today));
+  const day = today.getDate();
+  const samePoint = isCurrent
+    ? prevWorkouts.filter((workout) => Number(String(workout.date).slice(8, 10)) <= day)
+    : null;
+  return {
+    prevKey,
+    prevName: formatMonthName(prevKey),
+    isCurrent,
+    day,
+    prev: getWorkoutLifetimeStats(prevWorkouts),
+    prevSamePoint: samePoint ? getWorkoutLifetimeStats(samePoint) : null,
+  };
+}
+
+function compareRatio(current, previous) {
+  if (previous > 0) return current / previous;
+  return current > 0 ? 1 : 0;
+}
+
+function compareBadge(current, previous) {
+  if (previous > 0) return `${formatWorkoutNumber((current / previous) * 100, 0)}%`;
+  return current > 0 ? "estreia" : "—";
+}
+
+function pickCompareTagline(current, previous, cmp) {
+  const name = cmp.prevName;
+  if (previous <= 0) {
+    return current > 0
+      ? `Em ${name} foi zero, então tudo aqui é recorde. Estreia de respeito.`
+      : `Zero aqui e zero em ${name}. O sofá tá invicto.`;
+  }
+  const ratio = current / previous;
+  if (ratio >= 1.5) return `Atropelou ${name}. O você do mês passado tá pedindo revanche.`;
+  if (ratio >= 1) return `Bateu ${name}. Evolução é isso aí.`;
+  if (ratio >= 0.75) return `Encostando em ${name}. Mais um gás e passa.`;
+  return cmp.isCurrent
+    ? `Ainda atrás de ${name}, mas o mês tá rolando. Dá tempo de virar.`
+    : `Mês mais leve que ${name}. Acontece, o próximo cobra.`;
+}
+
+function eqCompareRow(icon, label, current, previous, { unit, digits, prevName }) {
+  const ratio = compareRatio(current, previous);
+  const width = Math.min(100, ratio * 100);
+  const beat = previous > 0 && current >= previous;
+  const badge = compareBadge(current, previous);
+  const fmt = (value) => formatWorkoutNumber(value, digits);
+  let note;
+  if (previous <= 0) {
+    note = current > 0 ? `${fmt(current)} ${unit} · em ${prevName} foi zero` : `Zero aqui e em ${prevName}`;
+  } else if (beat) {
+    note = `${fmt(current)} ${unit} · ${prevName}: ${fmt(previous)} ${current > previous ? `(+${fmt(current - previous)})` : "(empate)"}`;
+  } else {
+    note = `${fmt(current)} de ${fmt(previous)} ${unit} · faltam ${fmt(previous - current)} pra bater ${prevName}`;
+  }
   return `
-    ${eqSummary(`${formatWorkoutNumber(km, 2)} km`, "percorridos", tagline)}
-    ${sections}
-    <p class="eq-footer">Distâncias aproximadas em linha reta a partir de São Paulo; trajetos reais variam. O importante é a barra crescer, não comprar passagem hoje.</p>`;
+    <div class="eq-card eq-challenge${beat ? " eq-beat" : ""}">
+      <span class="eq-icon" aria-hidden="true">${icon}</span>
+      <div class="eq-body">
+        <div class="eq-challenge-head">
+          <strong>${label}</strong>
+          <span class="eq-percent">${beat ? "🏆 " : ""}${badge}</span>
+        </div>
+        <div class="eq-bar" role="progressbar" aria-label="${label}: ${badge} de ${prevName}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${width}">
+          <div class="eq-bar-fill" style="width: ${width}%"></div>
+        </div>
+        <span class="eq-note">${note}</span>
+      </div>
+    </div>`;
+}
+
+// Só no mês atual: "no mesmo ponto do mês passado você tinha X".
+function eqSamePointNote(current, then, cmp, unit, digits) {
+  if (!cmp.isCurrent || then == null) return "";
+  const fmt = (value) => formatWorkoutNumber(value, digits);
+  const verdict = current > then
+    ? `Tá <strong>${fmt(current - then)} ${unit} na frente</strong> 🔥`
+    : current < then
+      ? `Tá ${fmt(then - current)} ${unit} atrás, bora correr atrás.`
+      : "Empatado, cabeça a cabeça.";
+  return `<p class="eq-intro">📆 No mesmo ponto de ${cmp.prevName} (até o dia ${cmp.day}) você tinha ${fmt(then)} ${unit}. ${verdict}</p>`;
+}
+
+function renderDistancePage(stats, scopeWorkouts, cmp) {
+  const km = stats.distance;
+  const prev = cmp.prev;
+  const opts = { unit: "km", digits: 2, prevName: cmp.prevName };
+  const modes = [
+    ["🚶", "A pé", "walkDistance"],
+    ["🚴", "De bike", "bikeDistance"],
+    ["🔁", "Elíptico", "ellipticalDistance"],
+    ["🏃", "Outros", "otherDistance"],
+  ].filter(([, , field]) => stats[field] > 0 || prev[field] > 0);
+  return `
+    ${eqSummary(`${formatWorkoutNumber(km, 2)} km`, `percorridos · ${cmp.prevName}: ${formatWorkoutNumber(prev.distance, 2)} km`, pickCompareTagline(km, prev.distance, cmp))}
+    ${eqSamePointNote(km, cmp.prevSamePoint ? cmp.prevSamePoint.distance : null, cmp, "km", 2)}
+    <div class="eq-section-title">🆚 Contra ${cmp.prevName}</div>
+    <div class="eq-list">
+      ${eqCompareRow("🌍", "Distância total", km, prev.distance, opts)}
+      ${modes.length > 1 ? modes.map(([icon, label, field]) => eqCompareRow(icon, label, stats[field], prev[field], opts)).join("") : ""}
+    </div>
+    <p class="eq-footer">Aqui é você contra você do mês passado. As cidades (Rio, Buenos Aires, Manaus...) e a volta na Terra somam a vida toda e seguem no Hall dos Heróis do Perfil.</p>`;
 }
 
 function renderLiftPage(stats) {
@@ -138,42 +248,25 @@ function renderLiftPage(stats) {
     <p class="eq-footer">Conta de guardanapo com pesos aproximados. Sem academia também conta: cada flexão levanta ~64% do seu peso, cada agachamento ~70% e cada abdominal ~30% (pelo peso da sua última pesagem até o dia do treino). Levantar o Titanic é por série, pelo menos em espírito.</p>`;
 }
 
-function renderSaitamaPage(stats) {
-  const days = 365 * 3;
-  const benchmarkReps = 100 * days;
-  const benchmarkDistance = 10 * days;
-  const totalReps = stats.situps + stats.pushups + stats.squats;
-  const progress = ((stats.situps + stats.pushups + stats.squats) / (benchmarkReps * 3)) * 100;
-  const tagline = pickTagline(progress, HALL_TAGLINES.saitama);
-  const row = (icon, label, value, goal, unit, digits) => {
-    const ratio = goal ? value / goal : 0;
-    const width = Math.min(100, ratio * 100);
-    return `
-      <div class="eq-card eq-challenge">
-        <span class="eq-icon" aria-hidden="true">${icon}</span>
-        <div class="eq-body">
-          <div class="eq-challenge-head">
-            <strong>${label}</strong>
-            <span class="eq-percent">${formatWorkoutNumber(ratio * 100, 3)}%</span>
-          </div>
-          <div class="eq-bar" role="progressbar" aria-label="${label}: ${formatWorkoutNumber(ratio * 100, 3)}% do treino Saitama" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${width}">
-            <div class="eq-bar-fill" style="width: ${width}%"></div>
-          </div>
-          <span class="eq-note">${formatWorkoutNumber(value, digits)} de ${formatWorkoutNumber(goal, 0)} ${unit}</span>
-        </div>
-      </div>`;
-  };
+function renderSaitamaPage(stats, scopeWorkouts, cmp) {
+  const prev = cmp.prev;
+  const name = cmp.prevName;
+  const reps = (item) => item.situps + item.pushups + item.squats;
+  const totalReps = reps(stats);
+  const prevReps = reps(prev);
+  const repOpts = { unit: "reps", digits: 0, prevName: name };
   return `
-    ${eqSummary(`${formatWorkoutNumber(totalReps, 0)} reps`, "no total", tagline)}
-    <p class="eq-intro">Na referência, Saitama fez <strong>100 de cada exercício e correu 10 km por dia durante 3 anos</strong>: ${formatWorkoutNumber(benchmarkReps, 0)} repetições de cada e ${formatWorkoutNumber(benchmarkDistance, 0)} km.</p>
-    <div class="eq-section-title">👊 Você contra o careca</div>
+    ${eqSummary(`${formatWorkoutNumber(totalReps, 0)} reps`, `no mês · ${name}: ${formatWorkoutNumber(prevReps, 0)}`, pickCompareTagline(totalReps, prevReps, cmp))}
+    ${eqSamePointNote(totalReps, cmp.prevSamePoint ? reps(cmp.prevSamePoint) : null, cmp, "reps", 0)}
+    <p class="eq-intro">Aqui é <strong>você contra você de ${name}</strong>. A meta do careca (100 de cada e 10 km por dia durante 3 anos) continua no Hall dos Heróis do Perfil, somando a vida toda.</p>
+    <div class="eq-section-title">👊 Você contra você de ${name}</div>
     <div class="eq-list">
-      ${row("🧎", "Abdominais", stats.situps, benchmarkReps, "repetições", 0)}
-      ${row("💪", "Flexões", stats.pushups, benchmarkReps, "repetições", 0)}
-      ${row("🦵", "Agachamentos", stats.squats, benchmarkReps, "repetições", 0)}
-      ${row("🏃", "Distância", stats.distance, benchmarkDistance, "km", 2)}
+      ${eqCompareRow("🧎", "Abdominais", stats.situps, prev.situps, repOpts)}
+      ${eqCompareRow("💪", "Flexões", stats.pushups, prev.pushups, repOpts)}
+      ${eqCompareRow("🦵", "Agachamentos", stats.squats, prev.squats, repOpts)}
+      ${eqCompareRow("🏃", "Distância", stats.distance, prev.distance, { unit: "km", digits: 2, prevName: name })}
     </div>
-    <p class="eq-footer">Não precisa virar o careca até sexta. Ele treinou por 3 anos; você já está fazendo a parte mais difícil: começar e voltar.</p>`;
+    <p class="eq-footer">O careca treinou 3 anos; aqui você só precisa ganhar do você do mês passado. Um mês de cada vez.</p>`;
 }
 
 /* --------------------------- navegação --------------------------- */
@@ -181,9 +274,9 @@ function renderSaitamaPage(stats) {
 function openWorkoutHallDetail(detail, monthKey = "") {
   const pages = {
     energy: { title: "🔥 Energia queimada", render: renderEnergyPage },
-    distance: { title: "🌍 Sua quilometragem pelo mapa", render: renderDistancePage },
+    distance: { title: "🌍 Quilometragem x mês passado", render: renderDistancePage },
     lifted: { title: "🏋️ Peso levantado", render: renderLiftPage },
-    saitama: { title: "👊 Você contra o mestre careca", render: renderSaitamaPage },
+    saitama: { title: "👊 Saitama x mês passado", render: renderSaitamaPage },
   };
   const page = pages[detail];
   if (!page || !monthKey) return;
@@ -193,7 +286,7 @@ function openWorkoutHallDetail(detail, monthKey = "") {
 
   document.getElementById("workoutDetailTitle").innerText = page.title;
   document.getElementById("workoutDetailContent").innerHTML =
-    `<div class="eq-scope">📅 ${formatWorkoutMonth(monthKey)}</div>` + page.render(stats, scopeWorkouts);
+    `<div class="eq-scope">📅 ${formatWorkoutMonth(monthKey)}</div>` + page.render(stats, scopeWorkouts, getMonthCompare(monthKey));
   openModule("viewDetail");
   window.scrollTo({ top: 0 });
 }

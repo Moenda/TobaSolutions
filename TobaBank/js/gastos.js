@@ -1108,6 +1108,13 @@ function guessExpenseCategory(description) {
  * ------------------------------------------------------------------- */
 let nativePending = [];
 
+// v1.95: categoria escolhida na lista (🏷️ Ajustar categoria). Fica só na
+// memória da página (id da pendente -> categoria) até lançar; a pendente
+// continua morando só na fila do app. O lançado ensina o palpite da
+// próxima compra na mesma loja (guessExpenseCategory).
+const pendingCategoryPick = {};
+let pendingCatsOpen = "";
+
 // Lê a fila do app, tira o lixo e o que já foi lançado; devolve as pendentes.
 function readNativePending() {
   if (!TOBA_NATIVE || !isDbLoaded) return [];
@@ -1139,7 +1146,7 @@ function readNativePending() {
       app: String(p.app || ""),
       raw: String(p.raw || ""),
       old: p.old === true,
-      category: guessExpenseCategory(desc),
+      category: BANK_CATEGORIES[pendingCategoryPick[id]] ? pendingCategoryPick[id] : guessExpenseCategory(desc),
     });
   });
   if (drop.length) TOBA_NATIVE.ackPurchases(JSON.stringify(drop));
@@ -1190,15 +1197,30 @@ function renderPendingList() {
     list.innerHTML = tobaEmpty("🧘", "Nada esperando", "Todas as compras lidas já foram lançadas ou descartadas.", { compact: true });
     return;
   }
+  const quick = pendingQuickCategories();
   list.innerHTML = nativePending.map((p) => {
     const twin = findPendingTwin(p);
+    const open = pendingCatsOpen === p.id;
+    const cat = getBankCategory(p.category);
+    const chips = open ? `
+        <div class="pending-cat-chips">
+          ${[cat.id, ...quick.filter((c) => c !== cat.id)].slice(0, 8).map((c) => {
+            const item = getBankCategory(c);
+            return `<button type="button" class="pending-chip${c === cat.id ? " is-on" : ""}" data-click="pickPendingCategory" data-id="${escapeHtml(p.id)}" data-cat="${c}">${item.emoji} ${escapeHtml(item.short || item.name)}</button>`;
+          }).join("")}
+          <button type="button" class="pending-chip pending-chip-more" data-click="morePendingCategories" data-id="${escapeHtml(p.id)}">🏷️ Todas…</button>
+        </div>` : "";
     return `
       <div class="pending-item">
         <div class="pending-head">
           <strong>${formatCurrency(p.amount)}</strong>
           <span>${isoToBrDate(p.date)}${p.app ? ` · ${escapeHtml(p.app)}` : ""}</span>
         </div>
-        <div class="pending-desc">${escapeHtml(p.desc)} · <span class="pending-cat">${escapeHtml(getCleanCategory(p.category))}</span></div>
+        <div class="pending-desc">${escapeHtml(p.desc)}</div>
+        <button type="button" class="pending-cat-btn${open ? " is-open" : ""}" data-click="togglePendingCategories" data-id="${escapeHtml(p.id)}">
+          <span class="pending-cat">${cat.emoji} ${escapeHtml(cat.name)}</span>
+          <span class="pending-cat-edit">${open ? "Fechar ▴" : "🏷️ Ajustar categoria"}</span>
+        </button>${chips}
         ${p.old ? '<div class="pending-flag">⏳ Notificação antiga reenviada pelo app. Confere se não é repetida.</div>' : ""}
         ${twin ? `<div class="pending-flag">⚠️ Parece repetida: ${twin}.</div>` : ""}
         ${p.raw ? `<details class="pending-raw"><summary>Texto da notificação</summary><p>${escapeHtml(p.raw)}</p></details>` : ""}
@@ -1210,7 +1232,57 @@ function renderPendingList() {
   }).join("");
 }
 
+// Chips rápidos: as categorias que você mais usou nos últimos 300 gastos (+ básicas pra completar).
+function pendingQuickCategories() {
+  const count = {};
+  db.transactions.slice(-300).forEach((t) => {
+    if (BANK_CATEGORIES[t.category]) count[t.category] = (count[t.category] || 0) + 1;
+  });
+  const used = Object.keys(count).sort((a, b) => count[b] - count[a]);
+  ["mercado", "comida", "uber", "combustivel", "saude", "assinaturas", "outros"].forEach((c) => {
+    if (BANK_CATEGORIES[c] && !used.includes(c)) used.push(c);
+  });
+  return used;
+}
+
+// Troca a categoria de uma pendente. As outras da mesma loja que você ainda
+// não ajustou vão junto (4 compras no mesmo mercado = 1 toque).
+function setPendingCategory(id, category) {
+  const p = nativePending.find((item) => item.id === id);
+  if (!p || !BANK_CATEGORIES[category]) return;
+  const key = plainText(p.desc);
+  let others = 0;
+  nativePending.forEach((o) => {
+    if (o.id === id || (!pendingCategoryPick[o.id] && plainText(o.desc) === key)) {
+      if (o.id !== id && o.category !== category) others++;
+      o.category = category;
+      pendingCategoryPick[o.id] = category;
+    }
+  });
+  pendingCatsOpen = "";
+  renderPendingList();
+  const cat = getBankCategory(category);
+  tobaToast(others ? `${cat.emoji} ${cat.name} (+${others} da mesma loja)` : `${cat.emoji} ${cat.name}`);
+}
+
+function togglePendingCategories(el) {
+  pendingCatsOpen = pendingCatsOpen === el.dataset.id ? "" : el.dataset.id;
+  renderPendingList();
+}
+
+function pickPendingCategory(el) {
+  setPendingCategory(el.dataset.id, el.dataset.cat);
+}
+
+// "🏷️ Todas…": a mesma gaveta de categorias do formulário de gasto.
+function morePendingCategories(el) {
+  const p = nativePending.find((item) => item.id === el.dataset.id);
+  if (!p) return;
+  openCategoryPickerFor(p.category, (category) => setPendingCategory(p.id, category));
+}
+
 function openPendingPurchases() {
+  pendingCatsOpen = "";
   refreshPendingPurchases();
   renderPendingList();
   openTobaModal("pendingModal");
@@ -1257,7 +1329,7 @@ async function launchAllPending() {
   if (!nativePending.length) return;
   const items = [...nativePending];
   const total = items.reduce((s, p) => s + p.amount, 0);
-  const ok = await showPageMessage(`${items.length} compras (${formatCurrency(total)}) entram no mês com a categoria sugerida. Dá pra editar cada uma depois no histórico.`, {
+  const ok = await showPageMessage(`${items.length} compras (${formatCurrency(total)}) entram no mês com a categoria que está em cada uma. Dá pra editar cada uma depois no histórico.`, {
     title: "Lançar todas?", icon: "✅", confirm: true, confirmLabel: "Lançar todas",
   });
   if (!ok) return;
@@ -1380,6 +1452,9 @@ tobaActions({
   openPendingPurchases,
   launchPending,
   discardPending,
+  togglePendingCategories,
+  pickPendingCategory,
+  morePendingCategories,
   launchAllPending,
   openExpenseReminder: () =>
     tobaOpenReminder({

@@ -118,15 +118,6 @@
   font-weight: 700;
 }
 
-.watch-stats {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-/* v1.91: 🔥 Calorias (ativas + total) ocupa a linha toda */
-.watch-stats > .toba-stat:first-child {
-  grid-column: 1 / -1;
-}
-
 /* Sono */
 .watch-sleep-main {
   display: flex;
@@ -231,10 +222,6 @@
 }
 
 /* Gráfico */
-.watch-range {
-  margin-bottom: 0.7rem;
-}
-
 .watch-chart {
   width: 100%;
   height: auto;
@@ -252,10 +239,6 @@
   stroke-width: 1;
   stroke-dasharray: 4 4;
   opacity: 0.8;
-}
-
-.watch-chart-stats {
-  margin-top: 0.7rem;
 }
 
 /* Lista */
@@ -953,4 +936,577 @@
 
 .watch-an-about {
   margin: 0.2rem 0 0.8rem;
+}
+
+/* ===== v1.95: 📆 Visão do dia ===== */
+
+/* ‹ Hoje › */
+.watch-daynav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 0.9rem;
+}
+
+.watch-daynav .toba-icon-btn,
+.watch-an-nav .toba-icon-btn {
+  flex: 0 0 auto;
+  font-size: 1.4rem;
+}
+
+.watch-daynav .toba-icon-btn:disabled {
+  opacity: 0.3;
+}
+
+.watch-daynav-pick {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: center;
+}
+
+.watch-an-nav .watch-daynav-pick.watch-an-pick {
+  height: auto;
+  min-height: 48px;
+  background: var(--surface-2);
+}
+
+.watch-daynav-main {
+  font-weight: 800;
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+.watch-daynav-caret {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.watch-daynav-sub {
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.watch-daynav-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  border: 0;
+}
+
+.watch-daynav-today {
+  flex: 1 1 100%;
+  height: 32px;
+  font-size: 0.8rem;
+}
+
+/* Herói */
+.watch-ring-vs {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+
+.watch-ring-vs.is-good,
+.watch-delta.is-good,
+.watch-trend-verdict.is-good,
+.watch-trend-streak.is-good {
+  color: var(--green);
+}
+
+.watch-ring-vs.is-bad,
+.watch-delta.is-bad,
+.watch-trend-verdict.is-bad,
+.watch-trend-streak.is-bad {
+  color: var(--coral);
+}
+
+.watch-headline {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-2);
+  margin: -0.3rem 0 0.9rem;
+  line-height: 1.4;
+}
+
+/* 📊 Hoje x ontem x 7 dias */
+.watch-cmp {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.watch-cmp-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 2px;
+}
+
+.watch-cmp-legend {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.watch-cmp-legend i {
+  display: inline-block;
+  width: 3px;
+  height: 10px;
+  border-radius: 2px;
+  margin: 0 3px 0 6px;
+  vertical-align: -1px;
+}
+
+.watch-cmp-legend i.is-y,
+.watch-cmp-mark.is-y {
+  background: var(--text);
+}
+
+.watch-cmp-legend i.is-w,
+.watch-cmp-mark.is-w {
+  background: var(--gold-2);
+}
+
+.watch-cmp-row {
+  background: var(--surface-3);
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+
+.watch-cmp-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.watch-cmp-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+.watch-cmp-val {
+  font-size: 1.05rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.watch-cmp-val small {
+  font-size: 0.68rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.watch-cmp-bar {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  margin: 6px 0 5px;
+}
+
+.watch-cmp-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.watch-cmp-mark {
+  position: absolute;
+  top: -3px;
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  transform: translateX(-50%);
+  box-shadow: 0 0 0 1px var(--surface-3);
+}
+
+.watch-cmp-deltas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.watch-delta {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.watch-delta small {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.watch-delta.is-none {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.watch-sleep-deltas {
+  margin-top: 0.5rem;
+}
+
+.watch-allday {
+  display: block;
+  width: 100%;
+  margin-top: 0.7rem;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: right;
+  padding: 2px 0;
+}
+
+/* 🧬 ❔ */
+.watch-body-tile {
+  position: relative;
+}
+
+.watch-help-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.watch-help-btn:active {
+  background: var(--surface-3);
+}
+
+.watch-body-tile .watch-body-label {
+  padding-right: 22px;
+}
+
+.watch-body-foot {
+  margin: -0.5rem 0 1rem;
+  font-size: 0.72rem;
+}
+
+#watchHelpBody p {
+  margin: 0.25rem 0 0;
+  color: var(--text-2);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.watch-help-sec + .watch-help-sec,
+.watch-help-zones + .watch-help-sec {
+  margin-top: 0.9rem;
+}
+
+.watch-help-h {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.watch-help-dir {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+
+.watch-help-dir.is-up {
+  color: var(--green);
+  background: rgba(63, 185, 80, 0.15);
+}
+
+.watch-help-dir.is-down {
+  color: var(--blue);
+  background: rgba(88, 166, 255, 0.15);
+}
+
+.watch-help-zones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-2);
+}
+
+.watch-help-zones i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+
+#watchHelpBody ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.15rem;
+  color: var(--text-2);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+#watchHelpBody li + li {
+  margin-top: 0.25rem;
+}
+
+#watchHelpBody .watch-muted {
+  margin-top: 1rem;
+}
+
+/* 🗓️ Tua semana */
+.watch-week-cols {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  height: 150px;
+}
+
+.watch-week-tick {
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  border-top: 1px dashed var(--gold-2);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.watch-week-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 4px 0;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.watch-week-col.is-sel {
+  border-color: var(--border);
+  background: var(--surface-3);
+}
+
+.watch-week-col.is-future {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.watch-week-val {
+  font-size: 0.62rem;
+  color: var(--muted);
+  white-space: nowrap;
+  height: 12px;
+}
+
+.watch-week-bar {
+  position: relative;
+  flex: 1 1 auto;
+  width: 62%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.watch-week-bar span {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+}
+
+.watch-week-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+.watch-week-col.is-sel .watch-week-name {
+  color: var(--text);
+}
+
+.watch-week-sleep {
+  font-size: 0.6rem;
+  color: var(--blue);
+  white-space: nowrap;
+  height: 12px;
+}
+
+.watch-week-stats {
+  margin-top: 0.8rem;
+}
+
+/* 📈 Tá melhorando? */
+.watch-trend-head {
+  font-weight: 800;
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.watch-trend-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px auto;
+  grid-template-areas:
+    "name spark val"
+    "verdict verdict verdict";
+  align-items: center;
+  gap: 2px 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border-soft);
+}
+
+.watch-trend-row:first-of-type {
+  border-top: none;
+}
+
+.watch-trend-name {
+  grid-area: name;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.watch-spark {
+  grid-area: spark;
+  width: 64px;
+  height: 22px;
+}
+
+.watch-spark polyline {
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.watch-trend-val {
+  grid-area: val;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.watch-trend-val b {
+  font-size: 0.9rem;
+}
+
+.watch-trend-val small {
+  font-size: 0.66rem;
+  color: var(--muted);
+}
+
+.watch-trend-verdict {
+  grid-area: verdict;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.watch-trend-verdict small {
+  margin-left: 6px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.watch-trend-streak {
+  grid-column: 1 / -1;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.watch-row.is-sel {
+  border-color: var(--accent);
+}
+
+/* 🔬 Dia na análise */
+.watch-an-day {
+  text-align: center;
+  margin-bottom: 0.8rem;
+}
+
+.watch-an-day-val {
+  font-size: 2.3rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.watch-an-day-sub {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 0.2rem 0 0.4rem;
+}
+
+.watch-an-day .progress-track {
+  margin-top: 0.6rem;
+}
+
+.watch-chart-label.is-hi {
+  fill: var(--text);
+  font-weight: 800;
+}
+
+.watch-an-help {
+  margin-top: 0.5rem;
+  height: auto;
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  white-space: normal;
+  text-align: left;
+}
+
+.watch-an-dayall {
+  width: 100%;
+  margin-top: 0.4rem;
 }
