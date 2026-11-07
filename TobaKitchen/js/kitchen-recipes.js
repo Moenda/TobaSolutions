@@ -855,44 +855,90 @@ const KITCHEN_TEA_EMOJIS = ["🍵", "🫖", "🌙", "😌", "⚡", "💧", "🔥
 // Cores das fatias da barrinha de proporção (na ordem das ervas do blend)
 const KITCHEN_TEA_COLORS = ["#ff7b72", "#d29922", "#3fb950", "#58a6ff", "#bc8cff", "#f778ba", "#56d4dd", "#e3b341"];
 
-// Ideias pra começar: tocar em "Usar" copia pro banco como blend do usuário.
+// Receitas de chá prontas (v1.96; fixas desde v1.97): abrem só pra ler (pra que
+// serve, o papel de cada erva e as proporções), sem editar. O `id` nunca muda
+// (as xícaras gravam teaId "i-<id>"). about = pra que serve; role = o que a erva faz ali.
 const KITCHEN_TEA_IDEAS = [
   {
     id: "dormir", name: "Chá pra dormir", emoji: "🌙", purpose: "dormir", author: "bertoba",
-    parts: [{ herb: "mulungu", parts: 3 }, { herb: "hibisco", parts: 1 }, { herb: "uva-passa", parts: 1 }, { herb: "cranberry", parts: 1 }],
+    about: "O blend da casa pra desligar de noite. O mulungu é a base calmante (uso popular pra ansiedade e sono), o hibisco dá a cor e o azedinho, e a uva passa com o cranberry adoçam sem açúcar. Toma uns 30 min antes de deitar.",
+    parts: [
+      { herb: "mulungu", parts: 3, role: "base calmante, dá o sono" },
+      { herb: "hibisco", parts: 1, role: "cor de groselha e azedinho" },
+      { herb: "uva-passa", parts: 1, role: "doce natural" },
+      { herb: "cranberry", parts: 1, role: "doce azedinho e frutado" },
+    ],
     howTo: "1 colher de sopa da mistura pra 250 ml de água quente. Abafa 10 min e coa.",
   },
   {
     id: "zen", name: "Camomila zen", emoji: "😌", purpose: "relaxar",
-    parts: [{ herb: "camomila", parts: 2 }, { herb: "erva-cidreira", parts: 2 }, { herb: "lavanda", parts: 1 }],
+    about: "Pra baixar a bola depois de um dia puxado, sem derrubar igual o mulungu. Camomila e erva-cidreira são as clássicas do \"calma aí\", e a lavanda entra pelo perfume.",
+    parts: [
+      { herb: "camomila", parts: 2, role: "calmante suave" },
+      { herb: "erva-cidreira", parts: 2, role: "relaxa e ajuda a digestão" },
+      { herb: "lavanda", parts: 1, role: "perfume (pouquinho, senão vira sabonete)" },
+    ],
     howTo: "1 colher de sopa pra 250 ml de água quase fervendo. Abafa 5 min.",
   },
   {
     id: "desincha", name: "Desincha, Toba", emoji: "💧", purpose: "desinchar",
-    parts: [{ herb: "cavalinha", parts: 2 }, { herb: "hibisco", parts: 1 }, { herb: "gengibre", parts: 1 }],
+    about: "Pro dia seguinte da pizza. A cavalinha é diurética (faz ir mais ao banheiro e solta o inchaço), o hibisco ajuda nisso também e o gengibre esquenta e dá sabor. Bebe de dia, não de noite (senão é xixi às 3 da manhã).",
+    parts: [
+      { herb: "cavalinha", parts: 2, role: "diurética, desincha" },
+      { herb: "hibisco", parts: 1, role: "diurético e azedinho" },
+      { herb: "gengibre", parts: 1, role: "esquenta e dá sabor" },
+    ],
     howTo: "1 colher de sopa pra 300 ml. Ferve o gengibre 3 min, desliga, joga o resto e abafa 7 min.",
   },
   {
     id: "gripe", name: "Mata-gripe", emoji: "🔥", purpose: "gripe",
-    parts: [{ herb: "gengibre", parts: 2 }, { herb: "canela-pau", parts: 1 }, { herb: "cravo", parts: 1 }, { herb: "casca-limao", parts: 1 }],
+    about: "Pra garganta arranhando e nariz entupido. Gengibre e cravo esquentam, a canela deixa cheiroso e a casca de limão dá frescor. Mel só depois de amornar.",
+    parts: [
+      { herb: "gengibre", parts: 2, role: "esquenta e alivia a garganta" },
+      { herb: "canela-pau", parts: 1, role: "doce e quentinho" },
+      { herb: "cravo", parts: 1, role: "picante, abre o nariz" },
+      { herb: "casca-limao", parts: 1, role: "frescor" },
+    ],
     howTo: "Ferve tudo 5 min em 300 ml de água. Mel depois de amornar.",
   },
   {
     id: "gelado", name: "Hibisco gelado da tropa", emoji: "🧊", purpose: "gelado",
-    parts: [{ herb: "hibisco", parts: 2 }, { herb: "maca-seca", parts: 2 }, { herb: "canela-pau", parts: 1 }, { herb: "cranberry", parts: 1 }],
+    about: "Refresco pra dia de calor em SP: rende uma jarra de 1 litro pra geladeira. O hibisco dá a cor de groselha, a maçã e o cranberry adoçam e a canela dá o toque.",
+    parts: [
+      { herb: "hibisco", parts: 2, role: "cor e azedinho de refresco" },
+      { herb: "maca-seca", parts: 2, role: "doce de fruta" },
+      { herb: "canela-pau", parts: 1, role: "o toque" },
+      { herb: "cranberry", parts: 1, role: "frutado" },
+    ],
     howTo: "4 colheres de sopa pra 1 litro de água quente, abafa 10 min, coa e geladeira.",
   },
   {
     id: "bomdia", name: "Bom dia, Cloba", emoji: "⚡", purpose: "energia",
-    parts: [{ herb: "mate", parts: 2 }, { herb: "hortela", parts: 1 }, { herb: "casca-limao", parts: 1 }],
+    about: "Pra acordar sem café (ou fazer companhia pra V60). A erva-mate tem cafeína, a hortelã refresca e a casca de limão acorda o paladar. Evita depois das 16h.",
+    parts: [
+      { herb: "mate", parts: 2, role: "cafeína, dá o gás" },
+      { herb: "hortela", parts: 1, role: "refresca" },
+      { herb: "casca-limao", parts: 1, role: "acorda o paladar" },
+    ],
     howTo: "1 colher de sopa pra 250 ml de água a uns 80 °C (antes de ferver). Abafa 4 min.",
   },
   {
     id: "verde", name: "Moringa verdinha", emoji: "🍃", purpose: "digestao",
-    parts: [{ herb: "moringa", parts: 1 }, { herb: "capim-santo", parts: 2 }, { herb: "hortela", parts: 1 }],
+    about: "Leve, pra depois do almoço. A moringa é folha verde cheia de nutriente (gosto de mato, por isso vai pouca), o capim-santo dá perfume de limão e a hortelã ajuda a digestão.",
+    parts: [
+      { herb: "moringa", parts: 1, role: "nutriente (gosto forte, vai pouca)" },
+      { herb: "capim-santo", parts: 2, role: "perfume de limão, acalma" },
+      { herb: "hortela", parts: 1, role: "ajuda a digestão" },
+    ],
     howTo: "1 colher de sopa pra 250 ml de água quente. Abafa 5 min.",
   },
 ];
+
+// Receita pronta pelo id do blend ("i-dormir") ou pelo da ideia ("dormir")
+function kitchenTeaIdea(id) {
+  const key = String(id || "").replace(/^i-/, "");
+  return KITCHEN_TEA_IDEAS.find((idea) => idea.id === key) || null;
+}
 
 function kitchenTeaHerb(id) {
   return KITCHEN_TEA_HERBS[id] || null;

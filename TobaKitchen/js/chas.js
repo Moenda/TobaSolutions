@@ -3,6 +3,9 @@
  * Chip "🍵 Chás" no Livro de Receitas: blends do usuário por PARTES
  * (3 de mulungu, 1 de hibisco...), conta do pote em gramas ou colheres,
  * "☕ Tomei uma xícara" e ervas direto na lista de compras.
+ * v1.97: as receitas prontas (KITCHEN_TEA_IDEAS) são FIXAS: abrem pela mesma
+ * tela, só pra ler (pra que serve + o papel de cada erva), sem ✏️ Editar.
+ * O id delas aqui é "i-<id da ideia>" (é o teaId que as xícaras gravam).
  * Os blends moram em kitchenDb.teas (o catálogo das ervas e as ideias do
  * Cloba ficam em kitchen-recipes.js). Carrega DEPOIS do receitas.js.
  * ===================================================================== */
@@ -11,6 +14,15 @@ const TEA_JAR_CHIPS = { g: [30, 50, 100, 200, 500], cs: [4, 8, 12, 20] };
 let teaId = null;
 let teaDraft = null; // blend sendo editado na folha (cópia; só grava no Salvar)
 let teaJar = { qty: 100, unit: "g" }; // conta do pote aberta agora
+
+// Blend do usuário (db.teas) ou receita pronta ("i-<id>", fixed: true)
+function teaById(id) {
+  if (String(id || "").startsWith("i-")) {
+    const idea = kitchenTeaIdea(id);
+    return idea ? { ...idea, id: `i-${idea.id}`, fixed: true } : null;
+  }
+  return kitchenTea(kitchenDb, id);
+}
 
 function teaBar(tea, big = false) {
   const shares = kitchenTeaShares(tea);
@@ -34,15 +46,17 @@ function teaCard(tea) {
 
 function teaIdeaCard(idea) {
   const author = KITCHEN_AUTHORS[idea.author] || KITCHEN_AUTHORS.cloba;
+  const purpose = kitchenTeaPurpose(idea.purpose);
+  const count = kitchenTeaBrewsOf(kitchenDb, `i-${idea.id}`).length;
   return `
-    <div class="toba-list-item kt-recipe">
+    <div class="toba-list-item kt-recipe" role="button" tabindex="0" data-click="openTea" data-id="i-${idea.id}">
       <span class="kt-recipe-emoji">${idea.emoji}</span>
       <span class="kt-recipe-text">
         <span class="kt-recipe-name">${escapeHtml(idea.name)}</span>
-        <span class="kt-recipe-meta">${escapeHtml(kitchenTeaPartsText(idea))} · ${author.emoji} ${author.name}</span>
+        <span class="kt-recipe-meta">${purpose ? `${purpose.icon} ${purpose.name} · ` : ""}${author.emoji} ${author.name}</span>
         ${teaBar(idea)}
       </span>
-      <button type="button" class="chip-btn" data-click="useTeaIdea" data-id="${idea.id}">Usar</button>
+      ${count ? `<span class="kt-count" title="Xícaras tomadas">${count}×</span>` : '<span class="toba-hub-chevron">›</span>'}
     </div>`;
 }
 
@@ -51,8 +65,7 @@ function renderTeaBook(query) {
   const q = kitchenNormalize(String(query || "").trim());
   const match = (tea) => !q || kitchenNormalize([tea.name, ...kitchenTeaShares(tea).map((p) => p.info.name)].join(" ")).includes(q);
   const mine = kitchenTeasByName(kitchenDb).filter(match);
-  const names = new Set(kitchenTeasOf(kitchenDb).map((t) => kitchenNormalize(t.name)));
-  const ideas = KITCHEN_TEA_IDEAS.filter((idea) => !names.has(kitchenNormalize(idea.name))).filter(match);
+  const ideas = KITCHEN_TEA_IDEAS.filter(match);
   let html = `
     <button type="button" class="kt-launch kt-tea-launch" data-click="newTea">
       <span class="kt-launch-icon">🍵</span>
@@ -64,9 +77,9 @@ function renderTeaBook(query) {
   html += `<div class="section-title is-first">🍵 Meus blends</div>`;
   html += mine.length
     ? `<div class="toba-list">${mine.map(teaCard).join("")}</div>`
-    : tobaEmpty("🫖", q ? "Nenhum blend com isso" : "Nenhum blend ainda", q ? "Tenta outra erva ou outro nome." : "Cria o teu no ➕ ou pega uma ideia aqui embaixo.");
+    : tobaEmpty("🫖", q ? "Nenhum blend com isso" : "Nenhum blend ainda", q ? "Tenta outra erva ou outro nome." : "Cria o teu no ➕ (os prontos estão aqui embaixo).");
   if (ideas.length) {
-    html += `<div class="section-title">🤖 Ideias pra começar</div><div class="toba-list">${ideas.map(teaIdeaCard).join("")}</div>`;
+    html += `<div class="section-title">📗 Receitas de chá</div><div class="toba-list">${ideas.map(teaIdeaCard).join("")}</div>`;
   }
   html += '<div class="hint-box kt-hint kt-tea-warn">🩺 O Cloba não é médico: mulungu, valeriana e passiflora dão sono de verdade. Grávida, remédio controlado ou pressão baixa, pergunta pro médico antes.</div>';
   document.getElementById("bookList").innerHTML = html;
@@ -76,7 +89,7 @@ function renderTeaBook(query) {
  * Detalhe do blend
  * ------------------------------------------------------------------- */
 function openTea(id) {
-  const tea = kitchenTea(kitchenDb, id);
+  const tea = teaById(id);
   if (!tea) {
     openBook();
     return;
@@ -90,7 +103,7 @@ function openTea(id) {
 }
 
 function renderTea() {
-  const tea = kitchenTea(kitchenDb, teaId);
+  const tea = teaById(teaId);
   if (!tea) return;
   const shares = kitchenTeaShares(tea);
   const totalParts = shares.reduce((sum, p) => sum + p.parts, 0);
@@ -98,7 +111,7 @@ function renderTea() {
   const brews = kitchenTeaBrewsOf(kitchenDb, tea.id);
   const legend = shares.map((p) => `
     <div class="kt-ing">
-      <span class="kt-ing-name"><span class="kt-tea-dot" style="background:${p.color}"></span>${p.info.emoji} ${escapeHtml(p.info.name)}</span>
+      <span class="kt-ing-name"><span class="kt-tea-dot" style="background:${p.color}"></span>${p.info.emoji} ${escapeHtml(p.info.name)}${p.role ? `<span class="kt-tea-role">${escapeHtml(p.role)}</span>` : ""}</span>
       <span class="kt-ing-qty">${kitchenTeaPartsNumber(p.parts)} ${p.parts > 1 ? "partes" : "parte"} · ${Math.round(p.share * 100)}%</span>
     </div>`).join("");
   const jar = kitchenTeaAmounts(tea, teaJar.qty, teaJar.unit).map((p) => `
@@ -115,16 +128,20 @@ function renderTea() {
     <div class="kt-hero">
       <span class="kt-hero-emoji">${escapeHtml(tea.emoji || "🍵")}</span>
       <div class="kt-hero-name">${escapeHtml(tea.name || "Blend sem nome")}</div>
-      <div class="kt-hero-author">🫖 blend da casa · ${kitchenTeaPartsNumber(totalParts)} ${totalParts > 1 ? "partes" : "parte"} no total</div>
+      <div class="kt-hero-author">${tea.fixed ? `📗 receita pronta do ${(KITCHEN_AUTHORS[tea.author] || KITCHEN_AUTHORS.cloba).emoji} ${(KITCHEN_AUTHORS[tea.author] || KITCHEN_AUTHORS.cloba).name}` : "🫖 teu blend"} · ${kitchenTeaPartsNumber(totalParts)} ${totalParts > 1 ? "partes" : "parte"} no total</div>
       ${purpose ? `<div class="kt-tags"><span class="kt-tag">${purpose.icon} ${purpose.name}</span></div>` : ""}
     </div>
+    ${tea.fixed && tea.about ? `<div class="section-title is-first">🎯 Pra que serve</div><div class="hint-box kt-hint kt-tea-about">${escapeHtml(tea.about)}</div>` : ""}
+    ${tea.fixed ? '<div class="section-title">⚖️ A receita (proporção)</div>' : ""}
     ${teaBar(tea, true)}
     <div class="card kt-ing-list">${legend || '<div class="text-muted">Sem ervas. Toca em ✏️ Editar.</div>'}</div>
     <button type="button" class="btn kt-btn-fire kt-cook-btn" data-click="teaBrewNow">☕ Tomei uma xícara (+1)</button>
-    <div class="btn-row kt-recipe-actions">
+    ${tea.fixed
+      ? '<button type="button" class="btn btn-secondary kt-tea-shop" data-click="teaToShopping">🛒 Pôr as ervas na lista</button>'
+      : `<div class="btn-row kt-recipe-actions">
       <button type="button" class="btn btn-secondary" data-click="editTea">✏️ Editar</button>
       <button type="button" class="btn btn-secondary" data-click="teaToShopping">🛒 Ervas na lista</button>
-    </div>
+    </div>`}
     <div class="section-title">🫙 Montar o pote</div>
     <div class="kt-chips">${unitChips}</div>
     <div class="kt-chips is-wrap">${qtyChips}
@@ -155,7 +172,7 @@ function teaQuip(count, tea) {
 }
 
 function teaBrewNow() {
-  const tea = kitchenTea(kitchenDb, teaId);
+  const tea = teaById(teaId);
   if (!tea) return;
   const entry = { id: kitchenNewId("b"), teaId: tea.id, date: toIsoDate(), doneAt: Date.now() };
   kitchenDb.teaBrews.push(entry);
@@ -180,7 +197,7 @@ function setTeaJar(qty, unit = teaJar.unit) {
   const n = Number(qty);
   if (!(n > 0) || n > 5000) return;
   teaJar = { qty: Math.round(n * 4) / 4, unit };
-  const tea = kitchenTea(kitchenDb, teaId);
+  const tea = kitchenTea(kitchenDb, teaId); // receita pronta não grava o pote (fica só na tela)
   if (tea) {
     tea.jar = { ...teaJar }; // lembra o último pote desse blend
     saveKitchenDb({ silent: true });
@@ -190,7 +207,7 @@ function setTeaJar(qty, unit = teaJar.unit) {
 
 /* 🛒 Põe as ervas do blend na lista (mesma regra do Escolher: item igual não duplica) */
 function teaToShopping() {
-  const tea = kitchenTea(kitchenDb, teaId);
+  const tea = teaById(teaId);
   if (!tea) return;
   const catalog = kitchenShopCatalog();
   let added = 0;
@@ -244,12 +261,6 @@ function editTea() {
   const tea = kitchenTea(kitchenDb, teaId);
   if (!tea) return;
   openTeaSheet(JSON.parse(JSON.stringify({ id: tea.id, name: tea.name, emoji: tea.emoji, purpose: tea.purpose, parts: tea.parts, howTo: tea.howTo })));
-}
-
-function useTeaIdea(id) {
-  const idea = KITCHEN_TEA_IDEAS.find((i) => i.id === id);
-  if (!idea) return;
-  openTeaSheet({ id: null, name: idea.name, emoji: idea.emoji, purpose: idea.purpose, parts: idea.parts.map((p) => ({ ...p })), howTo: idea.howTo });
 }
 
 function teaDraftIndex(key) {
@@ -387,7 +398,6 @@ tobaActions({
     bookMeal = "chas";
     openBook();
   },
-  useTeaIdea: (el) => useTeaIdea(el.dataset.id),
   teaBrewNow,
   undoTeaBrew: (el) => undoTeaBrew(el.dataset.id),
   teaToShopping,
@@ -415,7 +425,7 @@ tobaActions({
 // ?cha=<id> abre o blend · ?chas=1 abre o livro no chip 🍵 Chás
 (function initChas() {
   const params = new URLSearchParams(location.search);
-  if (params.get("cha") && kitchenTea(kitchenDb, params.get("cha"))) {
+  if (params.get("cha") && teaById(params.get("cha"))) {
     openTea(params.get("cha"));
     return;
   }

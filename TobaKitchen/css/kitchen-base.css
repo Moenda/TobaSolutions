@@ -911,3 +911,21 @@
 .kt-tea-warn {
   margin-top: 1rem;
 }
+
+/* v1.97: receitas de chá prontas (fixas) */
+.kt-tea-role {
+  display: block;
+  margin: 2px 0 0 16px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.kt-tea-about {
+  line-height: 1.55;
+  font-size: 0.84rem;
+}
+
+.kt-tea-shop {
+  width: 100%;
+  margin: 0.5rem 0 0.4rem;
+}

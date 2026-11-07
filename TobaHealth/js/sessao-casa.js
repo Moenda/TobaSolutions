@@ -301,7 +301,7 @@ function renderHomeLiveStartSection() {
   const total = count("home") + count("stretch") + saitamaCount;
   const plans = (ids) => HOME_PLANS.filter((plan) => ids.includes(plan.cat || "")).map(homePlanButton).join("");
   const stretch = STRETCH_PLANS.map((plan) => homeMenuButton({
-    click: "startStretchLive",
+    click: "openStretchIntro", // v1.97: abre a abertura antes
     attrs: ` data-plan="${plan.id}"`,
     icon: plan.icon,
     title: plan.name,
@@ -315,7 +315,7 @@ function renderHomeLiveStartSection() {
       <div class="hub-title">💪 Força e abdômen</div>
       <div class="toba-menu">
         ${plans(["forca"])}
-        ${homeMenuButton({ click: "startSaitamaLive", icon: "👊", title: "Treino do Saitama", desc: `Flexão, abdominal e agachamento no contador${saitamaCount ? ` · feito ${saitamaCount}×` : ""}` })}
+        ${homeMenuButton({ click: "openSaitamaIntro", icon: "👊", title: "Treino do Saitama", desc: `Flexão, abdominal e agachamento no contador${saitamaCount ? ` · feito ${saitamaCount}×` : ""}` })}
       </div>
       <div class="hub-title">🧘 Alongamento${count("stretch") ? ` · feito ${count("stretch")}×` : ""}</div>
       <div class="toba-menu">${stretch}</div>
@@ -437,6 +437,181 @@ function openHomeHelp(planId) {
     ${list}
     <p class="live-hint">Dói articulação (joelho, ombro, lombar)? Para e pula o exercício. Mandíbula solta, sem trincar o dente 🦷</p>`;
   openTobaModal("homeHelpModal");
+}
+
+/* ---------------------------------------------------------------------
+ * Abertura também no 🧘 Alongamento e no 👊 Saitama (v1.97, pedido do Rafa:
+ * "muito foda, quero em todos"). Mesmas peças: resumo, lista com o
+ * bonequinho, ❔ Papo do Cloba (#homeHelpModal) e ▶ Iniciar embaixo.
+ * O início de verdade continua nos arquivos deles (startStretchLive /
+ * startSaitamaLive); aqui só a tela de antes.
+ * ------------------------------------------------------------------- */
+function introResumeLive() {
+  const { session } = readLiveSession();
+  if (!session) return false;
+  liveSession = session; // já tem treino rolando: volta pra ele
+  closeTobaModal("workoutModal");
+  openLiveSessionView();
+  return true;
+}
+
+function introChips(list) {
+  return list.filter(Boolean).map((chip) => `<span class="workout-chip">${chip}</span>`).join("");
+}
+
+function introRow(figure, title, sub) {
+  return `
+      <div class="stretch-row home-intro-row">
+        ${figure}
+        <span class="stretch-row-text"><strong>${escapeHtml(title)}</strong><small>${escapeHtml(sub)}</small></span>
+      </div>`;
+}
+
+function renderTrainingIntro({ title, desc, chips, listTitle, rows, helpClick, helpAttrs = "", startClick, startAttrs = "", startLabel, hint }) {
+  const head = document.getElementById("liveStartTitle");
+  if (head) head.textContent = title;
+  document.getElementById("liveStartList").innerHTML = `
+    <button type="button" class="back-nav-btn" data-click="openLiveStartPage" data-page="home">‹ Treinos em casa</button>
+    <div class="home-intro">
+      <div class="home-intro-top">
+        <p class="toba-sheet-text">${escapeHtml(desc)}</p>
+        <button type="button" class="toba-icon-btn home-help-btn" data-click="${helpClick}"${helpAttrs} aria-label="Papo do Cloba: como é esse treino">❔</button>
+      </div>
+      <div class="workout-record-chips">${introChips(chips)}</div>
+      <div class="hub-title">${escapeHtml(listTitle)}</div>
+      <div class="card stretch-list">${rows}</div>
+      <p class="live-hint">${escapeHtml(hint)}</p>
+    </div>
+    <div class="toba-sheet-footer">
+      <button type="button" class="btn btn-primary home-go" data-click="${startClick}"${startAttrs}>▶ ${escapeHtml(startLabel)}</button>
+    </div>`;
+  closeTobaModal("workoutModal");
+  openTobaModal("liveStartModal");
+  document.querySelector("#liveStartModal .toba-sheet")?.scrollTo?.(0, 0);
+}
+
+function renderTrainingHelp({ title, cloba, how, exercises, note }) {
+  document.getElementById("homeHelpTitle").textContent = `❔ ${title}`;
+  document.getElementById("homeHelpBody").innerHTML = `
+    <div class="home-help-cloba">
+      <span class="home-help-avatar" aria-hidden="true">🤖</span>
+      <div><strong>Papo do Cloba</strong><p>${escapeHtml(cloba)}</p></div>
+    </div>
+    <div class="hub-title">Como funciona</div>
+    <ul class="home-help-how">${how.map((line) => `<li>${line}</li>`).join("")}</ul>
+    <div class="hub-title">${exercises.title}</div>
+    ${exercises.items.map((item) => `
+      <div class="home-help-ex">
+        ${item.figure}
+        <div>
+          <strong>${escapeHtml(item.name)}</strong>
+          <p>${escapeHtml(item.how || "")}</p>
+          ${item.tip ? `<p class="home-help-tip">💡 ${escapeHtml(item.tip)}</p>` : ""}
+        </div>
+      </div>`).join("")}
+    <p class="live-hint">${escapeHtml(note)}</p>`;
+  openTobaModal("homeHelpModal");
+}
+
+/* ---------- 🧘 Alongamento ---------- */
+const STRETCH_PLAN_CLOBA = {
+  s10: "Rapidinho de 10 minutos pra desenferrujar: pescoço, ombro, peito, costas e perna. Bom pra depois de um dia inteiro na cadeira gamer ou de manhã antes do café na V60. Alongar é segurar parado sentindo puxar, não é competição de quem encosta a mão no pé.",
+  s20: "O completão de 20 minutos: aquece o ombro, solta o pescoço, abre o peito, cuida das costas e termina no quadril e na perna, que é onde quem passa o dia sentado mais trava. Faz sem pressa, respirando fundo, que o corpo agradece no dia seguinte.",
+};
+
+// Posições do plano na ordem, uma linha por exercício (lado R e L viram "cada lado")
+function stretchIntroItems(plan) {
+  return plan.steps.map(([id, secs]) => {
+    const exercise = getStretchExercise(id);
+    if (!exercise) return null;
+    const time = id === "relax" ? "até fechar o tempo" : `${secs} s${exercise.sides ? " cada lado" : ""}`;
+    return { id, exercise, time };
+  }).filter(Boolean);
+}
+
+function openStretchIntro(planId) {
+  const plan = getStretchPlan(planId);
+  if (!plan || introResumeLive()) return;
+  const items = stretchIntroItems(plan);
+  const holds = items.filter((item) => item.id !== "relax").length;
+  renderTrainingIntro({
+    title: `${plan.icon} ${plan.name}`,
+    desc: plan.desc,
+    chips: [`⏱️ ${plan.minutes} min`, `🧘 ${holds} posições`, items.some((item) => item.exercise.sides) ? "👉👈 troca de lado sozinho" : "", `⚡ ~${estimateStretchKcal(plan.minutes, toIsoDate())} kcal`],
+    listTitle: "As posições",
+    rows: items.map((item, index) => introRow(stretchFigureSvg(item.id, { size: "sm" }), `${index + 1}. ${item.exercise.name}`, item.time)).join(""),
+    helpClick: "openStretchHelp",
+    helpAttrs: ` data-plan="${plan.id}"`,
+    startClick: "startStretchLive",
+    startAttrs: ` data-plan="${plan.id}"`,
+    startLabel: `Iniciar ${plan.name}`,
+    hint: "Toca no ❔ que o Cloba explica cada posição. Deixa o celular no chão, de frente pra ti: tem 5 s de Prepara antes de cada uma.",
+  });
+}
+
+function openStretchHelp(planId) {
+  const plan = getStretchPlan(planId);
+  if (!plan) return;
+  renderTrainingHelp({
+    title: plan.name,
+    cloba: STRETCH_PLAN_CLOBA[plan.id] || plan.desc,
+    how: [
+      "⏳ 5 s de <b>Prepara</b> antes de cada posição (a voz fala qual é a próxima).",
+      "🧘 <b>Segura</b> parado até o timer zerar. A parte verde do bonequinho é o que tem que puxar.",
+      "👉👈 Posição de um lado só? Faz o direito, a voz avisa \"troca de lado\" e o bonequinho espelha.",
+      "🌬️ Termina com Respira e relaxa até fechar o tempo do plano.",
+      "⏸ Pausa, pula ou volta quando quiser. 🏁 Terminar agora salva o que já segurou.",
+    ],
+    exercises: {
+      title: "As posições",
+      items: stretchIntroItems(plan).map((item) => ({ figure: stretchFigureSvg(item.id, { size: "sm" }), name: item.exercise.name, how: item.exercise.how, tip: item.exercise.tip })),
+    },
+    note: "Puxou gostoso, fica. Doeu de verdade, afrouxa: alongamento não é tortura. Sem quicar e com a mandíbula solta 🦷",
+  });
+}
+
+/* ---------- 👊 Saitama ---------- */
+const SAITAMA_INTRO_FIGS = { pushups: "flexao", situps: "abdominal", squats: "agachamento" };
+
+function openSaitamaIntro() {
+  if (introResumeLive()) return;
+  const done = (healthDb.workouts || []).filter((workout) => workout.type === "saitama").length;
+  const rows = SAITAMA_LIVE_FIELDS.map((item) => introRow(homeFigureSvg(SAITAMA_INTRO_FIGS[item.field], { size: "sm" }), `${item.icon} ${item.name}`, `meta: ${SAITAMA_LIVE_GOAL} por dia`)).join("")
+    + introRow('<span class="home-intro-emoji" aria-hidden="true">🚶</span>', "🚶 10 km de corrida", "treino à parte, na porta 🚶");
+  renderTrainingIntro({
+    title: "👊 Treino do Saitama",
+    desc: "Contador de bolso: flexão, abdominal e agachamento no teu ritmo, sem ordem fixa.",
+    chips: [`🎯 ${SAITAMA_LIVE_GOAL} de cada`, "🔢 +1 · +5 · +10 · +20", `⏱️ descanso de ${SAITAMA_LIVE_REST} s`, done ? `👊 feito ${done}×` : ""],
+    listTitle: "O treino do careca",
+    rows,
+    helpClick: "openSaitamaHelp",
+    startClick: "startSaitamaLive",
+    startLabel: "Iniciar treino do Saitama",
+    hint: "Toca no ❔ que o Cloba explica o contador. Não precisa fechar os 100 hoje: o que der, vale XP e sequência.",
+  });
+}
+
+function openSaitamaHelp() {
+  renderTrainingHelp({
+    title: "Treino do Saitama",
+    cloba: "O treino que deixou o careca mais forte do universo: 100 flexões, 100 abdominais, 100 agachamentos e 10 km de corrida, todo santo dia. Aqui é contador de bolso: faz no teu ritmo, em quantas levas quiser, e vai tocando no quadrado pra somar. Ficar careca é opcional 🦲",
+    how: [
+      "🔢 Escolhe o passo lá em cima (+1, +5, +10 ou +20).",
+      "👆 Fez uma leva? Toca no quadrado do exercício e soma o passo. Errou? ↩ desfaz o último.",
+      `⏱️ Com o <b>Descanso automático</b> ligado, cada toque já solta o timer de ${SAITAMA_LIVE_REST} s (dá pra mudar o tempo).`,
+      "🎯 A barrinha mostra quanto falta pros 100 de cada. Fechou os 3 no mesmo dia = troféu Dia do careca.",
+      "🚶 Os 10 km são um treino de Caminhada / Corrida à parte: no mesmo dia vale o Careca completo.",
+      "🏁 Finalizar salva o que fez, mesmo que não tenha chegado nos 100.",
+    ],
+    exercises: {
+      title: "Os exercícios",
+      items: SAITAMA_LIVE_FIELDS.map((item) => {
+        const exercise = getHomeExercise(SAITAMA_INTRO_FIGS[item.field]);
+        return { figure: homeFigureSvg(SAITAMA_INTRO_FIGS[item.field], { size: "sm" }), name: `${item.icon} ${item.name}`, how: exercise?.how, tip: exercise?.tip };
+      }),
+    },
+    note: "Começou a doer articulação, para. Barra de proteína não conta como agachamento. Mandíbula solta, sem trincar o dente 🦷",
+  });
 }
 
 /* ---------------------------------------------------------------------
@@ -878,6 +1053,10 @@ tobaActions({
   startHomeLive: (el) => openHomeIntro(el.dataset.plan), // v1.96: abre a abertura, não começa direto
   startHomeNow: (el) => startHomeLive(el.dataset.plan),
   openHomeHelp: (el) => openHomeHelp(el.dataset.plan),
+  openStretchIntro: (el) => openStretchIntro(el.dataset.plan), // v1.97
+  openStretchHelp: (el) => openStretchHelp(el.dataset.plan),
+  openSaitamaIntro,
+  openSaitamaHelp,
   openHomeStart,
   homeTogglePause,
   homeSkip,

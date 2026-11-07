@@ -215,3 +215,14 @@
 .home-help-ex p.home-help-tip {
   color: var(--muted);
 }
+
+/* Linha sem bonequinho na abertura (v1.97: os 10 km do Saitama) */
+.home-intro-emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 48px;
+  flex: 0 0 64px;
+  font-size: 1.8rem;
+}

@@ -2376,3 +2376,33 @@ Pedido do Rafa: "coloca as coisa que dá pra puxar: stress, HRV, oxigenação, t
 **Dados:** campos novos opcionais no `TOBA_KITCHEN_DB`: `teas` (blends: nome, emoji, pra quê, ervas com as partes, modo de preparo e o último pote) e `teaBrews` (xícaras tomadas). Banco e backup antigos continuam funcionando (entram vazios) e sincronizam na Conta Toba junto com o resto do Kitchen. Receitas, contador, programação e lista não mudam.
 
 **Como testar:** Receitas › chip 🍵 Chás › "Usar" no Chá pra dormir › ajusta as partes › 💾 Salvar. Na tela do blend: troca o pote pra 200 g e pra 🥄 Colheres, toca "☕ Tomei uma xícara" (contador sobe, ↩ Desfazer tira), "🛒 Ervas na lista" e confere na Lista de compras a seção 🍵 Chás e ervas. ✏️ Editar › 🗑️ Apagar blend some com ele. ⚙️ mostra "Patch v1.96".
+
+---
+
+## v1.97 — Commit com vários patches (cada um na sua seção abaixo)
+
+### 🧘👊 Toba Health: tela de abertura também no Alongamento e no Saitama
+
+**Arquivos:** `TobaHealth/js/sessao-casa.js`, `TobaHealth/js/sessao-alongamento.js`, `TobaHealth/css/casa.css`, `assets/toba-common.js` (Patch v1.97)
+
+1. **🧘 Alongamento 10/20 min não começa mais direto:** abre a mesma tela de antes dos Treinos em casa, com ⏱️ minutos, quantas posições, 👉👈 troca de lado sozinho e ⚡ kcal, a lista de TODAS as posições na ordem com o bonequinho e o tempo de cada ("25 s cada lado"), e o **▶ Iniciar** embaixo. O ❔ abre o Papo do Cloba: pra que serve o plano, como funciona (Prepara de 5 s, Segura, troca de lado, voz) e cada posição com como fazer e a dica.
+2. **👊 Treino do Saitama também:** abertura com a meta (🎯 100 de cada), o contador +1/+5/+10/+20, o descanso de 60 s, flexão/abdominal/agachamento com o bonequinho e o lembrete dos 🚶 10 km (treino à parte). O ❔ explica o contador, o ↩, o descanso automático, o Dia do careca e o Careca completo, e cada exercício.
+3. Os botões "Fazer agora" do + Treino › 🧘 Alongamento também abrem a abertura. ‹ Treinos em casa volta pra lista.
+
+**Dados:** nenhuma mudança no banco (só tela).
+
+**Como testar:** Treinos › ▶ Iniciar treino › 🏠 › Alongamento 10 min: abre a lista das posições e NÃO começa; ❔ mostra o Papo do Cloba; ▶ Iniciar Alongamento 10 min começa o Prepara. Mesma coisa no 👊 Treino do Saitama (▶ Iniciar abre o contador). + Treino › 🧘 › ▶ 20 min abre a abertura do de 20. ⚙️ mostra "Patch v1.97".
+
+**Commit sugerido:** `v1.97 - Tela de abertura com Iniciar e Papo do Cloba tambem no Alongamento e no Treino do Saitama + Chas prontos do Kitchen viram receita fixa (pra que serve + proporcao, sem editar)`
+
+### 📗 Toba Kitchen: chás prontos viraram receita fixa
+
+**Arquivos alterados:** `TobaKitchen/js/chas.js`, `TobaKitchen/js/kitchen-recipes.js`, `TobaKitchen/css/kitchen-base.css`, `assets/toba-common.js` (Patch v1.97 na ⚙️), `sw.js` (`toba-v52`), `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **📗 Receitas de chá (no lugar das "Ideias pra começar"):** os 7 chás prontos abrem como receita, sem a tela de alterar. Mostram **🎯 Pra que serve** (ex.: o chá pra dormir explica o mulungu como base calmante e a uva passa com o cranberry adoçando) e **⚖️ A receita**: cada erva com as partes, a % e o que ela faz ali.
+2. **Continua tudo que importa:** 🫙 Montar o pote (gramas ou colheres), ☕ Tomei uma xícara (+1, conta separado por receita) e 🛒 Pôr as ervas na lista.
+3. **Teus blends continuam editáveis:** os que você cria no ➕ Novo blend seguem com ✏️ Editar e 🗑️ Apagar. As receitas prontas agora aparecem sempre (antes sumiam quando você salvava uma com o mesmo nome).
+
+**Dados:** nada novo no banco. As xícaras das receitas prontas entram no mesmo `teaBrews`, com `teaId` `"i-<receita>"` (ex.: `"i-dormir"`). Blend salvo antes pelo "Usar" continua como blend teu, editável.
+
+**Como testar:** Receitas › 🍵 Chás › 📗 Chá pra dormir: abre direto com Pra que serve e a proporção, sem ✏️ Editar. Troca o pote pra 200 g (100 g mulungu + 33 g de cada), toca ☕ Tomei (o card ganha "1×") e 🛒 Pôr as ervas na lista. ➕ Novo blend continua com ✏️ Editar. ⚙️ mostra "Patch v1.97".

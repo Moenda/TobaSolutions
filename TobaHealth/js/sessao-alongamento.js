@@ -583,7 +583,7 @@ function renderStretchFormFields() {
   return `
     <div class="hub-title">Fazer agora, com timer e bonequinho</div>
     <div class="stretch-form-start">
-      ${STRETCH_PLANS.map((plan) => `<button type="button" class="btn btn-primary" data-click="startStretchLive" data-plan="${plan.id}">▶ ${escapeHtml(plan.short)}</button>`).join("")}
+      ${STRETCH_PLANS.map((plan) => `<button type="button" class="btn btn-primary" data-click="openStretchIntro" data-plan="${plan.id}">▶ ${escapeHtml(plan.short)}</button>`).join("")}
     </div>
     <div class="walk-or">ou anota um que já fez 👇</div>
     <div class="form-group">
