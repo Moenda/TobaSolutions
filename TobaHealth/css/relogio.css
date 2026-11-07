@@ -838,3 +838,119 @@
   text-align: center;
   text-align-last: center;
 }
+
+/* v1.94 (🩻 RAIO ULTRA X): 🧬 Corpo por dentro */
+.watch-body-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.watch-body-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  min-width: 0;
+}
+
+.watch-body-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted, var(--muted));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.watch-body-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.watch-body-arrow {
+  font-size: 0.75rem;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.watch-body-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted, var(--muted));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Faixas (barra empilhada) */
+.watch-an-zbar {
+  display: flex;
+  height: 14px;
+  border-radius: 7px;
+  overflow: hidden;
+  gap: 2px;
+}
+
+.watch-an-zlegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 10px;
+  font-size: 0.8rem;
+}
+
+.watch-an-zlegend i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+
+.watch-an-zlegend small {
+  color: var(--text-muted, var(--muted));
+}
+
+/* Hora do aperto (24 barrinhas) */
+.watch-an-hours {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 70px;
+}
+
+.watch-an-hours span {
+  flex: 1;
+  border-radius: 3px 3px 0 0;
+  background: var(--coral);
+  opacity: 0.45;
+}
+
+.watch-an-hours span.is-top {
+  opacity: 1;
+  background: var(--gold-2);
+}
+
+.watch-an-hours-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--text-muted, var(--muted));
+  margin: 4px 0 10px;
+}
+
+.watch-an-norm {
+  font-size: 1.3rem;
+  font-weight: 800;
+  text-align: center;
+  margin: 0.2rem 0 0.4rem;
+}
+
+.watch-an-about {
+  margin: 0.2rem 0 0.8rem;
+}

@@ -17,8 +17,12 @@ import android.health.connect.datatypes.AggregationType;
 import android.health.connect.datatypes.DataOrigin;
 import android.health.connect.datatypes.DistanceRecord;
 import android.health.connect.datatypes.ExerciseSessionRecord;
+import android.health.connect.datatypes.FloorsClimbedRecord;
 import android.health.connect.datatypes.HeartRateRecord;
+import android.health.connect.datatypes.HeartRateVariabilityRmssdRecord;
+import android.health.connect.datatypes.OxygenSaturationRecord;
 import android.health.connect.datatypes.Record;
+import android.health.connect.datatypes.RespiratoryRateRecord;
 import android.health.connect.datatypes.RestingHeartRateRecord;
 import android.health.connect.datatypes.SleepSessionRecord;
 import android.health.connect.datatypes.StepsRecord;
@@ -33,12 +37,16 @@ import org.json.JSONObject;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -46,6 +54,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.ToDoubleFunction;
 
 /**
  * v1.87 (APK 2.2): ⌚ Relógio do Toba Health. Lê do Health Connect do Android 14+
@@ -63,6 +72,10 @@ import java.util.function.Function;
  * por dia: soma por app (filtro de origem) e fica com a MAIOR. Quem tem relógio fica com
  * o Samsung Health (que já junta relógio + celular); quem não tem, com o celular.
  * v1.89 (APK 2.3): cada exercício vem com kcal/km/passos/FC do horário dele (sessionStats).
+ * v1.94 (APK 2.5, 🩻 RAIO ULTRA X): HRV, oxigenação (SpO2) e respiração da NOITE (medida
+ * das 18h em diante conta pro dia seguinte, o dia em que acorda) + andares do dia (uma fonte só).
+ * Stress, Energy Score, temperatura da pele e ronco o Samsung não manda pro Health Connect:
+ * esses só pelo 📥 histórico do Samsung.
  */
 @TargetApi(34)
 final class HealthReader {
@@ -76,8 +89,14 @@ final class HealthReader {
             {"heart", "android.permission.health.READ_HEART_RATE"},
             {"restHr", "android.permission.health.READ_RESTING_HEART_RATE"},
             {"exercise", "android.permission.health.READ_EXERCISE"},
+            // v1.94 (APK 2.5)
+            {"hrv", "android.permission.health.READ_HEART_RATE_VARIABILITY"},
+            {"spo2", "android.permission.health.READ_OXYGEN_SATURATION"},
+            {"resp", "android.permission.health.READ_RESPIRATORY_RATE"},
+            {"floors", "android.permission.health.READ_FLOORS_CLIMBED"},
     };
     private static final int MAX_DAYS = 120;
+    private static final int NIGHT_FROM_HOUR = 18; // v1.94: medida das 18h em diante = noite do dia seguinte
     private static final long WAIT_S = 25;
     private static final ExecutorService WORKER = Executors.newSingleThreadExecutor();
 
@@ -185,6 +204,7 @@ final class HealthReader {
         List<String> kcalOrigins = new ArrayList<>();
         List<String> activeOrigins = new ArrayList<>();
         List<String> distOrigins = new ArrayList<>();
+        JSONObject sources = new JSONObject();
         if (has(c, PERMS, "steps")) {
             stepOrigins = origins(hc, StepsRecord.class, whole);
             byDayOneSource(hc, range, StepsRecord.STEPS_COUNT_TOTAL, "steps", v -> v, stepOrigins, days, errors);
@@ -201,7 +221,6 @@ final class HealthReader {
             distOrigins = origins(hc, DistanceRecord.class, whole);
             byDayOneSource(hc, range, DistanceRecord.DISTANCE_TOTAL, "distanceM", HealthReader::meters, distOrigins, days, errors);
         }
-        JSONObject sources = new JSONObject();
         sources.put("steps", new JSONArray(stepOrigins));
         sources.put("kcal", new JSONArray(kcalOrigins));
         sources.put("activeKcal", new JSONArray(activeOrigins));
@@ -213,6 +232,30 @@ final class HealthReader {
         }
         if (has(c, PERMS, "restHr")) {
             byDay(hc, range, RestingHeartRateRecord.BPM_AVG, "restHr", v -> v, days, errors);
+        }
+        // v1.94 (APK 2.5): andares do dia, de uma fonte só (igual passos)
+        if (has(c, PERMS, "floors")) {
+            List<String> floorOrigins = origins(hc, FloorsClimbedRecord.class, whole);
+            byDayOneSource(hc, range, FloorsClimbedRecord.FLOORS_CLIMBED_TOTAL, "floors",
+                    v -> v != null && v > 0 ? (Object) Math.round(v) : null, floorOrigins, days, errors);
+            sources.put("floors", new JSONArray(floorOrigins));
+        }
+        // v1.94 (APK 2.5): medidas da noite. Começa às 18h da véspera do 1º dia.
+        TimeInstantRangeFilter nights = new TimeInstantRangeFilter.Builder()
+                .setStartTime(from.minusDays(1).atTime(NIGHT_FROM_HOUR, 0).atZone(zone).toInstant())
+                .setEndTime(end.atZone(zone).toInstant())
+                .build();
+        if (has(c, PERMS, "hrv")) {
+            nightly(hc, HeartRateVariabilityRmssdRecord.class, nights, r -> r.getHeartRateVariabilityMillis(), r -> r.getTime(),
+                    1, 300, "hrv", null, 1, from, to, zone, days, errors);
+        }
+        if (has(c, PERMS, "spo2")) {
+            nightly(hc, OxygenSaturationRecord.class, nights, r -> r.getPercentage().getValue(), r -> r.getTime(),
+                    50, 100, "spo2", "spo2Min", 1, from, to, zone, days, errors);
+        }
+        if (has(c, PERMS, "resp")) {
+            nightly(hc, RespiratoryRateRecord.class, nights, r -> r.getRate(), r -> r.getTime(),
+                    4, 60, "resp", null, 10, from, to, zone, days, errors);
         }
 
         // Sono: começa ao meio-dia da véspera (a noite que acorda no 1º dia entra).
@@ -260,6 +303,48 @@ final class HealthReader {
         out.put("sources", sources); // v1.93: apps que gravaram cada tipo (pro 🩺 Diagnóstico)
         out.put("status", status(c));
         return out;
+    }
+
+    /* v1.94 (APK 2.5): medida pontual da noite (HRV, SpO2, respiração) -> média por dia.
+     * O dia é o da manhã em que acorda: das 18h em diante conta pro dia seguinte.
+     * min/max = faixa que faz sentido (fora disso é leitura torta e fica de fora).
+     * minField != null: também manda o menor valor da noite (o SpO2 mais baixo).
+     * dec = 1 (inteiro) ou 10 (uma casa). Falhou? Vai pro errors e segue. */
+    private static <T extends Record> void nightly(HealthConnectManager hc, Class<T> cls, TimeInstantRangeFilter filter,
+            ToDoubleFunction<T> value, Function<T, Instant> time, double min, double max, String field, String minField, int dec,
+            LocalDate from, LocalDate to, ZoneId zone, JSONObject days, JSONObject errors) throws JSONException {
+        try {
+            Map<String, double[]> acc = new HashMap<>(); // {soma, n, menor}
+            for (T r : readAll(hc, cls, filter)) {
+                double v = value.applyAsDouble(r);
+                if (!(v >= min && v <= max)) continue;
+                LocalDateTime at = LocalDateTime.ofInstant(time.apply(r), zone);
+                LocalDate day = at.toLocalTime().isBefore(LocalTime.of(NIGHT_FROM_HOUR, 0)) ? at.toLocalDate() : at.toLocalDate().plusDays(1);
+                if (day.isBefore(from) || day.isAfter(to)) continue;
+                double[] a = acc.get(day.toString());
+                if (a == null) {
+                    a = new double[]{0, 0, v};
+                    acc.put(day.toString(), a);
+                }
+                a[0] += v;
+                a[1] += 1;
+                if (v < a[2]) a[2] = v;
+            }
+            for (Map.Entry<String, double[]> e : acc.entrySet()) {
+                double[] a = e.getValue();
+                JSONObject d = days.optJSONObject(e.getKey());
+                if (d == null) {
+                    d = new JSONObject();
+                    days.put(e.getKey(), d);
+                }
+                double avg = a[0] / a[1];
+                if (dec > 1) d.put(field, Math.round(avg * dec) / (double) dec);
+                else d.put(field, Math.round(avg));
+                if (minField != null) d.put(minField, Math.round(a[2]));
+            }
+        } catch (Exception e) {
+            errors.put(field, msg(e));
+        }
     }
 
     // v1.93: apps (pacotes) que gravaram esse tipo no período. Lê os registros (até

@@ -2232,3 +2232,27 @@ O Samsung não reenvia o passado pro Health Connect, então agora dá pra puxar 
 **Como testar:** Raio-X › responde os cards 🗑️ Sumiu do relógio › fecha e abre de novo: não voltam. Toca em 👟 passos › Mês › ‹ até Agosto 2026 (ou escolhe na lista) › Ano › ‹ 2025. Instala o APK 2.4 › ⚙️ mostra "APK 2.4 · Patch v1.93" › Raio-X › 🔄: os passos de hoje batem com o Samsung Health. ⚙️ › 🩺 Diagnóstico: aparece "👟 Passos: Samsung Health + o próprio celular".
 
 **Commit sugerido:** `v1.93 - Raio-X: passos, distancia e calorias de uma fonte so por dia (sem somar celular + Samsung Health), rele 30 dias na 1a vez e diagnostico mostra os apps + APK 2.4 + Sumiu do relogio nao repete depois de respondido + analise com Semana, Mes, Semestre e Ano fechados escolhendo o periodo`
+
+## v1.94 — 🩻 RAIO ULTRA X: stress, Energy Score, HRV, oxigenação, temperatura, respiração, andares e ronco (+ APK 2.5)
+
+Pedido do Rafa: "coloca as coisa que dá pra puxar: stress, HRV, oxigenação, temp, energy, andares, ronco. RAIO ULTRA X".
+
+1. **📥 Histórico do Samsung lê 8 coisas novas** (mesmo ZIP/pasta de sempre, na ⚙️ do Raio-X): 😰 **stress** (média do dia, pico, hora do pico, horas no alto), 🔋 **Energy Score**, 💓 **HRV** (e FC de repouso), 🫁 **oxigenação** do sono (média e a menor), 🌡️ **temperatura da pele** de noite, 😮‍💨 **respiração** no sono, 🪜 **andares** e 😪 **ronco**. As da noite vão pro dia em que acordou. Leitura torta (HRV de 222 ms, stress 0) fica de fora.
+2. **🧬 Corpo por dentro** no Raio-X, embaixo do sono: um quadradinho pra cada (só aparece o que tem dado), com o último valor, a seta ▲▼ contra a tua média dos 30 dias antes (verde = bom, vermelho = ruim) e a faixa (😌 tranquilo, 💪 bom, ✅ no teu normal...). Toca e abre a análise.
+3. **🔬 Análise de cada uma** (com Semana/Mês/Semestre/Ano da v1.93):
+   - **🎚️ Faixas:** barra de quantos dias caíram em cada faixa (stress tranquilo/normal/puxado/alto; Energy baixo/ok/bom/top; oxigenação boa/ok/de olho...).
+   - **⏰ Hora do aperto** (stress): em que hora do dia o stress costuma estourar, quantas horas por dia no alto e o maior do período.
+   - **📏 O teu normal** (HRV, temperatura, respiração): esses números variam de pessoa pra pessoa, então compara com os teus 60 dias antes do período.
+   - **🔬 Raio laser** cruzando tudo: sono × stress, sono × Energy, treino × HRV, passos × stress, fim de semana, dia da semana... e o 🤡 Cloba comentando cada métrica (também no papo reto da tela principal quando o Energy tá baixo, o HRV caiu ou o stress subiu).
+   - **ℹ️** de uma linha explicando o que é cada número.
+4. **APK 2.5 (versionCode 16):** HRV, oxigenação, respiração e andares vêm **ao vivo** do Health Connect no 🔄 (o celular pede 4 permissões novas: "🔒 Faltou liberar" › Liberar). Medida das 18h em diante conta pra noite do dia seguinte. Andares de uma fonte só (igual passos). Na 1ª leitura com as permissões novas, relê 30 dias. Stress, Energy, temperatura e ronco o Samsung **não manda** pro Health Connect: esses só pelo 📥 histórico (dá pra baixar de novo de tempos em tempos).
+
+**Dados:** campos novos opcionais no dia de `TOBA_HEALTH_DB.watch.days`: `hrv`, `spo2`, `spo2Min`, `resp`, `floors` (APK 2.5 ou import) e `stress`, `stressMax`, `stressPeak`, `stressHigh`, `energy`, `temp`, `snoreMin` (só import; o 🔄 nunca apaga). `toba_health_watch_state.bodyRead: 1` = já releu 30 dias com as permissões novas. Ponte: `version()` = 13. APK antigo segue funcionando sem as métricas ao vivo.
+
+**APK 2.5 (versionCode 16):** `HealthReader.java` (`PERMS` + `nightly` + andares), `TobaBridge.java` (version 13), `app/build.gradle`, `AndroidManifest.xml` (4 permissões de leitura). Sync Gradle › Generate Signed APK › instala pelo **KingInstaller** por cima (nunca desinstalar).
+
+**Arquivos:** `TobaHealth/js/relogio.js`, `TobaHealth/js/relogio-samsung.js`, `TobaHealth/js/relogio-analise.js`, `TobaHealth/css/relogio.css`, `TobaHealth/TobaHealth-Relogio.html`, `TobaAndroid/app/auto/br/com/toba/app/HealthReader.java`, `TobaAndroid/app/auto/br/com/toba/app/TobaBridge.java`, `TobaAndroid/app/build.gradle`, `TobaAndroid/app/src/main/AndroidManifest.xml`, `assets/toba-common.js`, `CLAUDE.md`, `PATCH-NOTES.md`.
+
+**Como testar:** Raio-X › ⚙️ › 📥 Histórico do Samsung › escolhe o ZIP de novo: a lista mostra ✅ stress, energy, oxigenação, temperatura, respiração, andares, ronco. Volta: aparece 🧬 Corpo por dentro. Toca no 😰 Stress › Ano: faixas, ⏰ Hora do aperto, raio laser. Toca no 💓 HRV: 📏 O teu normal. Instala o APK 2.5 › ⚙️ mostra "APK 2.5 · Patch v1.94" › Raio-X › 🔒 Faltou liberar › Liberar (HRV, oxigenação, respiração, andares) › 🔄 › 🩺 Diagnóstico mostra quantos dias vieram de cada.
+
+**Commit sugerido:** `v1.94 - Raio Ultra X: stress, Energy Score, HRV, oxigenacao, temperatura da pele, respiracao, andares e ronco (import do Samsung + APK 2.5 ao vivo), secao Corpo por dentro e analise de cada uma com faixas, hora do aperto, teu normal e raio laser`

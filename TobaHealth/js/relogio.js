@@ -31,11 +31,20 @@ const WATCH_GROUPS = {
   restHr: ["restHr"],
   sleep: ["sleep"],
   exercise: ["ex"],
+  // v1.94 (APK 2.5): da noite (vai pro dia em que acorda) e andares
+  hrv: ["hrv"],
+  spo2: ["spo2", "spo2Min"],
+  resp: ["resp"],
+  floors: ["floors"],
 };
 const WATCH_GROUP_LABELS = {
   steps: "👟 passos", sleep: "😴 sono", kcal: "🔥 calorias", activeKcal: "⚡ calorias ativas",
   distance: "📏 distância", heart: "❤️ batimentos", restHr: "💤 FC em repouso", exercise: "🏃 exercícios",
+  hrv: "💓 HRV", spo2: "🫁 oxigenação", resp: "😮‍💨 respiração", floors: "🪜 andares",
 };
+// v1.94: só vêm do 📥 histórico do Samsung (o Health Connect não tem): stress, energy, temperatura, ronco
+const WATCH_IMPORT_FIELDS = ["stress", "stressMax", "stressPeak", "stressHigh", "energy", "temp", "snoreMin"];
+const WATCH_DECIMAL_FIELDS = ["resp", "temp"];
 // Tipos de exercício do Health Connect do Android (ExerciseSessionType)
 const WATCH_EXERCISE_NAMES = {
   0: "🏅 Treino", 3: "🏀 Basquete", 4: "🚴 Bike", 5: "🚴 Bike ergométrica", 7: "🥊 Boxe",
@@ -97,7 +106,8 @@ function watchAddDays(iso, n) {
 }
 
 function watchHasData(day) {
-  return Boolean(day) && Object.keys(WATCH_GROUPS).some((g) => WATCH_GROUPS[g].some((f) => day[f] !== undefined && day[f] !== null));
+  return Boolean(day) && (Object.keys(WATCH_GROUPS).some((g) => WATCH_GROUPS[g].some((f) => day[f] !== undefined && day[f] !== null))
+    || WATCH_IMPORT_FIELDS.some((f) => day[f] !== undefined && day[f] !== null));
 }
 
 /* ---------------- Ponte com o APK ---------------- */
@@ -122,6 +132,20 @@ function watchGranted() {
   return s && s.ok && Array.isArray(s.granted) ? s.granted : [];
 }
 
+function watchNativeVersion() {
+  try {
+    return typeof TOBA_NATIVE !== "undefined" && TOBA_NATIVE && typeof TOBA_NATIVE.version === "function" ? Number(TOBA_NATIVE.version()) || 0 : 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
+// v1.94: alguma das permissões do 🩻 RAIO ULTRA X liberada?
+function watchGrantedBody(granted) {
+  const g = Array.isArray(granted) ? granted : [...(granted || [])];
+  return ["hrv", "spo2", "resp", "floors"].some((k) => g.includes(k));
+}
+
 // Período a puxar: 1ª vez = 30 dias; depois, do último dia guardado (−2, o relógio
 // sincroniza atrasado) até hoje.
 function watchPullRange(full) {
@@ -132,6 +156,8 @@ function watchPullRange(full) {
   // que celular + Samsung Health foram somados (passos/km/kcal a mais).
   if (!watchState().oneSource && typeof TOBA_NATIVE !== "undefined" && TOBA_NATIVE
     && typeof TOBA_NATIVE.version === "function" && Number(TOBA_NATIVE.version()) >= 12) full = true;
+  // v1.94 (APK 2.5): liberou HRV/oxigenação/respiração/andares? A 1ª leitura relê 30 dias.
+  if (!watchState().bodyRead && watchNativeVersion() >= 13 && watchGrantedBody(watchGranted())) full = true;
   if (!full && dates.length) {
     const last = dates[dates.length - 1] < today ? dates[dates.length - 1] : today;
     from = watchAddDays(last, -2);
@@ -197,7 +223,10 @@ window.onTobaHealthData = function (reqId, data) {
   }
   const changed = watchMerge(data);
   const auto = watchAutoMerge();
-  watchSetState({ pulledAt: Date.now(), diag: watchBuildDiag(data), ...(data.sources ? { oneSource: 1 } : {}) });
+  watchSetState({
+    pulledAt: Date.now(), diag: watchBuildDiag(data), ...(data.sources ? { oneSource: 1 } : {}),
+    ...(watchNativeVersion() >= 13 && data.status && watchGrantedBody(data.status.granted) ? { bodyRead: 1 } : {}),
+  });
   if (changed || auto) saveHealthDb();
   renderWatch();
   if (auto) tobaToast(`⌚ ${auto === 1 ? "1 treino completado" : `${auto} treinos completados`} com o relógio`);
@@ -311,7 +340,10 @@ function watchMerge(data) {
         let v;
         if (f === "sleep") v = sleep[date];
         else if (f === "ex") v = watchSyncExercises(old.ex, ex[date], vanished); // v1.89: apagou no relógio, some aqui
-        else v = Number.isFinite(Number(src[f])) && src[f] !== null ? Math.round(Number(src[f])) : undefined;
+        else if (Number.isFinite(Number(src[f])) && src[f] !== null) {
+          const dec = WATCH_DECIMAL_FIELDS.includes(f) ? 10 : 1; // v1.94: respiração com 1 casa
+          v = Math.round(Number(src[f]) * dec) / dec;
+        } else v = undefined;
         // Sumiu do Health Connect? Fica o que já estava (dado nunca some calado).
         if (v !== undefined) next[f] = v;
       });
@@ -477,6 +509,7 @@ function watchBuildDiag(data) {
     counts: {
       steps: count("steps"), kcal: count("kcal"), activeKcal: count("activeKcal"), distance: count("distanceM"),
       heart: count("hrAvg"), restHr: count("restHr"),
+      hrv: count("hrv"), spo2: count("spo2"), resp: count("resp"), floors: count("floors"), // v1.94 (APK 2.5)
       sleep: Array.isArray(data.sleep) ? data.sleep.length : 0,
       exercise: Array.isArray(data.exercises) ? data.exercises.length : 0,
     },
@@ -489,7 +522,7 @@ function watchBuildDiag(data) {
 function watchDiagSources(src) {
   if (!src || typeof src !== "object") return null;
   const out = {};
-  ["steps", "distance", "activeKcal", "kcal"].forEach((k) => {
+  ["steps", "distance", "activeKcal", "kcal", "floors"].forEach((k) => {
     if (Array.isArray(src[k])) out[k] = src[k].map((x) => String(x).slice(0, 80)).slice(0, 6);
   });
   return out;
@@ -542,7 +575,7 @@ function openWatchDiag() {
   el.innerHTML = `<p class="toba-sheet-text">Última leitura: ${escapeHtml(watchDayLabel(toIsoDate(at)).toLowerCase())} às ${watchClock(d.at)}, de ${escapeHtml(d.from.slice(8, 10))}/${escapeHtml(d.from.slice(5, 7))} até ${escapeHtml(d.to.slice(8, 10))}/${escapeHtml(d.to.slice(5, 7))}.</p>
     <div class="kv-list">${rows}</div>
     ${d.origins.length ? `<p class="watch-muted">Sono/treino vieram de: ${d.origins.map(escapeHtml).join(", ")}</p>` : ""}
-    ${d.sources ? `<p class="watch-muted">${[["steps", "👟 Passos"], ["distance", "📏 Distância"], ["activeKcal", "⚡ Ativas"], ["kcal", "🔥 Calorias"]]
+    ${d.sources ? `<p class="watch-muted">${[["steps", "👟 Passos"], ["distance", "📏 Distância"], ["activeKcal", "⚡ Ativas"], ["kcal", "🔥 Calorias"], ["floors", "🪜 Andares"]]
       .filter(([k]) => d.sources[k] && d.sources[k].length)
       .map(([k, label]) => `${label}: ${d.sources[k].map((x) => escapeHtml(watchAppName(x))).join(" + ")}`).join("<br>")}</p>
       ${Object.values(d.sources).some((l) => l.length > 1) ? `<p class="watch-muted">Mais de um app gravando o mesmo? O Toba usa um só por dia (o que mediu mais, normalmente o Samsung Health, que já junta relógio + celular), pra não contar duas vezes.</p>` : ""}` : ""}
@@ -956,6 +989,7 @@ function renderWatch() {
   renderWatchConnect();
   renderWatchToday();
   renderWatchSleep();
+  renderWatchBody();
   renderWatchCloba();
   renderWatchGone();
   renderWatchInbox();
@@ -994,7 +1028,7 @@ function renderWatchConnect() {
           <summary>Samsung Health não manda nada?</summary>
           <ol>
             <li>Abre o <b>Samsung Health</b> › ☰/⋮ › <b>Configurações</b> › <b>Health Connect</b> (ou Conexão Saúde).</li>
-            <li>Libera o Samsung Health a <b>escrever</b> passos, sono, calorias, frequência cardíaca e exercícios.</li>
+            <li>Libera o Samsung Health a <b>escrever</b> passos, sono, calorias, frequência cardíaca e exercícios (e, pro 🧬 Corpo por dentro, HRV, oxigenação, respiração e andares).</li>
             <li>Volta aqui e toca no 🔄.</li>
           </ol>
         </details>
@@ -1105,6 +1139,81 @@ function renderWatchSleep() {
     ${watchSleepBar(s)}`;
 }
 
+/* ---------------- 🧬 Corpo por dentro (v1.94, 🩻 RAIO ULTRA X) ---------------- */
+// Cada quadrado = último valor (até 3 dias atrás; ronco/oxigênio/temp/respiração que nem toda noite tem, mais) e a seta contra a média dos 30 dias antes.
+const WATCH_BODY_TILES = [
+  { metric: "stress", label: "😰 Stress", field: "stress" },
+  { metric: "energy", label: "🔋 Energy", field: "energy" },
+  { metric: "hrv", label: "💓 HRV", field: "hrv" },
+  { metric: "spo2", label: "🫁 Oxigênio", field: "spo2", back: 14 },
+  { metric: "resp", label: "😮‍💨 Respiração", field: "resp", back: 14 },
+  { metric: "temp", label: "🌡️ Temp. pele", field: "temp", back: 14 },
+  { metric: "snore", label: "😪 Ronco", field: "snoreMin", back: 60 },
+  { metric: "floors", label: "🪜 Andares", field: "floors" },
+];
+
+function watchDec(v) {
+  return Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+function watchLatest(field, maxBack = 3) {
+  const today = toIsoDate();
+  for (let i = 0; i <= maxBack; i++) {
+    const date = watchAddDays(today, -i);
+    const d = watchDay(date);
+    if (d && d[field] !== undefined && d[field] !== null) return { date, v: Number(d[field]) };
+  }
+  return null;
+}
+
+function watchAvgBefore(field, date, days = 30) {
+  let sum = 0, n = 0;
+  for (let i = 1; i <= days; i++) {
+    const d = watchDay(watchAddDays(date, -i));
+    if (d && d[field] !== undefined && d[field] !== null) { sum += Number(d[field]); n++; }
+  }
+  return n >= 5 ? sum / n : null;
+}
+
+function renderWatchBody() {
+  const el = document.getElementById("watchBody");
+  if (!el) return;
+  const any = (field) => Object.values(watchDays()).some((d) => d && d[field] !== undefined && d[field] !== null);
+  const tiles = WATCH_BODY_TILES.filter((t) => any(t.field));
+  el.hidden = !tiles.length;
+  if (!tiles.length) {
+    el.innerHTML = "";
+    return;
+  }
+  const today = toIsoDate();
+  el.innerHTML = `<div class="section-title">🧬 Corpo por dentro</div>
+    <div class="watch-body-grid">${tiles.map((t) => {
+      const m = typeof WATCH_METRICS === "object" ? WATCH_METRICS[t.metric] : null;
+      const last = watchLatest(t.field, t.back || 3);
+      const base = last ? watchAvgBefore(t.field, last.date) : null;
+      let arrow = "";
+      if (last && base) {
+        const pct = ((last.v - base) / base) * 100;
+        const lim = t.metric === "temp" || t.metric === "spo2" ? 1 : 8;
+        if (Math.abs(pct) >= lim) {
+          const good = !m || m.better === "none" ? null : m.better === "up" ? pct > 0 : pct < 0;
+          arrow = `<span class="watch-body-arrow ${good === null ? "" : good ? "text-green" : "text-coral"}">${pct > 0 ? "▲" : "▼"}</span>`;
+        }
+      }
+      const when = !last ? "sem dado recente" : last.date === today ? "hoje" : last.date === watchAddDays(today, -1) ? "ontem" : watchAnDateShort(last.date);
+      const zone = last && m && m.zone ? m.zone(last.v, last.date) : null;
+      return `<div class="watch-body-tile watch-tap" role="button" tabindex="0" data-click="openWatchMetric" data-metric="${t.metric}">
+        <span class="watch-body-label">${t.label}</span>
+        <span class="watch-body-value">${last && m ? escapeHtml(m.fmt(last.v)) : "--"}${arrow}</span>
+        <span class="watch-body-sub">${zone ? `${zone.icon} ${escapeHtml(zone.label)} · ` : ""}${when}</span>
+      </div>`;
+    }).join("")}</div>`;
+}
+
+function watchAnDateShort(iso) {
+  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+}
+
 // 🤡 Papo reto do Cloba: 1 ou 2 frases sobre hoje e a última noite
 function renderWatchCloba() {
   const el = document.getElementById("watchCloba");
@@ -1128,7 +1237,19 @@ function renderWatchCloba() {
     else if (hour >= 18 && s < goals.steps * 0.4) lines.push(`🛋️ ${watchInt(s)} passos até agora... bora dar uma volta no quarteirão, parça.`);
     else lines.push(`👟 Faltam ${watchInt(goals.steps - s)} passos pra meta. Dá tempo!`);
   }
-  el.innerHTML = lines.length ? `<div class="watch-cloba"><span class="watch-cloba-face">🤡</span><div><b>Papo reto do Cloba</b><p>${lines.slice(0, 3).join("<br>")}</p></div></div>` : "";
+  // v1.94: o corpo por dentro (stress de ontem/hoje, energy, HRV)
+  const today = toIsoDate();
+  const energy = watchLatest("energy", 1);
+  if (energy) {
+    if (energy.v >= 85) lines.push(`🔋 Energy ${watchInt(energy.v)}: bateria no talo. Dia de quebrar recorde.`);
+    else if (energy.v < 60) lines.push(`🪫 Energy ${watchInt(energy.v)}: corpo pedindo arrego. Treino leve e cama cedo.`);
+  }
+  const hrv = watchLatest("hrv", 1);
+  const hrvBase = hrv ? watchAvgBefore("hrv", hrv.date, 60) : null;
+  if (hrv && hrvBase && hrv.v < hrvBase * 0.8) lines.push(`💓 HRV ${watchInt(hrv.v)} ms, bem abaixo do teu normal (${watchInt(hrvBase)}). Recuperação tá devendo.`);
+  const stress = watchLatest("stress", 1);
+  if (stress && stress.v >= 50) lines.push(`😰 Stress médio ${watchInt(stress.v)} ${stress.date === today ? "hoje" : "ontem"}. Respira, Cloba: 4 segundos puxa, 4 segura, 6 solta.`);
+  el.innerHTML = lines.length ? `<div class="watch-cloba"><span class="watch-cloba-face">🤡</span><div><b>Papo reto do Cloba</b><p>${lines.slice(0, 4).join("<br>")}</p></div></div>` : "";
 }
 
 function watchChartRows() {
@@ -1313,6 +1434,15 @@ function openWatchDay(el) {
   if (d.restHr !== undefined) rows.push(row("💤 FC em repouso", `${watchInt(d.restHr)} bpm`));
   if (d.hrAvg !== undefined) rows.push(row("❤️ FC média", `${watchInt(d.hrAvg)} bpm`));
   if (d.hrMin !== undefined && d.hrMax !== undefined) rows.push(row("📉📈 Mín / máx", `${watchInt(d.hrMin)} / ${watchInt(d.hrMax)} bpm`));
+  // v1.94 (🩻 RAIO ULTRA X)
+  if (d.stress !== undefined) rows.push(row("😰 Stress", `${watchInt(d.stress)} média · pico ${watchInt(d.stressMax)} às ${d.stressPeak}h`));
+  if (d.energy !== undefined) rows.push(row("🔋 Energy Score", `${watchInt(d.energy)}`));
+  if (d.hrv !== undefined) rows.push(row("💓 HRV dormindo", `${watchInt(d.hrv)} ms`));
+  if (d.spo2 !== undefined) rows.push(row("🫁 Oxigenação", `${d.spo2}%${d.spo2Min !== undefined ? ` · mín. ${d.spo2Min}%` : ""}`));
+  if (d.resp !== undefined) rows.push(row("😮‍💨 Respiração", `${watchDec(d.resp)} por min`));
+  if (d.temp !== undefined) rows.push(row("🌡️ Temp. da pele", `${watchDec(d.temp)} °C`));
+  if (d.snoreMin !== undefined) rows.push(row("😪 Ronco", d.snoreMin ? watchHours(d.snoreMin) : "nada"));
+  if (d.floors !== undefined) rows.push(row("🪜 Andares", watchInt(d.floors)));
   let sleep = "";
   if (d.sleep) {
     sleep = `<div class="section-title">😴 Sono</div>

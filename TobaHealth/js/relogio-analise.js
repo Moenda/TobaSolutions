@@ -34,6 +34,69 @@ const WATCH_METRICS = {
     icon: "❤️", name: "Coração", color: "var(--red, #f85149)", better: "down",
     get: (d) => d.hrAvg, fmt: (v) => `${watchInt(v)} bpm`, unit: "", zoom: true,
   },
+  /* v1.94 (🩻 RAIO ULTRA X): o corpo por dentro. zone(v, date) = faixa do dia (ícone + nome). */
+  stress: {
+    icon: "😰", name: "Stress", color: "var(--coral)", better: "down",
+    get: (d) => d.stress, fmt: (v) => watchInt(v), unit: "",
+    zone: (v) => (v < 30 ? { icon: "😌", label: "tranquilo", k: 0 } : v < 50 ? { icon: "🙂", label: "normal", k: 1 } : v < 70 ? { icon: "😬", label: "puxado", k: 2 } : { icon: "🔥", label: "alto", k: 3 }),
+    zones: [["😌 tranquilo", "var(--green)"], ["🙂 normal", "var(--blue)"], ["😬 puxado", "var(--gold-2)"], ["🔥 alto", "var(--coral)"]],
+    about: "Score de 0 a 100 que o relógio calcula pela variação do batimento, uma vez por hora. Aqui é a média do dia.",
+  },
+  energy: {
+    icon: "🔋", name: "Energy Score", color: "var(--gold-2)", better: "up",
+    get: (d) => d.energy, fmt: (v) => watchInt(v), unit: "",
+    zone: (v) => (v >= 85 ? { icon: "⚡", label: "excelente", k: 0 } : v >= 70 ? { icon: "💪", label: "bom", k: 1 } : v >= 60 ? { icon: "😐", label: "regular", k: 2 } : { icon: "🪫", label: "baixo", k: 3 }),
+    zones: [["⚡ excelente", "var(--green)"], ["💪 bom", "var(--blue)"], ["😐 regular", "var(--gold-2)"], ["🪫 baixo", "var(--coral)"]],
+    about: "Nota de 0 a 100 que o Samsung dá todo dia de manhã juntando sono, batimento dormindo, HRV e atividade dos dias antes.",
+  },
+  hrv: {
+    icon: "💓", name: "HRV", color: "var(--purple, #a371f7)", better: "up",
+    get: (d) => d.hrv, fmt: (v) => `${watchInt(v)} ms`, unit: "", zoom: true,
+    zone: (v, date) => {
+      const base = watchAvgBefore("hrv", date, 60);
+      if (!base) return null;
+      return v >= base * 1.1 ? { icon: "🚀", label: "acima do teu normal", k: 0 } : v >= base * 0.85 ? { icon: "✅", label: "no teu normal", k: 1 } : { icon: "🪫", label: "abaixo do normal", k: 2 };
+    },
+    zones: [["🚀 acima", "var(--green)"], ["✅ normal", "var(--blue)"], ["🪫 abaixo", "var(--coral)"]],
+    about: "Variação entre um batimento e outro, medida dormindo. Mais alto = corpo recuperado; caiu muito do teu normal = cansaço, doença, álcool ou stress.",
+  },
+  spo2: {
+    icon: "🫁", name: "Oxigenação", color: "var(--blue)", better: "up",
+    get: (d) => d.spo2, fmt: (v) => `${watchInt(v)}%`, unit: "", zoom: true, per: "por noite",
+    zone: (v) => (v >= 95 ? { icon: "✅", label: "normal", k: 0 } : v >= 90 ? { icon: "⚠️", label: "atenção", k: 1 } : { icon: "🚨", label: "baixo", k: 2 }),
+    zones: [["✅ 95%+", "var(--green)"], ["⚠️ 90-94%", "var(--gold-2)"], ["🚨 < 90%", "var(--coral)"]],
+    about: "Oxigênio no sangue (SpO2) medido durante o sono. Normal é 95% pra cima.",
+  },
+  resp: {
+    icon: "😮‍💨", name: "Respiração", color: "var(--teal, #39c5cf)", better: "down",
+    get: (d) => d.resp, fmt: (v) => `${watchDec(v)}/min`, unit: "", zoom: true, per: "por noite",
+    zone: (v) => (v >= 12 && v <= 20 ? { icon: "✅", label: "normal", k: 0 } : { icon: "⚠️", label: "fora do comum", k: 1 }),
+    zones: [["✅ 12-20", "var(--green)"], ["⚠️ fora", "var(--gold-2)"]],
+    about: "Respirações por minuto dormindo. Adulto em repouso fica entre 12 e 20; subir do teu normal pode ser começo de gripe.",
+  },
+  temp: {
+    icon: "🌡️", name: "Temperatura da pele", color: "var(--coral)", better: "none", noBest: true,
+    get: (d) => d.temp, fmt: (v) => `${watchDec(v)} °C`, unit: "", zoom: true, per: "por noite",
+    zone: (v, date) => {
+      const base = watchAvgBefore("temp", date, 60);
+      if (!base) return null;
+      return v - base > 0.5 ? { icon: "🔥", label: "mais quente", k: 0 } : base - v > 0.5 ? { icon: "🧊", label: "mais fria", k: 2 } : { icon: "✅", label: "normal", k: 1 };
+    },
+    zones: [["🔥 +0,5 °C", "var(--coral)"], ["✅ normal", "var(--green)"], ["🧊 -0,5 °C", "var(--blue)"]],
+    about: "Temperatura da pele do pulso dormindo. Não é febre (pele é mais fria que o corpo): o que importa é fugir do TEU normal.",
+  },
+  snore: {
+    icon: "😪", name: "Ronco", color: "var(--purple, #a371f7)", better: "down", zeroOk: true, per: "por noite",
+    get: (d) => d.snoreMin, fmt: (v) => (v >= 1 ? watchHours(v) : "0 min"), unit: "",
+    zone: (v) => (v < 1 ? { icon: "🤫", label: "nada", k: 0 } : v < 15 ? { icon: "😴", label: "pouco", k: 1 } : v < 45 ? { icon: "😪", label: "médio", k: 2 } : { icon: "🐻", label: "urso", k: 3 }),
+    zones: [["🤫 nada", "var(--green)"], ["😴 < 15 min", "var(--blue)"], ["😪 15-45", "var(--gold-2)"], ["🐻 45+", "var(--coral)"]],
+    about: "Minutos roncando que o celular ouviu na noite (detector de ronco do Samsung Health ligado).",
+  },
+  floors: {
+    icon: "🪜", name: "Andares", color: "var(--green)", sum: true, better: "up",
+    get: (d) => d.floors, fmt: (v) => watchInt(v), unit: "andares", zeroOk: true,
+    about: "Andares subidos no dia (o barômetro do relógio conta cada ~3 m de subida).",
+  },
 };
 // v1.93 (pedido do Rafa): períodos FECHADOS de calendário, escolhendo qual com ‹ ›
 // (Agosto 2026, 2025 inteiro...) e comparando com o anterior do mesmo tamanho.
@@ -227,8 +290,8 @@ function watchAnRecords(key, m) {
   });
   const ranked = Object.keys(months).filter((ym) => months[ym].n >= 7).map((ym) => ({ ym, avg: months[ym].sum / months[ym].n }));
   ranked.sort((a, b) => (m.better === "down" ? a.avg - b.avg : b.avg - a.avg));
-  const bestMonth = ranked[0];
-  const bestDay = m.better === "down" ? s.worst : s.best;
+  const bestMonth = m.noBest ? null : ranked[0];
+  const bestDay = m.noBest ? null : m.better === "down" ? s.worst : s.best;
   const goal = m.goal ? m.goal() : 0;
   let streak = 0, cur = 0;
   if (goal) {
@@ -350,7 +413,7 @@ function watchAnSplit(key, test, minEach = 5) {
     const d = watchDay(date);
     if (!d) continue;
     const v = m.get(d);
-    if (v === undefined || v === null || !(Number(v) > 0)) continue;
+    if (v === undefined || v === null || !(Number(v) > 0 || (m.zeroOk && Number(v) === 0))) continue;
     const t = test(date, d);
     if (t === true) yes.push(Number(v));
     else if (t === false) no.push(Number(v));
@@ -395,6 +458,57 @@ function watchAnInsights(key) {
     add("😴", "Sono x coração", watchAnSplit("heart", (date) => goodSleep(date)), "depois de dormir 7h+", "depois de menos de 6h", m.fmt, "down");
     add("🏋️", "Treino x coração", watchAnSplit("heart", (date, d) => watchAnTrained(d)), "em dia de treino", "em dia sem treino", m.fmt, "none"); // treinar sobe o batimento do dia: não é ruim
   }
+  // v1.94 (🩻 RAIO ULTRA X)
+  const fieldOf = (field) => (date) => { const d = watchDay(date); return d && d[field] !== undefined && d[field] !== null ? Number(d[field]) : null; };
+  const stressOf = fieldOf("stress");
+  const trainedBefore = (date) => { const d = watchDay(watchAddDays(date, -1)); return d ? watchAnTrained(d) : null; };
+  const stressedBefore = (date) => { const v = stressOf(watchAddDays(date, -1)); return v === null ? null : v >= 50 ? true : v < 30 ? false : null; };
+  const weekend = (date) => [0, 6].includes(new Date(`${date}T12:00:00`).getDay());
+  const fridayNight = (date) => [6, 0].includes(new Date(`${date}T12:00:00`).getDay()); // noite que acaba sáb/dom
+  if (key === "sleep") {
+    add("😰", "Stress x sono", watchAnSplit("sleep", (date) => stressedBefore(date)), "depois de dia estressado", "depois de dia tranquilo", m.fmt);
+  }
+  if (key === "steps") {
+    add("🔋", "Energy x passos", watchAnSplit("steps", (date) => { const e = fieldOf("energy")(date); return e === null ? null : e >= 70 ? true : e < 60 ? false : null; }), "com energy 70+", "com energy < 60", m.fmt);
+  }
+  if (key === "stress") {
+    add("😴", "Sono x stress", watchAnSplit("stress", (date) => goodSleep(date)), "depois de dormir 7h+", "depois de menos de 6h", m.fmt, "down");
+    add("👟", "Andar x stress", watchAnSplit("stress", (date, d) => (d.steps === undefined ? null : d.steps >= goals.steps)), "em dia na meta de passos", "em dia parado", m.fmt, "down");
+    add("🏋️", "Treino x stress", watchAnSplit("stress", (date, d) => watchAnTrained(d)), "em dia de treino", "em dia sem treino", m.fmt, "none"); // treino sobe o batimento: o score sobe junto
+    add("📅", "Fim de semana", watchAnSplit("stress", (date) => weekend(date)), "no sáb/dom", "na semana", m.fmt, "down");
+  }
+  if (key === "hrv") {
+    add("😴", "Sono x HRV", watchAnSplit("hrv", (date) => goodSleep(date)), "em noite de 7h+", "em noite de menos de 6h", m.fmt);
+    add("🏋️", "Treino ontem x HRV", watchAnSplit("hrv", (date) => trainedBefore(date)), "depois de dia com treino", "depois de dia sem treino", m.fmt);
+    add("😰", "Stress x HRV", watchAnSplit("hrv", (date) => stressedBefore(date)), "depois de dia estressado", "depois de dia tranquilo", m.fmt);
+    add("🍻", "Sexta e sábado", watchAnSplit("hrv", (date) => fridayNight(date)), "nas noites de sex/sáb", "nas outras noites", m.fmt);
+  }
+  if (key === "energy") {
+    add("😴", "Sono x energy", watchAnSplit("energy", (date) => goodSleep(date)), "depois de dormir 7h+", "depois de menos de 6h", m.fmt);
+    add("🏋️", "Treino ontem x energy", watchAnSplit("energy", (date) => trainedBefore(date)), "depois de dia com treino", "depois de dia sem treino", m.fmt);
+    add("👟", "Andar ontem x energy", watchAnSplit("energy", (date) => { const v = stepsOf(watchAddDays(date, -1)); return v === null ? null : v >= goals.steps; }), "depois de dia na meta de passos", "depois de dia parado", m.fmt);
+    add("😰", "Stress x energy", watchAnSplit("energy", (date) => stressedBefore(date)), "depois de dia estressado", "depois de dia tranquilo", m.fmt);
+  }
+  if (key === "spo2") {
+    add("😪", "Ronco x oxigênio", watchAnSplit("spo2", (date, d) => (d.snoreMin === undefined ? null : d.snoreMin >= 15 ? true : d.snoreMin < 3 ? false : null)), "em noite com ronco", "em noite sem ronco", m.fmt);
+    add("😴", "Sono x oxigênio", watchAnSplit("spo2", (date) => goodSleep(date)), "em noite de 7h+", "em noite curta", m.fmt);
+  }
+  if (key === "resp") {
+    add("🏋️", "Treino ontem x respiração", watchAnSplit("resp", (date) => trainedBefore(date)), "depois de dia com treino", "depois de dia sem treino", m.fmt, "down");
+    add("😰", "Stress x respiração", watchAnSplit("resp", (date) => stressedBefore(date)), "depois de dia estressado", "depois de dia tranquilo", m.fmt, "down");
+  }
+  if (key === "temp") {
+    add("🏋️", "Treino ontem x temperatura", watchAnSplit("temp", (date) => trainedBefore(date)), "depois de dia com treino", "depois de dia sem treino", m.fmt, "none");
+    add("🍻", "Sexta e sábado", watchAnSplit("temp", (date) => fridayNight(date)), "nas noites de sex/sáb", "nas outras noites", m.fmt, "none");
+  }
+  if (key === "snore") {
+    add("🍻", "Sexta e sábado", watchAnSplit("snore", (date) => fridayNight(date)), "nas noites de sex/sáb", "nas outras noites", m.fmt, "down");
+    add("😰", "Stress x ronco", watchAnSplit("snore", (date) => stressedBefore(date)), "depois de dia estressado", "depois de dia tranquilo", m.fmt, "down");
+    add("🏋️", "Treino x ronco", watchAnSplit("snore", (date) => trainedBefore(date)), "depois de dia com treino", "depois de dia sem treino", m.fmt, "down");
+  }
+  if (key === "floors") {
+    add("📅", "Fim de semana", watchAnSplit("floors", (date) => weekend(date)), "no sáb/dom", "na semana", m.fmt);
+  }
   if (key === "kcal" || key === "distance") {
     add("🏋️", "Treino faz diferença?", watchAnSplit(key, (date, d) => watchAnTrained(d)), "em dia de treino", "em dia sem treino", m.fmt);
     add("😴", "Sono x energia", watchAnSplit(key, (date) => goodSleep(date)), "depois de dormir 7h+", "depois de menos de 6h", m.fmt);
@@ -436,6 +550,25 @@ function watchAnCloba(key, m, s, prev, rows) {
   if (key === "sleep" && s.avg !== null && s.avg < 360) lines.push("🥱 Menos de 6h por noite em média. O Saitama não treinou dormindo pouco.");
   if (key === "steps" && s.avg !== null && s.avg < 5000) lines.push("🛋️ Abaixo de 5 mil por dia é zona de sofá. Uma caminhada de 20 min já dá uns 2.500.");
   if (key === "heart" && pct !== null && pct > 8) lines.push("🤒 Batimento subindo assim pode ser cansaço, pouco sono ou começo de gripe. Pega leve uns dias.");
+  // v1.94 (🩻 RAIO ULTRA X)
+  const valid = rows.filter((r) => r.v !== null);
+  const share = (fn) => (valid.length ? valid.filter(fn).length / valid.length : 0);
+  if (key === "stress" && s.avg !== null) {
+    if (s.avg >= 50) lines.push("🧯 Média de stress puxada. Caminhada leve, sol e 10 min sem celular abaixam isso mais que qualquer chá.");
+    else if (s.avg < 30) lines.push("🧘 Stress lá embaixo. Monge budista mandou perguntar o segredo.");
+  }
+  if (key === "energy" && s.avg !== null) {
+    if (s.avg >= 80) lines.push("🔋 Bateria média acima de 80. Esse corpo tá em modo Super Saiyajin.");
+    else if (s.avg < 65) lines.push("🪫 Energy médio baixo. O Samsung tá dizendo: dorme mais e vai com calma nos treinos pesados.");
+  }
+  if (key === "hrv" && s.avg !== null && prev.avg !== null && s.avg < prev.avg * 0.9) lines.push("🫠 HRV caindo: o corpo tá acumulando cansaço. Semana com treino mais leve e sono caprichado resolve.");
+  if (key === "hrv" && s.avg !== null && prev.avg !== null && s.avg > prev.avg * 1.1) lines.push("🧬 HRV subindo: recuperação nível Wolverine.");
+  if (key === "spo2" && share((r) => r.v < 93) > 0.2) lines.push("🫁 Muitas noites abaixo de 93%. Se roncar alto ou acordar cansado, vale falar com um médico do sono.");
+  if (key === "resp" && pct !== null && pct > 7) lines.push("🤧 Respiração subindo do teu normal. Às vezes é o corpo brigando com um resfriado antes de aparecer.");
+  if (key === "temp" && valid.length && Math.abs(valid[valid.length - 1].v - s.avg) > 0.5) lines.push("🌡️ A última noite fugiu do teu normal em mais de meio grau. Calor, cobertor, álcool ou começo de gripe?");
+  if (key === "snore" && share((r) => r.v >= 15) > 0.4) lines.push("🐻 Ronco em boa parte das noites. Dormir de lado, menos álcool à noite e nariz desentupido ajudam.");
+  if (key === "snore" && valid.length && share((r) => r.v < 1) > 0.7) lines.push("🤫 Quase toda noite sem ronco. Quem dorme do lado agradece.");
+  if (key === "floors" && s.avg !== null && s.avg >= 10) lines.push("🪜 Mais de 10 andares por dia em média. Elevador tá com saudade.");
   const empty = rows.filter((r) => r.v === null).length;
   if (empty > rows.length / 2) lines.push("⌚ Mais da metade dos dias sem dado: dorme e anda com o relógio pra análise ficar certa.");
   if (!lines.length) return "";
@@ -467,6 +600,8 @@ function renderWatchMetric() {
     watchAnTile("vs Anterior", pct === null ? "--" : Math.abs(pct) < 0.5 ? "= 0%" : `${pct > 0 ? "▲" : "▼"} ${Math.abs(Math.round(pct)) || "<1"}%`, prev.avg !== null ? `${escapeHtml(before.short)}: ${escapeHtml(m.fmt(prev.avg))}` : `sem dado em ${escapeHtml(before.short)}`, good === null ? "" : good ? "text-green" : "text-coral"),
     m.sum
       ? watchAnTile("Total", s.n ? escapeHtml(m.fmt(s.sum)) : "--", `${s.n} dias`)
+      : m.noBest
+      ? watchAnTile("Variou", s.n ? `${escapeHtml(watchDec(s.best.v - s.worst.v))}` : "--", s.n ? `${escapeHtml(m.fmt(s.worst.v))} a ${escapeHtml(m.fmt(s.best.v))}` : "")
       : watchAnTile(m.better === "down" ? "Menor" : "Melhor", bestDay ? escapeHtml(m.fmt(bestDay.v)) : "--", bestDay ? watchAnDate(bestDay.date) : ""),
   ];
   const buckets = watchAnBuckets(rows, watchAn.unit);
@@ -494,6 +629,11 @@ function renderWatchMetric() {
     ${key === "steps" || key === "sleep" ? watchAnGoalExtras(rows, m) : ""}
     ${key === "sleep" ? watchAnSleepExtras(from, to) : ""}
     ${key === "heart" ? watchAnHeartExtras(from, to) : ""}
+    ${m.zones ? watchAnZones(rows, m) : ""}
+    ${key === "stress" ? watchAnStressExtras(from, to) : ""}
+    ${key === "hrv" || key === "temp" || key === "resp" ? watchAnBaseline(key, m, rows) : ""}
+    ${key === "spo2" ? watchAnSpo2Extras(from, to) : ""}
+    ${m.about ? `<p class="watch-muted watch-an-about">ℹ️ ${escapeHtml(m.about)}</p>` : ""}
     ${watchAnInsights(key)}
     ${watchAnWeekdays(rows, m)}
     ${watchAnRecords(key, m)}
@@ -506,6 +646,111 @@ function renderWatchMetric() {
       </div>`).join("") : tobaEmpty(m.icon, "Nenhum dia com dado", "", { compact: true })}
     </div>
     ${list.length > shown.length ? `<button type="button" class="btn btn-secondary" data-click="watchMetricMore">Mostrar mais (${list.length - shown.length})</button>` : ""}`;
+}
+
+/* ---------- v1.94 (🩻 RAIO ULTRA X): seções do corpo por dentro ---------- */
+
+// Faixas: quantos dias do período em cada uma (barra empilhada + legenda)
+function watchAnZones(rows, m) {
+  const counts = m.zones.map(() => 0);
+  let n = 0;
+  rows.forEach((r) => {
+    if (r.v === null) return;
+    const z = m.zone(r.v, r.date);
+    if (!z) return;
+    counts[z.k]++;
+    n++;
+  });
+  if (!n) return "";
+  return `<div class="section-title">🎚️ Faixas</div>
+    <div class="card">
+      <div class="watch-an-zbar">${counts.map((c, i) => (c ? `<span style="flex:${c};background:${m.zones[i][1]}"></span>` : "")).join("")}</div>
+      <div class="watch-an-zlegend">${counts.map((c, i) => `<span><i style="background:${m.zones[i][1]}"></i>${escapeHtml(m.zones[i][0])} <b>${c}</b> <small>(${Math.round((c / n) * 100)}%)</small></span>`).join("")}</div>
+    </div>`;
+}
+
+// Stress: a hora que mais aperta (hora do pico de cada dia) e horas de stress alto por dia
+function watchAnStressExtras(from, to) {
+  const hours = Array(24).fill(0);
+  let days = 0, high = 0, maxDay = null;
+  for (let date = from; date <= to; date = watchAddDays(date, 1)) {
+    const d = watchDay(date);
+    if (!d || d.stress === undefined) continue;
+    days++;
+    if (Number.isFinite(Number(d.stressPeak))) hours[Number(d.stressPeak)]++;
+    high += Number(d.stressHigh) || 0;
+    if (d.stressMax !== undefined && (!maxDay || d.stressMax > maxDay.v)) maxDay = { date, v: d.stressMax, h: d.stressPeak };
+  }
+  if (!days) return "";
+  const top = hours.indexOf(Math.max(...hours));
+  const max = Math.max(...hours) || 1;
+  const period = top < 12 ? "de manhã" : top < 18 ? "de tarde" : "de noite";
+  return `<div class="section-title">⏰ Hora do aperto</div>
+    <div class="card">
+      <div class="watch-an-hours">${hours.map((c, h) => `<span class="${h === top ? "is-top" : ""}" style="height:${Math.max(3, Math.round((c / max) * 100))}%" title="${h}h: ${c}"></span>`).join("")}</div>
+      <div class="watch-an-hours-axis"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>23h</span></div>
+      <div class="toba-stats is-3">
+        ${watchAnTile("⏰ Pico", `${top}h`, period)}
+        ${watchAnTile("🔥 Alto", `${watchDec(high / days)} h`, "por dia (70+)")}
+        ${watchAnTile("💥 Maior", maxDay ? watchInt(maxDay.v) : "--", maxDay ? `${watchAnDate(maxDay.date)} às ${maxDay.h}h` : "")}
+      </div>
+      <p class="watch-muted">O stress do dia costuma estourar lá pelas <b>${top}h</b>. Se dá pra prever, dá pra se preparar: água, respirar fundo e levantar da cadeira antes disso.</p>
+    </div>`;
+}
+
+// HRV / temperatura / respiração: o TEU normal (60 dias antes do período) e quantos dias fugiram dele
+function watchAnBaseline(key, m, rows) {
+  const first = rows.find((r) => r.v !== null);
+  if (!first) return "";
+  const vals = [];
+  for (let i = 1; i <= 60; i++) {
+    const d = watchDay(watchAddDays(rows[0].date, -i));
+    const v = d ? m.get(d) : undefined;
+    if (v !== undefined && v !== null) vals.push(Number(v));
+  }
+  if (vals.length < 10) return "";
+  const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+  const sd = Math.sqrt(vals.reduce((a, b) => a + (b - avg) ** 2, 0) / vals.length);
+  const band = key === "temp" ? 0.5 : Math.max(sd, avg * 0.05);
+  const lo = avg - band, hi = avg + band;
+  const inside = rows.filter((r) => r.v !== null && r.v >= lo && r.v <= hi).length;
+  const above = rows.filter((r) => r.v !== null && r.v > hi).length;
+  const below = rows.filter((r) => r.v !== null && r.v < lo).length;
+  const total = inside + above + below;
+  const words = {
+    hrv: ["🚀 acima (recuperado)", "🪫 abaixo (cansado)"],
+    temp: ["🔥 mais quente", "🧊 mais fria"],
+    resp: ["⚠️ mais rápida", "😌 mais lenta"],
+  }[key];
+  return `<div class="section-title">📏 O teu normal</div>
+    <div class="card">
+      <p class="watch-an-norm">${escapeHtml(m.fmt(lo))} <span class="watch-muted">até</span> ${escapeHtml(m.fmt(hi))}</p>
+      <p class="watch-muted">Faixa dos 60 dias antes do período (média ${escapeHtml(m.fmt(avg))}). Comparar com você mesmo vale mais que qualquer tabela.</p>
+      <div class="kv-list">
+        <div class="kv-row"><span>✅ dentro do normal</span><strong>${inside} de ${total}</strong></div>
+        <div class="kv-row"><span>${words[0]}</span><strong>${above}</strong></div>
+        <div class="kv-row"><span>${words[1]}</span><strong>${below}</strong></div>
+      </div>
+    </div>`;
+}
+
+function watchAnSpo2Extras(from, to) {
+  let low = null, n = 0, under = 0;
+  for (let date = from; date <= to; date = watchAddDays(date, 1)) {
+    const d = watchDay(date);
+    if (!d || d.spo2Min === undefined) continue;
+    n++;
+    if (d.spo2Min < 88) under++;
+    if (!low || d.spo2Min < low.v) low = { date, v: d.spo2Min };
+  }
+  if (!n) return "";
+  return `<div class="card">
+      <div class="toba-stats">
+        ${watchAnTile("📉 Menor da noite", low ? `${low.v}%` : "--", low ? watchAnDate(low.date) : "")}
+        ${watchAnTile("🌙 Noites com mín. < 88%", `${under}`, `de ${n}`)}
+      </div>
+      <p class="watch-muted">Cair um pouco de madrugada é normal; cair abaixo de 88% em muitas noites junto com ronco alto é coisa pra ver com médico.</p>
+    </div>`;
 }
 
 // v1.91: botão do basal (só na análise das calorias)

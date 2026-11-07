@@ -10,6 +10,15 @@
  *   tracker.heart_rate (blocos de 1 h: média, mín., máx.)
  *   shealth.sleep + sleep_stage (noites e fases: 40001 acordado, 40002 leve, 40003 profundo, 40004 REM)
  *   shealth.exercise (treinos: tipo, tempo, kcal, km, FC média/máx.)
+ * v1.94 (🩻 RAIO ULTRA X): também
+ *   shealth.stress (blocos de 1 h: score 0-100) -> stress (média do dia), stressMax, stressPeak (hora), stressHigh (horas >= 70)
+ *   shealth.vitality_score (Energy Score do dia) -> energy, hrv (HRV dormindo, ms), restHr (FC dormindo, se vazio)
+ *   tracker.oxygen_saturation (noite) -> spo2 (média %), spo2Min
+ *   health.skin_temperature (noite) -> temp (°C, 1 casa)
+ *   health.respiratory_rate (noite) -> resp (respirações/min, 1 casa)
+ *   tracker.floors_day_summary (+ health.floors_climbed onde faltar) -> floors
+ *   shealth.sleep_snoring (noite) -> snoreMin (0 = mediu e não roncou)
+ * Medida da noite vai pro dia em que acordou (end_time), igual o sono.
  * Horários do Samsung vêm em UTC ("AAAA-MM-DD HH:MM:SS.mmm"); o dia é o do celular.
  * Datas de dia (day_time) já vêm como o dia certo.
  *
@@ -30,6 +39,14 @@ const SAMSUNG_FILES = [
   { key: "sleep", test: /shealth\.sleep\.\d/i, label: "😴 sono" },
   { key: "stage", test: /health\.sleep_stage\.\d/i, label: "😴 fases do sono" },
   { key: "exercise", test: /shealth\.exercise\.\d/i, label: "🏃 exercícios" },
+  { key: "stress", test: /shealth\.stress\.\d/i, label: "😰 stress" },
+  { key: "vitality", test: /vitality_score/i, label: "🔋 energy score e 💓 HRV" },
+  { key: "spo2", test: /tracker\.oxygen_saturation\.\d/i, label: "🫁 oxigenação" },
+  { key: "temp", test: /health\.skin_temperature\.\d/i, label: "🌡️ temperatura da pele" },
+  { key: "resp", test: /health\.respiratory_rate\.\d/i, label: "😮‍💨 respiração" },
+  { key: "floors", test: /floors_day_summary/i, label: "🪜 andares" },
+  { key: "floorsRaw", test: /health\.floors_climbed\.\d/i, label: "🪜 andares (antigos)" },
+  { key: "snore", test: /sleep_snoring/i, label: "😪 ronco" },
 ];
 
 // Tipo do Samsung Health -> tipo do Health Connect (o mesmo que o APK manda), com nome quando precisa
@@ -241,7 +258,141 @@ async function samsungParse(files) {
     });
     found.exercise = exercises.length;
   }
+  await samsungParseBody(byKey, day, found);
   return { days, sleep, exercises, found };
+}
+
+// v1.94 (🩻 RAIO ULTRA X): stress, energy, HRV, SpO2, temperatura, respiração, andares e ronco
+async function samsungParseBody(byKey, day, found) {
+  const read = async (key) => (byKey[key] ? samsungCsvRows(await samsungReadFile(byKey[key])) : null);
+  const local = (s) => { const t = samsungUtc(s); return Number.isFinite(t) ? { t, iso: toIsoDate(new Date(t)) } : null; };
+  const one = (v) => Math.round(v * 10) / 10;
+
+  const stress = await read("stress");
+  if (stress) {
+    const { head, rows } = stress;
+    const cS = samsungCol(head, "start_time"), cScore = samsungCol(head, "score");
+    const acc = {};
+    rows.forEach((r) => {
+      const at = local(r[cS]), v = samsungNum(r[cScore]);
+      if (!at || !(v > 0) || v > 100) return;
+      const a = (acc[at.iso] = acc[at.iso] || { sum: 0, n: 0, max: 0, peak: 0, high: 0 });
+      a.sum += v; a.n++;
+      if (v >= 70) a.high++;
+      if (v > a.max) { a.max = v; a.peak = new Date(at.t).getHours(); }
+    });
+    Object.keys(acc).forEach((iso) => {
+      const a = acc[iso];
+      if (a.n < 3) return; // relógio no pulso só 1-2 h não diz nada do dia
+      Object.assign(day(iso), { stress: Math.round(a.sum / a.n), stressMax: Math.round(a.max), stressPeak: a.peak, stressHigh: a.high });
+    });
+    found.stress = Object.keys(acc).length;
+  }
+
+  const vit = await read("vitality");
+  if (vit) {
+    const { head, rows } = vit;
+    const cDay = samsungCol(head, "day_time"), cScore = samsungCol(head, "total_score");
+    const cHrv = samsungCol(head, "shrv_value"), cShr = samsungCol(head, "shr_value");
+    let n = 0;
+    rows.forEach((r) => {
+      const iso = samsungDayOf(r[cDay]);
+      if (!iso) return;
+      const d = day(iso);
+      const e = samsungNum(r[cScore]), h = samsungNum(r[cHrv]), hr = samsungNum(r[cShr]);
+      if (e > 0 && e <= 100) d.energy = Math.round(e);
+      if (h > 0 && h < 200) d.hrv = Math.round(h);
+      if (hr > 25 && hr < 150) d.restHr = Math.round(hr);
+      n++;
+    });
+    found.vitality = n;
+  }
+
+  const spo2 = await read("spo2");
+  if (spo2) {
+    const { head, rows } = spo2;
+    const cE = samsungCol(head, "end_time"), cS = samsungCol(head, "start_time"), cV = samsungCol(head, "spo2"), cMin = samsungCol(head, "min");
+    const best = {};
+    rows.forEach((r) => {
+      const at = local(r[cE]), v = samsungNum(r[cV]), lo = samsungNum(r[cMin]);
+      if (!at || !(v >= 70 && v <= 100)) return;
+      const long = samsungUtc(r[cE]) - samsungUtc(r[cS]);
+      // a medida da noite (longa) ganha da medida avulsa de 30 s
+      if (!best[at.iso] || long > best[at.iso].long) best[at.iso] = { v, lo: lo >= 50 && lo <= 100 ? lo : null, long };
+    });
+    Object.keys(best).forEach((iso) => {
+      const d = day(iso);
+      d.spo2 = Math.round(best[iso].v);
+      if (best[iso].lo !== null) d.spo2Min = Math.round(best[iso].lo);
+    });
+    found.spo2 = Object.keys(best).length;
+  }
+
+  const temp = await read("temp");
+  if (temp) {
+    const { head, rows } = temp;
+    const cE = samsungCol(head, "end_time"), cV = samsungCol(head, "temperature");
+    let n = 0;
+    rows.forEach((r) => {
+      const at = local(r[cE]), v = samsungNum(r[cV]);
+      if (!at || !(v > 25 && v < 42)) return;
+      day(at.iso).temp = one(v);
+      n++;
+    });
+    found.temp = n;
+  }
+
+  const resp = await read("resp");
+  if (resp) {
+    const { head, rows } = resp;
+    const cE = samsungCol(head, "end_time"), cV = samsungCol(head, "average");
+    let n = 0;
+    rows.forEach((r) => {
+      const at = local(r[cE]), v = samsungNum(r[cV]);
+      if (!at || !(v > 4 && v < 40)) return;
+      day(at.iso).resp = one(v);
+      n++;
+    });
+    found.resp = n;
+  }
+
+  const floors = {};
+  const fl = await read("floors");
+  if (fl) {
+    const { head, rows } = fl;
+    const cDay = samsungCol(head, "day_time"), cV = samsungCol(head, "floor_count");
+    rows.forEach((r) => {
+      const iso = samsungDayOf(r[cDay]), v = samsungNum(r[cV]);
+      if (iso && v !== null && v >= 0) floors[iso] = Math.max(floors[iso] || 0, v);
+    });
+  }
+  const flRaw = await read("floorsRaw");
+  if (flRaw) {
+    const { head, rows } = flRaw;
+    const cS = samsungCol(head, "start_time"), cV = samsungCol(head, "floor");
+    const sum = {};
+    rows.forEach((r) => {
+      const at = local(r[cS]), v = samsungNum(r[cV]);
+      if (at && v > 0) sum[at.iso] = (sum[at.iso] || 0) + v;
+    });
+    Object.keys(sum).forEach((iso) => { if (floors[iso] === undefined) floors[iso] = sum[iso]; });
+  }
+  Object.keys(floors).forEach((iso) => { day(iso).floors = Math.round(floors[iso]); });
+  if (fl || flRaw) found[fl ? "floors" : "floorsRaw"] = Object.keys(floors).length;
+
+  const snore = await read("snore");
+  if (snore) {
+    const { head, rows } = snore;
+    const cE = samsungCol(head, "end_time"), cD = samsungCol(head, "duration");
+    const acc = {};
+    rows.forEach((r) => {
+      const at = local(r[cE]), ms = samsungNum(r[cD]);
+      if (!at || ms === null || ms < 0 || at.iso < "2000-01-01") return;
+      acc[at.iso] = (acc[at.iso] || 0) + ms;
+    });
+    Object.keys(acc).forEach((iso) => { day(iso).snoreMin = Math.round(acc[iso] / 60000); });
+    found.snore = Object.keys(acc).length;
+  }
 }
 
 // Junta no banco sem mexer no que já tinha. Devolve { days, from, to, filled }
