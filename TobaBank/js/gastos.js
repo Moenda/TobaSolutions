@@ -1108,12 +1108,13 @@ function guessExpenseCategory(description) {
  * ------------------------------------------------------------------- */
 let nativePending = [];
 
-// v1.95: categoria escolhida na lista (🏷️ Ajustar categoria). Fica só na
-// memória da página (id da pendente -> categoria) até lançar; a pendente
-// continua morando só na fila do app. O lançado ensina o palpite da
-// próxima compra na mesma loja (guessExpenseCategory).
+// v1.95/v1.96: nome e categoria ajustados na própria lista (✏️ Ajustar nome,
+// 🏷️ Ajustar categoria). Ficam só na memória da página (id da pendente ->
+// valor) até lançar; a pendente continua morando só na fila do app. O
+// lançado ensina o palpite da próxima compra na mesma loja (guessExpenseCategory).
 const pendingCategoryPick = {};
-let pendingCatsOpen = "";
+const pendingNamePick = {};
+let pendingNameEditing = "";
 
 // Lê a fila do app, tira o lixo e o que já foi lançado; devolve as pendentes.
 function readNativePending() {
@@ -1140,9 +1141,10 @@ function readNativePending() {
       drop.push(id); // já lançado numa abertura anterior
       return;
     }
-    const desc = String(p.desc || "Compra no cartão").slice(0, 60);
+    const orig = String(p.desc || "Compra no cartão").slice(0, 60);
+    const desc = pendingNamePick[id] || orig;
     list.push({
-      id, amount, desc, date: p.date,
+      id, amount, desc, orig, date: p.date,
       app: String(p.app || ""),
       raw: String(p.raw || ""),
       old: p.old === true,
@@ -1197,52 +1199,44 @@ function renderPendingList() {
     list.innerHTML = tobaEmpty("🧘", "Nada esperando", "Todas as compras lidas já foram lançadas ou descartadas.", { compact: true });
     return;
   }
-  const quick = pendingQuickCategories();
   list.innerHTML = nativePending.map((p) => {
     const twin = findPendingTwin(p);
-    const open = pendingCatsOpen === p.id;
     const cat = getBankCategory(p.category);
-    const chips = open ? `
-        <div class="pending-cat-chips">
-          ${[cat.id, ...quick.filter((c) => c !== cat.id)].slice(0, 8).map((c) => {
-            const item = getBankCategory(c);
-            return `<button type="button" class="pending-chip${c === cat.id ? " is-on" : ""}" data-click="pickPendingCategory" data-id="${escapeHtml(p.id)}" data-cat="${c}">${item.emoji} ${escapeHtml(item.short || item.name)}</button>`;
-          }).join("")}
-          <button type="button" class="pending-chip pending-chip-more" data-click="morePendingCategories" data-id="${escapeHtml(p.id)}">🏷️ Todas…</button>
-        </div>` : "";
+    const id = escapeHtml(p.id);
+    const name = pendingNameEditing === p.id
+      ? `<div class="pending-name-edit">
+          <input type="text" class="form-control pending-name-input" id="pendingNameInput" maxlength="60" value="${escapeHtml(p.desc)}" data-change="savePendingName" data-id="${id}" enterkeyhint="done" autocomplete="off" />
+          <button type="button" class="btn btn-primary pending-name-ok" data-click="savePendingName" data-id="${id}">✓</button>
+        </div>`
+      : `<button type="button" class="pending-cat-btn" data-click="editPendingName" data-id="${id}">
+          <span class="pending-cat pending-name">${escapeHtml(p.desc)}</span>
+          <span class="pending-cat-edit">✏️ Ajustar nome</span>
+        </button>`;
     return `
       <div class="pending-item">
         <div class="pending-head">
           <strong>${formatCurrency(p.amount)}</strong>
           <span>${isoToBrDate(p.date)}${p.app ? ` · ${escapeHtml(p.app)}` : ""}</span>
         </div>
-        <div class="pending-desc">${escapeHtml(p.desc)}</div>
-        <button type="button" class="pending-cat-btn${open ? " is-open" : ""}" data-click="togglePendingCategories" data-id="${escapeHtml(p.id)}">
+        ${name}
+        <button type="button" class="pending-cat-btn" data-click="morePendingCategories" data-id="${id}">
           <span class="pending-cat">${cat.emoji} ${escapeHtml(cat.name)}</span>
-          <span class="pending-cat-edit">${open ? "Fechar ▴" : "🏷️ Ajustar categoria"}</span>
-        </button>${chips}
+          <span class="pending-cat-edit">🏷️ Ajustar categoria</span>
+        </button>
         ${p.old ? '<div class="pending-flag">⏳ Notificação antiga reenviada pelo app. Confere se não é repetida.</div>' : ""}
         ${twin ? `<div class="pending-flag">⚠️ Parece repetida: ${twin}.</div>` : ""}
         ${p.raw ? `<details class="pending-raw"><summary>Texto da notificação</summary><p>${escapeHtml(p.raw)}</p></details>` : ""}
         <div class="pending-actions">
-          <button type="button" class="btn btn-secondary" data-click="discardPending" data-id="${escapeHtml(p.id)}">❌ Descartar</button>
-          <button type="button" class="btn btn-primary" data-click="launchPending" data-id="${escapeHtml(p.id)}">✅ Lançar</button>
+          <button type="button" class="btn btn-secondary" data-click="discardPending" data-id="${id}">❌ Descartar</button>
+          <button type="button" class="btn btn-primary" data-click="launchPending" data-id="${id}">✅ Lançar</button>
         </div>
       </div>`;
   }).join("");
-}
-
-// Chips rápidos: as categorias que você mais usou nos últimos 300 gastos (+ básicas pra completar).
-function pendingQuickCategories() {
-  const count = {};
-  db.transactions.slice(-300).forEach((t) => {
-    if (BANK_CATEGORIES[t.category]) count[t.category] = (count[t.category] || 0) + 1;
-  });
-  const used = Object.keys(count).sort((a, b) => count[b] - count[a]);
-  ["mercado", "comida", "uber", "combustivel", "saude", "assinaturas", "outros"].forEach((c) => {
-    if (BANK_CATEGORIES[c] && !used.includes(c)) used.push(c);
-  });
-  return used;
+  const input = document.getElementById("pendingNameInput");
+  if (input) {
+    input.focus();
+    input.select();
+  }
 }
 
 // Troca a categoria de uma pendente. As outras da mesma loja que você ainda
@@ -1250,59 +1244,90 @@ function pendingQuickCategories() {
 function setPendingCategory(id, category) {
   const p = nativePending.find((item) => item.id === id);
   if (!p || !BANK_CATEGORIES[category]) return;
-  const key = plainText(p.desc);
+  const key = plainText(p.orig);
   let others = 0;
   nativePending.forEach((o) => {
-    if (o.id === id || (!pendingCategoryPick[o.id] && plainText(o.desc) === key)) {
+    if (o.id === id || (!pendingCategoryPick[o.id] && plainText(o.orig) === key)) {
       if (o.id !== id && o.category !== category) others++;
       o.category = category;
       pendingCategoryPick[o.id] = category;
     }
   });
-  pendingCatsOpen = "";
   renderPendingList();
   const cat = getBankCategory(category);
   tobaToast(others ? `${cat.emoji} ${cat.name} (+${others} da mesma loja)` : `${cat.emoji} ${cat.name}`);
 }
 
-function togglePendingCategories(el) {
-  pendingCatsOpen = pendingCatsOpen === el.dataset.id ? "" : el.dataset.id;
-  renderPendingList();
-}
-
-function pickPendingCategory(el) {
-  setPendingCategory(el.dataset.id, el.dataset.cat);
-}
-
-// "🏷️ Todas…": a mesma gaveta de categorias do formulário de gasto.
+// 🏷️ Ajustar categoria: abre direto a gaveta completa de categorias.
 function morePendingCategories(el) {
   const p = nativePending.find((item) => item.id === el.dataset.id);
   if (!p) return;
   openCategoryPickerFor(p.category, (category) => setPendingCategory(p.id, category));
 }
 
+// ✏️ Ajustar nome: vira campo de texto ali mesmo.
+function editPendingName(el) {
+  pendingNameEditing = el.dataset.id;
+  renderPendingList();
+}
+
+// Grava o nome novo (na memória). As outras da mesma loja que você ainda não
+// renomeou vão junto; categoria não ajustada ganha o palpite do nome novo.
+function savePendingName(el, event) {
+  const id = el.dataset.id;
+  // Saiu do campo tocando noutro botão (ex.: ✅ Lançar): redesenha depois do toque, senão ele se perde.
+  const redraw = () => (event?.type === "change" ? setTimeout(renderPendingList, 250) : renderPendingList());
+  if (pendingNameEditing !== id) return; // Enter + ✓ chegam os dois: só o 1º vale
+  const input = document.getElementById("pendingNameInput");
+  const p = nativePending.find((item) => item.id === id);
+  pendingNameEditing = "";
+  const name = String(input?.value || "").replace(/\s+/g, " ").trim().slice(0, 60);
+  if (!p || !name || name === p.desc) {
+    redraw();
+    return;
+  }
+  const key = plainText(p.orig);
+  nativePending.forEach((o) => {
+    if (o.id !== id && (pendingNamePick[o.id] || plainText(o.orig) !== key)) return;
+    o.desc = name;
+    pendingNamePick[o.id] = name;
+    if (!pendingCategoryPick[o.id]) o.category = guessExpenseCategory(name);
+  });
+  redraw();
+}
+
 function openPendingPurchases() {
-  pendingCatsOpen = "";
+  pendingNameEditing = "";
   refreshPendingPurchases();
   renderPendingList();
   openTobaModal("pendingModal");
 }
 
-// Abre o formulário de gasto já preenchido; o salvar (saveExpense) grava com notifId e tira da fila.
+// ✅ Lançar: grava direto com o nome e a categoria que estão na lista (v1.96;
+// antes abria o formulário). Só tira da fila depois de gravar.
 function launchPending(el) {
   const p = nativePending.find((item) => item.id === el.dataset.id);
-  if (!p) return;
-  closeTobaModal("pendingModal");
-  openExpenseModal(null, p.date);
-  document.getElementById("expenseModalTitle").innerText = "🤖 Lançar compra do cartão";
-  document.getElementById("expenseDescInput").value = p.desc;
-  document.getElementById("expenseAmountInput").value = formatMoneyInput(p.amount);
-  setCategoryField("expenseCategorySelect", p.category);
-  document.getElementById("expensePendingId").value = p.id;
-  document.getElementById("installmentCheckboxGroup").hidden = true;
-  const hint = document.getElementById("expensePendingHint");
-  hint.textContent = `Lida da notificação${p.app ? ` do ${p.app}` : ""}. Confere e salva; dá pra mudar tudo.`;
-  hint.hidden = false;
+  if (!p || !TOBA_NATIVE) return;
+  if (pendingNameEditing === p.id) {
+    const typed = String(document.getElementById("pendingNameInput")?.value || "").replace(/\s+/g, " ").trim().slice(0, 60);
+    if (typed) p.desc = typed;
+    pendingNameEditing = "";
+  }
+  if (db.transactions.some((t) => String(t.notifId) === p.id)) return; // toque duplo
+  const added = { id: Date.now().toString(), description: p.desc, amount: p.amount, category: p.category, date: p.date, notifId: p.id };
+  db.transactions.push(added);
+  if (!saveDatabase({ silent: true })) {
+    db.transactions = db.transactions.filter((t) => t !== added);
+    return; // fica na fila
+  }
+  TOBA_NATIVE.ackPurchases(JSON.stringify([p.id]));
+  delete pendingCategoryPick[p.id];
+  delete pendingNamePick[p.id];
+  refreshPendingPurchases();
+  renderPendingList();
+  const cat = getBankCategory(p.category);
+  tobaToast(`✅ ${formatCurrency(p.amount)} · ${p.desc} (${cat.emoji} ${cat.short || cat.name})`);
+  if (!nativePending.length) closeTobaModal("pendingModal");
 }
 
 // Chamado pelo saveExpense quando o gasto veio de uma pendente.
@@ -1452,9 +1477,9 @@ tobaActions({
   openPendingPurchases,
   launchPending,
   discardPending,
-  togglePendingCategories,
-  pickPendingCategory,
   morePendingCategories,
+  editPendingName,
+  savePendingName,
   launchAllPending,
   openExpenseReminder: () =>
     tobaOpenReminder({

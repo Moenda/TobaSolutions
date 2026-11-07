@@ -25,6 +25,8 @@ function createEmptyKitchenDb() {
     shopping: {}, // { "<segunda AAAA-MM-DD>": { checked: [ids de ingrediente] } }
     extras: [], // v1.53: itens escolhidos da lista [{ id: "x-<ts>-<rand4>", itemId?, name, aisle, qty, checked, addedAt }] (sem itemId = digitado no Outros)
     extrasRecent: [], // v1.53: digitados no Outros que saíram da lista [{ name, aisle }] (seguem como chip; até 24)
+    teas: [], // v1.96: blends de chá [{ id: "t-<ts>-<rand4>", name, emoji, purpose, parts: [{ herb?, name?, parts }], howTo, jar?, createdAt, updatedAt }]
+    teaBrews: [], // v1.96: xícaras tomadas [{ id: "b-<ts>-<rand4>", teaId, date: "AAAA-MM-DD", doneAt: ms }]
   };
 }
 
@@ -51,6 +53,20 @@ function normalizeKitchenDb(db) {
   out.extrasRecent = Array.isArray(out.extrasRecent)
     ? out.extrasRecent.filter((r) => r && typeof r === "object" && String(r.name || "").trim()).slice(0, KITCHEN_RECENT_MAX)
     : [];
+  // v1.96: chás (bancos antigos não têm; parte sem número vira 1, sem nome nem erva sai da tela mas fica gravada)
+  out.teas = Array.isArray(out.teas) ? out.teas.filter((t) => t && typeof t === "object") : [];
+  out.teas.forEach((t) => {
+    t.id = t.id ? String(t.id) : kitchenNewId("t");
+    t.name = String(t.name || "");
+    t.emoji = String(t.emoji || "🍵");
+    t.purpose = String(t.purpose || "");
+    t.howTo = String(t.howTo || "");
+    t.parts = Array.isArray(t.parts) ? t.parts.filter((p) => p && typeof p === "object") : [];
+    t.parts.forEach((p) => {
+      if (!(Number(p.parts) > 0)) p.parts = 1;
+    });
+  });
+  out.teaBrews = Array.isArray(out.teaBrews) ? out.teaBrews.filter((b) => b && typeof b === "object" && b.teaId) : [];
   Object.values(out.shopping).forEach((week) => {
     if (week && typeof week === "object" && !Array.isArray(week.checked)) week.checked = [];
   });
@@ -174,7 +190,7 @@ async function importKitchenBackup(text) {
 }
 
 async function resetKitchenData() {
-  const ok = await showPageMessage("Apaga TUDO do Toba Kitchen (contador, programação, despensa e lista de compras). As receitas continuam. Não dá para desfazer!", { title: "Apagar tudo?", icon: "🚨", confirm: true, confirmLabel: "Apagar tudo" });
+  const ok = await showPageMessage("Apaga TUDO do Toba Kitchen (contador, programação, despensa, lista de compras e seus blends de chá). As receitas continuam. Não dá para desfazer!", { title: "Apagar tudo?", icon: "🚨", confirm: true, confirmLabel: "Apagar tudo" });
   if (!ok) return;
   localStorage.removeItem(KITCHEN_KEY); // só a chave deste app
   kitchenDb = createEmptyKitchenDb();

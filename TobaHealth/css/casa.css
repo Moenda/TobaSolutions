@@ -141,3 +141,77 @@
   font-size: 0.8rem;
   white-space: nowrap;
 }
+
+/* ---------- Abertura do treino (v1.96): resumo + ❔ + ▶ Iniciar ---------- */
+.home-intro-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.home-intro-top .toba-sheet-text {
+  flex: 1;
+  margin: 0;
+}
+
+.home-help-btn {
+  flex: 0 0 auto;
+}
+
+.home-intro .workout-record-chips {
+  margin: 10px 0 4px;
+}
+
+.home-go {
+  width: 100%;
+  font-size: 1.05rem;
+}
+
+/* ---------- ❔ Papo do Cloba ---------- */
+.home-help-cloba {
+  display: flex;
+  gap: 10px;
+  padding: 0.75rem;
+  border: 1px solid rgba(240, 136, 62, 0.45);
+  border-radius: var(--radius-lg);
+  background: rgba(240, 136, 62, 0.08);
+}
+
+.home-help-avatar {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.home-help-cloba p,
+.home-help-ex p {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-2);
+}
+
+.home-help-how {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+  color: var(--text-2);
+}
+
+.home-help-how li + li {
+  margin-top: 4px;
+}
+
+.home-help-ex {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.home-help-ex:last-of-type {
+  border-bottom: 0;
+}
+
+.home-help-ex p.home-help-tip {
+  color: var(--muted);
+}

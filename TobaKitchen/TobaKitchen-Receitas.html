@@ -35,7 +35,7 @@
     <!-- Livro: busca, categorias e lista -->
     <section class="app-view active" id="viewBook">
       <div id="cookResume"></div>
-      <button type="button" class="kt-launch" data-click="openPantry">
+      <button type="button" class="kt-launch" id="pantryLaunch" data-click="openPantry">
         <span class="kt-launch-icon">🧺</span>
         <span class="kt-launch-copy">
           <span class="kt-launch-title">O que tem aí na geladeira?</span>
@@ -67,6 +67,9 @@
 
     <!-- Detalhe da receita -->
     <section class="app-view" id="viewRecipe"></section>
+
+    <!-- 🍵 Detalhe do blend de chá (v1.96, js/chas.js) -->
+    <section class="app-view" id="viewTea"></section>
   </div>
 
   <!-- Modo cozinha (passo a passo, tela cheia) -->
@@ -100,6 +103,40 @@
     </div>
   </div>
 
+  <!-- 🍵 Criar/editar blend de chá (v1.96) -->
+  <div class="toba-modal" id="teaSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="teaSheetTitle">🍵 Novo blend</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div class="form-group">
+        <label for="teaName">Nome</label>
+        <input type="text" class="form-control" id="teaName" maxlength="40" placeholder="Ex.: Chá pra dormir" autocomplete="off" />
+      </div>
+      <div class="kt-aisle">🎨 Cara do chá</div>
+      <div class="kt-chips is-wrap" id="teaEmojis"></div>
+      <div class="kt-aisle">🎯 Pra quê?</div>
+      <div class="kt-chips is-wrap" id="teaPurposes"></div>
+      <div class="section-title">🌿 Ervas</div>
+      <div id="teaHerbs"></div>
+      <div class="kt-pantry-top kt-tea-other">
+        <input type="text" class="form-control" id="teaOther" maxlength="30" placeholder="✍️ Outra erva (ex.: folha de goiaba)" autocomplete="off" />
+        <button type="button" class="chip-btn" data-click="addTeaOther">➕ Pôr</button>
+      </div>
+      <div class="section-title" id="teaPartsTitle">⚖️ Partes</div>
+      <div id="teaParts"></div>
+      <div class="form-group kt-tea-howto">
+        <label for="teaHowTo">☕ Como prepara (opcional)</label>
+        <textarea class="form-control" id="teaHowTo" rows="2" maxlength="300" placeholder="Ex.: 1 colher de sopa pra 250 ml, abafa 10 min"></textarea>
+      </div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn kt-btn-fire" data-click="saveTea">💾 Salvar blend</button>
+        <button type="button" class="btn btn-secondary text-red" id="teaDelete" data-click="deleteTea" hidden>🗑️ Apagar blend</button>
+      </div>
+    </div>
+  </div>
+
   <script src="../assets/toba-common.js"></script>
   <script src="../assets/toba-cloud.js"></script>
   <script src="js/kitchen-recipes.js"></script>
@@ -111,6 +148,7 @@
   <script src="../assets/toba-player.js"></script>
   <script src="js/kitchen-core.js"></script>
   <script src="js/receitas.js"></script>
+  <script src="js/chas.js"></script>
   <script src="../assets/pwa-register.js"></script>
 </body>
 

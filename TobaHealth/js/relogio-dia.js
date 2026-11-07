@@ -213,6 +213,7 @@ function renderWatchToday() {
   const rows = WATCH_CMP_ROWS.map((row) => watchCmpRow(row, sel)).filter(Boolean);
   el.innerHTML = `
     <div class="watch-hero">
+      ${typeof watchRecordsBadge === "function" ? watchRecordsBadge(sel) : ""}
       <div class="watch-ring-wrap watch-tap" role="button" tabindex="0" data-click="openWatchMetric" data-metric="steps" aria-label="Análise dos passos">
         ${watchRing(steps, goal, done ? "var(--gold-2)" : "var(--green)")}
         <div class="watch-ring-text">
@@ -719,7 +720,10 @@ function openWatchHelp(el) {
     <div class="watch-help-sec"><div class="watch-help-h">🛠️ Como melhorar</div><ul>${h.tips.map((t) => `<li>${escapeHtml(t)}</li>`).join("")}</ul></div>
     ${mine.length ? `<div class="watch-help-sec"><div class="watch-help-h">📍 O teu</div><div class="kv-list">${mine.join("")}</div></div>` : ""}
     <p class="watch-muted">🤡 O Cloba não é médico: é pra entender o relógio, não pra diagnosticar. Coisa estranha por vários dias, procura um.</p>`;
-  document.getElementById("watchHelpGo").dataset.metric = key;
+  const go = document.getElementById("watchHelpGo");
+  go.dataset.metric = key;
+  // v1.96 (pedido do Rafa): aberto de dentro da análise, o 🔬 Ver análise não faz sentido
+  go.style.display = typeof watchMetricOpen === "function" && watchMetricOpen() ? "none" : "";
   openTobaModal("watchHelpModal");
 }
 
@@ -782,6 +786,7 @@ tobaActions({
   // 📜 Mês a mês / 🗓️ Dias do período: abre o dia na tela principal
   watchGoDay(el) {
     if (typeof watchMetricOpen === "function" && watchMetricOpen()) closeWatchMetric();
+    if (typeof watchRecordsOpen === "function" && watchRecordsOpen()) closeWatchRecords(); // v1.96: 🏆 Recordes
     watchSetDate(el.dataset.id);
     window.scrollTo(0, 0);
   },

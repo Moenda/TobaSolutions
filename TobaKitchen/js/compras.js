@@ -173,6 +173,7 @@ const KITCHEN_AISLE_HINTS = [
   ["pet", ["racao", "areia", "sache", "petisco", "gato", "cachorro", "killua", "gon"]],
   ["higiene", ["papel higienico", "sabonete", "shampoo", "xampu", "condicionador", "pasta de dente", "creme dental", "escova de dente", "desodorante", "fio dental", "absorvente", "barbeador", "lamina", "cotonete", "hidratante", "protetor solar"]],
   ["limpeza", ["detergente", "sabao", "amaciante", "agua sanitaria", "desinfetante", "esponja", "saco de lixo", "papel toalha", "alcool", "multiuso", "lustra", "vassoura", "pano"]],
+  ["chas", ["hibisco", "mulungu", "camomila", "cavalinha", "moringa", "erva cidreira", "erva-cidreira", "capim santo", "capim-santo", "boldo", "carqueja", "melissa", "passiflora", "valeriana", "erva mate", "erva-mate", "cranberry", "uva passa", "chas", "cha de"]], // v1.96
   ["bebidas", ["agua", "refri", "suco", "cerveja", "breja", "vinho", "energetico", "isotonico", "coca", "guarana", "cha gelado"]],
   ["padaria", ["pao", "bisnaguinha", "torrada", "bolo", "croissant", "sonho"]],
   ["acougue", ["carne", "frango", "linguica", "bacon", "picanha", "patinho", "costela", "file", "peixe", "salmao", "tilapia"]],

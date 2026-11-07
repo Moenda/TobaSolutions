@@ -56,7 +56,7 @@ const WATCH_EXERCISE_NAMES = {
   60: "🌀 Elíptico", 61: "🚣 Remo ergométrico",
 };
 
-const watchUi = { date: "", listShown: 12, pulling: false, reqId: "", timer: null, status: null }; // date (v1.95) = dia escolhido na tela
+const watchUi = { date: "", listShown: 6, pulling: false, reqId: "", timer: null, status: null }; // date (v1.95) = dia escolhido na tela
 
 /* ---------------- Dados ---------------- */
 
@@ -988,6 +988,7 @@ function watchAgo(ms) {
 // 🧬 corpo, ⚖️ balança (relogio-balanca.js, se existir), 🤡, caixinhas, 🗓️ semana, 📈 tendência, 📜 meses.
 function renderWatch() {
   if (typeof watchMetricOpen === "function" && watchMetricOpen()) renderWatchMetric();
+  if (typeof watchRecordsOpen === "function" && watchRecordsOpen()) renderWatchRecords(); // v1.96
   renderWatchConnect();
   renderWatchDayNav();
   renderWatchToday();
@@ -1101,7 +1102,7 @@ function watchAnDateShort(iso) {
 
 // v1.90 (pedido do Rafa): 📜 Mês a mês. Cada mês mostra o total consolidado; tocar abre o dia a dia.
 const WATCH_MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-const WATCH_MONTH_STEP = 12;
+const WATCH_MONTH_STEP = 6; // v1.96 (pedido do Rafa): 6 meses por vez, todos fechados
 
 function watchDayRow(date, goals) {
   const d = watchDay(date);
@@ -1163,7 +1164,7 @@ function renderWatchList() {
     if (!months.length || months[months.length - 1].ym !== ym) months.push({ ym, dates: [] });
     months[months.length - 1].dates.push(date);
   });
-  if (watchUi.openMonth === undefined) watchUi.openMonth = months[0].ym;
+  if (watchUi.openMonth === undefined) watchUi.openMonth = ""; // v1.96: começa tudo fechado, só o resumo
   const shown = months.slice(0, watchUi.listShown);
   el.innerHTML = shown.map(({ ym, dates: md }) => {
     const sum = watchMonthSummary(md, goals);
@@ -1183,7 +1184,7 @@ function renderWatchList() {
       <div class="watch-month-stats">${stats.join("")}</div>
       ${open ? `<div class="toba-list watch-month-days">${md.map((date) => watchDayRow(date, goals)).join("")}</div>` : ""}
     </div>`;
-  }).join("") + (months.length > shown.length ? `<button type="button" class="btn btn-secondary" data-click="watchMore">Mostrar meses mais antigos (${months.length - shown.length})</button>` : "");
+  }).join("") + (months.length > shown.length ? `<button type="button" class="btn btn-secondary" data-click="watchMore">⬇️ Mostrar próximos ${Math.min(WATCH_MONTH_STEP, months.length - shown.length)} meses</button>` : "");
 }
 
 function renderWatchSync() {

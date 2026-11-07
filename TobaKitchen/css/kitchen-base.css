@@ -815,3 +815,99 @@
   width: 100%;
   margin-bottom: 0.6rem;
 }
+
+/* ---------------------------------------------------------------------
+ * 🍵 Chás (v1.96, js/chas.js)
+ * ------------------------------------------------------------------- */
+.kt-tea-launch {
+  background: linear-gradient(140deg, #5a2a4a, #1f1420 75%);
+  border-color: rgba(247, 120, 186, 0.6);
+}
+
+.kt-tea-launch .kt-launch-icon {
+  background: #f778ba;
+}
+
+.kt-tea-launch .kt-launch-detail {
+  color: #f3c3df;
+}
+
+/* Barrinha de proporção (uma fatia por erva) */
+.kt-tea-bar {
+  display: flex;
+  width: 100%;
+  height: 6px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-3);
+  gap: 2px;
+}
+
+.kt-tea-bar.is-big {
+  height: 14px;
+  margin: 0 0 0.8rem;
+}
+
+.kt-tea-bar > span {
+  min-width: 4px;
+}
+
+.kt-tea-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.kt-tea-part .kt-ing-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.kt-tea-part .kt-stepper {
+  flex: 0 0 auto;
+}
+
+.kt-tea-n {
+  min-width: 26px;
+  text-align: center;
+  font-weight: 900;
+}
+
+.kt-tea-pct {
+  flex: 0 0 36px;
+  text-align: right;
+  font-size: 0.74rem;
+}
+
+.kt-tea-emoji {
+  min-width: 42px;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.kt-tea-qty {
+  flex: 0 0 78px;
+  width: 78px;
+  height: 34px;
+  padding: 0 8px;
+}
+
+.kt-tea-qty.is-on {
+  border-color: var(--coral);
+}
+
+.kt-tea-other {
+  margin: 0.4rem 0 0.2rem;
+}
+
+.kt-tea-howto {
+  margin-top: 1rem;
+}
+
+.kt-tea-warn {
+  margin-top: 1rem;
+}

@@ -682,33 +682,8 @@
   color: var(--accent, var(--blue));
 }
 
-.pending-cat-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  animation: pending-in 0.25s ease both;
-}
-
-.pending-chip {
-  padding: 0.4rem 0.65rem;
-  font: inherit;
-  font-size: 0.78rem;
-  color: var(--text);
-  cursor: pointer;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface);
-}
-
-.pending-chip.is-on {
+.pending-name {
   font-weight: 700;
-  border-color: var(--green);
-  background: rgba(46, 160, 67, 0.18);
-}
-
-.pending-chip-more {
-  color: var(--accent, var(--blue));
-  border-style: dashed;
 }
 
 .pending-flag {
@@ -730,6 +705,25 @@
   font-size: 0.74rem;
   color: var(--text-2);
   word-break: break-word;
+}
+
+/* v1.96: ✏️ Ajustar nome ali mesmo */
+.pending-name-edit {
+  display: flex;
+  gap: 6px;
+}
+
+.pending-name-edit .pending-name-input {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.pending-name-edit .pending-name-ok {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+  padding: 0 0.9rem;
 }
 
 .pending-actions {

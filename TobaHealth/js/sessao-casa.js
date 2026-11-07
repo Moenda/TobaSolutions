@@ -329,6 +329,117 @@ function openHomeStart() {
 }
 
 /* ---------------------------------------------------------------------
+ * Abertura do treino (v1.96, pedido do Rafa): tocar num plano não começa
+ * mais direto. Mostra o resumo, a lista dos exercícios com o bonequinho,
+ * o ❔ "Papo do Cloba" e o botão ▶ Iniciar. Mora na mesma folha do
+ * ▶ Iniciar treino (#liveStartModal), com ‹ pra voltar pra porta 🏠.
+ * ------------------------------------------------------------------- */
+const HOME_PLAN_CLOBA = {
+  hiit10: "HIIT é tiro curto e forte com descanso curto: o coração sobe, desce e sobe de novo, e o corpo segue queimando depois que acaba. São 10 minutos que parecem 30. Não precisa ser o mais rápido do prédio: é dar o máximo que dá NAQUELES 40 segundos e respirar de verdade nos 20.",
+  tabata4: "Tabata é o japonês mais cruel da academia: 20 s no talo, 10 s de folga, 8 vezes. São só 4 minutos, então o combinado é ir com tudo do começo ao fim. Se no 6º tiro tu achar que vai morrer, tá fazendo certo 💀",
+  silencioso15: "Cardio sem nenhum pulo: dá pra fazer de madrugada, de meia, com o Gon dormindo do lado. Não é treino fraco não: mantém o ritmo constante que o coração sobe igual, só não acorda o vizinho de baixo.",
+  forca20: "Circuito de força só com o peso do corpo: perna, peito, tríceps, glúteo e core. São 45 s em cada, sem pressa: movimento bem feito vale mais que número de repetição. No fim de cada volta tem 1min30 de descanso pra beber água e xingar o Cloba.",
+  core10: "Tanquinho se faz na cozinha, mas se fortalece aqui. Abdômen, lombar e a cadeirinha na parede pra fechar. Barriga encolhida o tempo todo e solta o ar na hora da força.",
+};
+
+function homeFormatSecs(secs) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return m ? `${m}min${s ? String(s).padStart(2, "0") : ""}` : `${s} s`;
+}
+
+function homeIntroChips(plan) {
+  const minutes = Math.round(getHomePlanSeconds(plan.id) / 60);
+  const kcal = estimateHomeKcal(plan.id, minutes, toIsoDate());
+  return [
+    `⏱️ ~${minutes} min`,
+    `🔁 ${plan.rounds} ${plan.rounds === 1 ? "volta" : "voltas"}`,
+    `🔥 ${plan.work} s / 😮‍💨 ${plan.rest} s`,
+    kcal ? `⚡ ~${kcal} kcal` : "",
+  ].filter(Boolean).map((chip) => `<span class="workout-chip">${chip}</span>`).join("");
+}
+
+function openHomeIntro(planId) {
+  const plan = getHomePlan(planId);
+  if (!plan) return;
+  const { session } = readLiveSession();
+  if (session) { // já tem treino rolando: volta pra ele
+    liveSession = session;
+    closeTobaModal("workoutModal");
+    openLiveSessionView();
+    return;
+  }
+  const rows = plan.list.filter((id) => getHomeExercise(id)).map((id, index) => {
+    const exercise = getHomeExercise(id);
+    return `
+      <div class="stretch-row home-intro-row">
+        ${homeFigureSvg(id, { size: "sm" })}
+        <span class="stretch-row-text"><strong>${index + 1}. ${escapeHtml(exercise.name)}</strong><small>${plan.work} s${exercise.jump ? " · tem pulo" : ""}</small></span>
+      </div>`;
+  }).join("");
+  const title = document.getElementById("liveStartTitle");
+  if (title) title.textContent = `${plan.icon} ${plan.name}`;
+  document.getElementById("liveStartList").innerHTML = `
+    <button type="button" class="back-nav-btn" data-click="openLiveStartPage" data-page="home">‹ Treinos em casa</button>
+    <div class="home-intro">
+      <div class="home-intro-top">
+        <p class="toba-sheet-text">${escapeHtml(plan.desc)}</p>
+        <button type="button" class="toba-icon-btn home-help-btn" data-click="openHomeHelp" data-plan="${plan.id}" aria-label="Papo do Cloba: como é esse treino">❔</button>
+      </div>
+      <div class="workout-record-chips">${homeIntroChips(plan)}</div>
+      <div class="hub-title">Os exercícios (cada volta)</div>
+      <div class="card stretch-list">${rows}</div>
+      <p class="live-hint">Toca no ❔ que o Cloba explica o treino e cada exercício. Quando tiver pronto no tapete, ▶ Iniciar: tem 10 s de "Prepara" antes do 1º tiro.</p>
+    </div>
+    <div class="toba-sheet-footer">
+      <button type="button" class="btn btn-primary home-go" data-click="startHomeNow" data-plan="${plan.id}">▶ Iniciar ${escapeHtml(plan.short)}</button>
+    </div>`;
+  closeTobaModal("workoutModal");
+  openTobaModal("liveStartModal");
+  document.querySelector("#liveStartModal .toba-sheet")?.scrollTo?.(0, 0);
+}
+
+// ❔ Papo do Cloba: o porquê do treino, como funciona o timer e cada exercício
+function openHomeHelp(planId) {
+  const plan = getHomePlan(planId);
+  if (!plan) return;
+  const list = plan.list.filter((id) => getHomeExercise(id)).map((id) => {
+    const exercise = getHomeExercise(id);
+    return `
+      <div class="home-help-ex">
+        ${homeFigureSvg(id, { size: "sm" })}
+        <div>
+          <strong>${escapeHtml(exercise.name)}</strong>
+          <p>${escapeHtml(exercise.how)}</p>
+          ${exercise.tip ? `<p class="home-help-tip">💡 ${escapeHtml(exercise.tip)}</p>` : ""}
+        </div>
+      </div>`;
+  }).join("");
+  const rounds = plan.rounds > 1
+    ? `Faz a lista inteira ${plan.rounds} vezes (${plan.rounds} voltas), com ${homeFormatSecs(plan.roundRest)} de descanso entre uma volta e outra.`
+    : "É uma volta só.";
+  document.getElementById("homeHelpTitle").textContent = `❔ ${plan.name}`;
+  document.getElementById("homeHelpBody").innerHTML = `
+    <div class="home-help-cloba">
+      <span class="home-help-avatar" aria-hidden="true">🤖</span>
+      <div><strong>Papo do Cloba</strong><p>${escapeHtml(HOME_PLAN_CLOBA[plan.id] || plan.desc)}</p></div>
+    </div>
+    <div class="hub-title">Como funciona</div>
+    <ul class="home-help-how">
+      <li>⏳ 10 s de <b>Prepara</b> antes do 1º exercício.</li>
+      <li>🔥 <b>Vai!</b> ${plan.work} s fazendo o exercício no teu ritmo (o bonequinho mostra o movimento).</li>
+      <li>😮‍💨 <b>Descansa</b> ${plan.rest} s e a tela já mostra o próximo.</li>
+      <li>🔁 ${escapeHtml(rounds)}</li>
+      <li>🔊 A voz avisa cada troca e conta o 3-2-1: dá pra deixar o celular no chão.</li>
+      <li>⏸ Pausa, pula ou volta quando quiser. 🏁 Terminar agora salva o que já fez.</li>
+    </ul>
+    <div class="hub-title">Os exercícios</div>
+    ${list}
+    <p class="live-hint">Dói articulação (joelho, ombro, lombar)? Para e pula o exercício. Mandíbula solta, sem trincar o dente 🦷</p>`;
+  openTobaModal("homeHelpModal");
+}
+
+/* ---------------------------------------------------------------------
  * Começar
  * ------------------------------------------------------------------- */
 function startHomeLive(planId) {
@@ -764,7 +875,9 @@ function readHomeFormExtras(original) {
 }
 
 tobaActions({
-  startHomeLive: (el) => startHomeLive(el.dataset.plan),
+  startHomeLive: (el) => openHomeIntro(el.dataset.plan), // v1.96: abre a abertura, não começa direto
+  startHomeNow: (el) => startHomeLive(el.dataset.plan),
+  openHomeHelp: (el) => openHomeHelp(el.dataset.plan),
   openHomeStart,
   homeTogglePause,
   homeSkip,

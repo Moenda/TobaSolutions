@@ -30,6 +30,7 @@ const KITCHEN_AISLES = [
   { key: "mercearia", icon: "🥫", name: "Mercearia" },
   { key: "bebidas", icon: "🥤", name: "Bebidas" },
   { key: "temperos", icon: "🧂", name: "Temperos" },
+  { key: "chas", icon: "🍵", name: "Chás e ervas", short: "Chás" }, // v1.96
   { key: "limpeza", icon: "🧽", name: "Limpeza" },
   { key: "higiene", icon: "🧴", name: "Higiene" },
   { key: "pet", icon: "🐾", name: "Pets" },
@@ -600,6 +601,11 @@ function kitchenShopCatalog() {
     push({ id: `i-${id}`, name: info.name, emoji: info.emoji, aisle: info.aisle || "mercearia" });
   });
   KITCHEN_SHOP_ITEMS.forEach(push);
+  // v1.96: ervas dos chás (id "cha-<erva>", seção 🍵); nome repetido fica com o de cima
+  Object.keys(KITCHEN_TEA_HERBS).forEach((id) => {
+    const herb = KITCHEN_TEA_HERBS[id];
+    push({ id: `cha-${id}`, name: herb.name, emoji: herb.emoji, aisle: "chas" });
+  });
   return out.sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }));
 }
 
@@ -781,4 +787,199 @@ function kitchenOneMissing(db, recipe) {
   if (!pantry.length || !recipe) return null;
   const match = kitchenMatchRecipe(recipe, new Set(pantry));
   return match.missing.length === 1 ? match.missing[0] : null;
+}
+
+/* ---------------------------------------------------------------------
+ * 🍵 Chás (desde v1.96): blends do usuário por PARTES (3 de mulungu, 1 de
+ * hibisco...). Os blends moram no banco (db.teas), não no código; aqui só o
+ * catálogo das ervas (chips), as ideias do Cloba e as contas puras.
+ * O `id` de erva e a `key` de "pra quê" nunca mudam (o blend grava eles).
+ * ------------------------------------------------------------------- */
+const KITCHEN_TEA_KINDS = [
+  { key: "folha", icon: "🌿", name: "Ervas, folhas e flores" },
+  { key: "fruta", icon: "🍒", name: "Frutas secas" },
+  { key: "raiz", icon: "🪵", name: "Raízes, cascas e especiarias" },
+];
+
+const KITCHEN_TEA_HERBS = {
+  hibisco: { name: "Hibisco", emoji: "🌺", kind: "folha" },
+  camomila: { name: "Camomila", emoji: "🌼", kind: "folha" },
+  cavalinha: { name: "Cavalinha", emoji: "🎋", kind: "folha" },
+  moringa: { name: "Moringa", emoji: "🍃", kind: "folha" },
+  "erva-cidreira": { name: "Erva-cidreira", emoji: "🌿", kind: "folha" },
+  "capim-santo": { name: "Capim-santo", emoji: "🌾", kind: "folha" },
+  hortela: { name: "Hortelã", emoji: "🌱", kind: "folha" },
+  melissa: { name: "Melissa", emoji: "🍀", kind: "folha" },
+  passiflora: { name: "Passiflora", emoji: "🌸", kind: "folha" },
+  lavanda: { name: "Lavanda", emoji: "🪻", kind: "folha" },
+  "flor-laranjeira": { name: "Flor de laranjeira", emoji: "💮", kind: "folha" },
+  "erva-doce": { name: "Erva-doce", emoji: "🌾", kind: "folha" },
+  boldo: { name: "Boldo", emoji: "🌿", kind: "folha" },
+  carqueja: { name: "Carqueja", emoji: "🌿", kind: "folha" },
+  "espinheira-santa": { name: "Espinheira-santa", emoji: "🍃", kind: "folha" },
+  alecrim: { name: "Alecrim", emoji: "🌿", kind: "folha" },
+  "cha-verde": { name: "Chá verde", emoji: "🍵", kind: "folha" },
+  "cha-preto": { name: "Chá preto", emoji: "🫖", kind: "folha" },
+  mate: { name: "Erva-mate", emoji: "🧉", kind: "folha" },
+  "uva-passa": { name: "Uva passa", emoji: "🍇", kind: "fruta" },
+  cranberry: { name: "Cranberry", emoji: "🍒", kind: "fruta" },
+  "maca-seca": { name: "Maçã desidratada", emoji: "🍎", kind: "fruta" },
+  "abacaxi-seco": { name: "Abacaxi desidratado", emoji: "🍍", kind: "fruta" },
+  "morango-seco": { name: "Morango desidratado", emoji: "🍓", kind: "fruta" },
+  goji: { name: "Goji berry", emoji: "🔴", kind: "fruta" },
+  "casca-laranja": { name: "Casca de laranja", emoji: "🍊", kind: "fruta" },
+  "casca-limao": { name: "Casca de limão", emoji: "🍋", kind: "fruta" },
+  mulungu: { name: "Mulungu", emoji: "🌳", kind: "raiz" },
+  valeriana: { name: "Valeriana", emoji: "🪷", kind: "raiz" },
+  gengibre: { name: "Gengibre", emoji: "🫚", kind: "raiz" },
+  "canela-pau": { name: "Canela em pau", emoji: "🪵", kind: "raiz" },
+  cravo: { name: "Cravo-da-índia", emoji: "🌰", kind: "raiz" },
+  "anis-estrelado": { name: "Anis-estrelado", emoji: "⭐", kind: "raiz" },
+  cardamomo: { name: "Cardamomo", emoji: "🟢", kind: "raiz" },
+  curcuma: { name: "Cúrcuma", emoji: "🟠", kind: "raiz" },
+};
+
+const KITCHEN_TEA_PURPOSES = [
+  { key: "dormir", icon: "🌙", name: "Dormir" },
+  { key: "relaxar", icon: "😌", name: "Relaxar" },
+  { key: "energia", icon: "⚡", name: "Energia" },
+  { key: "desinchar", icon: "💧", name: "Desinchar" },
+  { key: "digestao", icon: "🍽️", name: "Digestão" },
+  { key: "gripe", icon: "🤧", name: "Gripe" },
+  { key: "gelado", icon: "🧊", name: "Gelado" },
+  { key: "sabor", icon: "😋", name: "Só o sabor" },
+];
+
+const KITCHEN_TEA_EMOJIS = ["🍵", "🫖", "🌙", "😌", "⚡", "💧", "🔥", "🧊", "🌺", "🍒", "🍃", "🧉"];
+
+// Cores das fatias da barrinha de proporção (na ordem das ervas do blend)
+const KITCHEN_TEA_COLORS = ["#ff7b72", "#d29922", "#3fb950", "#58a6ff", "#bc8cff", "#f778ba", "#56d4dd", "#e3b341"];
+
+// Ideias pra começar: tocar em "Usar" copia pro banco como blend do usuário.
+const KITCHEN_TEA_IDEAS = [
+  {
+    id: "dormir", name: "Chá pra dormir", emoji: "🌙", purpose: "dormir", author: "bertoba",
+    parts: [{ herb: "mulungu", parts: 3 }, { herb: "hibisco", parts: 1 }, { herb: "uva-passa", parts: 1 }, { herb: "cranberry", parts: 1 }],
+    howTo: "1 colher de sopa da mistura pra 250 ml de água quente. Abafa 10 min e coa.",
+  },
+  {
+    id: "zen", name: "Camomila zen", emoji: "😌", purpose: "relaxar",
+    parts: [{ herb: "camomila", parts: 2 }, { herb: "erva-cidreira", parts: 2 }, { herb: "lavanda", parts: 1 }],
+    howTo: "1 colher de sopa pra 250 ml de água quase fervendo. Abafa 5 min.",
+  },
+  {
+    id: "desincha", name: "Desincha, Toba", emoji: "💧", purpose: "desinchar",
+    parts: [{ herb: "cavalinha", parts: 2 }, { herb: "hibisco", parts: 1 }, { herb: "gengibre", parts: 1 }],
+    howTo: "1 colher de sopa pra 300 ml. Ferve o gengibre 3 min, desliga, joga o resto e abafa 7 min.",
+  },
+  {
+    id: "gripe", name: "Mata-gripe", emoji: "🔥", purpose: "gripe",
+    parts: [{ herb: "gengibre", parts: 2 }, { herb: "canela-pau", parts: 1 }, { herb: "cravo", parts: 1 }, { herb: "casca-limao", parts: 1 }],
+    howTo: "Ferve tudo 5 min em 300 ml de água. Mel depois de amornar.",
+  },
+  {
+    id: "gelado", name: "Hibisco gelado da tropa", emoji: "🧊", purpose: "gelado",
+    parts: [{ herb: "hibisco", parts: 2 }, { herb: "maca-seca", parts: 2 }, { herb: "canela-pau", parts: 1 }, { herb: "cranberry", parts: 1 }],
+    howTo: "4 colheres de sopa pra 1 litro de água quente, abafa 10 min, coa e geladeira.",
+  },
+  {
+    id: "bomdia", name: "Bom dia, Cloba", emoji: "⚡", purpose: "energia",
+    parts: [{ herb: "mate", parts: 2 }, { herb: "hortela", parts: 1 }, { herb: "casca-limao", parts: 1 }],
+    howTo: "1 colher de sopa pra 250 ml de água a uns 80 °C (antes de ferver). Abafa 4 min.",
+  },
+  {
+    id: "verde", name: "Moringa verdinha", emoji: "🍃", purpose: "digestao",
+    parts: [{ herb: "moringa", parts: 1 }, { herb: "capim-santo", parts: 2 }, { herb: "hortela", parts: 1 }],
+    howTo: "1 colher de sopa pra 250 ml de água quente. Abafa 5 min.",
+  },
+];
+
+function kitchenTeaHerb(id) {
+  return KITCHEN_TEA_HERBS[id] || null;
+}
+
+function kitchenTeaPurpose(key) {
+  return KITCHEN_TEA_PURPOSES.find((p) => p.key === key) || null;
+}
+
+// Uma parte do blend: erva do catálogo ({ herb }) ou digitada ({ name })
+function kitchenTeaPartInfo(part) {
+  const herb = part && kitchenTeaHerb(part.herb);
+  if (herb) return { name: herb.name, emoji: herb.emoji, kind: herb.kind };
+  return { name: String((part && part.name) || "Erva").trim() || "Erva", emoji: "🌿", kind: "outra" };
+}
+
+function kitchenTeasOf(db) {
+  return (db && Array.isArray(db.teas) ? db.teas : []).filter((t) => t && typeof t === "object" && Array.isArray(t.parts));
+}
+
+function kitchenTea(db, id) {
+  return kitchenTeasOf(db).find((t) => String(t.id) === String(id)) || null;
+}
+
+// Blends em ordem alfabética
+function kitchenTeasByName(db) {
+  return [...kitchenTeasOf(db)].sort((a, b) => String(a.name).localeCompare(String(b.name), "pt-BR", { sensitivity: "base" }));
+}
+
+// Partes válidas do blend com a porcentagem e a cor de cada uma
+function kitchenTeaShares(tea) {
+  const parts = (tea && Array.isArray(tea.parts) ? tea.parts : []).filter((p) => p && Number(p.parts) > 0);
+  const total = parts.reduce((sum, p) => sum + Number(p.parts), 0);
+  return parts.map((p, i) => ({
+    ...p,
+    parts: Number(p.parts),
+    info: kitchenTeaPartInfo(p),
+    share: total ? Number(p.parts) / total : 0,
+    color: KITCHEN_TEA_COLORS[i % KITCHEN_TEA_COLORS.length],
+  }));
+}
+
+// 3 -> "3", 0.5 -> "½", 1.5 -> "1 ½"
+function kitchenTeaPartsNumber(parts) {
+  return kitchenFormatNumber(Math.round(Number(parts) * 4) / 4);
+}
+
+// "3 mulungu · 1 hibisco · 1 uva passa"
+function kitchenTeaPartsText(tea) {
+  return kitchenTeaShares(tea).map((p) => `${kitchenTeaPartsNumber(p.parts)} ${p.info.name.toLowerCase()}`).join(" · ");
+}
+
+/* Conta do pote: quanto de cada erva pra um total.
+ * unit "g": de 10 g pra cima em gramas inteiros, abaixo de meio em meio.
+ * unit "cs" (colher de sopa): em ¼ de colher. */
+function kitchenTeaAmounts(tea, total, unit = "g") {
+  return kitchenTeaShares(tea).map((p) => {
+    const raw = p.share * Number(total || 0);
+    let amount;
+    if (unit === "cs") amount = Math.round(raw * 4) / 4;
+    else amount = raw >= 10 ? Math.round(raw) : Math.round(raw * 2) / 2;
+    return { ...p, amount };
+  });
+}
+
+function kitchenTeaAmountText(amount, unit = "g") {
+  if (unit === "cs") return amount > 0 ? kitchenFormatAmount(amount, "cs") : "uma pitada";
+  return `${String(amount).replace(".", ",")} g`;
+}
+
+function kitchenTeaBrewsOf(db, teaId) {
+  return (db && Array.isArray(db.teaBrews) ? db.teaBrews : [])
+    .filter((b) => b && String(b.teaId) === String(teaId))
+    .sort((a, b) => (Number(b.doneAt) || 0) - (Number(a.doneAt) || 0));
+}
+
+// Ervas digitadas no "✍️ Outra" de qualquer blend (viram chip), sem repetir
+function kitchenTeaCustomNames(db) {
+  const seen = new Set();
+  const out = [];
+  kitchenTeasOf(db).forEach((t) => t.parts.forEach((p) => {
+    if (!p || kitchenTeaHerb(p.herb)) return;
+    const name = String(p.name || "").trim();
+    const norm = kitchenNormalizeText(name);
+    if (!name || seen.has(norm)) return;
+    seen.add(norm);
+    out.push(name);
+  }));
+  return out.sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
 }

@@ -40,7 +40,7 @@ function kitchenNormalize(text) {
  * Livro: chips de refeição + lista
  * ------------------------------------------------------------------- */
 function renderBookMeals() {
-  const chips = [{ key: "all", icon: "📚", short: "Todas" }, ...KITCHEN_MEALS];
+  const chips = [{ key: "all", icon: "📚", short: "Todas" }, { key: "chas", icon: "🍵", short: "Chás" }, ...KITCHEN_MEALS]; // v1.96: Chás (js/chas.js) logo depois do Todas
   document.getElementById("bookMeals").innerHTML = chips.map((m) => `
     <button type="button" class="chip-btn kt-chip${bookMeal === m.key ? " is-on" : ""}" data-click="pickBookMeal" data-meal="${m.key}">${m.icon} ${m.short}</button>`).join("");
 }
@@ -74,6 +74,14 @@ function recipeCard(recipe, extra = "") {
 function renderBook() {
   renderBookMeals();
   renderCookResume();
+  // v1.96: chip 🍵 Chás mostra os blends (js/chas.js) no lugar das receitas
+  const teaMode = bookMeal === "chas" && typeof renderTeaBook === "function";
+  document.getElementById("pantryLaunch").hidden = teaMode;
+  document.getElementById("bookSearch").placeholder = teaMode ? "🔎 Buscar blend ou erva" : "🔎 Buscar receita ou ingrediente";
+  if (teaMode) {
+    renderTeaBook(bookQuery);
+    return;
+  }
   const pantry = kitchenDb.pantry.length;
   document.getElementById("pantryLaunchDetail").textContent = pantry
     ? `${pantry} ${pantry === 1 ? "ingrediente marcado" : "ingredientes marcados"} · ${countCanMake()} receitas dá pra fazer já`

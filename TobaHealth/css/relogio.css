@@ -1510,3 +1510,354 @@
   width: 100%;
   margin-top: 0.4rem;
 }
+
+/* ===== v1.96: 🏆 Hall dos Recordes ===== */
+#watchToday {
+  position: relative;
+}
+
+.watch-rec-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 58px;
+  padding: 6px 8px 5px;
+  border-radius: 14px;
+  border: 1px solid rgba(227, 179, 65, 0.4);
+  background: linear-gradient(160deg, rgba(227, 179, 65, 0.18), rgba(227, 179, 65, 0.04));
+  color: var(--gold-2);
+  font: inherit;
+  cursor: pointer;
+}
+
+.watch-rec-badge:active {
+  transform: scale(0.96);
+}
+
+.watch-rec-badge-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.watch-rec-badge-text {
+  font-size: 0.62rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.watch-rec-badge.is-hot {
+  border-color: var(--gold-2);
+  box-shadow: 0 0 14px rgba(227, 179, 65, 0.35);
+  animation: watch-rec-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes watch-rec-pulse {
+  50% {
+    box-shadow: 0 0 22px rgba(227, 179, 65, 0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watch-rec-badge.is-hot {
+    animation: none;
+  }
+}
+
+.watch-rec-scopes {
+  margin-bottom: 0.9rem;
+}
+
+.watch-rec-hero {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  padding: 1.1rem 1rem 1rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(227, 179, 65, 0.35);
+  background: linear-gradient(180deg, rgba(227, 179, 65, 0.12), var(--surface) 75%);
+  margin-bottom: 0.9rem;
+}
+
+.watch-rec-hero-glow {
+  position: absolute;
+  left: 50%;
+  top: -60px;
+  width: 220px;
+  height: 160px;
+  transform: translateX(-50%);
+  background: radial-gradient(closest-side, rgba(227, 179, 65, 0.35), transparent);
+  pointer-events: none;
+}
+
+.watch-rec-hero-trophy {
+  position: relative;
+  font-size: 2.6rem;
+  line-height: 1;
+  filter: drop-shadow(0 4px 12px rgba(227, 179, 65, 0.5));
+}
+
+.watch-rec-hero-title {
+  position: relative;
+  font-size: 1.3rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  margin-top: 0.3rem;
+  background: linear-gradient(90deg, #f7d774, var(--gold-2), #f0a830);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.watch-rec-hero-sub {
+  position: relative;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+/* Pódio */
+.watch-podium {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: 0.8rem 0.8rem 0;
+  margin-bottom: 0.9rem;
+  overflow: hidden;
+}
+
+.watch-podium-title {
+  font-weight: 800;
+  font-size: 0.9rem;
+  margin-bottom: 0.6rem;
+}
+
+.watch-podium-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 6px;
+}
+
+.watch-podium-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.watch-podium-medal {
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.watch-podium-col.is-p1 .watch-podium-medal {
+  font-size: 2.2rem;
+}
+
+.watch-podium-val {
+  font-weight: 900;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.watch-podium-col.is-p1 .watch-podium-val {
+  font-size: 1.2rem;
+  color: var(--gold-2);
+}
+
+.watch-podium-date {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.watch-podium-block {
+  width: 100%;
+  margin-top: 4px;
+  border-radius: 10px 10px 0 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 6px;
+  font-size: 1.1rem;
+  color: rgba(13, 17, 23, 0.75);
+}
+
+.watch-podium-col.is-p1 .watch-podium-block {
+  height: 74px;
+  background: linear-gradient(180deg, #f7d774, #c99a2e);
+}
+
+.watch-podium-col.is-p2 .watch-podium-block {
+  height: 52px;
+  background: linear-gradient(180deg, #e6edf3, #8b949e);
+}
+
+.watch-podium-col.is-p3 .watch-podium-block {
+  height: 38px;
+  background: linear-gradient(180deg, #e3a06b, #a0592b);
+}
+
+/* Sequências */
+.watch-rec-streaks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 0.4rem;
+}
+
+.watch-rec-streak {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1px;
+  padding: 0.7rem 0.5rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  min-width: 0;
+}
+
+.watch-rec-streak-icon {
+  font-size: 1.3rem;
+}
+
+.watch-rec-streak b {
+  font-size: 1.15rem;
+}
+
+.watch-rec-streak span:not(.watch-rec-streak-icon) {
+  font-size: 0.72rem;
+  color: var(--text-2);
+}
+
+.watch-rec-streak small {
+  font-size: 0.66rem;
+  color: var(--muted);
+}
+
+/* Top 3 de cada */
+.watch-rec-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.watch-rec-card {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-left: 3px solid var(--rec, var(--gold-2));
+  border-radius: var(--radius);
+  padding: 0.55rem 0.7rem 0.45rem;
+}
+
+.watch-rec-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 0.35rem;
+  cursor: pointer;
+}
+
+.watch-rec-icon {
+  font-size: 1.2rem;
+}
+
+.watch-rec-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 800;
+  font-size: 0.92rem;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.watch-rec-title small {
+  font-weight: 600;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.watch-rec-more {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.watch-rec-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  border-top: 1px solid var(--border-soft);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.watch-rec-row.is-p1 {
+  background: linear-gradient(90deg, rgba(227, 179, 65, 0.12), transparent 70%);
+}
+
+.watch-rec-row.is-sel {
+  outline: 1px solid var(--accent);
+}
+
+.watch-rec-medal {
+  font-size: 1.2rem;
+  width: 1.5rem;
+  text-align: center;
+}
+
+.watch-rec-when {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.watch-rec-when b {
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.watch-rec-when small {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.watch-rec-when em {
+  font-style: normal;
+  color: var(--gold-2);
+  font-weight: 700;
+}
+
+.watch-rec-val {
+  font-weight: 900;
+  font-size: 0.98rem;
+  white-space: nowrap;
+}
+
+.watch-rec-row.is-p1 .watch-rec-val {
+  color: var(--gold-2);
+}
+
+.watch-rec-foot {
+  text-align: center;
+  margin: 0.8rem 0 0.4rem;
+}

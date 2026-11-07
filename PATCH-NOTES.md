@@ -2318,3 +2318,61 @@ Pedido do Rafa: "coloca as coisa que dá pra puxar: stress, HRV, oxigenação, t
 **Dados:** Nenhuma mudança no banco: só lê as pesagens. Chave nova só no aparelho: `toba_health_basal_source`.
 
 **Como testar:** Health › 🩻 Raio-X: desce até ⚖️ Balança (aparece a pesagem de 01/11, 91,05 kg). Toca num quadrado: abre a Pesagem. Volta, toca no 🔥 Calorias › liga ➕ Somar o basal: aparecem ⚖️ Balança / ⌚ Relógio. Troca entre os dois: o gráfico e os números mudam. Com ⌚ fica igual era antes.
+
+---
+
+## v1.96 — Commit com vários patches (cada um na sua seção abaixo)
+
+### ✅ Toba Bank: compras pra aprovar sem tela repetida
+
+**Arquivos alterados:** `TobaBank/js/gastos.js`, `TobaBank/css/gastos.css`, `assets/toba-common.js` (Patch v1.96 na ⚙️), `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **✏️ Ajustar nome:** cada compra mostra o nome num botão. Tocou, vira campo de texto ali mesmo (Enter ou ✓ grava). As outras pendentes da mesma loja que você ainda não renomeou trocam junto, e se a categoria ainda não foi escolhida, ganha o palpite do nome novo.
+2. **🏷️ Ajustar categoria:** agora abre direto a lista completa de categorias (saiu o menuzinho de chips embaixo). Mesma loja continua indo junto.
+3. **✅ Lançar direto:** lança na hora com o nome e a categoria que estão na compra, sem abrir o formulário de gasto (era a tela repetida). Aparece um aviso "✅ R$ 55,00 · Santa Paula (🛒 Mercado)". Lançou a última, a folha fecha sozinha.
+
+**Dados:** Nenhuma mudança no banco. O gasto lançado é igual ao de antes (com `notifId`, a compra só sai da fila do app depois de gravar).
+
+**Como testar:** no APK, com compras pendentes: Gastos › card 🤖 › "✏️ Ajustar nome" › digita "Santa Paula" › Enter › "🏷️ Ajustar categoria" › abre a gaveta › Mercado › "✅ Lançar": não abre formulário, aparece o aviso e a compra está no histórico com o nome e a categoria novos. ⚙️ mostra "Patch v1.96".
+
+**Commit sugerido:** `v1.96 - Compras pra aprovar: Ajustar nome e Ajustar categoria (lista completa) na propria compra e Lancar direto sem abrir o formulario + Raio-X com Hall dos Recordes (top 3 de tudo), mes a mes fechado 6 por vez e ajuda sem Ver analise dentro da analise + Treinos em casa com tela de abertura (Iniciar + Papo do Cloba) + Kitchen com secao de Chas: blends por partes, conta do pote em gramas ou colheres, xicaras e ervas na lista de compras`
+
+### 🏆 Toba Health: Hall dos Recordes no Raio-X + mês a mês mais limpo
+
+**Arquivos novos/alterados:** `TobaHealth/js/relogio-recordes.js` (NOVO), `TobaHealth/js/relogio.js`, `TobaHealth/js/relogio-dia.js`, `TobaHealth/css/relogio.css`, `TobaHealth/TobaHealth-Relogio.html`, `sw.js` (PRECACHE + `toba-v51`), `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **🏆 Botão de recordes no anel:** no canto do anel dos passos tem um troféu. Se o dia que você tá vendo entrou em algum top 3, ele brilha e mostra "🆕 2 top 3".
+2. **Hall dos Recordes:** troféu dourado no topo, **pódio dos passos** (🥈 🥇 🥉 com os degraus), as maiores **sequências** na meta de passos e de sono, e o **top 3 de cada**: distância, calorias ativas, andares, maior noite, sono profundo, HRV, Energy Score, coração mais calmo (repouso mais baixo) e dia mais zen (menor stress). Embaixo, a semana e o mês com mais passos. Recorde dos últimos 7 dias ganha "🆕 fresquinho", e o 🤡 comenta.
+3. **Sempre / Este ano / 30 dias:** troca o período dos recordes. Tocar num dia abre ele no Raio-X; tocar no título de um card abre a análise daquele número.
+4. **📜 Mês a mês:** começa tudo fechado, só com o resumo (toca no mês pra abrir os dias). Mostra os últimos 6 meses, e o botão lá embaixo é "⬇️ Mostrar próximos 6 meses".
+5. **❔ dentro da análise:** aberto de dentro da análise de um número, o ❔ agora só tem o Fechar (o 🔬 Ver análise só aparece quando abre lá da tela do Raio-X).
+
+**Dados:** Nenhuma mudança no banco. O período escolhido nos recordes fica só na tela.
+
+**Como testar:** Raio-X › toca no 🏆 do canto do anel: pódio, sequências, top 3 de cada. Troca pra "30 dias": tudo recalcula. Toca num dia de um top 3: volta pro Raio-X naquele dia. Desce no 📜 Mês a mês: 6 meses fechados + "Mostrar próximos 6 meses". Abre a análise do 😰 Stress › ❔ Entenda: só Fechar. Na tela do Raio-X, o ❔ do quadradinho continua com 🔬 Ver análise. ⚙️ mostra "Patch v1.96".
+
+### 🏠 Toba Health: Treinos em casa com ▶ Iniciar e ❔ Papo do Cloba
+
+**Arquivos:** `TobaHealth/js/sessao-casa.js`, `TobaHealth/css/casa.css`, `TobaHealth/TobaHealth-Treinos.html`
+
+1. **Não começa mais direto:** tocar num treino em casa (HIIT, Tabata, Sem pulo, Força, Abdômen) abre uma tela de abertura com o resumo (⏱️ minutos, 🔁 voltas, 🔥 tempo de tiro / 😮‍💨 descanso, ⚡ kcal estimada), a lista dos exercícios com o bonequinho e o aviso de quais têm pulo. O timer só começa no botão **▶ Iniciar** lá embaixo (e ainda tem os 10 s de Prepara). ‹ Treinos em casa volta pra lista. Vale também pros botões "Fazer agora" do + Treino › 🏠.
+2. **❔ Papo do Cloba:** o ❔ da abertura explica o treino no estilo Cloba (o porquê daquele treino), como o timer funciona (Prepara, Vai!, Descansa, voltas, voz 3-2-1, pausar/pular) e cada exercício com o bonequinho, como fazer e a dica.
+
+**Dados:** nenhuma mudança no banco (só tela).
+
+**Como testar:** Treinos › ▶ Iniciar treino › 🏠 › HIIT 10 min: abre a abertura e o treino NÃO começa. Toca no ❔: aparece o Papo do Cloba com os 5 exercícios. Bora 👊 fecha, ▶ Iniciar HIIT 10 começa o Prepara. + Treino › 🏠 › ⚡ Tabata 4 também abre a abertura.
+
+### 🍵 Toba Kitchen: sessão de Chás nas Receitas
+
+**Arquivos novos/alterados:** `TobaKitchen/js/chas.js` (NOVO), `TobaKitchen/js/kitchen-recipes.js`, `TobaKitchen/js/kitchen-core.js`, `TobaKitchen/js/receitas.js`, `TobaKitchen/js/compras.js`, `TobaKitchen/TobaKitchen-Receitas.html`, `TobaKitchen/css/kitchen-base.css`, `sw.js` (PRECACHE do chas.js, versão continua `toba-v51`), `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **Chip 🍵 Chás no Livro de Receitas:** fica logo depois do "📚 Todas". Tocando nele a lista vira a dos teus blends, com a busca procurando por nome ou erva.
+2. **➕ Novo blend por partes:** nome, carinha (emoji), "pra quê" (🌙 Dormir, 😌 Relaxar, ⚡ Energia, 💧 Desinchar...) e as ervas em chips pra tocar (hibisco, mulungu, cavalinha, moringa, uva passa, cranberry, camomila, gengibre, canela em pau e mais umas 25). Cada erva entra com 1 parte e ajusta no − / + (dá até meia parte). A barrinha colorida mostra a proporção e a % de cada uma. Erva que não tá na lista vai no "✍️ Outra" e vira chip pros próximos blends.
+3. **🫙 Montar o pote:** escolhe quanto quer fazer (30/50/100/200/500 g, ou em colheres de sopa, ou digita) e o Toba diz quanto pôr de cada erva. Ex.: chá pra dormir 3 mulungu + 1 hibisco + 1 uva passa + 1 cranberry em 120 g = 60 g + 20 + 20 + 20. Lembra o último pote de cada blend.
+4. **☕ Tomei uma xícara (+1):** contador de xícaras por blend (total, do mês e as últimas com ↩ Desfazer). "☕ Na xícara" mostra o teu jeito de preparar (anotado no ✏️ Editar).
+5. **🛒 Ervas na lista:** um toque põe as ervas do blend na lista de compras, na seção nova **🍵 Chás e ervas** (que também aparece no 🧺 Escolher da lista pra marcar por chip). Erva que já tá na lista não duplica.
+6. **🤖 Ideias pra começar:** 7 blends prontos (o chá pra dormir da casa, camomila zen, desincha, mata-gripe, hibisco gelado, bom dia e moringa). "Usar" abre já preenchido pra ajustar e salvar. Aviso do Cloba: mulungu, valeriana e passiflora dão sono de verdade.
+
+**Dados:** campos novos opcionais no `TOBA_KITCHEN_DB`: `teas` (blends: nome, emoji, pra quê, ervas com as partes, modo de preparo e o último pote) e `teaBrews` (xícaras tomadas). Banco e backup antigos continuam funcionando (entram vazios) e sincronizam na Conta Toba junto com o resto do Kitchen. Receitas, contador, programação e lista não mudam.
+
+**Como testar:** Receitas › chip 🍵 Chás › "Usar" no Chá pra dormir › ajusta as partes › 💾 Salvar. Na tela do blend: troca o pote pra 200 g e pra 🥄 Colheres, toca "☕ Tomei uma xícara" (contador sobe, ↩ Desfazer tira), "🛒 Ervas na lista" e confere na Lista de compras a seção 🍵 Chás e ervas. ✏️ Editar › 🗑️ Apagar blend some com ele. ⚙️ mostra "Patch v1.96".
