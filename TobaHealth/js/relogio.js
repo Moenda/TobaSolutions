@@ -6,7 +6,7 @@
  * - Tudo fica no TOBA_HEALTH_DB.watch (vai junto no backup do Health e na ☁️):
  *   { v: 1, days: { "AAAA-MM-DD": { steps, kcal, activeKcal, distanceM, hrAvg,
  *     hrMin, hrMax, restHr, sleep: { start, end, min, deep, light, rem, awake,
- *     napMin?, naps?, st?, bk?, hr?, ox?, rr?, ... (v1.98, ver watchGroupSleep) }, ex: [{ start, end, type, title? }], at } }, goals: { steps, sleepMin } }
+ *     napMin?, naps?, st?, bk?, hr?, ox?, rr?, ... (v1.98, ver watchGroupSleep) }, ex: [{ start, end, type, title? }], at } }, goals: { steps, sleepMin, wakeWk?, wakeWe? (v2.00: hora de acordar em min, seg-sex / sáb-dom) } }
  *   O Health Connect é a fonte: puxar de novo regrava os números do dia. Campo
  *   sem permissão, com erro ou que não veio mantém o valor antigo.
  * - No navegador (PC) só mostra o que já veio pela ☁️ Conta.
@@ -17,6 +17,9 @@ const WATCH_STATE_KEY = "toba_health_watch_state";
 const WATCH_DEFAULT_GOALS = { steps: 8000, sleepMin: 450 };
 const WATCH_STEP_GOALS = [5000, 6000, 8000, 10000, 12000, 15000];
 const WATCH_SLEEP_GOALS = [360, 390, 420, 450, 480, 510];
+// v2.00 (pedido do Rafa: "preciso acordar 6h pra trabalhar, isso tem que entrar na conta"): despertador
+const WATCH_WAKE_WK = [300, 330, 360, 390, 420, 450, 480, 540];
+const WATCH_WAKE_WE = [360, 420, 480, 540, 600, 660];
 const WATCH_FIRST_DAYS = 30;  // 1ª vez: o Health Connect só deixa ler ~30 dias antes da 1ª permissão
 const WATCH_MAX_DAYS = 120;
 const WATCH_AUTO_MIN = 10;    // puxa sozinho ao abrir/voltar se faz mais que isso
@@ -72,7 +75,18 @@ function watchGoals() {
   return {
     steps: Number(g.steps) > 0 ? Number(g.steps) : WATCH_DEFAULT_GOALS.steps,
     sleepMin: Number(g.sleepMin) > 0 ? Number(g.sleepMin) : WATCH_DEFAULT_GOALS.sleepMin,
+    wakeWk: Number(g.wakeWk) > 0 && Number(g.wakeWk) < 720 ? Number(g.wakeWk) : null,
+    wakeWe: Number(g.wakeWe) > 0 && Number(g.wakeWe) < 720 ? Number(g.wakeWe) : null,
   };
+}
+
+// v2.00: despertador da manhã do dia `iso` (sáb/dom = fim de semana). null = livre (sem horário)
+function watchWakeFor(iso) {
+  const wd = new Date(`${iso}T12:00:00`).getDay();
+  const we = wd === 0 || wd === 6;
+  const g = watchGoals();
+  const min = we ? g.wakeWe : g.wakeWk;
+  return min ? { min, we, label: we ? "de fim de semana" : "de dia de semana" } : null;
 }
 
 function watchDays() {
@@ -1439,6 +1453,33 @@ function renderWatchGoals() {
     `<button type="button" class="chip-btn${v === g.steps ? " is-on" : ""}" data-click="setWatchGoal" data-kind="steps" data-value="${v}">${watchInt(v)}</button>`).join("");
   document.getElementById("watchGoalSleep").innerHTML = WATCH_SLEEP_GOALS.map((v) =>
     `<button type="button" class="chip-btn${v === g.sleepMin ? " is-on" : ""}" data-click="setWatchGoal" data-kind="sleepMin" data-value="${v}">${watchHours(v)}</button>`).join("");
+  const clock = (v) => `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(v % 60).padStart(2, "0")}`;
+  const wake = (id, kind, list, cur) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = list.map((v) => `<button type="button" class="chip-btn${v === cur ? " is-on" : ""}" data-click="setWatchWake" data-kind="${kind}" data-value="${v}">${clock(v)}</button>`).join("")
+      + `<button type="button" class="chip-btn${!cur ? " is-on" : ""}" data-click="setWatchWake" data-kind="${kind}" data-value="0">🆓 Livre</button>`;
+  };
+  wake("watchWakeWk", "wakeWk", WATCH_WAKE_WK, g.wakeWk);
+  wake("watchWakeWe", "wakeWe", WATCH_WAKE_WE, g.wakeWe);
+}
+
+// v2.00: ⏰ hora de acordar. 0 = livre (o Cloba usa a tua média de acordar)
+function setWatchWake(el) {
+  const kind = el.dataset.kind === "wakeWe" ? "wakeWe" : "wakeWk";
+  const value = Number(el.dataset.value);
+  if (!(value >= 0 && value < 720)) return;
+  if (!healthDb.watch || typeof healthDb.watch !== "object" || Array.isArray(healthDb.watch)) {
+    healthDb.watch = { v: 1, days: {}, goals: {} };
+  }
+  const w = watchDb();
+  if (!w.goals || typeof w.goals !== "object" || Array.isArray(w.goals)) w.goals = {};
+  if (value > 0) w.goals[kind] = value;
+  else delete w.goals[kind];
+  saveHealthDb();
+  renderWatchGoals();
+  renderWatch();
+  if (typeof watchMetricOpen === "function" && watchMetricOpen() && typeof renderWatchMetric === "function") renderWatchMetric();
 }
 
 function setWatchGoal(el) {
@@ -1498,6 +1539,7 @@ tobaActions({
   openWatchDay,
   openWatchGoals,
   setWatchGoal,
+  setWatchWake,
   openWatchDiag,
   watchSamsungAsk,
   watchMergeAsk,

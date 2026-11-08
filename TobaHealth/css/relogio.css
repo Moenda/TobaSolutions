@@ -2534,3 +2534,6 @@
 
 .wsl-tonight-h { font-weight: 700; margin-bottom: 4px; }
 .wsl-tonight p { margin: 4px 0 0; font-size: 0.84rem; line-height: 1.4; }
+
+/* v2.00: ⏰ despertador no 🌙 */
+.wsl-tonight-set { margin-top: 8px; }

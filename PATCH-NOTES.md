@@ -2456,3 +2456,20 @@ Pedidos do Rafa olhando a v1.98 no celular (sem APK novo):
 **Como testar:** Raio-X › 😴 Sono › Dia: ver o 🤡 com a prontidão, as falas e o 🌙; tocar em cada ❔. Trocar pra Mês: no lugar do Raio laser aparece o 🔍 O que mexe no teu sono.
 
 **Commit sugerido:** `v1.99 - Sono: Papo reto do Cloba junta prontidao + noite + E pra hoje a noite (hora de deitar e pista do Cloba), banco de sono fora da nota e da tela, explicacoes no botao de interrogacao, sem nota do Samsung, Raio laser do sono vira O que mexe no teu sono`
+
+## v2.00 — ⏰ Hora de acordar no Raio-X: a hora de deitar conta com o teu despertador
+
+**Arquivos alterados:** `TobaHealth/js/relogio.js`, `TobaHealth/js/relogio-sono.js`, `TobaHealth/TobaHealth-Relogio.html`, `TobaHealth/css/relogio.css`, `sw.js`, `assets/toba-common.js`, `CLAUDE.md`
+
+Pedido do Rafa: "o Cloba manda eu dormir até 7h40, mas eu preciso acordar às 6h pra trabalhar; isso tem que entrar na conta, e dá pra ter um horário no dia de semana e outro no fim de semana".
+
+1. **⏰ Hora de acordar na ⚙️ › 🎯 Metas:** chips pra **seg a sex** (05:00 a 09:00) e pra **sáb e dom** (06:00 a 11:00), mais **🆓 Livre** (sem despertador). Vai junto no backup/☁️ (`watch.goals.wakeWk` / `wakeWe`, em minutos).
+2. **🌙 E pra hoje à noite? usa o despertador de amanhã:** sexta à noite já usa o de fim de semana, domingo à noite o de dia de semana. Fica "deita entre 21:45 e 22:15 pra acordar às 06:00 (teu despertador de dia de semana)". Sem despertador, usa a tua média de acordar nas manhãs do mesmo tipo (semana com semana, fim de semana com fim de semana), não mais a média geral.
+3. **O Cloba explica a conta:** "com o despertador às 06:00, deitando no teu horário de dia de semana (00:24), só cabem ~5h10 de sono. É daí que a meta não fecha: o que manda é a hora de deitar". Se a hora certa tiver muito longe do teu normal (1h30+), ele sugere ir puxando 30 min por vez.
+4. Sem despertador configurado, o 🌙 mostra o botão **⏰ Contar com o meu despertador**, que abre as Metas. O ❔ do 🤡 explica o despertador.
+
+**Dados:** `TOBA_HEALTH_DB.watch.goals.wakeWk` / `wakeWe` (opcionais, minutos desde 0h; sem eles = Livre). Nada apagado.
+
+**Como testar:** Raio-X › ⚙️ › 🎯 Metas › escolher 06:00 em seg a sex. Abrir 😴 Sono › Dia: o 🌙 passa a falar do despertador e a hora de deitar muda. Num sábado (ou mudando o dia pra sexta), usa o de fim de semana.
+
+**Commit sugerido:** `v2.00 - Raio-X: hora de acordar (seg a sex e sab/dom) nas Metas; E pra hoje a noite calcula a hora de deitar pelo despertador do dia seguinte e o Cloba explica por que a meta nao fecha`

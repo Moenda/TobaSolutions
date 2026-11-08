@@ -692,8 +692,23 @@ function wslTonight(date) {
   const lats = w.nights.map((x) => wslAnalyze(x.s).lat).filter((v) => Number.isFinite(v));
   const lat = lats.length ? Math.min(45, lats.reduce((x, y) => x + y, 0) / lats.length) : 15;
   const awakeAvg = w.nights.reduce((x, n) => x + (n.s.awake || 0), 0) / w.nights.length;
-  const bed = Math.round((w.wakeAvg - need - lat - Math.min(30, awakeAvg / 2)) / 15) * 15;
+  // v2.00 (pedido do Rafa): acorda no horário do DESPERTADOR da manhã seguinte (semana x fim de
+  // semana, ⚙️ › 🎯 Metas). Sem despertador: a tua média de acordar nas manhãs do mesmo tipo.
+  const tomorrow = watchAddDays(date, 1);
+  const isWe = (iso) => [0, 6].includes(new Date(`${iso}T12:00:00`).getDay());
+  const clk = (ms) => { const d = new Date(ms); let m = d.getHours() * 60 + d.getMinutes(); if (m < 12 * 60) m += 1440; return m; };
+  const same = w.nights.filter((x) => isWe(x.date) === isWe(tomorrow));
+  const alarm = typeof watchWakeFor === "function" ? watchWakeFor(tomorrow) : null;
+  const wake = alarm ? alarm.min + 1440 : same.length >= 3 ? avg(same.map((x) => clk(x.s.end))) : w.wakeAvg;
+  const bed = Math.round((wake - need - lat - Math.min(30, awakeAvg / 2)) / 15) * 15;
   const tips = [];
+  // a conta explicada: o despertador x a hora que tu costuma deitar nesses dias
+  const usualBed = same.length >= 3 ? avg(same.map((x) => clk(x.s.start))) : null;
+  if (alarm && usualBed !== null && usualBed - bed >= 30) {
+    const fits = Math.max(0, wake - usualBed - lat);
+    tips.push(`⏰ Com o despertador às ${watchAnClockText(alarm.min)}, deitando no teu horário ${isWe(tomorrow) ? "de fim de semana" : "de dia de semana"} (${watchAnClockText(usualBed)}) só cabem ~${watchHours(Math.round(fits / 5) * 5)} de sono. É daí que a meta não fecha: o que manda é a hora de deitar.`);
+    if (usualBed - bed >= 90) tips.push(`🪜 Tá muito longe do teu normal? Começa puxando 30 min: deita às ${watchAnClockText(Math.round((usualBed - 30) / 15) * 15)} esta semana e vai adiantando aos poucos.`);
+  }
   if (short >= 30) {
     const worse = p7 !== null && a7 < p7 - 15;
     tips.push(`Na última semana tu dormiu ${watchHours(Math.round(a7))} por noite, ${watchHours(Math.round(short))} abaixo da meta${worse ? " e tá piorando em relação à semana antes" : ""}. Semana puxada acontece: não precisa pagar tudo de uma vez, mas hoje vale deitar um pouco mais cedo.`);
@@ -707,7 +722,7 @@ function wslTonight(date) {
     const how = { ex: "uma caminhada hoje", steps: "bater os passos hoje", late: "deitar antes da meia-noite", nap: "pular o cochilo da tarde" }[pick.k];
     tips.push(`🔍 Pista do Cloba: tua nota ${pick.ds > 0 ? "sobe" : "cai"} ${Math.abs(Math.round(pick.ds))} pontos ${pick.ds > 0 ? "depois de" : "quando"} ${pick.k === "ex" ? "dia com treino/caminhada" : pick.k === "steps" ? "dia com a meta de passos" : pick.k === "late" ? "deita depois da meia-noite" : "cochila de tarde"}. Vale ${how}.`);
   }
-  return { bed, need, goal, wake: w.wakeAvg, tips };
+  return { bed, need, goal, wake, alarm, tips };
 }
 
 function wslPapo(date, s, an) {
@@ -735,8 +750,9 @@ function wslPapo(date, s, an) {
   const night = lines.length ? `<div class="wsl-papo-lines">${lines.map((l) => `<p>${escapeHtml(l)}</p>`).join("")}</div>` : "";
   const tonight = tn ? `<div class="wsl-tonight">
       <div class="wsl-tonight-h">🌙 E ${isToday ? "pra hoje à noite" : "pra noite seguinte"}?</div>
-      <p>Deita entre <b>${watchAnClockText(tn.bed - 15)}</b> e <b>${watchAnClockText(tn.bed + 15)}</b> pra acordar no teu horário (${watchAnClockText(tn.wake)}) com ${watchHours(tn.need)} de sono${tn.need > tn.goal ? ` (a meta + ${watchHours(tn.need - tn.goal)} pra ir recuperando)` : ""}.</p>
+      <p>Deita entre <b>${watchAnClockText(tn.bed - 15)}</b> e <b>${watchAnClockText(tn.bed + 15)}</b> pra acordar ${tn.alarm ? `às <b>${watchAnClockText(tn.wake)}</b> (teu despertador ${escapeHtml(tn.alarm.label)})` : `no teu horário (${watchAnClockText(tn.wake)})`} com ${watchHours(tn.need)} de sono${tn.need > tn.goal ? ` (a meta + ${watchHours(tn.need - tn.goal)} pra ir recuperando)` : ""}.</p>
       ${tn.tips.map((t) => `<p class="watch-muted">${escapeHtml(t)}</p>`).join("")}
+      ${tn.alarm ? "" : `<button type="button" class="chip-btn wsl-tonight-set" data-click="openWatchGoals">⏰ Contar com o meu despertador</button>`}
     </div>` : "";
   if (!ready && !night && !tonight) return "";
   return `<div class="section-title wsl-title">🤡 Papo reto do Cloba ${wslQ("papo")}</div>
@@ -750,7 +766,8 @@ const WSL_HELP = {
     body: [
       ["🔋 Prontidão", "Nota de 0 a 100 de como o corpo acordou, no estilo da Readiness do Oura e da Recovery do Whoop. Junta a noite (40%), o HRV (25%), a FC em repouso (15%), a temperatura da pele (12%) e o esforço de ontem (8%), sempre comparando com o TEU normal dos últimos 30-60 dias, não com tabela de internet. O que não foi medido fica fora da conta."],
       ["🚦 O que fazer com o dia", "85+ 🚀 pronto pra guerra · 70+ 💪 dia bom · 55+ 😐 vai no teu ritmo · abaixo disso 🪫 dia de recuperar."],
-      ["🌙 E pra hoje à noite?", "A hora de deitar sai do teu horário médio de acordar menos o sono que tu precisa e o tempo que tu costuma levar pra apagar. Se a última semana ficou abaixo da meta, o Cloba soma um pedaço (até 1h) pra ir recuperando aos poucos, sem cobrar tudo de uma vez."],
+      ["🌙 E pra hoje à noite?", "A hora de deitar = a hora de acordar amanhã menos o sono que tu precisa e o tempo que tu costuma levar pra apagar. Se a última semana ficou abaixo da meta, o Cloba soma um pedaço (até 1h) pra ir recuperando aos poucos, sem cobrar tudo de uma vez."],
+      ["⏰ Despertador", "Na ⚙️ › 🎯 Metas dá pra escolher a hora que tu PRECISA acordar no dia de semana e no fim de semana. Aí a conta usa o despertador do dia seguinte (sexta à noite já usa o de fim de semana). Em 🆓 Livre, usa a hora que tu costuma acordar nas manhãs do mesmo tipo."],
     ],
   },
   factors: {
