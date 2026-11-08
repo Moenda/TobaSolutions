@@ -18,6 +18,10 @@
  *   health.respiratory_rate (noite) -> resp (respirações/min, 1 casa)
  *   tracker.floors_day_summary (+ health.floors_climbed onde faltar) -> floors
  *   shealth.sleep_snoring (noite) -> snoreMin (0 = mediu e não roncou)
+ * v1.98 (😴 Sono turbinado): sleep_stage também vira a linha do tempo das fases (sleep.st, noites
+ *   do último ano) e o shealth.sleep traz sleep_score/efficiency/sleep_latency/sleep_cycle/
+ *   mental_recovery/physical_recovery/movement_awakening (sleep.score/eff/lat/cyc/ment/phys/mov).
+ *   Noite que já veio do Health Connect só ganha o que faltava (samsungSleepFill), nunca perde.
  * Medida da noite vai pro dia em que acordou (end_time), igual o sono.
  * Horários do Samsung vêm em UTC ("AAAA-MM-DD HH:MM:SS.mmm"); o dia é o do celular.
  * Datas de dia (day_time) já vêm como o dia certo.
@@ -202,18 +206,25 @@ async function samsungParse(files) {
       const { head, rows } = samsungCsvRows(await samsungReadFile(byKey.stage));
       const cId = samsungCol(head, "sleep_id"), cS = samsungCol(head, "start_time"), cE = samsungCol(head, "end_time"), cSt = samsungCol(head, "stage");
       const names = { 40001: "awake", 40002: "light", 40003: "deep", 40004: "rem" };
+      const hcType = { awake: 1, light: 4, deep: 5, rem: 6 }; // v1.98: mesmo código do Health Connect (pro hipnograma)
       rows.forEach((r) => {
         const k = names[r[cSt]];
-        const ms = samsungUtc(r[cE]) - samsungUtc(r[cS]);
+        const a = samsungUtc(r[cS]), b = samsungUtc(r[cE]);
+        const ms = b - a;
         if (!k || !(ms > 0) || !r[cId]) return;
-        const s = (stages[r[cId]] = stages[r[cId]] || { awake: 0, light: 0, deep: 0, rem: 0 });
+        const s = (stages[r[cId]] = stages[r[cId]] || { awake: 0, light: 0, deep: 0, rem: 0, line: [] });
         s[k] += ms;
+        s.line.push([a, b, hcType[k]]);
       });
       found.stage = Object.keys(stages).length;
     }
     const { head, rows } = samsungCsvRows(await samsungReadFile(byKey.sleep));
     const cS = samsungCol(head, "start_time"), cE = samsungCol(head, "end_time");
     const cId = samsungCol(head, "datauuid"), cDur = samsungCol(head, "sleep_duration");
+    // v1.98: o que o Samsung calcula da noite (coluna que não existir fica de fora)
+    const extra = { score: "sleep_score", eff: "efficiency", lat: "sleep_latency", cyc: "sleep_cycle", ment: "mental_recovery", phys: "physical_recovery", mov: "movement_awakening" };
+    const cExtra = Object.keys(extra).map((k) => [k, samsungCol(head, extra[k])]).filter(([, i]) => i >= 0);
+    const stFrom = Date.now() - WATCH_IMPORT_ST_DAYS * 86400000;
     rows.forEach((r) => {
       const start = samsungUtc(r[cS]), end = samsungUtc(r[cE]);
       if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
@@ -223,7 +234,17 @@ async function samsungParse(files) {
       if (st) {
         Object.assign(s, { deep: m(st.deep), light: m(st.light), rem: m(st.rem), awake: m(st.awake) });
         s.min = s.deep + s.light + s.rem;
+        if (end >= stFrom) s.stages = st.line; // v1.98: hipnograma (só do último ano, pra não pesar no aparelho)
       }
+      cExtra.forEach(([k, i]) => {
+        let v = samsungNum(r[i]);
+        if (v === null || v < 0) return;
+        if (k === "lat" && v > 600) v = v / 60000; // latência às vezes vem em ms
+        if (k === "eff" && v > 0 && v <= 1) v *= 100;
+        if ((k === "score" || k === "eff" || k === "ment" || k === "phys") && v > 100) return;
+        if (k === "lat" && v > 300) return;
+        s[k] = Math.round(v * 10) / 10;
+      });
       if (!(s.min > 0)) {
         const dur = samsungNum(r[cDur]);
         s.min = dur > 0 ? Math.round(dur) : m(end - start);
@@ -395,6 +416,24 @@ async function samsungParseBody(byKey, day, found) {
   }
 }
 
+const WATCH_IMPORT_ST_DAYS = 400; // v1.98: hipnograma do import só das noites do último ano (mais ou menos)
+
+// v1.98: mesma noite (começo e fim a até 20 min)? Devolve a noite antiga + campos que faltavam, ou null.
+function samsungSleepFill(old, imp) {
+  if (!old || !imp || Math.abs(Number(old.start) - imp.start) > 20 * 60000 || Math.abs(Number(old.end) - imp.end) > 20 * 60000) return null;
+  const out = { ...old };
+  let n = 0;
+  ["st", ...WATCH_SLEEP_EXTRA].forEach((k) => {
+    if (out[k] === undefined && imp[k] !== undefined) { out[k] = imp[k]; n++; }
+  });
+  if (!Array.isArray(out.naps) && Array.isArray(imp.naps) && (!out.napMin || out.napMin === imp.napMin)) {
+    out.naps = imp.naps;
+    out.napMin = imp.napMin;
+    n++;
+  }
+  return n ? out : null;
+}
+
 // Junta no banco sem mexer no que já tinha. Devolve { days, from, to, filled }
 function samsungApply(parsed) {
   const w = watchEnsureDb();
@@ -418,6 +457,11 @@ function samsungApply(parsed) {
       if (next[f] === undefined || next[f] === null) { next[f] = src[f]; changed = true; filled++; }
     });
     if (nights[iso] && !next.sleep) { next.sleep = nights[iso]; changed = true; filled++; }
+    else if (nights[iso] && next.sleep) {
+      // v1.98: a noite já veio do Health Connect: só completa o que falta (fases no tempo, nota do Samsung, cochilos)
+      const add = samsungSleepFill(next.sleep, nights[iso]);
+      if (add) { next.sleep = add; changed = true; filled++; }
+    }
     if (exByDay[iso]) {
       const list = Array.isArray(next.ex) ? next.ex.slice() : [];
       exByDay[iso].forEach((x) => {

@@ -6,7 +6,7 @@
  * - Tudo fica no TOBA_HEALTH_DB.watch (vai junto no backup do Health e na ☁️):
  *   { v: 1, days: { "AAAA-MM-DD": { steps, kcal, activeKcal, distanceM, hrAvg,
  *     hrMin, hrMax, restHr, sleep: { start, end, min, deep, light, rem, awake,
- *     napMin? }, ex: [{ start, end, type, title? }], at } }, goals: { steps, sleepMin } }
+ *     napMin?, naps?, st?, bk?, hr?, ox?, rr?, ... (v1.98, ver watchGroupSleep) }, ex: [{ start, end, type, title? }], at } }, goals: { steps, sleepMin } }
  *   O Health Connect é a fonte: puxar de novo regrava os números do dia. Campo
  *   sem permissão, com erro ou que não veio mantém o valor antigo.
  * - No navegador (PC) só mostra o que já veio pela ☁️ Conta.
@@ -225,6 +225,7 @@ window.onTobaHealthData = function (reqId, data) {
   const auto = watchAutoMerge();
   watchSetState({
     pulledAt: Date.now(), diag: watchBuildDiag(data), ...(data.sources ? { oneSource: 1 } : {}),
+    ...(data.samsung && typeof data.samsung === "object" ? { samsung: { ok: Boolean(data.samsung.ok), granted: Array.isArray(data.samsung.granted) ? data.samsung.granted.map(String) : [], at: Date.now() } } : {}),
     ...(watchNativeVersion() >= 13 && data.status && watchGrantedBody(data.status.granted) ? { bodyRead: 1 } : {}),
   });
   if (changed || auto) saveHealthDb();
@@ -262,34 +263,132 @@ function watchExplainBrowser() {
 
 // Sono: a noite é do dia em que acordou. A maior sessão é a noite; as outras que
 // não encostam nela viram cochilo (napMin). Sessão em cima da outra (duas fontes) é ignorada.
+// v1.98 (😴 Sono turbinado): também guarda (tudo opcional, noite antiga não tem):
+//   st = linha do tempo das fases, "l0.12 a12.3 d15.40" (fase + minuto desde o início . duração);
+//   naps = [{ start, end, min, deep, light, rem, awake, st? }] (horário de cada cochilo);
+//   bk + hr/ox/rr = FC média / menor oxigênio / respiração de dentro da noite em blocos de bk min (APK 2.6);
+//   hrLow, oxLowSec (segundos abaixo de 90%), hrvAvg; e do 📥 Samsung: score, eff, lat, cyc, ment, phys, mov.
+const WATCH_SLEEP_EXTRA = ["hrLow", "oxLowSec", "hrvAvg", "score", "eff", "lat", "cyc", "ment", "phys", "mov"];
+
+// Fase do Health Connect -> letra. 1/3/7 acordado, 4 leve, 5 profundo, 6 REM, resto "dormindo" (sem fase)
+function watchStageLetter(type) {
+  const t = Number(type);
+  return t === 1 || t === 3 || t === 7 ? "a" : t === 4 ? "l" : t === 5 ? "d" : t === 6 ? "r" : "s";
+}
+
+// [[início, fim, tipo], ...] (ms) -> "l0.12 a12.3" (junta pedaço colado da mesma fase)
+function watchStEncode(stages, start) {
+  if (!Array.isArray(stages) || !stages.length) return "";
+  const segs = stages
+    .map((x) => (Array.isArray(x) ? { s: Number(x[0]), e: Number(x[1]), t: watchStageLetter(x[2]) } : null))
+    .filter((x) => x && Number.isFinite(x.s) && Number.isFinite(x.e) && x.e > x.s)
+    .sort((a, b) => a.s - b.s);
+  const out = [];
+  segs.forEach((x) => {
+    const off = Math.max(0, Math.round((x.s - start) / 60000));
+    const dur = Math.max(1, Math.round((x.e - x.s) / 60000));
+    const last = out[out.length - 1];
+    if (last && last.t === x.t && Math.abs(last.off + last.dur - off) <= 1) last.dur = off + dur - last.off;
+    else out.push({ t: x.t, off, dur });
+  });
+  return out.slice(0, 400).map((x) => `${x.t}${x.off}.${x.dur}`).join(" ");
+}
+
+// "l0.12 a12.3" -> [{ t, off, dur }] (texto torto = lista vazia)
+function watchStDecode(st) {
+  const out = [];
+  String(st || "").replace(/([adlrs])(\d+)\.(\d+)/g, (_, t, off, dur) => {
+    out.push({ t, off: Number(off), dur: Number(dur) });
+    return "";
+  });
+  return out;
+}
+
+// Série da noite: só número ou null, no máximo 200 blocos
+function watchSeriesClean(a, dec) {
+  if (!Array.isArray(a) || !a.length) return undefined;
+  const out = a.slice(0, 200).map((v) => (v === null || v === undefined || v === "" || !Number.isFinite(Number(v)) ? null : Math.round(Number(v) * dec) / dec));
+  return out.some((v) => v !== null) ? out : undefined;
+}
+
+function watchSleepSession(s) {
+  const start = Number(s && s.start);
+  const end = Number(s && s.end);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  const out = {
+    start, end,
+    min: Math.max(0, Math.round(Number(s.min) || 0)),
+    deep: Math.round(Number(s.deep) || 0),
+    light: Math.round(Number(s.light) || 0),
+    rem: Math.round(Number(s.rem) || 0),
+    awake: Math.round(Number(s.awake) || 0),
+  };
+  const st = typeof s.st === "string" ? s.st : watchStEncode(s.stages, start);
+  if (st) out.st = st;
+  const bk = Number(s.bk);
+  if (bk > 0 && bk <= 60) {
+    const hr = watchSeriesClean(s.hr, 1), ox = watchSeriesClean(s.ox, 1), rr = watchSeriesClean(s.rr, 10);
+    const tp = watchSeriesClean(s.tp, 100); // v1.98: temperatura da pele (SDK do Samsung), 2 casas
+    if (hr || ox || rr || tp) {
+      out.bk = Math.round(bk);
+      if (hr) out.hr = hr;
+      if (ox) out.ox = ox;
+      if (rr) out.rr = rr;
+      if (tp) out.tp = tp;
+    }
+  }
+  WATCH_SLEEP_EXTRA.forEach((k) => {
+    const v = Number(s[k]);
+    if (s[k] !== null && s[k] !== undefined && s[k] !== "" && Number.isFinite(v) && v >= 0) out[k] = Math.round(v * 10) / 10;
+  });
+  return out;
+}
+
 function watchGroupSleep(list) {
   const byDate = {};
-  (Array.isArray(list) ? list : []).forEach((s) => {
-    const start = Number(s && s.start);
-    const end = Number(s && s.end);
-    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
-    const date = toIsoDate(new Date(end));
-    (byDate[date] = byDate[date] || []).push({
-      start, end,
-      min: Math.max(0, Math.round(Number(s.min) || 0)),
-      deep: Math.round(Number(s.deep) || 0),
-      light: Math.round(Number(s.light) || 0),
-      rem: Math.round(Number(s.rem) || 0),
-      awake: Math.round(Number(s.awake) || 0),
-    });
+  (Array.isArray(list) ? list : []).forEach((raw) => {
+    const s = watchSleepSession(raw);
+    if (!s) return;
+    const date = toIsoDate(new Date(s.end));
+    (byDate[date] = byDate[date] || []).push(s);
   });
   const out = {};
   Object.keys(byDate).forEach((date) => {
     const all = byDate[date].sort((a, b) => b.min - a.min);
     const main = { ...all[0] };
     let napMin = 0;
+    const naps = [];
     all.slice(1).forEach((s) => {
       const overlaps = s.start < main.end && s.end > main.start;
-      if (!overlaps) napMin += s.min;
+      if (overlaps) return;
+      // cochilo em cima de outro cochilo (duas fontes): fica só o primeiro (o maior)
+      if (naps.some((n) => s.start < n.end && s.end > n.start)) return;
+      napMin += s.min;
+      const nap = { start: s.start, end: s.end, min: s.min, deep: s.deep, light: s.light, rem: s.rem, awake: s.awake };
+      if (s.st) nap.st = s.st;
+      naps.push(nap);
     });
-    if (napMin > 0) main.napMin = napMin;
+    if (napMin > 0) {
+      main.napMin = napMin;
+      main.naps = naps.sort((a, b) => a.start - b.start);
+    }
     out[date] = main;
   });
+  return out;
+}
+
+// v1.98: a noite nova do Health Connect substitui a antiga, mas o que ela não trouxe e a antiga
+// tinha (nota do Samsung, fases do import, séries de uma leitura anterior) continua, se for a MESMA noite.
+function watchSleepKeep(old, next) {
+  if (!next || !old || typeof old !== "object") return next;
+  if (Math.abs(Number(old.start) - next.start) > 20 * 60000 || Math.abs(Number(old.end) - next.end) > 20 * 60000) return next;
+  const out = { ...next };
+  ["st", ...WATCH_SLEEP_EXTRA].forEach((k) => {
+    if (out[k] === undefined && old[k] !== undefined) out[k] = old[k];
+  });
+  if (!out.bk && old.bk) ["bk", "hr", "ox", "rr", "tp"].forEach((k) => { if (old[k] !== undefined) out[k] = old[k]; });
+  else if (out.bk === old.bk && !out.tp && old.tp) out.tp = old.tp; // leitura sem o Samsung: a temperatura antiga fica
+  if (!out.naps && Array.isArray(old.naps) && out.napMin === old.napMin) out.naps = old.naps;
   return out;
 }
 
@@ -330,6 +429,11 @@ function watchMerge(data) {
   const vanished = [];
   // Grupo que deu pra ler (permissão + sem erro): o número que veio substitui o antigo.
   const readable = Object.keys(WATCH_GROUPS).filter((g) => granted.has(g) && !WATCH_GROUPS[g].some((f) => errors[f]) && !errors[g]);
+  // v1.98 (APK 2.6): 🌡️ temperatura e 🔋 Energy Score direto do Samsung Health (SamsungReader).
+  // Só regrava quando veio número; não veio = fica o que tinha (até o do 📥 import antigo).
+  const sam = data.samsung && typeof data.samsung === "object" && data.samsung.ok ? data.samsung : null;
+  const samErr = sam && sam.errors && typeof sam.errors === "object" ? sam.errors : {};
+  const samFields = sam && Array.isArray(sam.granted) ? ["temp", "energy"].filter((f) => sam.granted.includes(f) && !samErr[f]) : [];
 
   for (let date = from; date <= to; date = watchAddDays(date, 1)) {
     const old = watchDay(date) || {};
@@ -338,7 +442,7 @@ function watchMerge(data) {
     readable.forEach((g) => {
       WATCH_GROUPS[g].forEach((f) => {
         let v;
-        if (f === "sleep") v = sleep[date];
+        if (f === "sleep") v = watchSleepKeep(old.sleep, sleep[date]); // v1.98: não perde o que só o 📥 Samsung tem
         else if (f === "ex") v = watchSyncExercises(old.ex, ex[date], vanished); // v1.89: apagou no relógio, some aqui
         else if (Number.isFinite(Number(src[f])) && src[f] !== null) {
           const dec = WATCH_DECIMAL_FIELDS.includes(f) ? 10 : 1; // v1.94: respiração com 1 casa
@@ -347,6 +451,12 @@ function watchMerge(data) {
         // Sumiu do Health Connect? Fica o que já estava (dado nunca some calado).
         if (v !== undefined) next[f] = v;
       });
+    });
+    samFields.forEach((f) => {
+      const v = Number(src[f]);
+      if (src[f] === null || src[f] === undefined || !Number.isFinite(v)) return;
+      if (f === "temp" && v >= 25 && v <= 42) next.temp = Math.round(v * 10) / 10;
+      if (f === "energy" && v > 0 && v <= 100) next.energy = Math.round(v);
     });
     delete next.at;
     if (!watchHasData(next)) continue;
@@ -515,6 +625,20 @@ function watchBuildDiag(data) {
     },
     origins: Object.keys(origins).slice(0, 6),
     sources: watchDiagSources(data.sources), // v1.93 (APK 2.4)
+    samsung: watchDiagSamsung(data.samsung), // v1.98 (APK 2.6)
+  };
+}
+
+// v1.98 (APK 2.6): o que veio direto do Samsung Health (temperatura, Energy Score, nota de sono)
+function watchDiagSamsung(x) {
+  if (!x || typeof x !== "object") return null;
+  const errs = {};
+  Object.entries(x.errors && typeof x.errors === "object" ? x.errors : {}).forEach(([k, v]) => { errs[k] = String(v).slice(0, 160); });
+  return {
+    ok: Boolean(x.ok), error: x.error ? String(x.error).slice(0, 200) : "",
+    granted: Array.isArray(x.granted) ? x.granted.map(String).slice(0, 6) : [],
+    counts: { temp: Number(x.temp) || 0, energy: Number(x.energy) || 0, score: Number(x.score) || 0 },
+    errors: errs,
   };
 }
 
@@ -579,9 +703,69 @@ function openWatchDiag() {
       .filter(([k]) => d.sources[k] && d.sources[k].length)
       .map(([k, label]) => `${label}: ${d.sources[k].map((x) => escapeHtml(watchAppName(x))).join(" + ")}`).join("<br>")}</p>
       ${Object.values(d.sources).some((l) => l.length > 1) ? `<p class="watch-muted">Mais de um app gravando o mesmo? O Toba usa um só por dia (o que mediu mais, normalmente o Samsung Health, que já junta relógio + celular), pra não contar duas vezes.</p>` : ""}` : ""}
+    ${watchDiagSamsungHtml(d.samsung)}
     ${watchLooksStarved() ? `<div class="hint-box watch-diag-hint">🕵️ O Toba tá lendo certinho, mas o Health Connect não tem passos nem sono. As 🔥 calorias iguais todo dia são só o basal que o próprio Health Connect calcula. Quem precisa mandar é o <b>Samsung Health</b>: ${WATCH_SAMSUNG_STEPS}</div>` : ""}`;
   openTobaModal("watchDiagModal");
 }
+
+function watchDiagSamsungHtml(x) {
+  if (!x) return watchSamsungCan() ? `<div class="card-title">📱 Direto do Samsung Health</div><p class="watch-muted">Puxa de novo (🔄) pra ver.</p>` : "";
+  const labels = { temp: ["🌡️ temperatura da pele", "dia(s)"], energy: ["🔋 Energy Score", "dia(s)"], score: ["🤡 nota de sono", "noite(s)"] };
+  const rows = Object.keys(labels).map((k) => {
+    let state;
+    if (!x.ok) state = `<span class="text-red">🔌 ${escapeHtml(x.error || "não conectou")}</span>`;
+    else if (!x.granted.includes(k)) state = `<span class="text-red">🔒 sem permissão</span>`;
+    else if (x.errors[k]) state = `<span class="text-red">💥 ${escapeHtml(x.errors[k])}</span>`;
+    else if (!x.counts[k]) state = `<span class="text-gold">🤷 nada no período</span>`;
+    else state = `<span class="text-green">✅ ${x.counts[k]} ${labels[k][1]}</span>`;
+    return `<div class="kv-row watch-diag-row"><span>${labels[k][0]}</span>${state}</div>`;
+  }).join("");
+  const fix = !x.ok || x.granted.length < 3
+    ? `<div class="hint-box watch-diag-hint">${WATCH_SAMSUNG_DEV}</div><button type="button" class="btn btn-secondary" data-click="watchSamsungAsk">📱 Ligar o Samsung Health</button>` : "";
+  return `<div class="card-title">📱 Direto do Samsung Health</div><div class="kv-list">${rows}</div>${fix}`;
+}
+
+/* ---------------- v1.98 (APK 2.6): 📱 Samsung Health direto (sem import) ----------------
+ * O que o Samsung não manda pro Health Connect (🌡️ temperatura da pele, 🔋 Energy Score e a
+ * nota de sono dele) o APK lê direto pelo SDK do Samsung, junto de cada 🔄. Precisa do
+ * "Developer Mode for Data Read" ligado no Samsung Health (só leitura, sem parceria). */
+const WATCH_SAMSUNG_DEV = "No celular: <b>Samsung Health › ⋮ › Configurações › Sobre o Samsung Health</b>, toca <b>10 vezes</b> na versão, entra em <b>Developer mode</b> e liga <b>Developer Mode for Data Read</b>. Os campos de package name e access code ficam em branco (são só pra parceria). Depois toca no botão aqui embaixo e libera as 3 leituras.";
+
+function watchSamsungCan() {
+  return Boolean(TOBA_NATIVE && typeof TOBA_NATIVE.samsungAsk === "function");
+}
+
+function watchSamsungOn() {
+  const x = watchState().samsung;
+  return Boolean(x && x.ok && Array.isArray(x.granted) && x.granted.length >= 3);
+}
+
+function watchSamsungAsk() {
+  if (!watchSamsungCan()) {
+    showPageMessage(TOBA_NATIVE ? "Isso precisa do APK 2.6 (instala pelo KingInstaller, igual sempre)." : "Só no app do Toba no celular.", { title: "📱 Samsung Health", icon: "📱" });
+    return;
+  }
+  closeTobaModal("watchDiagModal");
+  watchUi.samsungAsked = true;
+  TOBA_NATIVE.samsungAsk();
+}
+
+// Resposta do TobaBridge.samsungAsk / samsungStatus
+window.onTobaSamsungStatus = function (x) {
+  if (!x || typeof x !== "object") return;
+  const asked = watchUi.samsungAsked;
+  watchUi.samsungAsked = false;
+  watchSetState({ samsung: { ok: Boolean(x.ok), granted: Array.isArray(x.granted) ? x.granted.map(String) : [], at: Date.now() } });
+  if (!asked) return renderWatch();
+  if (x.ok && Array.isArray(x.granted) && x.granted.length) {
+    watchPull({ full: true, quiet: true });
+    return;
+  }
+  renderWatch();
+  {
+    showPageMessage(`${x.ok ? "O Samsung Health não liberou nada." : `O Samsung Health não deixou conectar${x.error ? ` (${x.error})` : ""}.`}\n\nConfere o modo desenvolvedor: Samsung Health › ⋮ › Configurações › Sobre › 10 toques na versão › Developer mode › Developer Mode for Data Read ligado. Depois tenta de novo.`, { title: "📱 Samsung Health", icon: "🔒" });
+  }
+};
 
 const WATCH_SAMSUNG_STEPS = "abre <b>Conexão Saúde › Seus apps › Samsung Health</b> e liga a permissão de <b>escrever</b> passos, distância, calorias ativas, sono e exercícios (ou dentro do Samsung Health › ☰ › Configurações › Health Connect). Depois abre o Samsung Health uma vez, espera sincronizar e toca no 🔄.";
 
@@ -1315,6 +1499,7 @@ tobaActions({
   openWatchGoals,
   setWatchGoal,
   openWatchDiag,
+  watchSamsungAsk,
   watchMergeAsk,
   watchMergePick,
   watchCreateEx,

@@ -75,7 +75,10 @@ import java.util.function.ToDoubleFunction;
  * v1.94 (APK 2.5, 🩻 RAIO ULTRA X): HRV, oxigenação (SpO2) e respiração da NOITE (medida
  * das 18h em diante conta pro dia seguinte, o dia em que acorda) + andares do dia (uma fonte só).
  * Stress, Energy Score, temperatura da pele e ronco o Samsung não manda pro Health Connect:
- * esses só pelo 📥 histórico do Samsung.
+ * desde o APK 2.6 temperatura, Energy Score e a nota de sono vêm do SamsungReader (SDK do Samsung).
+ * v1.98 (APK 2.6, 😴 Sono turbinado): cada sessão de sono manda a linha do tempo das fases
+ * (stages, pro hipnograma) e, nas noites dos últimos 40 dias, FC/oxigênio/respiração/HRV
+ * de DENTRO da noite em blocos de 5 min (sleepSeries).
  */
 @TargetApi(34)
 final class HealthReader {
@@ -97,6 +100,8 @@ final class HealthReader {
     };
     private static final int MAX_DAYS = 120;
     private static final int NIGHT_FROM_HOUR = 18; // v1.94: medida das 18h em diante = noite do dia seguinte
+    private static final int SERIES_BUCKET_MIN = 5; // v1.98: série da noite em blocos de 5 min
+    private static final int SERIES_DAYS = 40;      // v1.98: só as noites dos últimos 40 dias levam série (leitura leve)
     private static final long WAIT_S = 25;
     private static final ExecutorService WORKER = Executors.newSingleThreadExecutor();
 
@@ -264,10 +269,14 @@ final class HealthReader {
                 .setEndTime(end.atZone(zone).toInstant())
                 .build();
         JSONArray sleep = new JSONArray();
+        // v1.98 (APK 2.6): noites recentes também levam FC/oxigênio/respiração/HRV da noite (série de 5 em 5 min)
+        long seriesFrom = to.minusDays(SERIES_DAYS).atStartOfDay(zone).toInstant().toEpochMilli();
         if (has(c, PERMS, "sleep")) {
             try {
                 for (SleepSessionRecord r : readAll(hc, SleepSessionRecord.class, instants)) {
-                    sleep.put(sleepJson(r));
+                    JSONObject o = sleepJson(r);
+                    if (r.getEndTime().toEpochMilli() >= seriesFrom) sleepSeries(c, hc, r, o, errors);
+                    sleep.put(o);
                 }
             } catch (Exception e) {
                 errors.put("sleep", msg(e));
@@ -292,6 +301,10 @@ final class HealthReader {
                 errors.put("exercise", msg(e));
             }
         }
+
+        // v1.98 (APK 2.6): temperatura da pele, Energy Score e nota de sono direto do Samsung Health
+        // (o Samsung não manda esses pro Health Connect). Falhou? Só fica sem eles.
+        out.put("samsung", SamsungReader.enrich(c, from, to, zone, days, sleep, seriesFrom, SERIES_BUCKET_MIN));
 
         out.put("ok", true);
         out.put("from", from.toString());
@@ -571,6 +584,17 @@ final class HealthReader {
                 }
             }
         }
+        // v1.98 (APK 2.6): a linha do tempo das fases (pro hipnograma): [início, fim, tipo]
+        JSONArray timeline = new JSONArray();
+        if (stages != null) {
+            for (SleepSessionRecord.Stage s : stages) {
+                JSONArray seg = new JSONArray();
+                seg.put(s.getStartTime().toEpochMilli());
+                seg.put(s.getEndTime().toEpochMilli());
+                seg.put(s.getType());
+                timeline.put(seg);
+            }
+        }
         long sleptMs = deep + light + rem + asleep;
         if (sleptMs <= 0) sleptMs = Math.max(0, end - start - awake);
         JSONObject o = new JSONObject();
@@ -582,7 +606,146 @@ final class HealthReader {
         o.put("rem", Math.round(rem / 60000.0));
         o.put("awake", Math.round(awake / 60000.0));
         o.put("origin", origin(r));
+        if (timeline.length() > 0) o.put("stages", timeline);
         return o;
+    }
+
+    /* v1.98 (APK 2.6): o corpo DURANTE a noite, em blocos de 5 min a partir do início da sessão.
+     * hr = média do bloco (+ hrLow = menor batimento da noite), ox = MENOR oxigênio do bloco
+     * (+ oxLowSec = segundos abaixo de 90%), rr = respiração média do bloco (1 casa),
+     * hrvAvg = média das medidas de HRV dentro da sessão. Bloco sem medida = null.
+     * Cada tipo só com a permissão dele; falhou = vai pro errors e segue sem ele. */
+    private static void sleepSeries(Context c, HealthConnectManager hc, SleepSessionRecord r, JSONObject o, JSONObject errors) throws JSONException {
+        long start = r.getStartTime().toEpochMilli();
+        long end = r.getEndTime().toEpochMilli();
+        long bucket = SERIES_BUCKET_MIN * 60000L;
+        int n = (int) Math.min(200, (end - start + bucket - 1) / bucket);
+        if (n <= 0) return;
+        TimeInstantRangeFilter win = new TimeInstantRangeFilter.Builder()
+                .setStartTime(r.getStartTime())
+                .setEndTime(r.getEndTime())
+                .build();
+        boolean any = false;
+        if (has(c, PERMS, "heart")) {
+            try {
+                double[] sum = new double[n];
+                int[] cnt = new int[n];
+                long low = 0;
+                for (HeartRateRecord h : readAll(hc, HeartRateRecord.class, win)) {
+                    for (HeartRateRecord.HeartRateSample smp : h.getSamples()) {
+                        long t = smp.getTime().toEpochMilli();
+                        long bpm = smp.getBeatsPerMinute();
+                        if (t < start || t >= end || bpm < 25 || bpm > 220) continue;
+                        int i = (int) ((t - start) / bucket);
+                        if (i >= n) continue;
+                        sum[i] += bpm;
+                        cnt[i]++;
+                        if (low == 0 || bpm < low) low = bpm;
+                    }
+                }
+                JSONArray a = seriesAvg(sum, cnt, 1);
+                if (a != null) {
+                    o.put("hr", a);
+                    o.put("hrLow", low);
+                    any = true;
+                }
+            } catch (Exception e) {
+                errors.put("sleepHr", msg(e));
+            }
+        }
+        if (has(c, PERMS, "spo2")) {
+            try {
+                double[] min = new double[n];
+                int[] cnt = new int[n];
+                List<long[]> pts = new ArrayList<>(); // {tempo, valor}
+                for (OxygenSaturationRecord x : readAll(hc, OxygenSaturationRecord.class, win)) {
+                    long t = x.getTime().toEpochMilli();
+                    double v = x.getPercentage().getValue();
+                    if (t < start || t >= end || v < 50 || v > 100) continue;
+                    int i = (int) ((t - start) / bucket);
+                    if (i >= n) continue;
+                    if (cnt[i] == 0 || v < min[i]) min[i] = v;
+                    cnt[i]++;
+                    pts.add(new long[]{t, Math.round(v * 10)});
+                }
+                JSONArray a = new JSONArray();
+                boolean found = false;
+                for (int i = 0; i < n; i++) {
+                    if (cnt[i] > 0) {
+                        a.put(Math.round(min[i]));
+                        found = true;
+                    } else a.put(JSONObject.NULL);
+                }
+                if (found) {
+                    o.put("ox", a);
+                    // tempo abaixo de 90%: cada medida baixa vale até a próxima (no máximo 5 min)
+                    pts.sort((p, q) -> Long.compare(p[0], q[0]));
+                    long lowMs = 0;
+                    for (int i = 0; i < pts.size(); i++) {
+                        if (pts.get(i)[1] >= 900) continue;
+                        long next = i + 1 < pts.size() ? pts.get(i + 1)[0] : pts.get(i)[0] + 60000L;
+                        lowMs += Math.min(bucket, Math.max(0, next - pts.get(i)[0]));
+                    }
+                    o.put("oxLowSec", Math.round(lowMs / 1000.0));
+                    any = true;
+                }
+            } catch (Exception e) {
+                errors.put("sleepOx", msg(e));
+            }
+        }
+        if (has(c, PERMS, "resp")) {
+            try {
+                double[] sum = new double[n];
+                int[] cnt = new int[n];
+                for (RespiratoryRateRecord x : readAll(hc, RespiratoryRateRecord.class, win)) {
+                    long t = x.getTime().toEpochMilli();
+                    double v = x.getRate();
+                    if (t < start || t >= end || v < 4 || v > 60) continue;
+                    int i = (int) ((t - start) / bucket);
+                    if (i >= n) continue;
+                    sum[i] += v;
+                    cnt[i]++;
+                }
+                JSONArray a = seriesAvg(sum, cnt, 10);
+                if (a != null) {
+                    o.put("rr", a);
+                    any = true;
+                }
+            } catch (Exception e) {
+                errors.put("sleepRr", msg(e));
+            }
+        }
+        if (has(c, PERMS, "hrv")) {
+            try {
+                double sum = 0;
+                int cnt = 0;
+                for (HeartRateVariabilityRmssdRecord x : readAll(hc, HeartRateVariabilityRmssdRecord.class, win)) {
+                    double v = x.getHeartRateVariabilityMillis();
+                    if (v < 1 || v > 300) continue;
+                    sum += v;
+                    cnt++;
+                }
+                if (cnt > 0) o.put("hrvAvg", Math.round(sum / cnt));
+            } catch (Exception e) {
+                errors.put("sleepHrv", msg(e));
+            }
+        }
+        if (any) o.put("bk", SERIES_BUCKET_MIN);
+    }
+
+    // v1.98: média de cada bloco (null onde não teve medida). dec = 1 (inteiro) ou 10 (uma casa). Nada = null.
+    private static JSONArray seriesAvg(double[] sum, int[] cnt, int dec) throws JSONException {
+        JSONArray a = new JSONArray();
+        boolean found = false;
+        for (int i = 0; i < sum.length; i++) {
+            if (cnt[i] > 0) {
+                double v = sum[i] / cnt[i];
+                if (dec > 1) a.put(Math.round(v * dec) / (double) dec);
+                else a.put(Math.round(v));
+                found = true;
+            } else a.put(JSONObject.NULL);
+        }
+        return found ? a : null;
     }
 
     private static String origin(Record r) {

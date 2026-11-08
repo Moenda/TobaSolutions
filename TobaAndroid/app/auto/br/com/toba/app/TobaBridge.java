@@ -44,7 +44,7 @@ final class TobaBridge {
 
     @JavascriptInterface
     public int version() {
-        return 13; // 13 = APK 2.5 (healthRead: + HRV, oxigenação, respiração da noite e andares; 🩻 RAIO ULTRA X); 12 = APK 2.4 (healthRead: passos/km/kcal de UMA fonte por dia, sem somar celular + Samsung Health; manda "sources"); 11 = APK 2.3 (exercícios do healthRead com kcal/km/passos/FC da sessão, pro mesclar); 10 = APK 2.2 (healthStatus/healthAsk/healthRead: ⌚ Relógio do Toba Health); 9 = APK 2.1 (clipboardText: 📋 Colar do Maps no Places); 8 = APK 1.8 (autoFavorites: ⭐ no Android Auto); 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
+        return 14; // 14 = APK 2.6 (healthRead: sono com a linha do tempo das fases + FC/oxigênio/respiração/HRV/temperatura de dentro da noite, + samsung com temperatura da pele/Energy Score/nota de sono pelo SDK do Samsung; samsungStatus/samsungAsk; 😴 Sono turbinado); 13 = APK 2.5 (healthRead: + HRV, oxigenação, respiração da noite e andares; 🩻 RAIO ULTRA X); 12 = APK 2.4 (healthRead: passos/km/kcal de UMA fonte por dia, sem somar celular + Samsung Health; manda "sources"); 11 = APK 2.3 (exercícios do healthRead com kcal/km/passos/FC da sessão, pro mesclar); 10 = APK 2.2 (healthStatus/healthAsk/healthRead: ⌚ Relógio do Toba Health); 9 = APK 2.1 (clipboardText: 📋 Colar do Maps no Places); 8 = APK 1.8 (autoFavorites: ⭐ no Android Auto); 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
     }
 
     /* ---------------- v1.87 (APK 2.2): ⌚ Relógio (Health Connect) ---------------- */
@@ -95,6 +95,26 @@ final class TobaBridge {
                 }
             }
         });
+    }
+
+    /* ---------------- v1.98 (APK 2.6): 🌡️ Samsung Health direto (SamsungReader) ---------------- */
+
+    // Pergunta em segundo plano o que o Samsung Health liberou. Resposta:
+    // window.onTobaSamsungStatus({ ok, granted: ["temp","energy","score"], missing: [...], error? })
+    @JavascriptInterface
+    public void samsungStatus() {
+        new Thread(() -> {
+            String json = SamsungReader.status(app).toString();
+            activity.healthJs("window.onTobaSamsungStatus&&window.onTobaSamsungStatus(" + json + ")");
+        }).start();
+    }
+
+    // Abre a tela do Samsung Health pedindo temperatura da pele, Energy Score e sono.
+    // Resposta: window.onTobaSamsungStatus(status). Precisa do "Developer Mode for Data Read" ligado.
+    @JavascriptInterface
+    public void samsungAsk() {
+        SamsungReader.ask(activity, json -> activity.healthJs(
+                "window.onTobaSamsungStatus&&window.onTobaSamsungStatus(" + json + ")"));
     }
 
     /* ---------------- v1.85 (APK 2.1): área de transferência ---------------- */

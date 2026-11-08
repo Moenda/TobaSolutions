@@ -299,13 +299,13 @@ function renderWatchSleep() {
       <span class="watch-sleep-time">🛏️ ${watchClock(s.start)} › ⏰ ${watchClock(s.end)}</span>
     </div>
     <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${s.min >= goal ? "var(--gold-2)" : "var(--blue)"}"></div></div>
-    <div class="watch-muted watch-sleep-goal">${pct}% da meta de ${watchHours(goal)}${s.napMin ? ` · 💤 +${watchHours(s.napMin)} de cochilo` : ""}</div>
+    <div class="watch-muted watch-sleep-goal">${pct}% da meta de ${watchHours(goal)}${s.napMin ? ` · 💤 +${watchHours(s.napMin)} de cochilo` : ""}${typeof wslScoreOf === "function" ? ` · 🤡 nota ${wslScoreOf(night.date)}` : ""}</div>
     <div class="watch-cmp-deltas watch-sleep-deltas">
       ${watchDeltaChip("sleep", r.v, r.y, "vs noite antes", false)}
       ${watchDeltaChip("sleep", r.v, r.w, "vs 7 noites", false)}
     </div>
     ${bits.length ? `<p class="watch-muted">🕐 Comparando com a semana: ${escapeHtml(bits.join(" e "))}.</p>` : ""}
-    ${watchSleepBar(s)}`;
+    ${typeof watchSleepMini === "function" ? watchSleepMini(s) : watchSleepBar(s)}`; // v1.98: mini hipnograma quando a noite tem as fases no tempo
 }
 
 /* ---------------- 🧬 Corpo por dentro ---------------- */

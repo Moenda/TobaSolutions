@@ -1861,3 +1861,626 @@
   text-align: center;
   margin: 0.8rem 0 0.4rem;
 }
+
+/* =====================================================================
+ * v1.98 · 😴 Sono turbinado (relogio-sono.js) + toque na barra (todos os gráficos)
+ * ===================================================================== */
+.watch-chart-wrap {
+  position: relative;
+}
+
+.watch-chart-tip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 34px;
+  margin-bottom: 0.4rem;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.watch-chart-tip.is-hint {
+  font-weight: 500;
+  color: var(--muted);
+  background: transparent;
+  border: 1px dashed var(--border);
+}
+
+.watch-chart-go {
+  font-size: 0.72rem;
+  padding: 4px 10px;
+}
+
+.watch-chart-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.watch-chart-hit.is-sel {
+  fill: rgba(255, 255, 255, 0.05);
+}
+
+.watch-chart-bar {
+  transition: opacity 0.15s;
+}
+
+.watch-chart-bar.is-dim {
+  opacity: 0.38;
+}
+
+.wsl-tip {
+  display: block;
+}
+
+.wsl-tip-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.wsl-tip-sub {
+  margin-top: 3px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--text-2);
+  line-height: 1.45;
+}
+
+.wsl-tip .watch-chart-go {
+  margin-top: 6px;
+}
+
+.wsl-goal-dot {
+  fill: var(--gold-2);
+}
+
+.wsl-nap-cap {
+  fill: var(--gold-2);
+  opacity: 0.75;
+}
+
+.wsl-legend i {
+  height: 9px !important;
+  width: 9px !important;
+  border: 0 !important;
+  border-radius: 3px;
+}
+
+.wsl-legend i.is-goal {
+  height: 0 !important;
+  width: 14px !important;
+  border-top: 2px dashed var(--gold-2) !important;
+  border-radius: 0;
+}
+
+.wsl-legend i.is-avg {
+  height: 0 !important;
+  width: 14px !important;
+  border-top: 2px dotted var(--text-2) !important;
+  border-radius: 0;
+}
+
+.watch-an-legend {
+  flex-wrap: wrap;
+}
+
+/* Herói da noite */
+.wsl-hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0.6rem;
+}
+
+.wsl-hero-main {
+  min-width: 0;
+}
+
+.wsl-hero-val {
+  font-size: 2.3rem;
+  font-weight: 800;
+  line-height: 1.05;
+  color: var(--blue);
+}
+
+.wsl-hero-sub {
+  font-size: 0.78rem;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+
+.wsl-hero-clock {
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+.wsl-hero-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.wsl-hero-score small {
+  font-size: 0.64rem;
+  color: var(--muted);
+  max-width: 90px;
+  line-height: 1.2;
+}
+
+.wsl-ring {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+
+.wsl-ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.wsl-ring-bg {
+  fill: none;
+  stroke: var(--surface-3);
+  stroke-width: 7;
+}
+
+.wsl-ring-fg {
+  fill: none;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke: var(--blue);
+}
+
+.wsl-ring.is-good .wsl-ring-fg { stroke: var(--green); }
+.wsl-ring.is-ok .wsl-ring-fg { stroke: var(--gold-2); }
+.wsl-ring.is-bad .wsl-ring-fg { stroke: var(--coral); }
+
+.wsl-ring-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.wsl-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+
+.wsl-badge.is-good { background: rgba(63, 185, 80, 0.16); color: var(--green); }
+.wsl-badge.is-ok { background: rgba(227, 179, 65, 0.16); color: var(--gold-2); }
+.wsl-badge.is-bad { background: rgba(255, 123, 114, 0.16); color: var(--coral); }
+
+/* Fatores */
+.wsl-factors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.wsl-factor {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 10px 11px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  min-width: 0;
+}
+
+.wsl-factor-label {
+  font-size: 0.74rem;
+  color: var(--text-2);
+}
+
+.wsl-factor b {
+  font-size: 1.15rem;
+}
+
+.wsl-factor small {
+  font-size: 0.66rem;
+  color: var(--muted);
+  line-height: 1.25;
+}
+
+.wsl-factor-note {
+  font-size: 0.7rem;
+}
+
+/* Noite minuto a minuto */
+.wsl-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+.wsl-scrub {
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: crosshair;
+}
+
+.wsl-scrub-tip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  min-height: 34px;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border);
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.wsl-scrub-tip.is-on {
+  border: 0;
+  background: var(--surface-3);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.wsl-lvl {
+  font-size: 9px;
+  fill: var(--muted);
+}
+
+.wsl-lvl.is-hi {
+  fill: var(--text);
+  font-weight: 800;
+}
+
+.wsl-axis {
+  font-size: 8.5px;
+  fill: var(--muted);
+  text-anchor: middle;
+}
+
+.wsl-grid {
+  stroke: var(--border-soft);
+  stroke-width: 1;
+}
+
+.wsl-step {
+  fill: none;
+  stroke: rgba(201, 209, 217, 0.28);
+  stroke-width: 1;
+}
+
+.wsl-cursor {
+  stroke: var(--text);
+  stroke-width: 1.2;
+  stroke-dasharray: 3 2;
+}
+
+.wsl-line {
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.wsl-ref {
+  stroke: var(--coral);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  opacity: 0.7;
+}
+
+.wsl-avg {
+  stroke: var(--text-2);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  opacity: 0.55;
+}
+
+.wsl-series {
+  margin-top: 0.7rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.wsl-series-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.78rem;
+  margin-bottom: 2px;
+  cursor: pointer;
+}
+
+.wsl-series-head span {
+  color: var(--text-2);
+}
+
+.wsl-series-head b {
+  margin-left: auto;
+}
+
+.wsl-series-head small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.wsl-nohyp {
+  margin-top: 0.6rem;
+}
+
+/* Fases x o teu normal */
+.wsl-stages {
+  margin-top: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.wsl-stage-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.wsl-stage-head span:last-child {
+  color: var(--text-2);
+}
+
+.wsl-stage-track {
+  position: relative;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.wsl-stage-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 6px;
+}
+
+.wsl-stage-band,
+.wsl-band-key {
+  background: repeating-linear-gradient(45deg, rgba(240, 246, 252, 0.55) 0 2px, transparent 2px 5px);
+}
+
+.wsl-stage-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid rgba(240, 246, 252, 0.6);
+  border-right: 1px solid rgba(240, 246, 252, 0.6);
+}
+
+.wsl-band-key {
+  display: inline-block;
+  width: 14px;
+  height: 9px;
+  border-radius: 2px;
+  vertical-align: -1px;
+  border: 1px solid rgba(240, 246, 252, 0.6);
+}
+
+.wsl-stage-note {
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* Corpo dormindo */
+.wsl-body .kv-row strong {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.wsl-body .kv-row small {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* Cochilos */
+.wsl-nap + .wsl-nap {
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.wsl-nap-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  margin-bottom: 4px;
+}
+
+.wsl-nap-head span {
+  color: var(--text-2);
+  font-size: 0.76rem;
+}
+
+/* Regularidade */
+.wsl-win-bar { fill: #4c6ef5; }
+.wsl-win-gold { fill: var(--gold-2); }
+.wsl-win-bar.is-hi, .wsl-win-gold.is-hi { stroke: var(--text); stroke-width: 1.2; }
+.wsl-win-nap { fill: #b197fc; opacity: 0.9; }
+
+.watch-an-legend i.wsl-key-bar,
+.watch-an-legend i.wsl-key-gold,
+.watch-an-legend i.wsl-key-nap {
+  width: 12px;
+  height: 8px;
+  border: 0;
+  border-radius: 2px;
+}
+
+.watch-an-legend i.wsl-key-bar { background: #4c6ef5; }
+.watch-an-legend i.wsl-key-gold { background: var(--gold-2); }
+.watch-an-legend i.wsl-key-nap { background: #b197fc; }
+
+.wsl-suggest {
+  margin-top: 0.7rem;
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  background: rgba(88, 166, 255, 0.1);
+  border: 1px solid rgba(88, 166, 255, 0.3);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+/* Detalhes técnicos */
+.wsl-details {
+  margin: 0.9rem 0 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 0 12px;
+}
+
+.wsl-details summary {
+  cursor: pointer;
+  padding: 12px 0;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.wsl-details .kv-list {
+  padding-bottom: 10px;
+}
+
+.wsl-details .kv-row strong {
+  text-align: right;
+}
+
+.wsl-details .kv-row small {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* Mini hipnograma no card do sono da tela principal */
+.wsl-mini {
+  display: block;
+  width: 100%;
+  height: 34px;
+  margin-top: 0.8rem;
+}
+
+/* v1.98: 🔋 Prontidão do Cloba */
+.wsl-ready-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.wsl-ready-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.wsl-ready-main b { font-size: 1rem; }
+.wsl-ready-main p { margin: 0; font-size: 0.82rem; }
+.wsl-ready-main small { color: var(--muted); font-size: 0.72rem; }
+
+.wsl-ready-parts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0 6px;
+}
+
+.wsl-ready-part {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  min-width: 0;
+}
+
+.wsl-ready-part span { font-size: 0.72rem; color: var(--muted); }
+.wsl-ready-part b { font-size: 0.9rem; }
+.wsl-ready-part small { font-size: 0.66rem; color: var(--muted); }
+
+.wsl-ready-bar {
+  display: block;
+  height: 5px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.wsl-ready-bar em {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--blue);
+}
+
+.wsl-ready-bar.is-good em { background: var(--green); }
+.wsl-ready-bar.is-ok em { background: var(--gold-2); }
+.wsl-ready-bar.is-bad em { background: var(--coral); }
+
+/* v1.98: 🔍 O que mexe no teu sono */
+.wsl-move {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border-left: 3px solid var(--blue);
+  background: var(--surface-2);
+  margin-bottom: 8px;
+}
+
+.wsl-move.is-good { border-left-color: var(--green); }
+.wsl-move.is-bad { border-left-color: var(--coral); }
+
+.wsl-move-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.wsl-move.is-good .wsl-move-head b { color: var(--green); }
+.wsl-move.is-bad .wsl-move-head b { color: var(--coral); }
+.wsl-move small { color: var(--muted); font-size: 0.72rem; }
+
+.wsl-jetlag { margin: 8px 0 0; }
+
+.wsl-samsung { margin: 12px 0; line-height: 1.45; }
+.wsl-samsung .btn { margin-top: 10px; width: 100%; }
