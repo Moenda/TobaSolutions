@@ -2484,3 +2484,53 @@
 
 .wsl-samsung { margin: 12px 0; line-height: 1.45; }
 .wsl-samsung .btn { margin-top: 10px; width: 100%; }
+
+/* v1.99: herói com respiro, ❔ nos títulos, 🤡 Papo reto juntando a prontidão */
+.wsl-hero { margin-bottom: 12px; }
+
+.wsl-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wsl-title-sub { margin-left: auto; font-weight: 400; }
+
+.wsl-q {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.wsl-q:active { background: var(--surface-3); }
+
+.wsl-ready-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.64rem !important;
+}
+
+.wsl-papo-lines {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.wsl-papo-lines p { margin: 0 0 6px; font-size: 0.85rem; line-height: 1.4; }
+
+.wsl-tonight {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(88, 166, 255, 0.08);
+  border: 1px solid rgba(88, 166, 255, 0.25);
+}
+
+.wsl-tonight-h { font-weight: 700; margin-bottom: 4px; }
+.wsl-tonight p { margin: 4px 0 0; font-size: 0.84rem; line-height: 1.4; }

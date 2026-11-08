@@ -677,7 +677,7 @@ function renderWatchMetric() {
     ${key === "hrv" || key === "temp" || key === "resp" ? watchAnBaseline(key, m, rows) : ""}
     ${key === "spo2" ? watchAnSpo2Extras(from, to) : ""}
     ${watchAnAbout(key, m)}
-    ${watchAnInsights(key)}
+    ${key === "sleep" && typeof wslMovesHtml === "function" ? wslMovesHtml(to < toIsoDate() ? to : toIsoDate()) : watchAnInsights(key)}
     ${watchAnWeekdays(rows, m)}
     ${watchAnRecords(key, m)}
     <div class="section-title">🗓️ Dias do período</div>

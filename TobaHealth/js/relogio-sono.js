@@ -17,7 +17,10 @@
  * Noite sem st (antiga / APK < 2.6) mostra o que tem e um aviso de como ganhar o hipnograma.
  * A Nota do Cloba é do Toba (conta aberta nos fatores), não é a do Samsung: a do Samsung
  * aparece do lado quando veio (sleep.score: SDK do Samsung no APK 2.6 ou 📥 import antigo).
- * Ideias do Cloba (mesma v1.98): 🔋 Prontidão (noite + HRV + FC + temperatura + banco + esforço
+ * v1.99 (pedido do Rafa): 🔋 Prontidão + Papo reto viraram UMA seção (🤡 Papo reto do Cloba, com
+ * 🌙 E pra hoje à noite?), o 🏦 banco saiu da tela e da conta, as explicações foram pro ❔ (WSL_HELP)
+ * e a nota do Samsung não aparece mais (quem manda é a do Cloba).
+ * Ideias do Cloba (v1.98): 🔋 Prontidão (noite + HRV + FC + temperatura + banco + esforço
  * de ontem x o TEU normal), 🔍 O que mexe no teu sono (noites depois de treino, passos, cochilo,
  * horário, fim de semana), 🌍 Jet lag social e 🌡️ temperatura da pele na noite minuto a minuto.
  */
@@ -126,9 +129,9 @@ function wslScoreOf(date) {
 
 /* ---------------- Pedaços de tela ---------------- */
 
-function wslRing(score) {
+function wslRing(score, cls) {
   const r = 30, c = 2 * Math.PI * r;
-  const g = wslGrade(score);
+  const g = cls ? { cls } : wslGrade(score);
   return `<div class="wsl-ring ${g.cls}" role="img" aria-label="Nota ${score}">
     <svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="${r}" class="wsl-ring-bg" />
       <circle cx="36" cy="36" r="${r}" class="wsl-ring-fg" style="stroke-dasharray:${((c * score) / 100).toFixed(1)} ${c.toFixed(1)}" /></svg>
@@ -381,7 +384,7 @@ function wslStageRows(s, date) {
       ${off ? `<div class="wsl-stage-note">${escapeHtml(off)}${band ? ` (${Math.round(band[0])}-${Math.round(band[1])}%)` : ""}</div>` : ""}
     </div>`;
   }).join("")}
-    <p class="watch-muted"><span class="wsl-band-key"></span> o teu normal (metade das tuas noites dos últimos 30 dias cai nessa faixa). % do tempo na cama, igual o Samsung.</p>
+
   </div>`;
 }
 
@@ -390,7 +393,7 @@ function wslNightCard(date, s, an) {
   const hasHyp = an.has;
   const top = hasHyp ? wslHypnogram(s, an) : `${watchSleepBar(s)}<p class="watch-muted wsl-nohyp">🧭 Essa noite chegou só com o total de cada fase. O gráfico das fases pelo horário vem nas noites puxadas com o <b>APK 2.6</b> (🔄), sozinho.</p>`;
   if (!hasHyp && !series) return `<div class="section-title">🧭 A noite</div><div class="card">${top}${wslStageRows(s, date)}</div>`;
-  return `<div class="section-title">🧭 A noite, minuto a minuto</div>
+  return `<div class="section-title wsl-title">🧭 A noite, minuto a minuto ${wslQ("night")}</div>
     <div class="card wsl-night" data-id="${date}">
       <div class="wsl-scrub-tip" aria-live="polite">👆 Toca ou arrasta no gráfico pra ver o que rolava em cada hora</div>
       <div class="wsl-scrub" data-click="watchSleepScrub" data-id="${date}">${top}${series}</div>
@@ -543,39 +546,17 @@ function wslRegularity(date) {
   for (let i = 13; i >= 0; i--) dates.push(watchAddDays(date, -i));
   const w = wslWindow(dates, date);
   if (!w) return "";
-  const goal = watchGoals().sleepMin;
-  // 🏦 Banco de sono (igual AutoSleep/Rise): 14 noites até o dia, sobra e falta contra a meta,
-  // cochilo conta (igual o Whoop). Noite sem dado não entra.
-  let bank = 0, nb = 0;
-  for (let i = 0; i < 14; i++) {
-    const s = wslNight(watchAddDays(date, -i));
-    if (!s) continue;
-    nb++;
-    bank += s.min + (Number(s.napMin) || 0) - goal;
-  }
-  // Sono que precisa hoje (igual o Whoop): a meta + um pedaço da dívida (paga em ~7 noites, até +1h)
-  const need = goal + (bank < 0 ? Math.min(60, Math.round(-bank / 7 / 5) * 5) : 0);
-  // hora de deitar sugerida: acordar médio − meta − tempo médio pra pegar no sono
-  const lats = w.nights.map((x) => wslAnalyze(x.s).lat).filter((v) => Number.isFinite(v));
-  const lat = lats.length ? Math.min(45, lats.reduce((a, b) => a + b, 0) / lats.length) : 15;
-  const awakeAvg = w.nights.reduce((a, x) => a + (x.s.awake || 0), 0) / w.nights.length;
-  const bed = Math.round((w.wakeAvg - need - lat - Math.min(30, awakeAvg / 2)) / 15) * 15;
-  const isToday = date === toIsoDate();
+  // v1.99 (pedido do Rafa): o 🏦 banco saiu daqui; a hora de deitar foi pro 🤡 (🌙 E pra hoje à noite?)
   const jl = wslSocialJetlag(date);
-  const jlTxt = jl === null ? "" : Math.abs(jl) < 30
-    ? `🌍 Jet lag social: ${watchHours(Math.round(Math.abs(jl)))}. Fim de semana no mesmo fuso dos dias úteis, relógio do corpo agradece.`
-    : `🌍 Jet lag social: ${watchHours(Math.round(Math.abs(jl)))}. No fim de semana teu sono ${jl > 0 ? "vai pra mais tarde" : "vem mais cedo"}: é tipo viajar de fuso toda sexta e voltar na segunda. ${Math.abs(jl) >= 60 ? "Acima de 1h já pesa na segunda-feira." : ""}`;
-  return `<div class="section-title">🪟 Regularidade</div>
+  return `<div class="section-title wsl-title">🪟 Regularidade ${wslQ("reg")}</div>
     <div class="card">
       ${w.svg}
       <div class="watch-an-legend"><span><i class="wsl-key-bar"></i>noite</span><span><i class="wsl-key-gold"></i>bateu a meta</span><span><i class="wsl-key-nap"></i>cochilo</span><span><i class="is-avg"></i>tua média</span></div>
       <div class="toba-stats is-3">
         ${watchAnTile("🎯 Horário", `<span class="wsl-badge ${w.reg.c}">${w.reg.t}</span>`, `deita ±${Math.round(w.sd)} min`)}
         ${watchAnTile("🛏️ / ⏰", `${watchAnClockText(w.bedAvg)}`, `acorda ${watchAnClockText(w.wakeAvg)}`)}
-        ${watchAnTile("🏦 Banco", nb ? `${bank < 0 ? "−" : "+"}${watchHours(Math.abs(bank))}` : "--", nb ? `${nb} noites x meta` : "", bank < 0 ? "text-coral" : "text-green")}
+        ${watchAnTile("🌍 Fim de semana", jl === null ? "--" : `${jl >= 0 ? "+" : "−"}${watchHours(Math.round(Math.abs(jl)))}`, jl === null ? "poucas noites" : Math.abs(jl) < 30 ? "mesmo fuso 👊" : `${jl > 0 ? "mais tarde" : "mais cedo"} · jet lag social`, jl !== null && Math.abs(jl) >= 60 ? "text-coral" : "")}
       </div>
-      ${jlTxt ? `<p class="watch-muted wsl-jetlag">${escapeHtml(jlTxt.trim())}</p>` : ""}
-      <div class="wsl-suggest">🌙 ${isToday ? "Hoje à noite" : "Pra essa noite"}: deita entre <b>${watchAnClockText(bed - 15)}</b> e <b>${watchAnClockText(bed + 15)}</b> pra acordar no teu horário (${watchAnClockText(w.wakeAvg)}) com ${watchHours(need)} de sono${need > goal ? ` (a meta + ${watchHours(need - goal)} pra ir pagando o banco)` : ""}.</div>
     </div>`;
 }
 
@@ -599,7 +580,6 @@ function wslDetails(date, s, an) {
   r("🕰️ Meio do sono", `${watchClock(Number(s.start) + (Number(s.end) - Number(s.start)) / 2)} <small>bom: entre 0h e 4h</small>`);
   if (s.hrvAvg) r("💓 HRV da noite", `${watchInt(s.hrvAvg)} ms`);
   if (s.oxLowSec !== undefined) r("🫁 Abaixo de 90%", s.oxLowSec >= 1 ? wslSecs(s.oxLowSec) : "nunca");
-  if (s.score !== undefined) r("📱 Nota do Samsung", `${watchInt(s.score)}`);
   if (s.eff !== undefined) r("📱 Eficiência (Samsung)", `${watchInt(s.eff)}%`);
   if (s.ment !== undefined) r("🧠 Recuperação mental", `${watchInt(s.ment)}`);
   if (s.phys !== undefined) r("💪 Recuperação física", `${watchInt(s.phys)}`);
@@ -616,45 +596,11 @@ function wslSamsungHint(date) {
     <button type="button" class="btn btn-secondary" data-click="watchSamsungAsk">📱 Ligar o Samsung Health</button></div>`;
 }
 
-function wslCloba(date, s, an) {
-  const lines = watchAnDayCloba("sleep", WATCH_METRICS.sleep, date);
-  const extra = [];
-  if (an.lat !== undefined && an.lat > 30) extra.push(`⏳ Levou ${Math.round(an.lat)} min pra apagar. Tela, café depois das 14h ou cabeça a mil? Chá de mulungu tá na Kitchen. 🍵`);
-  if (an.has && an.waso >= 60) extra.push(`🌀 Ficou ${watchHours(an.waso)} acordado no meio da noite (${an.wakes} ${an.wakes === 1 ? "vez" : "vezes"}). Calor, xixi, Killua e Gon pulando na cama?`);
-  const staged = s.deep + s.light + s.rem;
-  if (staged && (s.rem / staged) * 100 < 15) extra.push("🌀 Pouco REM. Ele vem mais no fim da noite: acordar cedo demais ou álcool cortam ele.");
-  if (staged && (s.deep / staged) * 100 < 10) extra.push("🌊 Pouco profundo. Treino de dia e quarto fresco e escuro ajudam.");
-  if (an.lat !== undefined && an.lat < 5 && s.min < watchGoals().sleepMin) extra.push("😵 Apagou em menos de 5 min: sinal de cansaço acumulado, não de sono bom.");
-  const dip = wslHrDip(watchDay(date) || {}, s);
-  if (dip && dip.pct < 10) extra.push(`📉 O batimento caiu só ${Math.max(0, Math.round(dip.pct))}% dormindo (bom é 10%+). Janta pesada, álcool ou treino tarde deixam o corpo ligado.`);
-  if (s.oxLowSec >= 300) extra.push(`🫁 Oxigênio abaixo de 90% por ${wslSecs(s.oxLowSec)}. Uma noite não diz nada; muitas assim, vale ver com médico.`);
-  // v1.98: termômetro do corpo (igual o Oura): pele mais quente que o TEU normal = alerta cedo
-  const dd = watchDay(date) || {};
-  const tBase = dd.temp ? watchAvgBefore("temp", date, 30) : null;
-  if (tBase !== null && dd.temp - tBase >= 0.5) extra.push(`🌡️ Pele ${watchDec(dd.temp - tBase)} °C mais quente que o teu normal. Quarto quente, álcool, treino tarde... ou o corpo brigando com alguma coisa. Se o HRV também caiu, pega leve hoje.`);
-  if (s.napMin >= 90) extra.push(`💤 Cochilo de ${watchHours(s.napMin)}: compensa a noite curta, mas pode roubar o sono de hoje.`);
-  const all = [...lines, ...extra].slice(0, 5);
-  if (!all.length) return "";
-  return `<div class="watch-cloba"><span class="watch-cloba-face">🤡</span><div><b>Papo reto do Cloba</b>${all.map((l) => `<p>${escapeHtml(l)}</p>`).join("")}</div></div>`;
-}
-
 /* ---------------- v1.98: 🔋 Prontidão do Cloba ----------------
  * "Ideia do Cloba" (Rafa: o que o Cloba acha daora pra ir acompanhando). Estilo Readiness do
  * Oura / Recovery do Whoop: junta a noite com o corpo (HRV, FC dormindo, temperatura x o TEU
  * normal), o banco de sono e o esforço de ontem, e diz o que fazer com o dia.
  * Só usa o que chega sozinho (Health Connect + SDK do Samsung). O que falta fica fora da conta. */
-function wslBank(date, nights = 14) {
-  const goal = watchGoals().sleepMin;
-  let bank = 0, n = 0;
-  for (let i = 0; i < nights; i++) {
-    const s = wslNight(watchAddDays(date, -i));
-    if (!s) continue;
-    n++;
-    bank += s.min + (Number(s.napMin) || 0) - goal;
-  }
-  return { bank, n };
-}
-
 function wslReadyParts(date) {
   const s = wslNight(date);
   if (!s) return null;
@@ -662,13 +608,11 @@ function wslReadyParts(date) {
   const lin = (v, bad, good) => Math.max(0, Math.min(100, Math.round(((v - bad) / (good - bad)) * 100)));
   const parts = [];
   const sleepScore = wslFactors(s, date, wslAnalyze(s)).total;
-  parts.push({ key: "sleep", label: "😴 Noite", value: `nota ${sleepScore}`, score: sleepScore, w: 35 });
-  const b = wslBank(date);
-  if (b.n >= 5) parts.push({ key: "bank", label: "🏦 Banco", value: `${b.bank < 0 ? "−" : "+"}${watchHours(Math.abs(b.bank))}`, score: b.bank >= 0 ? 100 : lin(b.bank, -600, 0), w: 15 });
+  parts.push({ key: "sleep", label: "😴 Noite", value: `nota ${sleepScore}`, score: sleepScore, w: 40 });
   const hrvBase = d.hrv ? watchAvgBefore("hrv", date, 60) : null;
   if (hrvBase) {
     const r = d.hrv / hrvBase;
-    parts.push({ key: "hrv", label: "💓 HRV", value: `${watchInt(d.hrv)} ms`, sub: `normal ${watchInt(hrvBase)}`, score: r >= 1.05 ? 100 : lin(r, 0.7, 1.05), w: 20 });
+    parts.push({ key: "hrv", label: "💓 HRV", value: `${watchInt(d.hrv)} ms`, sub: `normal ${watchInt(hrvBase)}`, score: r >= 1.05 ? 100 : lin(r, 0.7, 1.05), w: 25 });
   }
   // FC em repouso do dia x a média dela (não mistura com o menor batimento da noite)
   const rest = Number(d.restHr) || 0;
@@ -680,17 +624,17 @@ function wslReadyParts(date) {
   const tBase = d.temp ? watchAvgBefore("temp", date, 30) : null;
   if (tBase !== null) {
     const dev = d.temp - tBase;
-    parts.push({ key: "temp", label: "🌡️ Temperatura", value: `${dev >= 0 ? "+" : "−"}${watchDec(Math.abs(dev))} °C`, sub: "x teu normal", score: Math.abs(dev) <= 0.3 ? 100 : lin(Math.abs(dev), 1.2, 0.3), w: 10 });
+    parts.push({ key: "temp", label: "🌡️ Temperatura", value: `${dev >= 0 ? "+" : "−"}${watchDec(Math.abs(dev))} °C`, sub: "x teu normal", score: Math.abs(dev) <= 0.3 ? 100 : lin(Math.abs(dev), 1.2, 0.3), w: 12 });
   }
   const y = watchDay(watchAddDays(date, -1)) || {};
   const loadBase = watchAvgBefore("activeKcal", watchAddDays(date, -1), 30);
   if (y.activeKcal && loadBase) {
     const r = y.activeKcal / loadBase;
-    parts.push({ key: "load", label: "🔥 Esforço de ontem", value: `${watchInt(y.activeKcal)} kcal`, sub: `${r >= 1 ? "+" : "−"}${Math.abs(Math.round((r - 1) * 100))}% x normal`, score: r <= 1.3 ? 100 : lin(r, 2.2, 1.3), w: 5 });
+    parts.push({ key: "load", label: "🔥 Esforço de ontem", value: `${watchInt(y.activeKcal)} kcal`, sub: `${r >= 1 ? "+" : "−"}${Math.abs(Math.round((r - 1) * 100))}% x normal`, score: r <= 1.3 ? 100 : lin(r, 2.2, 1.3), w: 8 });
   }
   const wsum = parts.reduce((a, x) => a + x.w, 0);
   const total = Math.round(parts.reduce((a, x) => a + x.score * x.w, 0) / (wsum || 1));
-  return { parts, total, energy: Number(d.energy) || null };
+  return { parts, total };
 }
 
 function wslReadyVerdict(total) {
@@ -700,29 +644,160 @@ function wslReadyVerdict(total) {
   return { icon: "🪫", label: "Dia de recuperar", cls: "is-bad", tip: "Corpo pediu arrego: alongamento de 10 min, água e dormir cedo hoje." };
 }
 
-function wslReady(date) {
+/* v1.99 (pedido do Rafa: "prontidão e papo reto tão redundantes, junta num só, clean, com ❔"):
+ * 🤡 Papo reto do Cloba = a 🔋 prontidão (anel + o que fazer com o dia + as peças) + o que o Cloba
+ * viu na noite + 🌙 E pra hoje à noite? (hora de deitar, sem número de "banco": a dívida vira dica). */
+function wslClobaLines(date, s, an) {
+  const lines = watchAnDayCloba("sleep", WATCH_METRICS.sleep, date);
+  const extra = [];
+  if (an.lat !== undefined && an.lat > 30) extra.push(`⏳ Levou ${Math.round(an.lat)} min pra apagar. Tela, café depois das 14h ou cabeça a mil? Chá de mulungu tá na Kitchen. 🍵`);
+  if (an.has && an.waso >= 60) extra.push(`🌀 Ficou ${watchHours(an.waso)} acordado no meio da noite (${an.wakes} ${an.wakes === 1 ? "vez" : "vezes"}). Calor, xixi, Killua e Gon pulando na cama?`);
+  const staged = s.deep + s.light + s.rem;
+  if (staged && (s.rem / staged) * 100 < 15) extra.push("🌀 Pouco REM. Ele vem mais no fim da noite: acordar cedo demais ou álcool cortam ele.");
+  if (staged && (s.deep / staged) * 100 < 10) extra.push("🌊 Pouco profundo. Treino de dia e quarto fresco e escuro ajudam.");
+  if (an.lat !== undefined && an.lat < 5 && s.min < watchGoals().sleepMin) extra.push("😵 Apagou em menos de 5 min: sinal de cansaço acumulado, não de sono bom.");
+  const dip = wslHrDip(watchDay(date) || {}, s);
+  if (dip && dip.pct < 10) extra.push(`📉 O batimento caiu só ${Math.max(0, Math.round(dip.pct))}% dormindo (bom é 10%+). Janta pesada, álcool ou treino tarde deixam o corpo ligado.`);
+  if (s.oxLowSec >= 300) extra.push(`🫁 Oxigênio abaixo de 90% por ${wslSecs(s.oxLowSec)}. Uma noite não diz nada; muitas assim, vale ver com médico.`);
+  // termômetro do corpo (igual o Oura): pele mais quente que o TEU normal = alerta cedo
+  const dd = watchDay(date) || {};
+  const tBase = dd.temp ? watchAvgBefore("temp", date, 30) : null;
+  if (tBase !== null && dd.temp - tBase >= 0.5) extra.push(`🌡️ Pele ${watchDec(dd.temp - tBase)} °C mais quente que o teu normal. Quarto quente, álcool, treino tarde... ou o corpo brigando com alguma coisa. Se o HRV também caiu, pega leve hoje.`);
+  if (s.napMin >= 90) extra.push(`💤 Cochilo de ${watchHours(s.napMin)}: compensa a noite curta, mas pode roubar o sono de hoje.`);
+  return [...lines, ...extra].slice(0, 4);
+}
+
+// 🌙 E pra hoje à noite? Hora de deitar pelo teu horário de acordar + o sono que tá faltando na semana
+function wslTonight(date) {
+  const dates = [];
+  for (let i = 13; i >= 0; i--) dates.push(watchAddDays(date, -i));
+  const w = wslWindow(dates, date);
+  if (!w) return null;
+  const goal = watchGoals().sleepMin;
+  const last7 = [];
+  for (let i = 0; i < 7; i++) {
+    const n = wslNight(watchAddDays(date, -i));
+    if (n) last7.push(n.min + (Number(n.napMin) || 0));
+  }
+  const prev7 = [];
+  for (let i = 7; i < 14; i++) {
+    const n = wslNight(watchAddDays(date, -i));
+    if (n) prev7.push(n.min + (Number(n.napMin) || 0));
+  }
+  const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+  const a7 = avg(last7), p7 = avg(prev7);
+  const short = a7 !== null ? goal - a7 : 0; // quanto falta por noite, em média, na última semana
+  // sono pra essa noite: a meta + um pedaço do que faltou na semana (até +1h, igual o Whoop)
+  const need = goal + (short > 0 ? Math.min(60, Math.round(short / 2 / 5) * 5) : 0);
+  const lats = w.nights.map((x) => wslAnalyze(x.s).lat).filter((v) => Number.isFinite(v));
+  const lat = lats.length ? Math.min(45, lats.reduce((x, y) => x + y, 0) / lats.length) : 15;
+  const awakeAvg = w.nights.reduce((x, n) => x + (n.s.awake || 0), 0) / w.nights.length;
+  const bed = Math.round((w.wakeAvg - need - lat - Math.min(30, awakeAvg / 2)) / 15) * 15;
+  const tips = [];
+  if (short >= 30) {
+    const worse = p7 !== null && a7 < p7 - 15;
+    tips.push(`Na última semana tu dormiu ${watchHours(Math.round(a7))} por noite, ${watchHours(Math.round(short))} abaixo da meta${worse ? " e tá piorando em relação à semana antes" : ""}. Semana puxada acontece: não precisa pagar tudo de uma vez, mas hoje vale deitar um pouco mais cedo.`);
+  } else if (a7 !== null && short <= 0) {
+    tips.push("Semana em dia com a meta. Só manter o horário. 👊");
+  }
+  // o que o 🔍 descobriu vira dica (só o que dá pra fazer hoje)
+  const mv = wslMoves(date).list;
+  const pick = mv.find((x) => (x.k === "ex" || x.k === "steps") && x.ds > 0) || mv.find((x) => (x.k === "late" || x.k === "nap") && x.ds < 0);
+  if (pick) {
+    const how = { ex: "uma caminhada hoje", steps: "bater os passos hoje", late: "deitar antes da meia-noite", nap: "pular o cochilo da tarde" }[pick.k];
+    tips.push(`🔍 Pista do Cloba: tua nota ${pick.ds > 0 ? "sobe" : "cai"} ${Math.abs(Math.round(pick.ds))} pontos ${pick.ds > 0 ? "depois de" : "quando"} ${pick.k === "ex" ? "dia com treino/caminhada" : pick.k === "steps" ? "dia com a meta de passos" : pick.k === "late" ? "deita depois da meia-noite" : "cochila de tarde"}. Vale ${how}.`);
+  }
+  return { bed, need, goal, wake: w.wakeAvg, tips };
+}
+
+function wslPapo(date, s, an) {
   const r = wslReadyParts(date);
-  if (!r || r.parts.length < 2) return "";
-  const v = wslReadyVerdict(r.total);
-  const worst = r.parts.filter((x) => x.score < 60).sort((a, b) => a.score - b.score)[0];
+  const lines = wslClobaLines(date, s, an);
+  const tn = wslTonight(date);
   const isToday = date === toIsoDate();
-  return `<div class="section-title">🔋 Prontidão do Cloba${isToday ? "" : ` <span class="watch-muted">· ${escapeHtml(watchAnDate(date))}</span>`}</div>
-    <div class="card wsl-ready">
-      <div class="wsl-ready-top">
-        ${wslRing(r.total)}
+  const ready = r && r.parts.length >= 2 ? (() => {
+    const v = wslReadyVerdict(r.total);
+    const worst = r.parts.filter((x) => x.score < 60).sort((a, b) => a.score - b.score)[0];
+    return `<div class="wsl-ready-top">
+        ${wslRing(r.total, v.cls)}
         <div class="wsl-ready-main">
+          <small class="wsl-ready-kicker">🔋 Prontidão ${isToday ? "de hoje" : `de ${escapeHtml(watchAnDate(date))}`}</small>
           <b>${v.icon} ${escapeHtml(v.label)}</b>
           <p>${escapeHtml(v.tip)}</p>
           ${worst ? `<small>O que mais puxou pra baixo: ${escapeHtml(worst.label)} (${escapeHtml(worst.value)})</small>` : ""}
-          ${r.energy ? `<small>🔋 Energy Score do Samsung: ${watchInt(r.energy)}</small>` : ""}
         </div>
       </div>
       <div class="wsl-ready-parts">${r.parts.map((x) => {
         const g = wslGrade(x.score);
         return `<div class="wsl-ready-part"><span>${x.label}</span><b>${escapeHtml(x.value)}</b><i class="wsl-ready-bar ${g.cls}"><em style="width:${x.score}%"></em></i>${x.sub ? `<small>${escapeHtml(x.sub)}</small>` : ""}</div>`;
-      }).join("")}</div>
-      <p class="watch-muted">Noite (35%) + HRV (20%) + banco de sono e FC em repouso (15% cada) + temperatura (10%) + esforço de ontem (5%), sempre comparando com o <b>teu</b> normal. Igual Readiness do Oura e Recovery do Whoop.</p>
-    </div>`;
+      }).join("")}</div>`;
+  })() : "";
+  const night = lines.length ? `<div class="wsl-papo-lines">${lines.map((l) => `<p>${escapeHtml(l)}</p>`).join("")}</div>` : "";
+  const tonight = tn ? `<div class="wsl-tonight">
+      <div class="wsl-tonight-h">🌙 E ${isToday ? "pra hoje à noite" : "pra noite seguinte"}?</div>
+      <p>Deita entre <b>${watchAnClockText(tn.bed - 15)}</b> e <b>${watchAnClockText(tn.bed + 15)}</b> pra acordar no teu horário (${watchAnClockText(tn.wake)}) com ${watchHours(tn.need)} de sono${tn.need > tn.goal ? ` (a meta + ${watchHours(tn.need - tn.goal)} pra ir recuperando)` : ""}.</p>
+      ${tn.tips.map((t) => `<p class="watch-muted">${escapeHtml(t)}</p>`).join("")}
+    </div>` : "";
+  if (!ready && !night && !tonight) return "";
+  return `<div class="section-title wsl-title">🤡 Papo reto do Cloba ${wslQ("papo")}</div>
+    <div class="card wsl-papo">${ready}${night}${tonight}</div>`;
+}
+
+/* ---------------- v1.99: ❔ explicações (pedido do Rafa: "explicação sempre com um ❔") ---------------- */
+const WSL_HELP = {
+  papo: {
+    title: "❔ 🤡 Papo reto do Cloba",
+    body: [
+      ["🔋 Prontidão", "Nota de 0 a 100 de como o corpo acordou, no estilo da Readiness do Oura e da Recovery do Whoop. Junta a noite (40%), o HRV (25%), a FC em repouso (15%), a temperatura da pele (12%) e o esforço de ontem (8%), sempre comparando com o TEU normal dos últimos 30-60 dias, não com tabela de internet. O que não foi medido fica fora da conta."],
+      ["🚦 O que fazer com o dia", "85+ 🚀 pronto pra guerra · 70+ 💪 dia bom · 55+ 😐 vai no teu ritmo · abaixo disso 🪫 dia de recuperar."],
+      ["🌙 E pra hoje à noite?", "A hora de deitar sai do teu horário médio de acordar menos o sono que tu precisa e o tempo que tu costuma levar pra apagar. Se a última semana ficou abaixo da meta, o Cloba soma um pedaço (até 1h) pra ir recuperando aos poucos, sem cobrar tudo de uma vez."],
+    ],
+  },
+  factors: {
+    title: "❔ 🧾 Fatores da nota",
+    body: [
+      ["🤡 Nota do Cloba", "Tempo dormindo vale 30%. Profundo, REM, acordado, eficiência, tempo pra pegar no sono e horário valem 10% cada. É o jeito do Oura de dar nota. O que não foi medido fica de fora da conta."],
+      ["🏷️ Boa / Razoável / Atenção", "Cada fator vira uma nota de 0 a 100: 80+ é Boa, 55+ é Razoável, abaixo disso é Atenção."],
+      ["⏳ Pegar no sono rápido demais", "Menos de 5 min não é sono bom: costuma ser cansaço acumulado. O ideal é entre 5 e 20 min."],
+    ],
+  },
+  night: {
+    title: "❔ 🧭 A noite, minuto a minuto",
+    body: [
+      ["👆 Arrastar", "Toca ou arrasta o dedo no gráfico: a linha corre em todos os gráficos juntos e o letreiro mostra a fase, o batimento, o oxigênio, a respiração e a temperatura daquela hora."],
+      ["▦ O teu normal", "Nas barras das fases, a faixa riscada é o teu normal: metade das tuas noites dos últimos 30 dias cai ali. A % é do tempo na cama, igual o Samsung."],
+      ["🌡️ Temperatura da pele", "A pele do pulso esquenta e esfria durante a noite, isso é normal. O que importa é a noite inteira fugir do teu normal."],
+    ],
+  },
+  moves: {
+    title: "❔ 🔍 O que mexe no teu sono",
+    body: [
+      ["🕵️ Como funciona", "O Cloba pega as noites dos últimos 90 dias e compara a nota das noites depois de cada coisa (treino, passos, cochilo, deitar tarde, fim de semana) com a das outras noites."],
+      ["📏 O que aparece", "Só entra o que tem pelo menos 4 noites de cada lado e diferença que importa (3+ pontos na nota ou 15+ min de sono)."],
+      ["⚠️ Correlação", "Não é prova: dia de treino pode ser também dia de menos tela, por exemplo. Quanto mais noites, mais certeiro."],
+    ],
+  },
+  reg: {
+    title: "❔ 🪟 Regularidade",
+    body: [
+      ["🎯 Horário", "Quanto a hora de deitar varia nas 14 noites: até ±30 min é Boa, até ±1h é Razoável, mais que isso é Bagunçada. Corpo gosta de rotina."],
+      ["🌍 Jet lag social", "Quanto o meio do teu sono no fim de semana foge do dos dias úteis (últimos 28 dias). Acima de 1h é como viajar de fuso toda sexta e voltar na segunda."],
+    ],
+  },
+};
+
+function wslQ(key) {
+  return `<button type="button" class="wsl-q" data-click="wslHelp" data-help="${key}" aria-label="Entenda">❔</button>`;
+}
+
+function wslHelp(el) {
+  const h = WSL_HELP[el && el.dataset.help];
+  if (!h) return;
+  document.getElementById("watchHelpTitle").textContent = h.title;
+  document.getElementById("watchHelpBody").innerHTML = h.body.map(([t, p]) => `<div class="watch-help-sec"><div class="watch-help-h">${escapeHtml(t)}</div><p>${escapeHtml(p)}</p></div>`).join("");
+  const go = document.getElementById("watchHelpGo");
+  if (go) go.style.display = "none";
+  openTobaModal("watchHelpModal");
 }
 
 /* ---------------- v1.98: 🔍 O que mexe no teu sono ----------------
@@ -774,7 +849,7 @@ function wslMoves(date) {
 function wslMovesHtml(date) {
   const m = wslMoves(date);
   if (m.rows.length < 14) {
-    return `<div class="section-title">🔍 O que mexe no teu sono</div>
+    return `<div class="section-title wsl-title">🔍 O que mexe no teu sono ${wslQ("moves")}</div>
       <div class="card"><p class="watch-muted">🕵️ O Cloba tá juntando pista: com ${m.rows.length ? `${m.rows.length} noites` : "as noites"} ainda não dá pra cravar nada. A partir de 14 ele começa a contar se treino, passos, cochilo e horário mexem no teu sono.</p></div>`;
   }
   const body = m.list.length ? m.list.map((x) => {
@@ -785,10 +860,8 @@ function wslMovesHtml(date) {
       <small>nota ${x.sa} (${x.na} noites) x ${x.sb} ${escapeHtml(x.no)} (${x.nb})${escapeHtml(minTxt)}</small>
     </div>`;
   }).join("") : `<p class="watch-muted">Por enquanto nada mexe muito: treino, passos, cochilo e horário dão quase a mesma nota. Sono estável! 👊</p>`;
-  return `<div class="section-title">🔍 O que mexe no teu sono <span class="watch-muted">· ${m.rows.length} noites</span></div>
-    <div class="card">${body}
-      <p class="watch-muted">A noite depois de cada coisa, nos últimos 90 dias. É correlação, não prova: quanto mais noite, mais certeiro.</p>
-    </div>`;
+  return `<div class="section-title wsl-title">🔍 O que mexe no teu sono ${wslQ("moves")}<span class="watch-muted wsl-title-sub">· ${m.rows.length} noites</span></div>
+    <div class="card">${body}</div>`;
 }
 
 // v1.98: 🌍 Jet lag social: meio do sono no fim de semana x dia de semana (Rise/Oura chamam assim)
@@ -828,17 +901,16 @@ function renderWatchSleepDay(date) {
           <div class="wsl-hero-sub">dormindo · ${escapeHtml(watchHours(an.inBed))} na cama · ${an.eff}% eficiência</div>
           <div class="wsl-hero-clock">🛏️ ${watchClock(s.start)} › ⏰ ${watchClock(s.end)}</div>
         </div>
-        <div class="wsl-hero-score">${wslRing(f.total)}<span class="wsl-badge ${g.cls}">${g.label}</span><small>Nota do Cloba${s.score !== undefined ? ` · Samsung ${watchInt(s.score)}` : ""}</small></div>
+        <div class="wsl-hero-score">${wslRing(f.total)}<span class="wsl-badge ${g.cls}">${g.label}</span><small>Nota do Cloba</small></div>
       </div>
       <div class="progress-track"><div class="progress-fill" style="width:${gpct}%;background:${s.min >= goal ? "var(--gold-2)" : m.color}"></div></div>
       <p class="watch-muted">${s.min >= goal ? "🏆 Meta batida" : `${gpct}% da meta de ${escapeHtml(watchHours(goal))}`}${s.napMin ? ` · 💤 +${escapeHtml(watchHours(s.napMin))} de cochilo` : ""}</p>
     </div>`;
-  const factors = `<div class="section-title">🧾 Fatores da nota</div>
+  const factors = `<div class="section-title wsl-title">🧾 Fatores da nota ${wslQ("factors")}</div>
     <div class="wsl-factors">${f.list.map((x) => {
       const gg = wslGrade(x.score);
       return `<div class="wsl-factor"><span class="wsl-factor-label">${x.label}</span><b>${escapeHtml(x.value)}</b><span class="wsl-badge ${gg.cls}">${gg.label}</span><small>${escapeHtml(x.tip)}</small></div>`;
-    }).join("")}</div>
-    <p class="watch-muted wsl-factor-note">Nota do Cloba = tempo dormindo (30%) + profundo, REM, acordado, eficiência, pegar no sono e horário (10% cada), no estilo dos fatores do Oura. O que não foi medido fica de fora da conta.</p>`;
+    }).join("")}</div>`;
   return `
     ${hero}
     <div class="toba-stats is-3 watch-an-stats">${watchAnDayTiles("sleep", m, date).join("")}</div>
@@ -846,8 +918,7 @@ function renderWatchSleepDay(date) {
       <div class="card-title">📈 As 14 noites até ${escapeHtml(watchDayLabel(date).toLowerCase())}</div>
       ${watchSleepStackChart(dates, { hi: date, goal, avg: r.w, avgLabel: "média 7 dias" })}
     </div>
-    ${wslReady(date)}
-    ${wslCloba(date, s, an)}
+    ${wslPapo(date, s, an)}
     ${factors}
     ${wslNightCard(date, s, an)}
     ${wslBodyRows(date, s, an)}
@@ -895,4 +966,4 @@ function watchSleepPeriodExtras(from, to) {
     </div>`;
 }
 
-tobaActions({ watchSleepBarTap, watchSleepScrub });
+tobaActions({ watchSleepBarTap, watchSleepScrub, wslHelp });

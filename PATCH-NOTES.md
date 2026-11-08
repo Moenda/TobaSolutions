@@ -2435,3 +2435,24 @@ Pedido do Rafa: "coloca as coisa que dá pra puxar: stress, HRV, oxigenação, t
 **Como testar:** Raio-X › 😴 Sono › aba Dia. Tocar nas barras das 14 noites; tocar/arrastar no gráfico das fases; abrir 🔬 Detalhes técnicos; trocar pra Semana/Mês e tocar nas barras. Em outra métrica (👟 passos), tocar numa barra mostra o número. No celular: no Android Studio, **Sync Gradle** (puxa gson/coroutines do SDK do Samsung) e gerar o **APK 2.6** (o `samsung-health-data-api-1.1.0.aar` tem que estar dentro de `TobaAndroid/app/libs/`), instalar pelo **KingInstaller**, tocar no 🔄 e abrir a noite de hoje (o hipnograma e as curvas aparecem). Ligar o Developer Mode for Data Read no Samsung Health, tocar em **📱 Ligar o Samsung Health** e liberar: a 🌡️ curva da pele, o 🔋 Energy Score e a nota do Samsung chegam no próximo 🔄. Conferir no 🩺 Diagnóstico › 📱 Direto do Samsung Health.
 
 **Commit sugerido:** `v1.98 - Raio-X: sono turbinado (hipnograma minuto a minuto com FC/oxigenio/respiracao/temperatura, nota e prontidao do Cloba, o que mexe no teu sono, cochilos com horario, regularidade com banco de sono, jet lag social e hora de deitar, detalhes tecnicos) + tocar na barra de qualquer grafico mostra o numero + APK 2.6 manda fases e curvas da noite e le temperatura da pele/Energy Score/nota de sono direto do Samsung Health (SDK)`
+
+## v1.99 — 😴 Sono: 🤡 Papo reto do Cloba junta a prontidão e a 🌙 noite de hoje, explicações no ❔ e sem o banco
+
+**Arquivos alterados:** `TobaHealth/js/relogio-sono.js`, `TobaHealth/js/relogio-analise.js`, `TobaHealth/css/relogio.css`, `sw.js`, `assets/toba-common.js`, `CLAUDE.md`
+
+Pedidos do Rafa olhando a v1.98 no celular (sem APK novo):
+
+1. **🤡 Papo reto do Cloba numa seção só:** a 🔋 Prontidão e o Papo reto eram redundantes. Agora é um cartão só: o anel da prontidão com o que fazer com o dia e as peças (noite, HRV, FC em repouso, temperatura, esforço de ontem), depois o que o Cloba viu na noite e, no fim, a **🌙 E pra hoje à noite?**.
+2. **🏦 Banco de sono fora:** saiu da conta da prontidão e do quadradinho da 🪟 Regularidade. A ideia boa dele virou dica no 🌙: a hora de deitar pra acordar no teu horário e, se a última semana ficou abaixo da meta, "dormiu Xh por noite, Yh abaixo da meta, hoje vale deitar um pouco mais cedo" (e avisa se tá piorando). A meta ganha no máximo +1h pra ir recuperando aos poucos. Prontidão agora: noite 40% + HRV 25% + FC em repouso 15% + temperatura 12% + esforço de ontem 8%.
+3. **🔍 Pista do Cloba no 🌙:** se o "O que mexe no teu sono" achou algo que dá pra fazer hoje (caminhada, passos, deitar antes da meia-noite, pular o cochilo da tarde), vira uma dica com o número ("tua nota sobe 11 pontos depois de dia com caminhada").
+4. **Explicações no ❔:** os textos fixos embaixo (conta da nota, conta da prontidão, legenda do "teu normal" nas fases, rodapé do 🔍, regularidade e jet lag) saíram da tela e foram pra um ❔ no título de cada seção (🤡 Papo reto, 🧾 Fatores, 🧭 A noite, 🔍 O que mexe, 🪟 Regularidade).
+5. **🪟 Regularidade mais limpa:** quadradinhos 🎯 Horário · 🛏️/⏰ · **🌍 Fim de semana** (jet lag social); sem o banco e sem a caixa da hora de deitar (foi pro 🤡).
+6. **Sem a nota do Samsung na tela:** quem manda é a Nota do Cloba (some do herói e dos 🔬 Detalhes). O Energy Score também saiu do cartão do 🤡. Os dados continuam guardados.
+7. **Semana/Mês/Semestre/Ano do 😴:** o 🔬 Raio laser (confuso) saiu; no lugar entra o **🔍 O que mexe no teu sono**.
+8. **Respiro** entre o cartão grande do sono e os quadradinhos vs ontem/7/30 dias.
+
+**Dados:** nada novo, nada apagado.
+
+**Como testar:** Raio-X › 😴 Sono › Dia: ver o 🤡 com a prontidão, as falas e o 🌙; tocar em cada ❔. Trocar pra Mês: no lugar do Raio laser aparece o 🔍 O que mexe no teu sono.
+
+**Commit sugerido:** `v1.99 - Sono: Papo reto do Cloba junta prontidao + noite + E pra hoje a noite (hora de deitar e pista do Cloba), banco de sono fora da nota e da tela, explicacoes no botao de interrogacao, sem nota do Samsung, Raio laser do sono vira O que mexe no teu sono`
