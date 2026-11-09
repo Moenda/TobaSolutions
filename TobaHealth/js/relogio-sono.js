@@ -43,7 +43,15 @@ function wslNight(date) {
   return d && d.sleep && d.sleep.min > 0 ? d.sleep : null;
 }
 
+// v2.01: noite com horário de deitar/acordar (noites antigas do 📥 import podem vir só com o total).
+// Sem isso, a conta de horário virava NaN e contaminava as médias (o "−NaN na nota" do 🔍).
+function wslTimed(s) {
+  const a = Number(s && s.start), b = Number(s && s.end);
+  return Number.isFinite(a) && Number.isFinite(b) && b > a;
+}
+
 function wslInBed(s) {
+  if (!wslTimed(s)) return Math.max(1, Math.round(Number(s.min) + (Number(s.awake) || 0)) || 1);
   return Math.max(1, Math.round((Number(s.end) - Number(s.start)) / 60000));
 }
 
@@ -113,9 +121,10 @@ function wslFactors(s, date, an) {
     list.push({ key: "reg", label: "🎯 Horário", value: diff < 15 ? "de sempre" : `${watchHours(diff)} ${watchAnClockMin(s.start, 15 * 60) > usual ? "+tarde" : "+cedo"}`, score: Math.round((lin(diff, 120, 30) + midScore) / 2), w: 10,
       tip: `perto da tua média; meio do sono às ${watchAnClockText(mid)} (bom: 0h-4h)` });
   }
-  const wsum = list.reduce((a, f) => a + f.w, 0);
-  const total = Math.round(list.reduce((a, f) => a + f.score * f.w, 0) / (wsum || 1));
-  return { list, total };
+  const ok = list.filter((f) => Number.isFinite(f.score)); // fator sem conta (dado torto) sai, não vira NaN
+  const wsum = ok.reduce((a, f) => a + f.w, 0);
+  const total = Math.round(ok.reduce((a, f) => a + f.score * f.w, 0) / (wsum || 1));
+  return { list: ok, total };
 }
 
 function wslGrade(score) {
@@ -516,7 +525,7 @@ function wslNaps(date, s) {
 
 // 🪟 Janela das 14 noites (deitou -> acordou num eixo de 20h às 14h) + hora de deitar sugerida
 function wslWindow(dates, hiDate) {
-  const nights = dates.map((date) => ({ date, s: wslNight(date) })).filter((x) => x.s);
+  const nights = dates.map((date) => ({ date, s: wslNight(date) })).filter((x) => x.s && wslTimed(x.s));
   if (nights.length < 3) return "";
   const goal = watchGoals().sleepMin;
   const AX0 = 20 * 60, AX1 = 38 * 60; // 20:00 até 14:00 do dia seguinte
@@ -526,7 +535,8 @@ function wslWindow(dates, hiDate) {
   const bedAvg = nights.reduce((a, x) => a + clk(x.s.start), 0) / nights.length;
   const wakeAvg = nights.reduce((a, x) => a + clk(x.s.end), 0) / nights.length;
   const rows = dates.map((date, i) => {
-    const s = wslNight(date);
+    const s0 = wslNight(date);
+    const s = s0 && wslTimed(s0) ? s0 : null;
     const yy = i * rowH + 2;
     const lbl = `<text x="0" y="${yy + 9}" class="wsl-lvl${date === hiDate ? " is-hi" : ""}">${escapeHtml(watchWeekday(date))} ${date.slice(8, 10)}</text>`;
     if (!s) return lbl;
@@ -725,49 +735,76 @@ function wslTonight(date) {
   return { bed, need, goal, wake, alarm, tips };
 }
 
-function wslPapo(date, s, an) {
+/* v2.01 (pedido do Rafa: "o papo reto tem tudo, coração e tal: fica no Raio-X geral; dentro de
+ * cada categoria, o resumo dela"): a 🔋 Prontidão (corpo inteiro) mora no 🤡 Papo reto da tela
+ * principal (renderWatchCloba em relogio-dia.js chama wslReadyHtml); aqui no 😴 fica só a noite:
+ * 🤡 O Cloba sobre a noite + 🌙 E pra hoje à noite? */
+function wslReadyHtml(date) {
   const r = wslReadyParts(date);
-  const lines = wslClobaLines(date, s, an);
-  const tn = wslTonight(date);
+  if (!r || r.parts.length < 2) return "";
   const isToday = date === toIsoDate();
-  const ready = r && r.parts.length >= 2 ? (() => {
-    const v = wslReadyVerdict(r.total);
-    const worst = r.parts.filter((x) => x.score < 60).sort((a, b) => a.score - b.score)[0];
-    return `<div class="wsl-ready-top">
-        ${wslRing(r.total, v.cls)}
-        <div class="wsl-ready-main">
-          <small class="wsl-ready-kicker">🔋 Prontidão ${isToday ? "de hoje" : `de ${escapeHtml(watchAnDate(date))}`}</small>
-          <b>${v.icon} ${escapeHtml(v.label)}</b>
-          <p>${escapeHtml(v.tip)}</p>
-          ${worst ? `<small>O que mais puxou pra baixo: ${escapeHtml(worst.label)} (${escapeHtml(worst.value)})</small>` : ""}
-        </div>
+  const v = wslReadyVerdict(r.total);
+  const worst = r.parts.filter((x) => x.score < 60).sort((a, b) => a.score - b.score)[0];
+  return `<div class="wsl-ready-top">
+      ${wslRing(r.total, v.cls)}
+      <div class="wsl-ready-main">
+        <small class="wsl-ready-kicker">🔋 Prontidão ${isToday ? "de hoje" : `de ${escapeHtml(watchAnDate(date))}`}</small>
+        <b>${v.icon} ${escapeHtml(v.label)}</b>
+        <p>${escapeHtml(v.tip)}</p>
+        ${worst ? `<small>O que mais puxou pra baixo: ${escapeHtml(worst.label)} (${escapeHtml(worst.value)})</small>` : ""}
       </div>
-      <div class="wsl-ready-parts">${r.parts.map((x) => {
-        const g = wslGrade(x.score);
-        return `<div class="wsl-ready-part"><span>${x.label}</span><b>${escapeHtml(x.value)}</b><i class="wsl-ready-bar ${g.cls}"><em style="width:${x.score}%"></em></i>${x.sub ? `<small>${escapeHtml(x.sub)}</small>` : ""}</div>`;
-      }).join("")}</div>`;
-  })() : "";
-  const night = lines.length ? `<div class="wsl-papo-lines">${lines.map((l) => `<p>${escapeHtml(l)}</p>`).join("")}</div>` : "";
-  const tonight = tn ? `<div class="wsl-tonight">
+    </div>
+    <div class="wsl-ready-parts">${r.parts.map((x) => {
+      const g = wslGrade(x.score);
+      return `<div class="wsl-ready-part"><span>${x.label}</span><b>${escapeHtml(x.value)}</b><i class="wsl-ready-bar ${g.cls}"><em style="width:${x.score}%"></em></i>${x.sub ? `<small>${escapeHtml(x.sub)}</small>` : ""}</div>`;
+    }).join("")}</div>`;
+}
+
+function wslTonightHtml(date) {
+  const tn = wslTonight(date);
+  if (!tn) return "";
+  const isToday = date === toIsoDate();
+  return `<div class="wsl-tonight">
       <div class="wsl-tonight-h">🌙 E ${isToday ? "pra hoje à noite" : "pra noite seguinte"}?</div>
       <p>Deita entre <b>${watchAnClockText(tn.bed - 15)}</b> e <b>${watchAnClockText(tn.bed + 15)}</b> pra acordar ${tn.alarm ? `às <b>${watchAnClockText(tn.wake)}</b> (teu despertador ${escapeHtml(tn.alarm.label)})` : `no teu horário (${watchAnClockText(tn.wake)})`} com ${watchHours(tn.need)} de sono${tn.need > tn.goal ? ` (a meta + ${watchHours(tn.need - tn.goal)} pra ir recuperando)` : ""}.</p>
       ${tn.tips.map((t) => `<p class="watch-muted">${escapeHtml(t)}</p>`).join("")}
       ${tn.alarm ? "" : `<button type="button" class="chip-btn wsl-tonight-set" data-click="openWatchGoals">⏰ Contar com o meu despertador</button>`}
-    </div>` : "";
-  if (!ready && !night && !tonight) return "";
-  return `<div class="section-title wsl-title">🤡 Papo reto do Cloba ${wslQ("papo")}</div>
-    <div class="card wsl-papo">${ready}${night}${tonight}</div>`;
+    </div>`;
+}
+
+// Uma linha pro 🤡 da tela principal: a hora de deitar de hoje (o detalhe fica no 😴)
+function wslTonightLine(date) {
+  const tn = wslTonight(date);
+  if (!tn) return "";
+  return `🌙 Hoje: deita entre ${watchAnClockText(tn.bed - 15)} e ${watchAnClockText(tn.bed + 15)}${tn.alarm ? ` (despertador às ${watchAnClockText(tn.wake)})` : ""}. O porquê tá no 😴 Sono.`;
+}
+
+function wslPapo(date, s, an) {
+  const lines = wslClobaLines(date, s, an);
+  const night = lines.length ? `<div class="wsl-papo-lines is-first">${lines.map((l) => `<p>${escapeHtml(l)}</p>`).join("")}</div>` : "";
+  const tonight = wslTonightHtml(date);
+  if (!night && !tonight) return "";
+  return `<div class="section-title wsl-title">🤡 O Cloba sobre a noite ${wslQ("night-talk")}</div>
+    <div class="card wsl-papo">${night}${tonight}</div>`;
 }
 
 /* ---------------- v1.99: ❔ explicações (pedido do Rafa: "explicação sempre com um ❔") ---------------- */
 const WSL_HELP = {
+  "night-talk": {
+    title: "❔ 🤡 O Cloba sobre a noite",
+    body: [
+      ["🤡 As falas", "O que chamou atenção nessa noite: tempo pra apagar, acordadas no meio, pouco profundo ou REM, batimento que não caiu, oxigênio, temperatura da pele e cochilo longo. A 🔋 Prontidão (o corpo todo) fica no 🤡 Papo reto da tela principal do Raio-X."],
+      ["🌙 E pra hoje à noite?", "A hora de deitar = a hora de acordar amanhã menos o sono que tu precisa e o tempo que tu costuma levar pra apagar. Se a última semana ficou abaixo da meta, o Cloba soma um pedaço (até 1h) pra ir recuperando aos poucos, sem cobrar tudo de uma vez."],
+      ["⏰ Despertador", "Na ⚙️ › 🎯 Metas dá pra escolher a hora que tu PRECISA acordar no dia de semana e no fim de semana. Aí a conta usa o despertador do dia seguinte (sexta à noite já usa o de fim de semana). Em 🆓 Livre, usa a hora que tu costuma acordar nas manhãs do mesmo tipo."],
+    ],
+  },
   papo: {
     title: "❔ 🤡 Papo reto do Cloba",
     body: [
       ["🔋 Prontidão", "Nota de 0 a 100 de como o corpo acordou, no estilo da Readiness do Oura e da Recovery do Whoop. Junta a noite (40%), o HRV (25%), a FC em repouso (15%), a temperatura da pele (12%) e o esforço de ontem (8%), sempre comparando com o TEU normal dos últimos 30-60 dias, não com tabela de internet. O que não foi medido fica fora da conta."],
       ["🚦 O que fazer com o dia", "85+ 🚀 pronto pra guerra · 70+ 💪 dia bom · 55+ 😐 vai no teu ritmo · abaixo disso 🪫 dia de recuperar."],
-      ["🌙 E pra hoje à noite?", "A hora de deitar = a hora de acordar amanhã menos o sono que tu precisa e o tempo que tu costuma levar pra apagar. Se a última semana ficou abaixo da meta, o Cloba soma um pedaço (até 1h) pra ir recuperando aos poucos, sem cobrar tudo de uma vez."],
-      ["⏰ Despertador", "Na ⚙️ › 🎯 Metas dá pra escolher a hora que tu PRECISA acordar no dia de semana e no fim de semana. Aí a conta usa o despertador do dia seguinte (sexta à noite já usa o de fim de semana). Em 🆓 Livre, usa a hora que tu costuma acordar nas manhãs do mesmo tipo."],
+      ["🤡 As falas", "O resumo do dia inteiro: sono, passos, coração, stress. O detalhe de cada assunto fica dentro dele (toca no card do 😴, do 👟...)."],
+      ["🌙 Hoje", "A hora de deitar sugerida pra hoje. A conta completa (despertador, semana abaixo da meta, pista do Cloba) tá no 😴 Sono › 🤡 O Cloba sobre a noite."],
     ],
   },
   factors: {
@@ -828,16 +865,18 @@ function wslMoves(date) {
     const d = watchAddDays(date, -i);
     const s = wslNight(d);
     if (!s) continue;
+    const score = wslFactors(s, d, wslAnalyze(s)).total;
+    if (!Number.isFinite(score)) continue;
     const y = watchDay(watchAddDays(d, -1)) || {};
     const ys = wslNight(watchAddDays(d, -1));
     const bedH = new Date(Number(s.start)).getHours();
     const wd = new Date(`${d}T12:00:00`).getDay(); // acordou sáb/dom = noite de sex/sáb
     rows.push({
-      score: wslFactors(s, d, wslAnalyze(s)).total, min: s.min,
+      score, min: s.min,
       ex: Array.isArray(y.ex) && y.ex.length > 0,
       steps: Number(y.steps) > 0 ? Number(y.steps) >= goal.steps : null,
       nap: ys ? Array.isArray(ys.naps) && ys.naps.some((n) => new Date(n.start).getHours() >= 11) : null,
-      late: bedH < 12,
+      late: wslTimed(s) ? bedH < 12 : null,
       wknd: wd === 0 || wd === 6,
     });
   }
@@ -887,7 +926,7 @@ function wslSocialJetlag(date) {
   for (let i = 0; i < 28; i++) {
     const d = watchAddDays(date, -i);
     const s = wslNight(d);
-    if (!s) continue;
+    if (!s || !wslTimed(s)) continue;
     const wd = new Date(`${d}T12:00:00`).getDay();
     const mid = watchAnClockMin(Number(s.start) + (Number(s.end) - Number(s.start)) / 2, 12 * 60);
     (wd === 0 || wd === 6 ? mids.we : mids.wk).push(mid);
@@ -916,7 +955,7 @@ function renderWatchSleepDay(date) {
         <div class="wsl-hero-main">
           <div class="wsl-hero-val">${escapeHtml(watchHours(s.min))}</div>
           <div class="wsl-hero-sub">dormindo · ${escapeHtml(watchHours(an.inBed))} na cama · ${an.eff}% eficiência</div>
-          <div class="wsl-hero-clock">🛏️ ${watchClock(s.start)} › ⏰ ${watchClock(s.end)}</div>
+          ${wslTimed(s) ? `<div class="wsl-hero-clock">🛏️ ${watchClock(s.start)} › ⏰ ${watchClock(s.end)}</div>` : ""}
         </div>
         <div class="wsl-hero-score">${wslRing(f.total)}<span class="wsl-badge ${g.cls}">${g.label}</span><small>Nota do Cloba</small></div>
       </div>

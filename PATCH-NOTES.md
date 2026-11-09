@@ -2473,3 +2473,32 @@ Pedido do Rafa: "o Cloba manda eu dormir até 7h40, mas eu preciso acordar às 6
 **Como testar:** Raio-X › ⚙️ › 🎯 Metas › escolher 06:00 em seg a sex. Abrir 😴 Sono › Dia: o 🌙 passa a falar do despertador e a hora de deitar muda. Num sábado (ou mudando o dia pra sexta), usa o de fim de semana.
 
 **Commit sugerido:** `v2.00 - Raio-X: hora de acordar (seg a sex e sab/dom) nas Metas; E pra hoje a noite calcula a hora de deitar pelo despertador do dia seguinte e o Cloba explica por que a meta nao fecha`
+
+## v2.01 — 👟 Passos turbinados + 🤡 Papo reto geral no Raio-X (sono dentro do sono) + conserto do −NaN
+
+**Arquivos novos/alterados:** `TobaHealth/js/relogio-passos.js` (NOVO), `TobaHealth/js/relogio-sono.js`, `TobaHealth/js/relogio-dia.js`, `TobaHealth/js/relogio-analise.js`, `TobaHealth/css/relogio.css`, `TobaHealth/TobaHealth-Relogio.html`, `sw.js`, `assets/toba-common.js`, `CLAUDE.md`
+
+Pedidos do Rafa: "o papo reto tem tudo (coração e tal): fica no Raio-X geral e dentro de cada categoria o resumo dela", "no O que mexe no teu sono tá tudo −NaN" e "faz o REVAMP DOS PASSOS: análises fodas, comparativos, se baseia no do sono". Sem APK novo.
+
+1. **Conserto do −NaN no 🔍 O que mexe no teu sono:** noite antiga do 📥 import sem horário de deitar/acordar fazia a conta do horário virar NaN e contaminar todas as médias. Agora noite sem horário fica fora só das contas de horário (e a Nota do Cloba ignora fator sem conta).
+2. **🤡 Papo reto do Cloba geral (tela principal do Raio-X):** subiu pra logo depois do anel dos passos. Tem a **🔋 Prontidão** (anel + o que fazer com o dia + peças), as falas do dia (sono, passos, stress) e uma linha **🌙 Hoje: deita entre X e Y**. O Energy do Samsung saiu das falas; o HRV só vira fala quando não tem prontidão (ela já mostra).
+3. **😴 Sono só com sono:** dentro do Sono o cartão vira **🤡 O Cloba sobre a noite** (as falas da noite + 🌙 E pra hoje à noite? completo, com despertador e pista). A prontidão saiu daqui (é do corpo todo).
+4. **👟 Passos turbinados (aba Dia da análise dos Passos, no estilo do Sono):**
+   - **Herói:** passos, km, kcal ativas, andares, anel da meta e **🔮 quanto fecha hoje**.
+   - vs ontem/7/30 e os 14 dias com toque.
+   - **🤡 O Cloba sobre os passos:** posição nos últimos 30, x teu normal, sequência, noite mal dormida, quanto veio do treino.
+   - **🔥 Sequência e semana:** bolinhas seg a dom com ✓ na meta, dias seguidos (com recorde do ano), quantos na meta e a semana x semana passada até o mesmo dia.
+   - **🧩 De onde vieram:** treino x dia a dia, com a lista dos treinos e os passos de cada.
+   - **📏 Passada:** cm por passo x teu normal, kcal a cada 1.000 passos e km no mês.
+   - **📅 Teu dia da semana:** média de cada dia nas últimas 12 semanas, com o dia mais ativo e o mais parado.
+   - **🗓️ O mês até aqui:** total, dias na meta, x mês passado até o mesmo dia e 🔮 quanto fecha o mês.
+   - **🔍 O que mexe nos teus passos (90 dias):** dormir 7h+ x menos de 6h, prontidão 70+, treino, dia depois de bater a meta, fim de semana e stress (só com 4+ dias de cada lado e diferença de 800+ passos ou 10%+).
+   - Explicações todas no ❔.
+5. **🔮 "Fecha em" mais honesto (também no anel da tela principal):** antes esticava o ritmo de agora (às 10h com 5.700 dava "fecha em 27.600"). Agora é o que já andou + o resto do dia no teu ritmo normal de 30 dias.
+6. **Semana/Mês/... dos Passos:** o 🔬 Raio laser saiu e entrou o 🔍 O que mexe nos teus passos (igual o Sono).
+
+**Dados:** nada novo, nada apagado.
+
+**Como testar:** Raio-X: o 🤡 aparece logo embaixo do anel, com a prontidão. 😴 Sono › Dia: 🤡 O Cloba sobre a noite + 🌙. 👟 tocar no anel/Passos › Dia: as seções novas e os ❔. Trocar pra Mês: 🔍 no lugar do Raio laser. No 🔍 do Sono não aparece mais −NaN.
+
+**Commit sugerido:** `v2.01 - Raio-X: Passos turbinados (fecha em honesto, sequencia e semana, de onde vieram, passada, dia da semana, mes com projecao, O que mexe nos teus passos) + Papo reto do Cloba geral com prontidao na tela principal e Cloba sobre a noite dentro do Sono + conserto do -NaN no O que mexe no teu sono`

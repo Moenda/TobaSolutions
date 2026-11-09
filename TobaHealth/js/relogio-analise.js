@@ -627,7 +627,8 @@ function renderWatchMetric() {
   if (watchAn.unit === "day") {
     const day = watchAddDays(today, watchAn.offset);
     // v1.98: 😴 Sono tem a tela própria da noite (relogio-sono.js)
-    const sleepDay = key === "sleep" && typeof renderWatchSleepDay === "function" ? renderWatchSleepDay(day) : "";
+    const sleepDay = key === "sleep" && typeof renderWatchSleepDay === "function" ? renderWatchSleepDay(day)
+      : key === "steps" && typeof renderWatchStepsDay === "function" ? renderWatchStepsDay(day) : ""; // v2.01: 👟 também (relogio-passos.js)
     el.innerHTML = watchAnNav(minOffset) + (sleepDay || renderWatchMetricDay(key, m, day));
     if (sleepDay && typeof watchSleepAfterRender === "function") watchSleepAfterRender();
     return;
@@ -677,7 +678,8 @@ function renderWatchMetric() {
     ${key === "hrv" || key === "temp" || key === "resp" ? watchAnBaseline(key, m, rows) : ""}
     ${key === "spo2" ? watchAnSpo2Extras(from, to) : ""}
     ${watchAnAbout(key, m)}
-    ${key === "sleep" && typeof wslMovesHtml === "function" ? wslMovesHtml(to < toIsoDate() ? to : toIsoDate()) : watchAnInsights(key)}
+    ${key === "sleep" && typeof wslMovesHtml === "function" ? wslMovesHtml(to < toIsoDate() ? to : toIsoDate())
+      : key === "steps" && typeof wpsMovesHtml === "function" ? wpsMovesHtml(to < toIsoDate() ? to : toIsoDate()) : watchAnInsights(key)}
     ${watchAnWeekdays(rows, m)}
     ${watchAnRecords(key, m)}
     <div class="section-title">🗓️ Dias do período</div>

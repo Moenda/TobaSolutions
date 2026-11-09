@@ -173,7 +173,10 @@ function watchPaceText(steps, goal) {
   const h = now.getHours() + now.getMinutes() / 60;
   const f = (h - 7) / 16;
   if (!(steps > 0) || f < 0.2 || f >= 0.97) return "";
-  const proj = Math.round(steps / f / 100) * 100;
+  // v2.01: o resto do dia no TEU ritmo normal (30 dias), não o ritmo de agora esticado
+  // (às 10h com 5.700 dava "fecha em 27.600"). Sem histórico, cai na conta antiga.
+  const n30 = watchMetricAvg("steps", watchAddDays(toIsoDate(), -1), 30, 5);
+  const proj = Math.round((n30 !== null ? steps + (1 - f) * n30 : steps / f) / 100) * 100;
   if (steps >= goal) return `🏆 Meta batida e o dia nem acabou. No ritmo, fecha em ~${watchInt(proj)}.`;
   if (proj >= goal) return `🚶 No ritmo de agora, fecha em ~${watchInt(proj)}: dá pra bater a meta.`;
   return `🐢 No ritmo de agora, fecha em ~${watchInt(proj)}. Faltam ${watchInt(goal - steps)} pra meta.`;
@@ -251,7 +254,7 @@ function watchUsualClock(date, field, pivot) {
   const vals = [];
   for (let i = 1; i <= 7; i++) {
     const d = watchDay(watchAddDays(date, -i));
-    if (d && d.sleep && d.sleep.min > 0) vals.push(watchAnClockMin(d.sleep[field], pivot));
+    if (d && d.sleep && d.sleep.min > 0 && Number.isFinite(Number(d.sleep[field]))) vals.push(watchAnClockMin(Number(d.sleep[field]), pivot)); // v2.01: noite sem horário fica fora
   }
   return vals.length >= 3 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
 }
@@ -407,18 +410,27 @@ function renderWatchCloba() {
     else if (s >= goals.steps) lines.push(`🏆 Meta de passos batida nesse dia (${watchInt(s)}).`);
     else lines.push(`👟 Fechou com ${watchInt(s)} passos: faltaram ${watchInt(goals.steps - s)} pra meta.`);
   }
-  const energy = watchLatest("energy", isToday ? 1 : 0, sel);
-  if (energy) {
-    if (energy.v >= 85) lines.push(`🔋 Energy ${watchInt(energy.v)}: bateria no talo. ${isToday ? "Dia de quebrar recorde." : ""}`.trim());
-    else if (energy.v < 60) lines.push(`🪫 Energy ${watchInt(energy.v)}: corpo pedindo arrego. ${isToday ? "Treino leve e cama cedo." : ""}`.trim());
-  }
+  // v2.01 (pedido do Rafa): o 🤡 daqui é o GERAL: 🔋 Prontidão (corpo todo, relogio-sono.js) + as falas
+  // de cada assunto + a hora de deitar de hoje. Energy do Samsung saiu (quem manda é o Cloba); o HRV
+  // só vira fala quando não tem prontidão (ela já mostra o HRV x o teu normal).
+  const ready = typeof wslReadyHtml === "function" ? wslReadyHtml(sel) : "";
   const hrv = watchLatest("hrv", isToday ? 1 : 0, sel);
   const hrvBase = hrv ? watchAvgBefore("hrv", hrv.date, 60) : null;
-  if (hrv && hrvBase && hrv.v < hrvBase * 0.8) lines.push(`💓 HRV ${watchInt(hrv.v)} ms, bem abaixo do teu normal (${watchInt(hrvBase)}). Recuperação tá devendo.`);
-  if (hrv && hrvBase && hrv.v > hrvBase * 1.15) lines.push(`💓 HRV ${watchInt(hrv.v)} ms, acima do teu normal (${watchInt(hrvBase)}). Corpo recuperado, pode apertar.`);
+  if (!ready && hrv && hrvBase && hrv.v < hrvBase * 0.8) lines.push(`💓 HRV ${watchInt(hrv.v)} ms, bem abaixo do teu normal (${watchInt(hrvBase)}). Recuperação tá devendo.`);
+  if (!ready && hrv && hrvBase && hrv.v > hrvBase * 1.15) lines.push(`💓 HRV ${watchInt(hrv.v)} ms, acima do teu normal (${watchInt(hrvBase)}). Corpo recuperado, pode apertar.`);
   const stress = watchLatest("stress", isToday ? 1 : 0, sel);
   if (stress && stress.v >= 50) lines.push(`😰 Stress médio ${watchInt(stress.v)}${stress.date === sel ? "" : " ontem"}. Respira, Cloba: 4 segundos puxa, 4 segura, 6 solta.`);
-  el.innerHTML = lines.length ? `<div class="watch-cloba"><span class="watch-cloba-face">🤡</span><div><b>Papo reto do Cloba</b><p>${lines.slice(0, 4).map(escapeHtml).join("<br>")}</p></div></div>` : "";
+  const shown = lines.slice(0, 4);
+  if (isToday && typeof wslTonightLine === "function") {
+    const t = wslTonightLine(sel);
+    if (t) shown.push(t);
+  }
+  if (!ready && !shown.length) {
+    el.innerHTML = "";
+    return;
+  }
+  el.innerHTML = `<div class="section-title wsl-title">🤡 Papo reto do Cloba ${typeof wslQ === "function" ? wslQ("papo") : ""}</div>
+    <div class="card wsl-papo">${ready}${shown.length ? `<div class="wsl-papo-lines${ready ? "" : " is-first"}">${shown.map((l) => `<p>${escapeHtml(l)}</p>`).join("")}</div>` : ""}</div>`;
 }
 
 /* ---------------- 🗓️ Tua semana ---------------- */

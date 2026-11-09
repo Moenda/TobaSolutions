@@ -2537,3 +2537,66 @@
 
 /* v2.00: ⏰ despertador no 🌙 */
 .wsl-tonight-set { margin-top: 8px; }
+
+/* v2.01: 🤡 sem a prontidão em cima (resumo da noite / sem dados do corpo) */
+.wsl-papo-lines.is-first { margin-top: 0; padding-top: 0; border-top: none; }
+
+/* v2.01: 👟 Passos turbinados (relogio-passos.js) */
+.wps-dots {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.wps-dot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.wps-dot i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--surface-3);
+  font-style: normal;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: #0d1117;
+}
+
+.wps-dot.is-hit i { background: var(--green); border-color: var(--green); }
+.wps-dot.is-miss i { background: rgba(63, 185, 80, 0.18); border-color: rgba(63, 185, 80, 0.45); }
+.wps-dot.is-future i { border-style: dashed; opacity: 0.5; }
+.wps-dot.is-sel i { box-shadow: 0 0 0 2px var(--gold-2); }
+.wps-dot span { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; }
+.wps-dot small { font-size: 0.64rem; color: var(--text-2); min-height: 0.8rem; }
+
+.wps-split {
+  display: flex;
+  height: 14px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: var(--surface-3);
+  margin-bottom: 8px;
+}
+
+.wps-split-ex, .wps-key-ex { background: var(--gold-2); }
+.wps-split-life, .wps-key-life { background: var(--green); }
+.watch-an-legend i.wps-key-ex, .watch-an-legend i.wps-key-life { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
+
+.wps-wd-bar { fill: rgba(88, 166, 255, 0.55); }
+.wps-wd-bar.is-hit { fill: rgba(63, 185, 80, 0.7); }
+.wps-wd-bar.is-sel { fill: var(--gold-2); }
+.wps-goal-line { stroke: var(--gold-2); stroke-width: 1.5; stroke-dasharray: 5 4; opacity: 0.8; }
+.watch-an-legend i.wps-key-sel, .watch-an-legend i.wps-key-hit { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
+.watch-an-legend i.wps-key-sel { background: var(--gold-2); }
+.watch-an-legend i.wps-key-hit { background: rgba(63, 185, 80, 0.7); }
+.watch-an-legend i.wps-key-goal { display: inline-block; width: 14px; border-top: 2px dashed var(--gold-2); vertical-align: middle; }
+.wsl-axis.is-hi { fill: var(--gold-2); font-weight: 700; }
+#watchCloba .wsl-papo { margin-bottom: 14px; }
