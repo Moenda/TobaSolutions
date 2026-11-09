@@ -122,6 +122,7 @@ const PLAYER_ACHIEVEMENT_CATS = [
   { id: "multidao", name: "🐘 Manadas & multidões" },
   { id: "distancia", name: "🌍 Distância" },
   { id: "energia", name: "🔥 Energia" },
+  { id: "raiox", name: "🩻 Raio-X" }, // v2.04: 🏅 Nota do Dia e 🌬️ respirar (só troféu, sem XP por dia)
   { id: "saitama", name: "👊 Saitama" },
   { id: "musculos", name: "🗺️ Mapa de calor" },
   { id: "recordes", name: "📈 Recordes" },
@@ -348,6 +349,16 @@ function buildPlayerAchievements() {
     { id: "kcal-10k", cat: "energia", tier: "prata", icon: "🍖", name: "Churrasqueira", desc: "10.000 kcal. A picanha pede licença.", hint: "Queime 10.000 kcal.", metric: (s) => s.kcal, goal: 10000 },
     { id: "kcal-50k", cat: "energia", tier: "ouro", icon: "🏭", name: "Alto-forno", desc: "50.000 kcal. A siderúrgica quer te contratar.", hint: "Queime 50.000 kcal.", metric: (s) => s.kcal, goal: 50000 },
     { id: "kcal-100k", cat: "energia", tier: "lenda", icon: "☢️", name: "Reator nuclear", desc: "100.000 kcal. A Eletrobras está de olho.", hint: "Queime 100.000 kcal.", metric: (s) => s.kcal, goal: 100000, title: "☢️ Reator Humano" },
+    // v2.04: 🏅 Nota do Dia do Cloba (calcWatchNotaTimeline, health-metrics.js: só dias fechados) e 🌬️ Respirar 1 min
+    { id: "nd-1", cat: "raiox", tier: "bronze", icon: "🏅", name: "Nota de respeito", desc: "Primeiro dia com Nota do Cloba 70+. Sono, passo, fogo e cabeça no lugar.", hint: "Feche um dia com 🏅 Nota do Dia 70+ no 🩻 Raio-X.", metric: (s) => s.notaGood, goal: 1 },
+    { id: "nd-7", cat: "raiox", tier: "prata", icon: "🔗", name: "Semana redonda", desc: "7 dias SEGUIDOS com nota 70+. A canetada pode esperar.", hint: "Feche 7 dias seguidos com 🏅 Nota do Dia 70+.", metric: (s) => s.notaSeq, goal: 7 },
+    { id: "nd-90", cat: "raiox", tier: "prata", icon: "🌟", name: "Dia de capa de revista", desc: "Um dia com nota 90+. Foto pro Instagram (que tu nem tem).", hint: "Feche um dia com 🏅 Nota do Dia 90+.", metric: (s) => s.notaBest, goal: 90 },
+    { id: "nd-50", cat: "raiox", tier: "ouro", icon: "📚", name: "Aluno nota 7", desc: "50 dias com nota 70+. O boletim tá lindo.", hint: "Feche 50 dias com 🏅 Nota do Dia 70+.", metric: (s) => s.notaGood, goal: 50 },
+    { id: "nd-30", cat: "raiox", tier: "ouro", icon: "💎", name: "Mês de vitrine", desc: "30 dias seguidos com nota 70+. Isso não é dieta, é vida nova.", hint: "Feche 30 dias seguidos com 🏅 Nota do Dia 70+.", metric: (s) => s.notaSeq, goal: 30, title: "🏅 Nota Dez do Cloba" },
+    { id: "nd-100", cat: "raiox", tier: "lenda", icon: "💯", name: "Gabaritou o Cloba", desc: "Nota 100 num dia: dormiu, andou, queimou, ficou zen e treinou. Nunca foi sorte.", hint: "???", metric: (s) => s.notaBest, goal: 100, mystery: true },
+    { id: "rs-1", cat: "raiox", tier: "bronze", icon: "🌬️", name: "Primeiro suspiro", desc: "Fez a respiração guiada de 1 minuto inteira. O stress piscou.", hint: "Faça o 🌬️ Respirar 1 min no 😤 Stress do Raio-X.", metric: (s) => s.breaths, goal: 1 },
+    { id: "rs-10", cat: "raiox", tier: "prata", icon: "🫁", name: "Pulmão de monge", desc: "10 respirações guiadas. O trânsito da Marginal nem te pega mais.", hint: "Faça 10 respirações guiadas.", metric: (s) => s.breaths, goal: 10 },
+    { id: "rs-50", cat: "raiox", tier: "ouro", icon: "🧘", name: "Dalai Cloba", desc: "50 respirações guiadas. Paz interior nível templo.", hint: "Faça 50 respirações guiadas.", metric: (s) => s.breaths, goal: 50, title: "🧘 Dalai Cloba" },
     { id: "st-fa", cat: "saitama", tier: "bronze", icon: "🥚", name: "Fã do careca", desc: "10 treinos do Saitama. Já pode comprar a capa.", hint: "Faça 10 treinos do Saitama.", metric: (s) => s.saitamaWorkouts, goal: 10 },
     { id: "st-dia", cat: "saitama", tier: "prata", icon: "👊", name: "Dia do careca", desc: "100 flexões, 100 abdominais e 100 agachamentos no mesmo dia.", hint: "Faça 100 de cada no mesmo dia (Saitama).", metric: (s) => s.carecaDay, goal: 1 },
     { id: "st-completo", cat: "saitama", tier: "ouro", icon: "🦲", name: "Careca completo", desc: "100/100/100 e 10 km de caminhada/corrida no mesmo dia. Cadê o cabelo?", hint: "100 de cada + um treino de Caminhada / Corrida somando 10 km, no mesmo dia.", metric: (s) => s.carecaFull, goal: 1, title: "🦲 Careca Honorário" },
@@ -1016,6 +1027,7 @@ function computePlayer(options = {}) {
     socialOn: 0, socialFriends: 0, socialDuels: 0, socialBeat: 0, socialGhost: 0,
     stretch: 0, gpsWalks: 0, // v1.84
     homeWorkouts: 0, homePlans: 0, // v1.87
+    notaGood: 0, notaBest: 0, notaSeq: 0, breaths: 0, // v2.04 (🩻 Raio-X)
   };
   const activeDays = new Set(); // dias com alguma coisa feita (pras temporadas)
   const checkAchievements = (date, active = true) => {
@@ -1043,7 +1055,24 @@ function computePlayer(options = {}) {
   // troféus de recorde e aparece no histórico, mas sem os +30 XP do recorde de treino
   const watchRecordDays = typeof calcWatchDayRecords === "function" ? calcWatchDayRecords(health, today) : [];
   let watchRecordIndex = 0;
+  // v2.04: 🏅 Nota do Dia (dias fechados) e 🌬️ respirações, também na ordem das datas (só conquistas)
+  const watchNotaDays = typeof calcWatchNotaTimeline === "function" ? calcWatchNotaTimeline(health, today) : [];
+  let watchNotaIndex = 0;
+  const watchBreathDays = typeof calcWatchBreaths === "function" ? calcWatchBreaths(health, today) : [];
+  let watchBreathIndex = 0;
   const flushWatchKm = (untilDate) => {
+    while (watchNotaIndex < watchNotaDays.length && (!untilDate || watchNotaDays[watchNotaIndex].date <= untilDate)) {
+      const n = watchNotaDays[watchNotaIndex++];
+      stats.notaBest = n.best;
+      stats.notaGood = n.good;
+      stats.notaSeq = n.seq;
+      checkAchievements(n.date, false);
+    }
+    while (watchBreathIndex < watchBreathDays.length && (!untilDate || watchBreathDays[watchBreathIndex].date <= untilDate)) {
+      const b = watchBreathDays[watchBreathIndex++];
+      stats.breaths = b.n;
+      checkAchievements(b.date, false);
+    }
     while (watchKmIndex < watchKmDays.length && (!untilDate || watchKmDays[watchKmIndex].date <= untilDate)) {
       const step = watchKmDays[watchKmIndex++];
       stats.watchKm += step.km;

@@ -420,17 +420,24 @@ function renderWatchCloba() {
   if (!ready && hrv && hrvBase && hrv.v > hrvBase * 1.15) lines.push(`💓 HRV ${watchInt(hrv.v)} ms, acima do teu normal (${watchInt(hrvBase)}). Corpo recuperado, pode apertar.`);
   const stress = watchLatest("stress", isToday ? 1 : 0, sel);
   if (stress && stress.v >= 50) lines.push(`😰 Stress médio ${watchInt(stress.v)}${stress.date === sel ? "" : " ontem"}. Respira, Cloba: 4 segundos puxa, 4 segura, 6 solta.`);
+  // v2.04: 🛋️ dia sofá das calorias (relogio-calorias.js) entra no papo geral
+  if (isToday && typeof wcaPapoLine === "function") {
+    const sofa = wcaPapoLine(sel);
+    if (sofa) lines.unshift(sofa);
+  }
   const shown = lines.slice(0, 4);
   if (isToday && typeof wslTonightLine === "function") {
     const t = wslTonightLine(sel);
     if (t) shown.push(t);
   }
-  if (!ready && !shown.length) {
+  // v2.04: 🏅 Nota do Dia do Cloba no topo do papo (relogio-nota.js)
+  const nota = typeof wndStripHtml === "function" ? wndStripHtml(sel) : "";
+  if (!nota && !ready && !shown.length) {
     el.innerHTML = "";
     return;
   }
   el.innerHTML = `<div class="section-title wsl-title">🤡 Papo reto do Cloba ${typeof wslQ === "function" ? wslQ("papo") : ""}</div>
-    <div class="card wsl-papo">${ready}${shown.length ? `<div class="wsl-papo-lines${ready ? "" : " is-first"}">${shown.map((l) => `<p>${escapeHtml(l)}</p>`).join("")}</div>` : ""}</div>`;
+    <div class="card wsl-papo">${nota}${ready}${shown.length ? `<div class="wsl-papo-lines${ready || nota ? "" : " is-first"}">${shown.map((l) => `<p>${escapeHtml(l)}</p>`).join("")}</div>` : ""}</div>`;
 }
 
 /* ---------------- 🗓️ Tua semana ---------------- */

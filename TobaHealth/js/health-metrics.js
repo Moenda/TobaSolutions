@@ -393,6 +393,139 @@ function calcWatchDayRecords(healthData, today) {
   return out;
 }
 
+/* v2.04: 🏅 Nota do Dia do Cloba (0 a 100) e 🎯 meta adaptativa das calorias ativas.
+ * Moram aqui porque o Raio-X (TobaHealth-Relogio.html) e o perfil do jogador (troféus nd-*,
+ * toba-player.js) TÊM que dar o mesmo número. Só leem healthData.watch.days / workouts / goals.
+ * Metas: as mesmas do Raio-X (watch.goals; padrão 8.000 passos e 7h30 de sono = WATCH_DEFAULT_GOALS). */
+const WATCH_NOTA_DEFAULT_GOALS = { steps: 8000, sleepMin: 450 };
+const WATCH_NOTA_WEIGHTS = { sleep: 30, steps: 25, active: 20, stress: 15, move: 10 };
+const WATCH_NOTA_GOOD = 70; // dia "nota 70+" = conta pra sequência
+const WATCH_KCAL_GOAL_DEFAULT = 300;
+
+function watchMetricDayNum(iso) {
+  return Math.round(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 86400000);
+}
+
+function watchMetricAddDays(iso, n) {
+  const d = new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10) + n));
+  return d.toISOString().slice(0, 10);
+}
+
+/* 🎯 Meta adaptativa das ativas: a mediana dos 28 dias ANTES do dia (precisa de 7 com dado)
+ * + 10%, arredondada de 10 em 10 (entre 150 e 1.500). Sem histórico = 300 kcal.
+ * Sobe sozinha quando tu anda mais e desce (devagar) quando a vida aperta: sempre um passo à frente. */
+function calcWatchKcalGoal(days, date) {
+  const vals = [];
+  for (let i = 1; i <= 28; i++) {
+    const d = days && days[watchMetricAddDays(date, -i)];
+    const v = d ? Number(d.activeKcal) : NaN;
+    if (Number.isFinite(v) && v > 0) vals.push(v);
+  }
+  if (vals.length < 7) return { goal: WATCH_KCAL_GOAL_DEFAULT, base: null, n: vals.length };
+  vals.sort((a, b) => a - b);
+  const mid = vals.length >> 1;
+  const base = vals.length % 2 ? vals[mid] : (vals[mid - 1] + vals[mid]) / 2;
+  const goal = Math.max(150, Math.min(1500, Math.round((base * 1.1) / 10) * 10));
+  return { goal, base: Math.round(base), n: vals.length };
+}
+
+/* Nota do dia: 😴 sono 30 + 👟 passos 25 + 🔥 ativas 20 + 😤 stress 15 + 🏃 se mexer de propósito 10.
+ * Cada parte vale 0 a 1; parte sem dado sai da conta (o resto vira 100%). Precisa dos passos
+ * e de mais 1 parte. Devolve { score, parts: [{ k, f (0-1), w, v, goal? }] } ou null. */
+function calcWatchDayScore(healthData, date) {
+  const w = healthData && healthData.watch;
+  const days = w && w.days && typeof w.days === "object" ? w.days : null;
+  const d = days && days[date];
+  if (!d || typeof d !== "object") return null;
+  const g = (w && w.goals) || {};
+  const goalSteps = Number(g.steps) > 0 ? Number(g.steps) : WATCH_NOTA_DEFAULT_GOALS.steps;
+  const goalSleep = Number(g.sleepMin) > 0 ? Number(g.sleepMin) : WATCH_NOTA_DEFAULT_GOALS.sleepMin;
+  const clamp = (x) => Math.max(0, Math.min(1, x));
+  const parts = [];
+  const steps = Number(d.steps);
+  if (!(steps > 0)) return null;
+  parts.push({ k: "steps", w: WATCH_NOTA_WEIGHTS.steps, f: clamp(steps / goalSteps), v: steps, goal: goalSteps });
+  const sleepMin = d.sleep && Number(d.sleep.min) > 0 ? Number(d.sleep.min) + (Number(d.sleep.napMin) || 0) : NaN;
+  if (sleepMin > 0) parts.push({ k: "sleep", w: WATCH_NOTA_WEIGHTS.sleep, f: clamp((sleepMin / goalSleep - 0.5) / 0.5), v: sleepMin, goal: goalSleep });
+  const active = Number(d.activeKcal);
+  if (active > 0) {
+    const kg = calcWatchKcalGoal(days, date).goal;
+    parts.push({ k: "active", w: WATCH_NOTA_WEIGHTS.active, f: clamp(active / kg), v: active, goal: kg });
+  }
+  const stress = Number(d.stress);
+  if (d.stress !== undefined && d.stress !== null && Number.isFinite(stress)) {
+    parts.push({ k: "stress", w: WATCH_NOTA_WEIGHTS.stress, f: clamp((70 - stress) / 45), v: stress });
+  }
+  // 🏃 se mexeu de propósito: treino do Toba no dia ou exercício do relógio de 15 min+.
+  // Descanso depois de 2 dias seguidos de treino vale 60% (descanso também é treino).
+  const moved = (iso) => {
+    const dd = days[iso];
+    const ex = dd && Array.isArray(dd.ex) ? dd.ex : [];
+    if (ex.some((x) => x && Number(x.end) - Number(x.start) >= 15 * 60000)) return true;
+    return (Array.isArray(healthData.workouts) ? healthData.workouts : []).some((x) => x && x.date === iso);
+  };
+  const mv = moved(date) ? 1 : moved(watchMetricAddDays(date, -1)) && moved(watchMetricAddDays(date, -2)) ? 0.6 : 0;
+  parts.push({ k: "move", w: WATCH_NOTA_WEIGHTS.move, f: mv, v: mv });
+  if (parts.length < 3) return null;
+  const tw = parts.reduce((a, p) => a + p.w, 0);
+  const score = Math.round((100 * parts.reduce((a, p) => a + p.w * p.f, 0)) / tw);
+  return { score, parts };
+}
+
+/* Todas as notas até `today` (inclusive), em ordem de data: [{ date, score }]. */
+function calcWatchDayScores(healthData, today) {
+  const days = healthData && healthData.watch && healthData.watch.days;
+  if (!days || typeof days !== "object") return [];
+  return Object.keys(days)
+    .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date) && (!today || date <= today))
+    .sort()
+    .map((date) => {
+      const r = calcWatchDayScore(healthData, date);
+      return r ? { date, score: r.score } : null;
+    })
+    .filter(Boolean);
+}
+
+/* Troféus da nota (só dias FECHADOS, antes de `today`): melhor nota, dias 70+ e a maior
+ * sequência de dias SEGUIDOS (calendário) com 70+. Devolve [{ date, best, good, seq }] na
+ * ordem das datas, com os números acumulados até aquele dia (pro computePlayer). */
+function calcWatchNotaTimeline(healthData, today) {
+  const list = calcWatchDayScores(healthData, today).filter((x) => !today || x.date < today);
+  const out = [];
+  let best = 0, good = 0, seq = 0, seqBest = 0, prev = null;
+  list.forEach((x) => {
+    best = Math.max(best, x.score);
+    if (x.score >= WATCH_NOTA_GOOD) {
+      good++;
+      seq = prev && watchMetricDayNum(x.date) - watchMetricDayNum(prev) === 1 ? seq + 1 : 1;
+      prev = x.date;
+    } else {
+      seq = 0;
+      prev = null;
+    }
+    seqBest = Math.max(seqBest, seq);
+    out.push({ date: x.date, best, good, seq: seqBest });
+  });
+  return out;
+}
+
+/* 🌬️ Respirações guiadas de 1 min (watch.breaths = [{ at: ms, s: segundos }]) feitas inteiras
+ * (50 s+), em ordem: [{ date, n }] com o total acumulado. */
+function calcWatchBreaths(healthData, today) {
+  const list = healthData && healthData.watch && Array.isArray(healthData.watch.breaths) ? healthData.watch.breaths : [];
+  const iso = (ms) => {
+    const d = new Date(Number(ms));
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  let n = 0;
+  return list
+    .filter((b) => b && Number(b.s) >= 50 && Number.isFinite(Number(b.at)))
+    .map((b) => iso(b.at))
+    .filter((date) => !today || date <= today)
+    .sort()
+    .map((date) => ({ date, n: ++n }));
+}
+
 const WORKOUT_LIFT_EQUIVALENTS = [
   { id: "lift-gato", icon: "🐈", one: "gato", name: "gatos", size: 4, note: "Levantado sem ele aprovar." },
   { id: "lift-caramelo", icon: "🐕", one: "cachorro caramelo", name: "cachorros caramelo", size: 12, note: "O patrimônio nacional, no supino." },

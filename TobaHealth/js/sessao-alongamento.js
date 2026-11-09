@@ -377,6 +377,7 @@ function renderStretchLive(session) {
         <input type="checkbox" data-change="stretchToggleVoice"${readStretchPrefs().voice ? " checked" : ""} />
         <span>🔊 Voz avisando a troca (dá pra fazer sem olhar a tela)</span>
       </label>
+      ${renderLiveVoiceExtra("stretchTestVoice")}
       ${renderLiveAwakeToggle()}
       <button type="button" class="btn btn-primary live-finish" data-click="stretchFinishNow">🏁 Terminar agora</button>
       <button type="button" class="btn btn-secondary" data-click="discardLiveSession">Cancelar treino</button>
@@ -411,6 +412,7 @@ function renderStretchDone(session) {
           <label for="stretch-notes">Observações (opcional)</label>
           <input id="stretch-notes" class="form-control" type="text" maxlength="160" placeholder="Como o corpo tá?" />
         </div>
+        ${renderLiveWatchCheck("stretch-watch-pending")}
         <button type="submit" class="btn btn-primary live-finish">Salvar alongamento 🧘</button>
       </form>
       <button type="button" class="btn btn-secondary" data-click="discardLiveSession">Jogar fora</button>
@@ -507,6 +509,13 @@ function stretchToggleVoice(el) {
   tobaToast(el.checked ? "🔊 O Toba avisa cada troca" : "🔇 Só vibração");
 }
 
+// v2.04: 🔊 Testar a voz (fala mesmo com a chavinha desligada)
+function stretchTestVoice() {
+  storeLivePrefs({ stretchVoice: true });
+  stretchSpeak("Teste de voz do Cloba. Nunca foi sorte.");
+  renderLiveSession();
+}
+
 function saveStretchLive() {
   if (!liveSession?.stretch) return;
   if (!isHealthDbLoaded) {
@@ -538,6 +547,10 @@ function saveStretchLive() {
     notes: document.getElementById("stretch-notes").value.trim(),
     stretch: { plan: data.plan, held: { ...data.held } },
   };
+  // v2.04: horário + ⌚ mesclar com o relógio
+  const startTime = liveStartClock(liveSession.startedAt);
+  if (startTime) workout.startTime = startTime;
+  liveApplyWatchPending(workout, "stretch-watch-pending");
   healthDb.workouts.push(workout);
   saveHealthDb();
   let saved = false;
@@ -635,5 +648,6 @@ tobaActions({
   stretchBack,
   stretchFinishNow,
   stretchToggleVoice,
+  stretchTestVoice,
   saveStretchLive,
 });

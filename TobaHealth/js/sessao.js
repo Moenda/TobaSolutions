@@ -1082,6 +1082,55 @@ function renderLiveAwakeToggle() {
     </label>`;
 }
 
+/* v2.04: 🔊 voz dos treinos ao vivo. No APK até o 2.8 a voz do Android só nascia no Partiu
+ * do 🧭 Drive / na 🚶 Caminhada: abriu o 🧘 Alongamento ou o 🏠 Treinos em casa direto = mudo,
+ * mesmo com volume no máximo. O APK 2.9 (ponte 16) liga a voz junto com o app. */
+function liveVoiceApkOld() {
+  try {
+    return Boolean(TOBA_NATIVE && typeof TOBA_NATIVE.speak === "function"
+      && (typeof TOBA_NATIVE.version !== "function" || Number(TOBA_NATIVE.version()) < 16));
+  } catch (err) {
+    return false;
+  }
+}
+
+function renderLiveVoiceExtra(testAction) {
+  const old = liveVoiceApkOld();
+  return `
+    <div class="live-voice-row">
+      ${old ? `<p class="live-hint live-voice-old">🔇 Teu APK (${escapeHtml(tobaApkVersion() || "antigo")}) só liga a voz depois de usar o 🧭 Drive. Instala o <b>APK 2.9</b> pelo KingInstaller que ela fala sempre.</p>` : ""}
+      <button type="button" class="chip-btn" data-click="${testAction}">🔊 Testar a voz</button>
+    </div>`;
+}
+
+/* v2.04: "⌚ Vai mesclar com o relógio?" no fim de TODO treino ao vivo (até a v2.03 só a 💪 força
+ * tinha). Marcado = workout.watchPending: no próximo ⌚ Sincronizar o relogio.js (watchAutoMerge)
+ * mescla sozinho e os números do relógio passam a valer. Só aparece pra quem já usa o relógio. */
+function renderLiveWatchCheck(inputId) {
+  if (typeof workoutWatchUsable !== "function" || !workoutWatchUsable()) return "";
+  return `
+    <label class="live-check live-watch-check">
+      <input type="checkbox" id="${inputId}"${workoutWatchPref() ? " checked" : ""} />
+      <span>⌚ Vai mesclar com o relógio?<small class="watch-pending-hint">Tempo, kcal e batimento do relógio passam a valer no próximo ⌚ Sincronizar. Dá pra editar depois.</small></span>
+    </label>`;
+}
+
+function liveApplyWatchPending(workout, inputId) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const row = input.closest("label");
+  if (row && row.hidden) return;
+  if (typeof workoutWatchRemember === "function") workoutWatchRemember(input.checked);
+  if (input.checked) workout.watchPending = { at: Date.now() };
+}
+
+// HH:MM de quando o treino começou (o mesclar acha o exercício do relógio pelo horário)
+function liveStartClock(startedAt) {
+  const d = new Date(Number(startedAt));
+  if (!Number.isFinite(d.getTime())) return "";
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
 function liveToggleAwake(el) {
   storeLivePrefs({ keepAwake: el.checked });
   if (el.checked) {

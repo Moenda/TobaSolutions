@@ -40,7 +40,7 @@ const WATCH_METRICS = {
     get: (d) => d.stress, fmt: (v) => watchInt(v), unit: "",
     zone: (v) => (v < 30 ? { icon: "😌", label: "tranquilo", k: 0 } : v < 50 ? { icon: "🙂", label: "normal", k: 1 } : v < 70 ? { icon: "😬", label: "puxado", k: 2 } : { icon: "🔥", label: "alto", k: 3 }),
     zones: [["😌 tranquilo", "var(--green)"], ["🙂 normal", "var(--blue)"], ["😬 puxado", "var(--gold-2)"], ["🔥 alto", "var(--coral)"]],
-    about: "Score de 0 a 100 que o relógio calcula pela variação do batimento, uma vez por hora. Aqui é a média do dia.",
+    about: "Score de 0 a 100, menor é melhor. Dia com o 📥 import do Samsung usa o dele (calculado pela variação do batimento, uma vez por hora). Dia sem ele (v2.04, APK 2.9) usa a 😤 Tensão do Cloba: o quanto o coração ficou acima do teu repouso nas horas em que tu tava parado e acordado. Aqui é a média do dia.",
   },
   energy: {
     icon: "🔋", name: "Energy Score", color: "var(--gold-2)", better: "up",
@@ -628,7 +628,9 @@ function renderWatchMetric() {
     const day = watchAddDays(today, watchAn.offset);
     // v1.98: 😴 Sono tem a tela própria da noite (relogio-sono.js)
     const sleepDay = key === "sleep" && typeof renderWatchSleepDay === "function" ? renderWatchSleepDay(day)
-      : key === "steps" && typeof renderWatchStepsDay === "function" ? renderWatchStepsDay(day) : ""; // v2.01: 👟 também (relogio-passos.js)
+      : key === "steps" && typeof renderWatchStepsDay === "function" ? renderWatchStepsDay(day) // v2.01: 👟 também (relogio-passos.js)
+      : key === "kcal" && typeof renderWatchKcalDay === "function" ? renderWatchKcalDay(day) // v2.04: 🔥 (relogio-calorias.js)
+      : key === "stress" && typeof renderWatchStressDay === "function" ? renderWatchStressDay(day) : ""; // v2.04: 😰 (relogio-stress.js)
     el.innerHTML = watchAnNav(minOffset) + (sleepDay || renderWatchMetricDay(key, m, day));
     if (sleepDay && typeof watchSleepAfterRender === "function") watchSleepAfterRender();
     return;
@@ -679,7 +681,9 @@ function renderWatchMetric() {
     ${key === "spo2" ? watchAnSpo2Extras(from, to) : ""}
     ${watchAnAbout(key, m)}
     ${key === "sleep" && typeof wslMovesHtml === "function" ? wslMovesHtml(to < toIsoDate() ? to : toIsoDate())
-      : key === "steps" && typeof wpsMovesHtml === "function" ? wpsMovesHtml(to < toIsoDate() ? to : toIsoDate()) : watchAnInsights(key)}
+      : key === "steps" && typeof wpsMovesHtml === "function" ? wpsMovesHtml(to < toIsoDate() ? to : toIsoDate())
+      : key === "kcal" && typeof wcaMovesHtml === "function" && !watchKcalBasal() ? wcaMovesHtml(to < toIsoDate() ? to : toIsoDate())
+      : key === "stress" && typeof wstMovesHtml === "function" ? wstMovesHtml(to < toIsoDate() ? to : toIsoDate()) : watchAnInsights(key)}
     ${watchAnWeekdays(rows, m)}
     ${watchAnRecords(key, m)}
     <div class="section-title">🗓️ Dias do período</div>

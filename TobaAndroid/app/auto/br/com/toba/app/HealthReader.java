@@ -3,6 +3,7 @@ package br.com.toba.app;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.health.connect.AggregateRecordsGroupedByDurationResponse;
 import android.health.connect.AggregateRecordsGroupedByPeriodResponse;
 import android.health.connect.AggregateRecordsRequest;
 import android.health.connect.AggregateRecordsResponse;
@@ -35,6 +36,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Instant;
@@ -79,6 +81,8 @@ import java.util.function.ToDoubleFunction;
  * v1.98 (APK 2.6, 😴 Sono turbinado): cada sessão de sono manda a linha do tempo das fases
  * (stages, pro hipnograma) e, nas noites dos últimos 40 dias, FC/oxigênio/respiração/HRV
  * de DENTRO da noite em blocos de 5 min (sleepSeries).
+ * v2.04 (APK 2.9): hora a hora dos últimos 35 dias (hourly: ativas, passos e FC média), pro mapa de
+ * horas das 🔥 calorias e pra 😤 Tensão do Cloba (o stress de verdade o Samsung não manda pra cá).
  */
 @TargetApi(34)
 final class HealthReader {
@@ -102,6 +106,7 @@ final class HealthReader {
     private static final int NIGHT_FROM_HOUR = 18; // v1.94: medida das 18h em diante = noite do dia seguinte
     private static final int SERIES_BUCKET_MIN = 5; // v1.98: série da noite em blocos de 5 min
     private static final int SERIES_DAYS = 40;      // v1.98: só as noites dos últimos 40 dias levam série (leitura leve)
+    private static final int HOURLY_DAYS = 35;      // v2.04: hora a hora (ativas, passos, batimento) só dos últimos 35 dias
     private static final long WAIT_S = 25;
     private static final ExecutorService WORKER = Executors.newSingleThreadExecutor();
 
@@ -302,6 +307,12 @@ final class HealthReader {
             }
         }
 
+        // v2.04 (APK 2.9, 😤 Stress e 🔥 Caloria ativa turbinados): o dia em 24 horas.
+        // hourly["AAAA-MM-DD"] = { k: [24 kcal ativas], s: [24 passos], h: [24 FC média, 0 = sem medida] }.
+        // O site tira daqui o mapa de horas das calorias e a 😤 Tensão do Cloba (batimento alto parado),
+        // já que o Samsung não manda o stress pro Health Connect. Falhou? Só fica sem (vai pro errors).
+        out.put("hourly", hourly(hc, from, to, zone, activeOrigins, stepOrigins, c, errors));
+
         // v1.98 (APK 2.6): temperatura da pele, Energy Score e nota de sono direto do Samsung Health
         // (o Samsung não manda esses pro Health Connect). Falhou? Só fica sem eles.
         out.put("samsung", SamsungReader.enrich(c, from, to, zone, days, sleep, seriesFrom, SERIES_BUCKET_MIN));
@@ -358,6 +369,114 @@ final class HealthReader {
         } catch (Exception e) {
             errors.put(field, msg(e));
         }
+    }
+
+    /* v2.04 (APK 2.9): hora a hora dos últimos HOURLY_DAYS dias. Ativas e passos de UMA fonte por dia
+     * (igual o byDayOneSource: soma de cada app e fica com o maior do dia); batimento = média da hora. */
+    private static JSONObject hourly(HealthConnectManager hc, LocalDate from, LocalDate to, ZoneId zone,
+            List<String> activeOrigins, List<String> stepOrigins, Context c, JSONObject errors) throws JSONException {
+        JSONObject out = new JSONObject();
+        LocalDate start = to.minusDays(HOURLY_DAYS - 1);
+        if (start.isBefore(from)) start = from;
+        if (start.isAfter(to)) return out;
+        TimeInstantRangeFilter t = new TimeInstantRangeFilter.Builder()
+                .setStartTime(start.atStartOfDay(zone).toInstant())
+                .setEndTime(to.plusDays(1).atStartOfDay(zone).toInstant())
+                .build();
+        Map<String, double[]> kcal = has(c, PERMS, "activeKcal")
+                ? hourlyOneSource(hc, t, ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL, e -> e.getInCalories() / 1000.0, activeOrigins, zone, "hourlyKcal", errors)
+                : new HashMap<>();
+        Map<String, double[]> steps = has(c, PERMS, "steps")
+                ? hourlyOneSource(hc, t, StepsRecord.STEPS_COUNT_TOTAL, v -> v, stepOrigins, zone, "hourlySteps", errors)
+                : new HashMap<>();
+        Map<String, double[]> hr = new HashMap<>();
+        if (has(c, PERMS, "heart")) {
+            try {
+                hr = byHour(hc, t, HeartRateRecord.BPM_AVG, v -> v, null, zone);
+            } catch (Exception e) {
+                errors.put("hourlyHr", msg(e));
+            }
+        }
+        Set<String> keys = new LinkedHashSet<>();
+        keys.addAll(kcal.keySet());
+        keys.addAll(steps.keySet());
+        keys.addAll(hr.keySet());
+        for (String day : keys) {
+            JSONObject o = new JSONObject();
+            if (kcal.containsKey(day)) o.put("k", hourArray(kcal.get(day)));
+            if (steps.containsKey(day)) o.put("s", hourArray(steps.get(day)));
+            if (hr.containsKey(day)) o.put("h", hourArray(hr.get(day)));
+            out.put(day, o);
+        }
+        return out;
+    }
+
+    private static JSONArray hourArray(double[] a) {
+        JSONArray j = new JSONArray();
+        for (double v : a) j.put(Math.max(0, Math.round(v)));
+        return j;
+    }
+
+    // Uma fonte por dia: 0 ou 1 app = soma do Health Connect; 2+ = cada app separado, fica o de maior soma no dia.
+    private static <T> Map<String, double[]> hourlyOneSource(HealthConnectManager hc, TimeInstantRangeFilter t, AggregationType<T> type,
+            ToDoubleFunction<T> conv, List<String> sources, ZoneId zone, String field, JSONObject errors) throws JSONException {
+        try {
+            if (sources.size() <= 1) return byHour(hc, t, type, conv, null, zone);
+            Map<String, double[]> best = new HashMap<>();
+            Map<String, Double> bestSum = new HashMap<>();
+            for (String pkg : sources) {
+                Map<String, double[]> one = byHour(hc, t, type, conv, pkg, zone);
+                for (Map.Entry<String, double[]> e : one.entrySet()) {
+                    double sum = 0;
+                    for (double v : e.getValue()) sum += v;
+                    Double had = bestSum.get(e.getKey());
+                    if (had == null || sum > had) {
+                        bestSum.put(e.getKey(), sum);
+                        best.put(e.getKey(), e.getValue());
+                    }
+                }
+            }
+            return best;
+        } catch (Exception e) {
+            errors.put(field, msg(e));
+            return new HashMap<>();
+        }
+    }
+
+    // {dia: [24 valores]} pela soma (ou média, conforme o tipo) do Health Connect em blocos de 1 h.
+    private static <T> Map<String, double[]> byHour(HealthConnectManager hc, TimeInstantRangeFilter t, AggregationType<T> type,
+            ToDoubleFunction<T> conv, String pkg, ZoneId zone) throws Exception {
+        AggregateRecordsRequest.Builder<T> rb = new AggregateRecordsRequest.Builder<T>(t).addAggregationType(type);
+        if (pkg != null) rb.addDataOriginsFilter(new DataOrigin.Builder().setPackageName(pkg).build());
+        CompletableFuture<List<AggregateRecordsGroupedByDurationResponse<T>>> f = new CompletableFuture<>();
+        hc.aggregateGroupByDuration(rb.build(), Duration.ofHours(1), Runnable::run,
+                new OutcomeReceiver<List<AggregateRecordsGroupedByDurationResponse<T>>, HealthConnectException>() {
+                    @Override
+                    public void onResult(List<AggregateRecordsGroupedByDurationResponse<T>> result) {
+                        f.complete(result);
+                    }
+
+                    @Override
+                    public void onError(HealthConnectException error) {
+                        f.completeExceptionally(error);
+                    }
+                });
+        Map<String, double[]> out = new HashMap<>();
+        for (AggregateRecordsGroupedByDurationResponse<T> r : f.get(WAIT_S, TimeUnit.SECONDS)) {
+            T v = r.get(type);
+            if (v == null) continue;
+            double val = conv.applyAsDouble(v);
+            if (!(val > 0)) continue;
+            LocalDateTime at = LocalDateTime.ofInstant(r.getStartTime(), zone);
+            String key = at.toLocalDate().toString();
+            double[] a = out.get(key);
+            if (a == null) {
+                a = new double[24];
+                out.put(key, a);
+            }
+            a[at.getHour()] += val;
+        }
+        return out;
     }
 
     // v1.93: apps (pacotes) que gravaram esse tipo no período. Lê os registros (até

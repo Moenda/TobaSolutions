@@ -40,6 +40,15 @@
     <div id="viewTraining" class="app-view active">
       <div id="playerStrip"></div>
       <div id="liveSessionLaunch"></div>
+      <!-- v2.04: ⌚ Treinos do relógio (saiu do 🩻 Raio-X) + ⌚ Sincronizar (treinos-relogio.js) -->
+      <div id="trainingWatch" class="training-watch" hidden>
+        <div class="training-watch-bar">
+          <span class="training-watch-line" id="trainingWatchLine"></span>
+          <button type="button" class="btn btn-secondary btn-sm training-watch-sync" id="trainingWatchSyncBtn" data-click="trainingWatchSync">⌚ Sincronizar</button>
+        </div>
+        <div id="watchGone" hidden></div>
+        <div id="watchInbox" hidden></div>
+      </div>
 
       <div class="section-title is-first" id="workoutMonthTitle">🏋️ Treinos do mês</div>
       <div class="toba-stats" id="workoutSummary"></div>
@@ -170,7 +179,7 @@
         <div id="workoutFormFields"></div>
         <label class="live-check" id="workoutWatchRow" hidden>
           <input type="checkbox" id="workout-watch-pending" />
-          <span>⌚ Completar com o relógio<small class="watch-pending-hint">Tempo, kcal e batimento vêm sozinhos no próximo 🔄 do 🩻 Raio-X. Pode deixar em branco.</small></span>
+          <span>⌚ Completar com o relógio<small class="watch-pending-hint">Tempo, kcal e batimento do relógio passam a valer no próximo ⌚ Sincronizar. Pode deixar em branco.</small></span>
         </label>
         <div class="toba-sheet-footer">
           <button type="submit" class="btn btn-primary">Salvar treino 💪</button>
@@ -240,7 +249,7 @@
         </div>
         <label class="live-check" id="liveWatchRow" hidden>
           <input type="checkbox" id="live-watch-pending" />
-          <span>⌚ Vai mesclar com o relógio?<small class="watch-pending-hint">As kcal e o batimento vêm sozinhos no próximo 🔄 do 🩻 Raio-X.</small></span>
+          <span>⌚ Vai mesclar com o relógio?<small class="watch-pending-hint">Tempo, kcal e batimento do relógio passam a valer no próximo ⌚ Sincronizar. Dá pra editar depois.</small></span>
         </label>
         <label class="live-check" id="liveSaveRoutineRow">
           <input type="checkbox" id="live-save-routine" />
@@ -250,6 +259,30 @@
           <button type="submit" class="btn btn-primary">Salvar treino 💪</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="watchMergeModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🔗 Mesclar com qual treino?</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="watchMergeBody"></div>
+      <p class="watch-muted">Mesclou = valem o tempo, as kcal e os km do relógio (e o batimento entra junto). Quer outro número? ✏️ Editar no treino. Dá pra desmesclar lá também.</p>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="watchIgnoredModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🙈 Treinos ignorados</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="watchIgnoredBody"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-secondary" data-close>Fechar 👍</button>
+      </div>
     </div>
   </div>
 
@@ -287,6 +320,10 @@
           <label for="walk-finish-notes">Observações (opcional)</label>
           <input id="walk-finish-notes" class="form-control" type="text" maxlength="160" placeholder="Por onde andou?" />
         </div>
+        <label class="live-check" id="walkWatchRow" hidden>
+          <input type="checkbox" id="walk-watch-pending" />
+          <span>⌚ Vai mesclar com o relógio?<small class="watch-pending-hint">Tempo, kcal, km e batimento do relógio passam a valer no próximo ⌚ Sincronizar. Dá pra editar depois.</small></span>
+        </label>
         <div class="toba-sheet-footer">
           <button type="submit" class="btn btn-primary">Salvar no histórico 🚶</button>
         </div>
@@ -404,6 +441,17 @@
         <span class="toba-hub-chevron">›</span>
       </button>
     </div>
+    <div class="toba-settings-section">
+      <div class="toba-settings-label">⌚ Relógio</div>
+      <button type="button" class="toba-menu-btn" data-click="openWatchIgnored">
+        <span class="toba-menu-icon">🙈</span>
+        <span class="toba-menu-text">
+          <span class="toba-menu-title">Treinos do relógio ignorados</span>
+          <span class="toba-menu-desc">Ignorou sem querer? Volta pra lista daqui</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </button>
+    </div>
   </div>
 
   <script src="../assets/toba-common.js"></script>
@@ -425,6 +473,8 @@
   <script src="js/sessao-alongamento.js"></script>
   <script src="js/sessao-casa.js"></script>
   <script src="js/sessao-caminhada.js"></script>
+  <script src="js/relogio.js"></script>
+  <script src="js/treinos-relogio.js"></script>
   <script src="js/treinos.js"></script>
   <script src="../assets/pwa-register.js"></script>
 </body>

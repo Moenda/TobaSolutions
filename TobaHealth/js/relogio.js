@@ -60,6 +60,9 @@ const WATCH_EXERCISE_NAMES = {
 };
 
 const watchUi = { date: "", listShown: 6, pulling: false, reqId: "", timer: null, status: null }; // date (v1.95) = dia escolhido na tela
+// v2.04: este arquivo também roda no 🏋️ Treinos (motor de puxar/mesclar + ⌚ Treinos do relógio).
+// Fora do Raio-X o renderWatch() só chama watchPageRefresh() da página (treinos-relogio.js).
+const WATCH_ON_RAIOX = Boolean(document.getElementById("watchConnect"));
 
 /* ---------------- Dados ---------------- */
 
@@ -588,8 +591,9 @@ function watchGoneApply(el) {
       tobaToast("🗑️ Treino apagado");
     } else {
       const wd = workout.watch || {};
+      const prev = wd.prev && typeof wd.prev === "object" ? wd.prev : {}; // v2.04: volta o que tava antes
       (Array.isArray(wd.filled) ? wd.filled : []).forEach((field) => {
-        if (["durationMinutes", "calories", "distanceKm"].includes(field)) workout[field] = null;
+        if (["durationMinutes", "calories", "distanceKm"].includes(field)) workout[field] = Object.prototype.hasOwnProperty.call(prev, field) ? prev[field] : null;
       });
       delete workout.watch;
       tobaToast("🔗 Desmesclado");
@@ -784,7 +788,7 @@ window.onTobaSamsungStatus = function (x) {
 const WATCH_SAMSUNG_STEPS = "abre <b>Conexão Saúde › Seus apps › Samsung Health</b> e liga a permissão de <b>escrever</b> passos, distância, calorias ativas, sono e exercícios (ou dentro do Samsung Health › ☰ › Configurações › Health Connect). Depois abre o Samsung Health uma vez, espera sincronizar e toca no 🔄.";
 
 /* ---------------- ⌚ Treinos do relógio (v1.89) ----------------
- * Cada exercício do relógio aparece uma vez na caixinha do Raio-X:
+ * Cada exercício do relógio aparece uma vez na caixinha (v2.04: no 🏋️ Treinos, não mais no Raio-X):
  *   🔗 Mesclar  = junta com um treino já anotado no Toba (o teu manda; o relógio
  *                 só completa o que estava vazio e guarda os números dele em workout.watch)
  *   ➕ Virar treino = cria um treino novo (source "health-connect", externalId = chave)
@@ -899,23 +903,22 @@ function watchFindEx(key) {
   return watchInbox().find((x) => watchExKey(x) === key) || null;
 }
 
-// O teu manda: só preenche o que estava vazio e anota o que preencheu (pra desmesclar)
+// v2.04 (pedido do Rafa): mesclou = vale o número do RELÓGIO (tempo, kcal, km), não o que o
+// formulário chutou. O que tava antes fica em watch.prev (desmesclar devolve) e dá pra ✏️ Editar depois.
+// (até a v2.03 o teu mandava: o relógio só preenchia o que tava vazio)
 function watchMergeInto(x, workout) {
   const filled = [];
-  if (!(Number(workout.durationMinutes) > 0)) {
-    workout.durationMinutes = watchExMinutes(x);
-    filled.push("durationMinutes");
-  }
-  const kcal = watchExKcal(x);
-  if (!(Number(workout.calories) > 0) && kcal) {
-    workout.calories = kcal;
-    filled.push("calories");
-  }
-  if (!(Number(workout.distanceKm) > 0) && Number(x.distanceM) >= 50) {
-    workout.distanceKm = Math.round(Number(x.distanceM) / 10) / 100;
-    filled.push("distanceKm");
-  }
-  workout.watch = watchExSnapshot(x, { filled, mergedAt: Date.now() });
+  const prev = {};
+  const put = (field, value) => {
+    if (!(Number(value) > 0) || Number(workout[field]) === Number(value)) return;
+    prev[field] = workout[field] === undefined ? null : workout[field];
+    workout[field] = value;
+    filled.push(field);
+  };
+  put("durationMinutes", watchExMinutes(x));
+  put("calories", watchExKcal(x));
+  if (Number(x.distanceM) >= 50) put("distanceKm", Math.round(Number(x.distanceM) / 10) / 100);
+  workout.watch = watchExSnapshot(x, { filled, prev, mergedAt: Date.now() });
   watchEnsureDb().handled[watchExKey(x)] = { action: "merged", workoutId: String(workout.id), at: Date.now() };
 }
 
@@ -1080,7 +1083,7 @@ async function watchIgnoreEx(el) {
   const x = watchFindEx(el.dataset.id);
   if (!x) return renderWatch();
   const ok = await showPageMessage(
-    `${watchExName(x)} de ${watchDayLabel(toIsoDate(new Date(x.start)))} (${watchClock(x.start)}) sai da lista e não vira treino: não conta XP nem troféu. Os números dele continuam no dia do Raio-X.\n\nSe mudar de ideia: ⚙️ › 🙈 Treinos do relógio ignorados.`,
+    `${watchExName(x)} de ${watchDayLabel(toIsoDate(new Date(x.start)))} (${watchClock(x.start)}) sai da lista e não vira treino: não conta XP nem troféu. Os números dele continuam no dia do Raio-X.\n\nSe mudar de ideia: ⚙️ do Treinos › 🙈 Treinos do relógio ignorados.`,
     { title: "Ignorar esse treino?", confirm: true, confirmLabel: "🙈 Ignorar" },
   );
   if (!ok) return;
@@ -1185,6 +1188,10 @@ function watchAgo(ms) {
 // v1.95: a tela é o DIA escolhido (relogio-dia.js): ‹ dia ›, herói + comparações, sono,
 // 🧬 corpo, ⚖️ balança (relogio-balanca.js, se existir), 🤡, caixinhas, 🗓️ semana, 📈 tendência, 📜 meses.
 function renderWatch() {
+  if (!WATCH_ON_RAIOX) {
+    if (typeof watchPageRefresh === "function") watchPageRefresh(); // v2.04: 🏋️ Treinos
+    return;
+  }
   if (typeof watchMetricOpen === "function" && watchMetricOpen()) renderWatchMetric();
   if (typeof watchRecordsOpen === "function" && watchRecordsOpen()) renderWatchRecords(); // v1.96
   renderWatchConnect();
@@ -1194,8 +1201,7 @@ function renderWatch() {
   renderWatchBody();
   if (typeof renderWatchScale === "function") renderWatchScale();
   renderWatchCloba();
-  renderWatchGone();
-  renderWatchInbox();
+  // v2.04: 🗑️ Sumiu do relógio e ⌚ Treinos do relógio saíram daqui: moram no 🏋️ Treinos
   renderWatchWeek();
   renderWatchTrend();
   renderWatchList();
@@ -1392,6 +1398,7 @@ function renderWatchSync() {
     btn.hidden = !TOBA_NATIVE;
   }
   const el = document.getElementById("watchSyncLine");
+  if (!el) return; // v2.04: no 🏋️ Treinos a linha é outra (treinos-relogio.js)
   const at = watchState().pulledAt;
   el.textContent = watchUi.pulling ? "⏳ Puxando do Health Connect..." : at ? `🔄 Puxado do relógio ${watchAgo(at)}` : "";
 }
@@ -1571,6 +1578,7 @@ window.onTobaAppResume = function () {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
+  if (!WATCH_ON_RAIOX) return; // v2.04: o 🏋️ Treinos cuida do dele (treinos-relogio.js)
   renderWatch();
   watchAutoPull();
 });

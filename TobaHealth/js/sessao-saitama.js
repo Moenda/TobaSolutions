@@ -302,6 +302,7 @@ function openSaitamaLiveFinish() {
   setLiveFinishMode(true);
   document.getElementById("live-calories").value = "";
   document.getElementById("live-notes").value = "";
+  if (typeof workoutWatchRowSetup === "function") workoutWatchRowSetup(null, "liveWatchRow", "live-watch-pending"); // v2.04
   openTobaModal("liveFinishModal");
 }
 
@@ -328,6 +329,10 @@ function finishSaitamaLiveSession() {
     weightKg: null,
     notes: document.getElementById("live-notes").value.trim(),
   };
+  // v2.04: horário + ⌚ mesclar com o relógio (igual a força)
+  const startTime = liveStartClock(liveSession.startedAt);
+  if (startTime) workout.startTime = startTime;
+  liveApplyWatchPending(workout, "live-watch-pending");
   healthDb.workouts.push(workout);
   saveHealthDb();
 

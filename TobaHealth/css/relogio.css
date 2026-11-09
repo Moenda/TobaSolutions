@@ -2600,3 +2600,57 @@
 .watch-an-legend i.wps-key-goal { display: inline-block; width: 14px; border-top: 2px dashed var(--gold-2); vertical-align: middle; }
 .wsl-axis.is-hi { fill: var(--gold-2); font-weight: 700; }
 #watchCloba .wsl-papo { margin-bottom: 14px; }
+
+/* v2.04: 🔥 Calorias, 😤 Stress e 🏅 Nota do Dia (relogio-horas.js, relogio-calorias.js, relogio-stress.js, relogio-nota.js) */
+.wx-bar { opacity: 0.85; }
+.wx-bar.is-mid { fill: var(--gold-2) !important; }
+.wx-bar.is-high { fill: var(--coral) !important; opacity: 1; }
+.wx-normal { fill: none; stroke: var(--text, #e6edf3); stroke-width: 1.5; stroke-dasharray: 4 3; opacity: 0.55; }
+.wx-cell.is-empty { fill: var(--surface-3); fill-opacity: 0.35; }
+.wx-cell.is-sel { stroke: var(--gold-2); stroke-width: 1.5; }
+.wx-wd-bar { opacity: 0.55; }
+.wx-wd-bar.is-sel { opacity: 1; fill: var(--gold-2) !important; }
+.wx-sub { margin: 14px 0 4px; font-size: 0.8rem; font-weight: 700; }
+.watch-an-legend i.wx-key-bar, .watch-an-legend i.wx-key-normal { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
+.watch-an-legend i.wx-key-normal { height: 0; border-top: 2px dashed var(--muted); border-radius: 0; vertical-align: middle; }
+.wx-tipwrap .watch-chart-tip { min-height: 1.4em; }
+
+.wst-breath-btn { width: 100%; margin-top: 12px; }
+.wst-breath-btn small { opacity: 0.8; font-weight: 500; }
+
+.wx-breath { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 8px 0 4px; text-align: center; }
+.wx-breath-ring {
+  width: 120px; height: 120px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 34px 0;
+  font-size: 1.1rem; font-weight: 800;
+  background: radial-gradient(circle, rgba(88, 166, 255, 0.45), rgba(88, 166, 255, 0.08) 70%);
+  border: 2px solid rgba(88, 166, 255, 0.6);
+  transform: scale(0.8);
+  transition-property: transform, background;
+  transition-timing-function: ease-in-out;
+}
+.wx-breath-ring.is-in { transform: scale(1.35); }
+.wx-breath-ring.is-out { transform: scale(0.8); background: radial-gradient(circle, rgba(63, 185, 80, 0.4), rgba(63, 185, 80, 0.06) 70%); border-color: rgba(63, 185, 80, 0.6); }
+.wx-breath-sub { margin: 0; font-size: 0.86rem; line-height: 1.4; color: var(--muted); max-width: 320px; }
+.wx-breath-bar { width: 100%; height: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
+.wx-breath-bar i { display: block; height: 100%; width: 0; background: var(--blue); }
+@media (prefers-reduced-motion: reduce) {
+  .wx-breath-ring { transition: none; }
+}
+
+.wnd-strip { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
+.wnd-strip .wsl-ring { width: 54px; height: 54px; flex-shrink: 0; }
+.wnd-strip .wsl-ring-num { font-size: 1.05rem; }
+.wnd-strip-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.wnd-strip-main .watch-muted { font-size: 0.78rem; }
+.wnd-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.wnd-chip { font-size: 0.7rem; padding: 1px 6px; border-radius: 999px; background: var(--surface-3); white-space: nowrap; }
+.wnd-chip.is-full { background: rgba(227, 179, 65, 0.22); }
+.wnd-chip.is-low { background: rgba(255, 123, 114, 0.18); }
+.wnd-top { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.wnd-top p { margin: 2px 0 0; }
+.wnd-parts { display: flex; flex-direction: column; gap: 12px; margin: 14px 0; }
+.wnd-part-head { display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 4px; }
+.wnd-part-head small { color: var(--muted); font-weight: 500; }
+.wnd-part .watch-muted { display: block; margin-top: 4px; font-size: 0.76rem; }

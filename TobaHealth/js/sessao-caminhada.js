@@ -673,6 +673,7 @@ function openWalkLiveFinish() {
   document.getElementById("walk-finish-calories").value = km > 0 ? String(estimateWalkKcal(km, suggested, session.date)) : "";
   document.getElementById("walk-finish-notes").value = "";
   setWalkFinishActivity(suggested);
+  if (typeof workoutWatchRowSetup === "function") workoutWatchRowSetup(null, "walkWatchRow", "walk-watch-pending"); // v2.04
   walkPendingFinish = { moved: km };
   openTobaModal("walkFinishModal");
 }
@@ -721,6 +722,7 @@ function saveWalkLive() {
     startTime: `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`,
   };
   if (!workout.track) delete workout.track;
+  liveApplyWatchPending(workout, "walk-watch-pending"); // v2.04: ⌚ mesclar com o relógio
   healthDb.workouts.push(workout);
   saveHealthDb();
   let saved = false;

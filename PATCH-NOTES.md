@@ -2586,3 +2586,46 @@ Pedidos do Rafa depois de usar o Toba Auto no dia a dia: linhas de trânsito mai
 **Como testar:** DHU no PC com destino e **Simular** (50 km/h): cada curva fala uma vez a ~100 m ("Em cem metros, ..."); trânsito da rota em faixa larga por baixo do azul. Encerrar no meio e começar de novo pro mesmo destino: "Voltei! Mesma viagem" e no 🧭 Viagens do Racing fica uma viagem só (Simular não entra no histórico, então teste de verdade na rua). Na rua: radar fala uma vez, "trezentos/quatrocentos metros"; passar embaixo de ponte com radar sem aviso. Na ⚙️: "APK 2.8 · Patch v2.03".
 
 **Commit sugerido:** `v2.03 - Toba Auto: uma fala por manobra e por radar (distancia pela velocidade, numero redondo), radar da ponte filtrado por via e sentido, transito mais grosso, recalculo calado e viagem que cai e volta pro mesmo destino continua a mesma (APK 2.8)`
+
+---
+
+## v2.04 — Commit com vários patches
+
+### 🔊 Voz e ⌚ relógio nos treinos
+
+**Arquivos novos/alterados:** `TobaHealth/js/treinos-relogio.js` (NOVO), `TobaHealth/js/relogio.js`, `TobaHealth/js/treinos.js`, `TobaHealth/js/sessao.js`, `TobaHealth/js/sessao-alongamento.js`, `TobaHealth/js/sessao-casa.js`, `TobaHealth/js/sessao-saitama.js`, `TobaHealth/js/sessao-caminhada.js`, `TobaHealth/TobaHealth-Treinos.html`, `TobaHealth/TobaHealth-Relogio.html`, `TobaHealth/css/treinos.css`, `TobaAndroid/app/auto/br/com/toba/app/MainActivity.java`, `TobaAndroid/app/auto/br/com/toba/app/TobaBridge.java`, `TobaAndroid/app/build.gradle`, `sw.js`, `assets/toba-common.js`, `CLAUDE.md`
+
+1. **🔊 Voz muda no Alongamento (e no Treinos em casa):** não foi o APK 2.8. A voz do celular só "acordava" depois de usar o 🧭 Drive ou a 🚶 Caminhada; abriu o alongamento direto = mudo, mesmo com tudo no máximo. No **APK 2.9** a voz nasce junto com o app, fala no volume de mídia e abaixa a música enquanto fala. Ganhou botão **🔊 Testar a voz** no treino; com APK antigo aparece o aviso pra instalar o 2.9. (Saitama, força e caminhada não têm voz, nunca tiveram.)
+2. **⌚ "Vai mesclar com o relógio?" em todo treino:** antes só a 💪 força tinha. Agora o fim do 🧘 Alongamento, 🏠 Treinos em casa, 👊 Saitama e 🚶 Caminhada também têm, e já vem marcado (o Toba lembra se desmarcar). Todo treino ao vivo grava o horário de início, pra mesclar com o exercício certo do relógio.
+3. **Mesclou = vale o número do relógio:** tempo, kcal e km do relógio passam a valer no lugar do que o formulário chutou. Quer outro número? ✏️ Editar. 🔗 Desmesclar devolve o que tava antes. Treino mesclado antes deste patch com número diferente ganha o botão **⌚ Usar os números do relógio** na página do treino (nada foi trocado sozinho).
+4. **⌚ Treinos do relógio saíram do 🩻 Raio-X e foram pro 🏋️ Treinos:** a lista com 🔗 Mesclar / ➕ Virar treino / 🙈 Ignorar (e o 🗑️ Sumiu do relógio) fica logo embaixo do ▶ Iniciar treino, com o botão **⌚ Sincronizar** pra puxar do relógio na hora (e ao abrir o Treinos ele já puxa sozinho se faz mais de 10 min). Os ignorados foram pra ⚙️ do Treinos › ⌚ Relógio.
+
+**Dados:** nada apagado. Campo novo opcional `workout.watch.prev` (o que o treino tinha antes de mesclar). Treinos ao vivo ganham `startTime`. Mesclas antigas continuam iguais.
+
+**APK novo (2.9 / versionCode 20):** Android Studio › **Sync Gradle** › Build › **Generate Signed APK** (release, chave de sempre) › conferir `TobaAndroid/app/release/output-metadata.json` com `"versionCode": 20` e `"versionName": "2.9"` › instalar **pelo KingInstaller**. Nunca desinstalar. Sem o APK novo, tudo do relógio já chega com o push; só a voz precisa do 2.9.
+
+**Como testar:** ▶ Iniciar treino › 🏠 › 🧘 Alongamento › 🔊 Testar a voz (tem que falar "Teste de voz do Cloba"). Terminar: aparece "⌚ Vai mesclar com o relógio?" marcado. No 🏋️ Treinos: ⌚ Sincronizar puxa e o alongamento fica com o tempo/kcal do relógio. No 🩻 Raio-X a caixinha de treinos não aparece mais. Na ⚙️: "APK 2.9 · Patch v2.04".
+
+**Commit sugerido (esta parte):** `v2.04 - voz dos treinos liga sozinha (APK 2.9), mesclar com o relogio em todo treino e valendo o numero do relogio, treinos do relogio sairam do Raio-X e foram pro Treinos com Sincronizar`
+
+### 🔥 Caloria ativa e 😤 Stress turbinados + 🏅 Nota do Dia do Cloba
+
+**Arquivos novos/alterados:** `TobaHealth/js/relogio-horas.js` (NOVO), `TobaHealth/js/relogio-calorias.js` (NOVO), `TobaHealth/js/relogio-stress.js` (NOVO), `TobaHealth/js/relogio-nota.js` (NOVO), `TobaHealth/js/health-metrics.js`, `TobaHealth/js/relogio-analise.js`, `TobaHealth/js/relogio-dia.js`, `TobaHealth/js/relogio-samsung.js`, `TobaHealth/css/relogio.css`, `TobaHealth/TobaHealth-Relogio.html`, `assets/toba-player.js`, `TobaAndroid/app/auto/br/com/toba/app/HealthReader.java`, `sw.js`
+
+Pedido do Rafa: "se vc fosse um humano tentando melhorar, sem tomar a canetada do Ozempic, querendo uma vida melhor, O QUE VC ADICIONARIA? O MELHOR DE TODA ANÁLISE".
+
+1. **APK 2.9 traz o dia em 24 horas:** calorias ativas, passos e batimento de cada hora dos últimos 35 dias (Health Connect, uma fonte por dia igual aos passos). Na 1ª leitura com o APK novo o Raio-X relê o mês sozinho.
+2. **😤 Tensão do Cloba (stress sem import):** o Samsung não manda o stress pro Health Connect nem pelo SDK dele, então o Cloba calcula pelo batimento: hora em que tu tava parado, acordado e longe de treino, com o coração acima do teu repouso = tensão (0 a 100). Nos dias que têm o stress do Samsung importado, ele acerta a régua pra bater com o do Samsung. Dia com o stress do Samsung continua com o dele (o import passa por cima da estimativa). Tudo automático, sem ZIP.
+3. **🔥 Calorias (aba Dia):** só as ATIVAS. Herói com 🎯 **meta que anda contigo** (teu normal dos 28 dias + 10%), 🔮 quanto fecha hoje, 🛋️ **dia sofá** (abaixo da metade do teu normal pra essa hora; também aparece no 🤡 Papo reto da tela principal), 🕐 **tuas horas de fogo** (hora a hora + mapa de calor de 8 semanas), 🧩 treino x dia a dia, 🍔 **em comida de verdade** (coxinha, pão francês, latinha, PF... e quantos passos teus pagam cada uma), 📈 **as últimas 4 semanas** (ritmo de subida/descida) e 🔍 o que mexe nas tuas calorias (sono, treino, stress, carro, fim de semana).
+4. **😤 Stress (aba Dia):** herói com a origem (📥 Samsung ou ≈ Tensão do Cloba), pico e horas no 70+, 🕐 **hora a hora** + mapa de 8 semanas (a tua hora do aperto), 📅 dia da semana, 🔗 **sono e treino x stress**, 🚗 **no trânsito** (cruza as viagens do 🧭 Toba Drive com o batimento: tensão no carro x fora e as viagens mais tensas), 🔍 o que mexe no teu stress.
+5. **🌬️ Respirar 1 min:** botão no 😤 Stress. 6 respirações (4 s puxa, 6 s solta) com bolinha que enche e vibração. Conta quantas fez e se ajuda no stress do dia seguinte.
+6. **🏅 Nota do Dia do Cloba (0 a 100):** no topo do 🤡 Papo reto da tela principal. 😴 sono 30 + 👟 passos 25 + 🔥 ativas 20 + 😤 stress 15 + 🏃 se mexer de propósito 10. Tocar abre o porquê da nota, onde tá o ponto mais fácil de subir, sequência de dias 70+ e os 14 dias.
+7. **9 troféus novos (categoria 🩻 Raio-X):** 🏅 Nota de respeito (dia 70+), 🔗 Semana redonda (7 seguidos), 🌟 Dia de capa de revista (90+), 📚 Aluno nota 7 (50 dias), 💎 Mês de vitrine (30 seguidos, título), 💯 Gabaritou o Cloba (100, misterioso), 🌬️ Primeiro suspiro / 🫁 Pulmão de monge / 🧘 Dalai Cloba (1/10/50 respirações). Só dia fechado conta. Sem XP por dia (só o XP normal de conquista).
+
+**Dados:** campos novos opcionais em `TOBA_HEALTH_DB.watch.days[dia]`: `hk`/`hs`/`hh` (24 números: kcal ativas, passos e FC média por hora; só os últimos 60 dias, o resto é podado) e `stressSrc: "hr"` quando `stress`/`stressMax`/`stressPeak`/`stressHigh` foram calculados pelo batimento. `watch.breaths = [{ at, s }]` (respirações, até 1.000). Backup antigo continua funcionando.
+
+**APK:** o mesmo 2.9 (versionCode 20) da parte de cima: Sync Gradle › Generate Signed APK › instalar pelo KingInstaller.
+
+**Como testar:** 🩻 Raio-X › 🔄 › tela principal com a 🏅 Nota do Dia no 🤡 (tocar abre a folha) › tocar no 🔥 e no 😤 do 🧬 (aba Dia) › 🌬️ Respirar 1 min até o fim › Perfil › troféus 🩻 Raio-X. Sem o APK 2.9 as seções de hora a hora mostram o aviso do APK.
+
+**Commit sugerido (esta parte):** `v2.04 - calorias ativas e stress turbinados, tensao pelo batimento (APK 2.9), respirar 1 min, Nota do Dia do Cloba e trofeus`

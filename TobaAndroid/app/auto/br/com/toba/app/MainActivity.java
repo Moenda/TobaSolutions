@@ -11,7 +11,11 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
+import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
+import android.media.AudioManager;
 import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.view.WindowManager;
 import android.webkit.GeolocationPermissions;
 import android.webkit.RenderProcessGoneDetail;
@@ -64,8 +68,12 @@ public class MainActivity extends Activity {
     private volatile boolean navigating = false;
     private LocationListener navGps;
     private TextToSpeech tts;
-    private boolean ttsReady = false;
+    private volatile boolean ttsReady = false;
     private int ttsSeq = 0;
+    // v2.04 (APK 2.9): fala que chegou antes do motor de voz ficar pronto (falava só depois do Drive)
+    private String ttsPending;
+    private AudioManager ttsAudio;
+    private AudioFocusRequest ttsFocus;
     // v1.78 (APK 1.7): rota do Android Auto -> 🧭 Toba Drive do site (window.onTobaAutoRoute)
     private final DriveSync.Phone carRoutes = json -> runOnUiThread(() -> {
         if (web != null) web.evaluateJavascript("window.onTobaAutoRoute&&window.onTobaAutoRoute(" + json + ")", null);
@@ -91,6 +99,7 @@ public class MainActivity extends Activity {
 
         // A ponte só existe dentro do app; no navegador o site funciona como sempre.
         web.addJavascriptInterface(new TobaBridge(this), "TobaNative");
+        ensureTts(); // v2.04: voz pronta antes do 1º aviso do treino (antes só ligava no Partiu do Drive)
 
         web.setWebViewClient(new WebViewClient() {
             @Override
@@ -224,6 +233,7 @@ public class MainActivity extends Activity {
             tts.shutdown();
             tts = null;
         }
+        releaseTtsFocus();
         super.onDestroy();
     }
 
@@ -360,12 +370,7 @@ public class MainActivity extends Activity {
                 navGps = null; // sem GPS no aparelho: segue com o do WebView
             }
         }
-        if (tts == null) {
-            tts = new TextToSpeech(getApplicationContext(), status -> {
-                ttsReady = status == TextToSpeech.SUCCESS;
-                if (ttsReady && tts != null) tts.setLanguage(new Locale("pt", "BR"));
-            });
-        }
+        ensureTts();
     }
 
     private void stopNav() {
@@ -395,13 +400,92 @@ public class MainActivity extends Activity {
         web.evaluateJavascript(js, null);
     }
 
+    /* v2.04 (APK 2.9): o motor de voz nasce junto com o app, não só no Partiu do 🧭 Drive.
+     * Até a v2.03 o TTS só era criado no startNav: quem abria o 🧘 Alongamento / 🏠 Treinos
+     * em casa sem ter navegado antes ficava mudo (o speak() saía calado com tts == null).
+     * Agora: cria no onCreate, guarda a fala que chegar antes de ficar pronto, fala no
+     * volume de MÍDIA e abaixa a música enquanto fala (foco de áudio "may duck"). */
+    private void ensureTts() {
+        if (tts != null) return;
+        if (ttsAudio == null) {
+            ttsAudio = (AudioManager) getSystemService(AUDIO_SERVICE);
+            AudioAttributes attrs = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build();
+            ttsFocus = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+                    .setAudioAttributes(attrs)
+                    .build();
+        }
+        tts = new TextToSpeech(getApplicationContext(), status -> runOnUiThread(() -> {
+            if (tts == null) return;
+            ttsReady = status == TextToSpeech.SUCCESS;
+            if (!ttsReady) {
+                // motor de voz falhou (sem app de voz?): solta e tenta de novo na próxima fala
+                try {
+                    tts.shutdown();
+                } catch (Exception ignored) {
+                    // já era
+                }
+                tts = null;
+                return;
+            }
+            tts.setLanguage(new Locale("pt", "BR"));
+            tts.setAudioAttributes(new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build());
+            tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                @Override
+                public void onStart(String id) {
+                }
+
+                @Override
+                public void onDone(String id) {
+                    releaseTtsFocus();
+                }
+
+                @Override
+                @SuppressWarnings("deprecation")
+                public void onError(String id) {
+                    releaseTtsFocus();
+                }
+            });
+            if (ttsPending != null) {
+                String p = ttsPending;
+                ttsPending = null;
+                speakNow(p, true);
+            }
+        }));
+    }
+
+    private void releaseTtsFocus() {
+        if (ttsAudio != null && ttsFocus != null) ttsAudio.abandonAudioFocusRequest(ttsFocus);
+    }
+
+    private void speakNow(String text, boolean interrupt) {
+        if (tts == null || !ttsReady) return;
+        if (ttsAudio != null && ttsFocus != null) ttsAudio.requestAudioFocus(ttsFocus);
+        ttsSeq += 1;
+        tts.speak(text, interrupt ? TextToSpeech.QUEUE_FLUSH : TextToSpeech.QUEUE_ADD, null, "toba-" + ttsSeq);
+    }
+
     // Voz do Android (a do site fica muda com a tela apagada)
     void speak(String text, boolean interrupt) {
         runOnUiThread(() -> {
-            if (tts == null || !ttsReady || text == null) return;
-            ttsSeq += 1;
-            tts.speak(text, interrupt ? TextToSpeech.QUEUE_FLUSH : TextToSpeech.QUEUE_ADD, null, "toba-" + ttsSeq);
+            if (text == null || text.trim().isEmpty()) return;
+            if (tts == null || !ttsReady) {
+                ttsPending = text; // fala assim que o motor ficar pronto
+                ensureTts();
+                return;
+            }
+            speakNow(text, interrupt);
         });
+    }
+
+    // v2.04: a voz tá pronta? (o site mostra "carregando a voz" / avisa se o celular não tem voz)
+    boolean ttsOk() {
+        return ttsReady;
     }
 
     static boolean isOwnSite(Uri url) {

@@ -263,10 +263,11 @@ function renderWorkoutView() {
 }
 
 /* ⌚ Dados do relógio (v1.89)
- * workout.watch = o que o relógio mediu (gravado pelo Raio-X, relogio.js):
+ * workout.watch = o que o relógio mediu (gravado pelo relogio.js; v2.04: caixinha no Treinos):
  * { key, start, end, type, minutes, kcal?, activeKcal?, distanceM?, steps?, hrAvg?, hrMax?,
- *   filled: ["durationMinutes"|"calories"|"distanceKm"], created?, mergedAt }
- * "filled" = campos do treino que estavam vazios e o relógio completou: desmesclar zera só eles. */
+ *   filled: ["durationMinutes"|"calories"|"distanceKm"], prev?: { campo: valor antes }, created?, mergedAt }
+ * "filled" = campos que o relógio escreveu. v2.04: o relógio MANDA (sobrescreve) e prev guarda o
+ * que tinha antes; desmesclar devolve o prev (mescla antiga sem prev = zera o campo). */
 function renderWorkoutWatchDetail(workout) {
   const w = workout.watch;
   if (!w || typeof w !== "object") return "";
@@ -283,29 +284,71 @@ function renderWorkoutWatchDetail(workout) {
   const when = Number(w.start) > 0 && Number(w.end) > 0 ? `${clock(w.start)}–${clock(w.end)}` : "";
   const filled = Array.isArray(w.filled) ? w.filled : [];
   const filledNames = { durationMinutes: "tempo", calories: "kcal", distanceKm: "km" };
+  // v2.04: mesclou = vale o do relógio (w.prev = o que tinha antes). Mescla antiga com número
+  // diferente do relógio ganha o botão ⌚ Usar os números do relógio.
+  const differs = !w.created && workoutWatchDiffers(workout);
   const note = w.created
     ? "Esse treino veio do relógio."
     : filled.length
-      ? `O relógio completou: ${filled.map((f) => filledNames[f] || f).join(", ")}. O resto é teu.`
-      : "Teus números ficaram como estavam; o relógio só somou o batimento.";
+      ? `Valem os números do relógio: ${filled.map((f) => filledNames[f] || f).join(", ")}. Quer outro? ✏️ Editar.`
+      : differs
+        ? "Os números do treino tão diferentes dos do relógio."
+        : "Os números batem com os do relógio; ele somou o batimento.";
   return `
     <div class="section-title">⌚ Dados do relógio${when ? ` <span class="wv-watch-when">${when}</span>` : ""}</div>
     <div class="card wv-watch">
       ${tiles.length ? `<div class="toba-stats wv-stats">${tiles.join("")}</div>` : ""}
       <p class="wv-watch-note">${escapeHtml(note)}</p>
+      ${differs ? `<button type="button" class="btn btn-primary btn-sm" data-click="useWorkoutWatchNumbers" data-id="${escapeHtml(workout.id)}">⌚ Usar os números do relógio</button>` : ""}
       ${w.created ? "" : `<button type="button" class="btn btn-secondary btn-sm" data-click="unmergeWorkoutWatch" data-id="${escapeHtml(workout.id)}">🔗 Desmesclar</button>`}
     </div>`;
 }
 
-// Desfaz o "Mesclar" do Raio-X: tira só o que o relógio preencheu e o exercício volta pra caixinha
+// v2.04: tempo/kcal/km que o relógio mediu (snapshot em workout.watch)
+function workoutWatchNumbers(w) {
+  const kcal = Number(w.kcal) > 0 ? Number(w.kcal) : Number(w.activeKcal) > 0 ? Number(w.activeKcal) : 0;
+  return {
+    durationMinutes: Number(w.minutes) > 0 ? Math.round(Number(w.minutes)) : null,
+    calories: kcal ? Math.round(kcal) : null,
+    distanceKm: Number(w.distanceM) >= 50 ? Math.round(Number(w.distanceM) / 10) / 100 : null,
+  };
+}
+
+function workoutWatchDiffers(workout) {
+  const n = workoutWatchNumbers(workout.watch || {});
+  return Object.keys(n).some((f) => n[f] && Number(workout[f]) !== n[f]);
+}
+
+// v2.04: mescla antiga (o teu mandava) -> passa a valer o relógio. O antigo vai pro watch.prev.
+function useWorkoutWatchNumbers(workoutId) {
+  const workout = healthDb.workouts.find((item) => String(item.id) === String(workoutId));
+  if (!workout || !workout.watch || workout.watch.created) return;
+  const w = workout.watch;
+  const n = workoutWatchNumbers(w);
+  if (!w.prev || typeof w.prev !== "object") w.prev = {};
+  if (!Array.isArray(w.filled)) w.filled = [];
+  Object.keys(n).forEach((f) => {
+    if (!n[f] || Number(workout[f]) === n[f]) return;
+    if (!Object.prototype.hasOwnProperty.call(w.prev, f) && !w.filled.includes(f)) w.prev[f] = workout[f] === undefined ? null : workout[f];
+    workout[f] = n[f];
+    if (!w.filled.includes(f)) w.filled.push(f);
+  });
+  saveHealthDb();
+  renderWorkoutView();
+  tobaToast("⌚ Valendo os números do relógio");
+}
+
+// Desfaz o "Mesclar": volta o que tinha antes (v2.04: watch.prev; mescla antiga = zera o que o
+// relógio preencheu) e o exercício volta pra caixinha ⌚ Treinos do relógio
 async function unmergeWorkoutWatch(workoutId) {
   const workout = healthDb.workouts.find((item) => String(item.id) === String(workoutId));
   if (!workout || !workout.watch || workout.watch.created) return;
-  const confirmed = await showPageMessage("O treino volta a ser só o que você anotou, e o exercício do relógio volta pra lista do 🩻 Raio-X.", { title: "Desmesclar do relógio?", confirm: true, confirmLabel: "Desmesclar" });
+  const confirmed = await showPageMessage("O treino volta a ser só o que você anotou, e o exercício do relógio volta pra lista ⌚ Treinos do relógio, aqui no Treinos.", { title: "Desmesclar do relógio?", confirm: true, confirmLabel: "Desmesclar" });
   if (!confirmed) return;
   const w = workout.watch;
+  const prev = w.prev && typeof w.prev === "object" ? w.prev : {};
   (Array.isArray(w.filled) ? w.filled : []).forEach((field) => {
-    if (["durationMinutes", "calories", "distanceKm"].includes(field)) workout[field] = null;
+    if (["durationMinutes", "calories", "distanceKm"].includes(field)) workout[field] = Object.prototype.hasOwnProperty.call(prev, field) ? prev[field] : null;
   });
   const handled = healthDb.watch && healthDb.watch.handled;
   if (handled && w.key && handled[w.key] && String(handled[w.key].workoutId) === String(workout.id)) delete handled[w.key];
@@ -315,7 +358,10 @@ async function unmergeWorkoutWatch(workoutId) {
   tobaToast("🔗 Desmesclado");
 }
 
-tobaActions({ unmergeWorkoutWatch: (el) => unmergeWorkoutWatch(el.dataset.id) });
+tobaActions({
+  unmergeWorkoutWatch: (el) => unmergeWorkoutWatch(el.dataset.id),
+  useWorkoutWatchNumbers: (el) => useWorkoutWatchNumbers(el.dataset.id), // v2.04
+});
 
 // Conta em hall-shared.js (o Perfil usa a mesma)
 function getWorkoutLifetimeStats(workouts = healthDb.workouts) {
@@ -800,7 +846,7 @@ const WORKOUT_WATCH_PREF = "toba_health_watch_pending_pref";
 
 function workoutWatchPref() {
   try {
-    return localStorage.getItem(WORKOUT_WATCH_PREF) === "1";
+    return localStorage.getItem(WORKOUT_WATCH_PREF) !== "0"; // v2.04: começa marcado (quem usa relógio quer mesclar)
   } catch (err) {
     return false;
   }
@@ -997,6 +1043,7 @@ function openModule(viewId) {
     .forEach((v) => v.classList.toggle("active", v.id === viewId));
   if (["viewTraining", "viewMonth"].includes(viewId)) renderWorkoutScreen();
   if (viewId === "viewTraining") renderLiveSessionLaunch();
+  if (viewId === "viewTraining" && typeof renderTrainingWatch === "function") renderTrainingWatch(); // v2.04
   if (viewId === "viewWalks") renderWalkHistory();
 
   const titles = {

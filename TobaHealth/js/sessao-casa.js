@@ -782,6 +782,7 @@ function renderHomeLive(session) {
         <input type="checkbox" data-change="homeToggleVoice"${readHomePrefs().voice ? " checked" : ""} />
         <span>🔊 Voz avisando a troca e o 3-2-1 (dá pra fazer sem olhar a tela)</span>
       </label>
+      ${renderLiveVoiceExtra("homeTestVoice")}
       ${renderLiveAwakeToggle()}
       <button type="button" class="btn btn-primary live-finish" data-click="homeFinishNow">🏁 Terminar agora</button>
       <button type="button" class="btn btn-secondary" data-click="discardLiveSession">Cancelar treino</button>
@@ -816,6 +817,7 @@ function renderHomeDone(session) {
           <label for="home-notes">Observações (opcional)</label>
           <input id="home-notes" class="form-control" type="text" maxlength="160" placeholder="Morreu ou sobreviveu?" />
         </div>
+        ${renderLiveWatchCheck("home-watch-pending")}
         <button type="submit" class="btn btn-primary live-finish">Salvar treino 🏠</button>
       </form>
       <p class="live-hint">Dica do Cloba: emenda um 🧘 alongamento de 10 min depois (▶ Iniciar treino › 🏠 › Alongamento).</p>
@@ -928,6 +930,13 @@ function homeToggleVoice(el) {
   tobaToast(el.checked ? "🔊 O Toba avisa cada troca" : "🔇 Só vibração");
 }
 
+// v2.04: 🔊 Testar a voz (fala mesmo com a chavinha desligada)
+function homeTestVoice() {
+  storeLivePrefs({ homeVoice: true });
+  homeSpeak("Teste de voz do Cloba. Nunca foi sorte.");
+  renderLiveSession();
+}
+
 function saveHomeLive() {
   if (!liveSession?.home) return;
   if (!isHealthDbLoaded) {
@@ -959,6 +968,10 @@ function saveHomeLive() {
     notes: document.getElementById("home-notes").value.trim(),
     home: { plan: data.plan, done: { ...data.done } },
   };
+  // v2.04: horário + ⌚ mesclar com o relógio
+  const startTime = liveStartClock(liveSession.startedAt);
+  if (startTime) workout.startTime = startTime;
+  liveApplyWatchPending(workout, "home-watch-pending");
   healthDb.workouts.push(workout);
   saveHealthDb();
   let saved = false;
@@ -1063,5 +1076,6 @@ tobaActions({
   homeBack,
   homeFinishNow,
   homeToggleVoice,
+  homeTestVoice,
   saveHomeLive,
 });

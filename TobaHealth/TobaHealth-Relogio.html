@@ -42,8 +42,6 @@
     <div class="card" id="watchSleep"></div>
     <div id="watchBody" hidden></div>
     <div id="watchScale" hidden></div>
-    <div id="watchGone" hidden></div>
-    <div id="watchInbox" hidden></div>
     <div id="watchWeek"></div>
     <div id="watchTrend"></div>
 
@@ -71,14 +69,6 @@
           <span class="toba-menu-text">
             <span class="toba-menu-title">Metas</span>
             <span class="toba-menu-desc">Passos por dia e horas de sono</span>
-          </span>
-          <span class="toba-hub-chevron">›</span>
-        </button>
-        <button type="button" class="toba-menu-btn" data-click="openWatchIgnored">
-          <span class="toba-menu-icon">🙈</span>
-          <span class="toba-menu-text">
-            <span class="toba-menu-title">Treinos do relógio ignorados</span>
-            <span class="toba-menu-desc">Ignorou sem querer? Volta pra lista daqui</span>
           </span>
           <span class="toba-hub-chevron">›</span>
         </button>
@@ -137,6 +127,34 @@
     </div>
   </div>
 
+  <!-- v2.04: 🏅 Nota do Dia (relogio-nota.js) e 🌬️ Respirar 1 min (relogio-horas.js) -->
+  <div class="toba-modal" id="wndModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🏅 Nota do Dia do Cloba</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="wndBody"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-secondary" data-close>Fechar 👍</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="wxBreathModal" data-backdrop="static">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🌬️ Respirar 1 min</h3>
+        <button type="button" class="close-btn" data-click="wxBreathClose" aria-label="Fechar">✕</button>
+      </div>
+      <div id="wxBreathBody"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-secondary" data-click="wxBreathClose">Fechar</button>
+        <button type="button" class="btn btn-primary" id="wxBreathGo" data-click="wxBreathStart">▶ Começar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toba-modal" id="watchDiagModal">
     <div class="toba-sheet">
       <div class="toba-sheet-header">
@@ -147,17 +165,6 @@
       <div class="toba-sheet-footer">
         <button type="button" class="btn btn-secondary" data-close>Fechar 👍</button>
       </div>
-    </div>
-  </div>
-
-  <div class="toba-modal" id="watchMergeModal">
-    <div class="toba-sheet">
-      <div class="toba-sheet-header">
-        <h3>🔗 Mesclar com qual treino?</h3>
-        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
-      </div>
-      <div id="watchMergeBody"></div>
-      <p class="watch-muted">O teu treino continua mandando: o relógio só completa o que tava vazio (tempo, kcal, km) e guarda o batimento. Dá pra desmesclar na página do treino.</p>
     </div>
   </div>
 
@@ -186,18 +193,6 @@
     </div>
   </div>
 
-  <div class="toba-modal" id="watchIgnoredModal">
-    <div class="toba-sheet">
-      <div class="toba-sheet-header">
-        <h3>🙈 Treinos ignorados</h3>
-        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
-      </div>
-      <div id="watchIgnoredBody"></div>
-      <div class="toba-sheet-footer">
-        <button type="button" class="btn btn-secondary" data-close>Fechar 👍</button>
-      </div>
-    </div>
-  </div>
 
   <div class="toba-modal" id="watchGoalsModal">
     <div class="toba-sheet">
@@ -223,6 +218,7 @@
   <script src="../assets/toba-common.js"></script>
   <script src="../assets/toba-cloud.js"></script>
   <script src="js/health-core.js"></script>
+  <script src="js/health-metrics.js"></script>
   <script src="js/relogio.js"></script>
   <script src="js/relogio-samsung.js"></script>
   <script src="js/relogio-analise.js"></script>
@@ -231,6 +227,10 @@
   <script src="js/relogio-recordes.js"></script>
   <script src="js/relogio-sono.js"></script>
   <script src="js/relogio-passos.js"></script>
+  <script src="js/relogio-horas.js"></script>
+  <script src="js/relogio-calorias.js"></script>
+  <script src="js/relogio-stress.js"></script>
+  <script src="js/relogio-nota.js"></script>
   <script src="../assets/pwa-register.js"></script>
 </body>
 

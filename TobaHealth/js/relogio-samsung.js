@@ -453,6 +453,11 @@ function samsungApply(parsed) {
     const next = { ...old };
     let changed = false;
     const src = parsed.days[iso] || {};
+    // v2.04: stress do Samsung de verdade passa por cima da 😤 Tensão do Cloba (estimada pelo batimento, stressSrc "hr")
+    if (next.stressSrc === "hr" && src.stress !== undefined) {
+      ["stress", "stressMax", "stressPeak", "stressHigh", "stressSrc"].forEach((f) => delete next[f]);
+      changed = true;
+    }
     Object.keys(src).forEach((f) => {
       if (next[f] === undefined || next[f] === null) { next[f] = src[f]; changed = true; filled++; }
     });
