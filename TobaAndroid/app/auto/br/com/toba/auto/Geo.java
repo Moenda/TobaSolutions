@@ -161,6 +161,23 @@ final class Geo {
         return String.format(BR, km < 2 ? "%.1f quilômetro" : "%.1f quilômetros", km);
     }
 
+    private static final String[] HUNDREDS = {"", "cem", "duzentos", "trezentos", "quatrocentos", "quinhentos",
+            "seiscentos", "setecentos", "oitocentos", "novecentos"};
+
+    /**
+     * v2.03: distância falada com número REDONDO e por extenso ("trezentos metros"): de 100 em
+     * 100 até 900 m, depois "um quilômetro", "um quilômetro e meio", "2 quilômetros".
+     */
+    static String roundSpoken(double m) {
+        long h = Math.max(1, Math.round(m / 100.0));
+        if (h < 10) return HUNDREDS[(int) h] + " metros";
+        long half = Math.round(m / 500.0); // meios quilômetros
+        if (half == 2) return "um quilômetro";
+        if (half == 3) return "um quilômetro e meio";
+        long km = Math.round(m / 1000.0);
+        return km + " quilômetros";
+    }
+
     /** "12 min", "1 h 05". */
     static String fmtDuration(long sec) {
         long min = Math.max(0, Math.round(sec / 60.0));

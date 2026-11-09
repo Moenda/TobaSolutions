@@ -40,6 +40,11 @@ const AM_PITCH_3D = 60;
 const AM_W_CASING = ["interpolate", ["linear"], ["zoom"], 11, 4.5, 15, 9, 18, 18];
 const AM_W_LINE = ["interpolate", ["linear"], ["zoom"], 11, 2.5, 15, 6, 18, 12.5];
 const AM_SEE_THROUGH = 0.55;
+// v2.03: trânsito grossão igual ao Toba Drive do celular (drive-map.js DRIVE_TRAFFIC_*):
+// o da rota é uma faixa larga POR BAIXO do risco azul (sobra amarelo/vermelho dos dois lados);
+// o das outras ruas ficou mais encorpado também.
+const AM_W_JAM = ["interpolate", ["linear"], ["zoom"], 10, 4, 13, 9, 15, 15, 16, 18, 18, 28, 19, 34];
+const AM_W_CITY_TRAFFIC = ["interpolate", ["linear"], ["zoom"], 10, 1.6, 13, 2.6, 15, 3.8, 16, 4.6, 18, 7, 19, 8.5];
 const AM_FRAME_MS = 33; // ~30 quadros por segundo (o celular também está dirigindo o carro)
 const AM_READY_WAIT_MS = 20000;
 
@@ -307,6 +312,20 @@ function amAddLayers() {
       "line-occlusion-opacity": AM_SEE_THROUGH,
     },
   });
+  // v2.03: trânsito da rota = faixa larga por baixo do risco (igual ao celular)
+  map.addLayer({
+    id: "am-jam-line",
+    type: "line",
+    source: "am-jams",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: {
+      "line-color": ["match", ["get", "lvl"], 3, AM_JAM_COLORS[3], 2, AM_JAM_COLORS[2], AM_JAM_COLORS[1]],
+      "line-width": AM_W_JAM,
+      "line-opacity": 0.95,
+      "line-emissive-strength": 1,
+      "line-occlusion-opacity": AM_SEE_THROUGH,
+    },
+  });
   map.addLayer({
     id: "am-route-casing",
     type: "line",
@@ -328,18 +347,6 @@ function amAddLayers() {
       "line-color": skin.route,
       "line-width": AM_W_LINE,
       "line-trim-offset": [0, 0],
-      "line-emissive-strength": 1,
-      "line-occlusion-opacity": AM_SEE_THROUGH,
-    },
-  });
-  map.addLayer({
-    id: "am-jam-line",
-    type: "line",
-    source: "am-jams",
-    layout: { "line-cap": "round", "line-join": "round" },
-    paint: {
-      "line-color": ["match", ["get", "lvl"], 3, AM_JAM_COLORS[3], 2, AM_JAM_COLORS[2], AM_JAM_COLORS[1]],
-      "line-width": AM_W_LINE,
       "line-emissive-strength": 1,
       "line-occlusion-opacity": AM_SEE_THROUGH,
     },
@@ -410,7 +417,7 @@ function amAddLayers() {
 }
 
 // v1.80: 🚦 trânsito das ruas em volta (Mapbox Traffic), SÓ amarelo / vermelho / vinho,
-// fininho e por baixo da rota. Rua livre (verde) não aparece.
+// por baixo da rota (v2.03: mais grosso, igual ao celular). Rua livre (verde) não aparece.
 function amAddTraffic() {
   const map = am.map;
   try {
@@ -424,9 +431,9 @@ function amAddTraffic() {
       layout: { "line-cap": "round", "line-join": "round" },
       paint: {
         "line-color": ["match", ["get", "congestion"], "severe", AM_JAM_COLORS[3], "heavy", AM_JAM_COLORS[2], AM_JAM_COLORS[1]],
-        "line-width": ["interpolate", ["linear"], ["zoom"], 12, 1.5, 16, 3, 19, 6],
-        "line-offset": ["interpolate", ["linear"], ["zoom"], 12, 1, 16, 2.5, 19, 5],
-        "line-opacity": 0.85,
+        "line-width": AM_W_CITY_TRAFFIC,
+        "line-offset": ["interpolate", ["linear"], ["zoom"], 12, 1, 16, 3, 19, 6],
+        "line-opacity": 0.8,
         "line-emissive-strength": 1,
         "line-occlusion-opacity": AM_SEE_THROUGH,
       },
@@ -648,20 +655,44 @@ function amShowOverview() {
 }
 
 
-/* ---------- 📸 radares (v1.80): OpenStreetMap pelo Overpass, mesmo cache do Toba Drive ----------
- * Caixas de ~4 km em volta do carro; o aviso vale pro radar na frente (até 30° do rumo)
- * a menos de 450 m. Falhou = segue sem radar.
+/* ---------- 📸 radares (v1.80): OpenStreetMap pelo Overpass ----------
+ * Caixas de ~4 km em volta do carro. Falhou = segue sem radar.
+ * v2.03 (pedidos do Rafa):
+ * - VOZ UMA VEZ SÓ por radar, número redondo e por extenso ("Radar a trezentos metros"),
+ *   na distância pela velocidade: até 60 km/h a 200 m, 60–120 km/h a 400 m, mais de 120 a 500 m.
+ *   Depois disso só a plaquinha 📸 na tela (aparece a até 500 m).
+ * - RADAR DA PONTE: além de estar a até 18 m da rota, o radar tem que estar na MESMA via e no
+ *   MESMO sentido. O Overpass agora traz junto as ruas do radar (a via em que ele tá ou, se ele
+ *   tá do lado da pista, a via mais perto a até 15 m) e o "direction" dele; rua que cruza a rota (ponte/viaduto por cima ou
+ *   túnel por baixo) fica com rumo virado e não avisa. Radar sem rua conhecida = regra antiga.
+ *   Cache novo (toba_auto_radar_cache), porque o do Toba Drive do celular não tem as ruas.
  */
 const AM_RADAR_TILE = 0.04;
-const AM_RADAR_WARN_M = 450;
-const AM_RADAR_CACHE_KEY = "toba_drive_radar_cache"; // o mesmo do Toba Drive (drive-route.js)
+const AM_RADAR_WARN_M = 500; // plaquinha na tela a partir daqui
+const AM_RADAR_CACHE_KEY = "toba_auto_radar_cache"; // v2.03: só do carro (linhas com rumo das ruas)
 const AM_RADAR_CACHE_DAYS = 7;
+const AM_RADAR_ROAD_TOL = 35; // rumo da rota x rumo da rua do radar (graus, mão ou contramão)
+const AM_RADAR_DIR_TOL = 50; // rumo da rota x "direction" do radar (graus)
+const AM_RADAR_WAY_SKIP = /^(footway|cycleway|path|steps|pedestrian|track|bridleway|corridor|platform|proposed|construction|elevator|via_ferrata)$/;
 const AM_OVERPASS = [
   "https://overpass-api.de/api/interpreter?data=",
   "https://overpass.private.coffee/api/interpreter?data=",
   "https://overpass.kumi.systems/api/interpreter?data=",
 ];
 const amRadar = { tiles: new Set(), list: new Map(), warned: new Set(), busy: false, near: null };
+
+// v2.03: distância da voz pela velocidade (m/s)
+function amRadarSayAt(speed) {
+  const kmh = (speed || 0) * 3.6;
+  return kmh > 120 ? 500 : kmh >= 60 ? 400 : 200;
+}
+
+// v2.03: "trezentos metros" (de 100 em 100, por extenso: o TTS não inventa "trezentos e cinquenta")
+const AM_HUNDREDS = ["", "cem", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos", "oitocentos", "novecentos"];
+function amSpokenRound(m) {
+  const h = Math.max(1, Math.min(9, Math.round(m / 100)));
+  return `${AM_HUNDREDS[h]} metros`;
+}
 
 function amBearing(a, b) {
   const p1 = (a[0] * Math.PI) / 180;
@@ -672,9 +703,32 @@ function amBearing(a, b) {
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
+function amAngle(a, b) {
+  return Math.abs(((a - b + 540) % 360) - 180);
+}
+
 function amRadarLimit(v) {
   const n = parseInt(String(v || ""), 10);
   return Number.isFinite(n) && n >= 10 && n <= 150 ? n : 0;
+}
+
+// "direction" do OSM: 90 / "90;270" / "NE" / "forward" / "backward" (forward = sentido da via)
+const AM_CARDINAL = { N: 0, NNE: 22.5, NE: 45, ENE: 67.5, E: 90, ESE: 112.5, SE: 135, SSE: 157.5, S: 180, SSW: 202.5, SW: 225, WSW: 247.5, W: 270, WNW: 292.5, NW: 315, NNW: 337.5 };
+function amRadarDirs(tag, wayHead) {
+  if (!tag) return [];
+  const out = [];
+  String(tag).split(";").forEach((raw) => {
+    const v = raw.trim().toUpperCase();
+    if (!v) return;
+    if (v === "FORWARD" && Number.isFinite(wayHead)) out.push(wayHead);
+    else if (v === "BACKWARD" && Number.isFinite(wayHead)) out.push((wayHead + 180) % 360);
+    else if (v in AM_CARDINAL) out.push(AM_CARDINAL[v]);
+    else {
+      const n = Number(v);
+      if (Number.isFinite(n) && n >= 0 && n <= 360) out.push(n % 360);
+    }
+  });
+  return out;
 }
 
 function amRadarCache() {
@@ -685,12 +739,31 @@ function amRadarCache() {
   }
 }
 
+// rumo da via no ponto mais perto do radar (e a distância até ela)
+function amWayNear(way, lat, lon) {
+  const g = way.geometry || [];
+  const k = Math.cos((lat * Math.PI) / 180) * 111320;
+  let best = null;
+  for (let i = 0; i < g.length - 1; i++) {
+    const a = [(g[i].lon - lon) * k, (g[i].lat - lat) * 110540];
+    const b = [(g[i + 1].lon - lon) * k, (g[i + 1].lat - lat) * 110540];
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const len2 = dx * dx + dy * dy || 1;
+    const t = Math.max(0, Math.min(1, (-a[0] * dx - a[1] * dy) / len2));
+    const off = Math.hypot(a[0] + t * dx, a[1] + t * dy);
+    if (!best || off < best.off) best = { off, head: amBearing([g[i].lat, g[i].lon], [g[i + 1].lat, g[i + 1].lon]) };
+  }
+  return best;
+}
+
+// linha do cache: [lat, lng, limite, [rumos das vias], [sentidos do radar]]
 async function amRadarBox(s, w, n, e) {
   const key = [s, w, n, e].map((v) => v.toFixed(2)).join(",");
   const hit = amRadarCache()[key];
   if (hit && Date.now() - hit.t < AM_RADAR_CACHE_DAYS * 86400000 && Array.isArray(hit.r)) return hit.r;
   const b = `(${s},${w},${n},${e})`;
-  const q = encodeURIComponent(`[out:json][timeout:20];(node[highway=speed_camera]${b};node[enforcement=maxspeed]${b};)->.a;relation[enforcement=maxspeed]${b}->.r;node(r.r:"device")->.d;(.a;.d;);out body 500;.r out body;`);
+  const q = encodeURIComponent(`[out:json][timeout:25];(node[highway=speed_camera]${b};node[enforcement=maxspeed]${b};)->.a;relation[enforcement=maxspeed]${b}->.r;node(r.r:"device")->.d;(.a;.d;)->.c;.c out body 500;.r out body;(way(bn.c)[highway];way(around.c:15)[highway];)->.w;.w out geom 1500;`);
   let json = null;
   for (const base of AM_OVERPASS) {
     try {
@@ -704,14 +777,19 @@ async function amRadarBox(s, w, n, e) {
   }
   if (!json) throw new Error("Overpass fora");
   const relLimit = new Map();
+  const relDir = new Map();
   const nodes = [];
+  const ways = [];
   (json.elements || []).forEach((el) => {
     if (el.type === "relation") {
       const lim = amRadarLimit(el.tags?.maxspeed);
       (el.members || []).forEach((m) => {
-        if (m.type === "node" && m.role === "device" && lim) relLimit.set(m.ref, lim);
+        if (m.type !== "node" || m.role !== "device") return;
+        if (lim) relLimit.set(m.ref, lim);
+        if (el.tags?.direction) relDir.set(m.ref, el.tags.direction);
       });
     } else if (el.type === "node") nodes.push(el);
+    else if (el.type === "way" && Array.isArray(el.geometry) && el.geometry.length > 1 && !AM_RADAR_WAY_SKIP.test(el.tags?.highway || "")) ways.push(el);
   });
   const seen = new Set();
   const rows = [];
@@ -720,7 +798,17 @@ async function amRadarBox(s, w, n, e) {
     const lng = Number(el.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || seen.has(el.id)) return;
     seen.add(el.id);
-    rows.push([Math.round(lat * 1e6) / 1e6, Math.round(lng * 1e6) / 1e6, amRadarLimit(el.tags?.maxspeed) || relLimit.get(el.id) || 0]);
+    // a via em que o radar tá (nó dela); se ele tá do lado da pista, as vias a até 15 m
+    const own = ways.filter((wy) => Array.isArray(wy.nodes) && wy.nodes.includes(el.id));
+    const pool = own.length ? own : ways;
+    let ownHead = NaN;
+    const near = pool.map((wy) => amWayNear(wy, lat, lng)).filter((x) => x && (own.length || x.off <= 15));
+    if (own.length && near.length) ownHead = near[0].head;
+    // do lado da pista: vale a via mais perto (e as que estão quase tão perto, até +4 m)
+    const closest = near.reduce((m, x) => Math.min(m, x.off), Infinity);
+    const heads = near.filter((x) => own.length || x.off <= closest + 4).map((x) => Math.round(x.head));
+    const dirs = amRadarDirs(el.tags?.direction || el.tags?.["camera:direction"] || relDir.get(el.id), ownHead).map(Math.round);
+    rows.push([Math.round(lat * 1e6) / 1e6, Math.round(lng * 1e6) / 1e6, amRadarLimit(el.tags?.maxspeed) || relLimit.get(el.id) || 0, heads, dirs]);
   });
   try {
     const all = amRadarCache();
@@ -745,10 +833,16 @@ function amRadarLoad(lat, lon) {
   amRadarBox(s, w, r2(s + AM_RADAR_TILE + 0.04), r2(w + AM_RADAR_TILE + 0.04))
     .then((rows) => {
       amRadar.tiles.add(key);
-      rows.forEach(([la, lo, lim]) => {
+      rows.forEach(([la, lo, lim, heads, dirs]) => {
         const id = `${la},${lo}`;
         const old = amRadar.list.get(id);
-        amRadar.list.set(id, { lat: la, lon: lo, lim: lim || (old && old.lim) || 0 });
+        amRadar.list.set(id, {
+          lat: la,
+          lon: lo,
+          lim: lim || (old && old.lim) || 0,
+          heads: Array.isArray(heads) ? heads : (old && old.heads) || [],
+          dirs: Array.isArray(dirs) ? dirs : (old && old.dirs) || [],
+        });
       });
       if (amRadar.list.size > 600) {
         // guarda só os mais perto
@@ -775,7 +869,16 @@ function amRadarDraw() {
   });
 }
 
+// v2.03: o radar vale pra quem anda nesse rumo? (mesma via e mesmo sentido)
+function amRadarFits(r, head) {
+  if (!Number.isFinite(head)) return true;
+  if (r.dirs && r.dirs.length) return r.dirs.some((d) => amAngle(d, head) <= AM_RADAR_DIR_TOL);
+  if (r.heads && r.heads.length) return r.heads.some((h) => amAngle(h, head) <= AM_RADAR_ROAD_TOL || amAngle(h, head) >= 180 - AM_RADAR_ROAD_TOL);
+  return true; // radar sem rua conhecida: regra antiga (só a distância)
+}
+
 // v1.82: radar está NA ROTA, na frente? (até 18 m da linha; pista do outro sentido fica fora)
+// v2.03: e na mesma via/sentido da rota naquele trecho (ponte por cima não conta)
 const AM_RADAR_ROUTE_M = 18;
 const AM_RADAR_SIDE_M = 12; // sem rota: até 12 m pro lado da linha reta do rumo
 
@@ -796,14 +899,14 @@ function amRadarOnRoute(r, lat, lon) {
     const len2 = dx * dx + dy * dy || 1;
     const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2));
     const off = Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
-    if (off <= AM_RADAR_ROUTE_M && (!best || off < best.off)) {
-      best = { off, along: rt.cum[i] + t * Math.sqrt(len2) };
-    }
+    if (off > AM_RADAR_ROUTE_M || (best && off >= best.off) || len2 < 1) continue;
+    if (!amRadarFits(r, amBearing(rt.pts[i], rt.pts[i + 1]))) continue;
+    best = { off, along: rt.cum[i] + t * Math.sqrt(len2) };
   }
   return best;
 }
 
-// radar na frente do carro: pílula + voz (uma vez por radar)
+// radar na frente do carro: plaquinha (até 500 m) + voz UMA vez (distância pela velocidade)
 function amRadarCheck(lat, lon, head, speed) {
   amRadarLoad(lat, lon);
   let best = null;
@@ -813,28 +916,28 @@ function amRadarCheck(lat, lon, head, speed) {
     if (d > AM_RADAR_WARN_M + 60) return;
     let ahead;
     if (routed) {
-      // com rota: só radar em cima da rota e na frente (pela distância rodada)
+      // com rota: só radar em cima da rota, na frente e na mesma via/sentido
       const on = amRadarOnRoute(r, lat, lon);
       if (!on) return;
       ahead = on.along - am.along;
       if (ahead < -5 || ahead > AM_RADAR_WARN_M) return;
     } else {
-      // sem rota: na frente (até 30°) e no máximo 12 m pro lado do rumo
+      // sem rota: na frente (até 30°), no máximo 12 m pro lado do rumo e na via/sentido do carro
       const diff = Math.abs(((amBearing([lat, lon], [r.lat, r.lon]) - head + 540) % 360) - 180);
       const side = d * Math.sin((Math.min(diff, 90) * Math.PI) / 180);
       if ((diff > 30 || side > AM_RADAR_SIDE_M) && d > 25) return;
       if (d > AM_RADAR_WARN_M) return;
+      if (!amRadarFits(r, head)) return;
       ahead = d;
     }
     if (!best || ahead < best.d) best = { id, d: Math.max(0, ahead), lim: r.lim };
   });
   const moving = (speed || 0) > 3;
   amRadar.near = best && moving ? best : null;
-  if (best && moving && !amRadar.warned.has(best.id)) {
+  if (best && moving && !amRadar.warned.has(best.id) && best.d <= amRadarSayAt(speed) + 20) {
     amRadar.warned.add(best.id);
     const n = amNative();
-    const m = Math.max(50, Math.round(best.d / 50) * 50);
-    if (n && typeof n.say === "function") n.say(`Radar a ${m} metros.${best.lim ? ` Limite de ${best.lim}.` : ""}`);
+    if (n && typeof n.say === "function") n.say(`Radar a ${amSpokenRound(best.d)}.${best.lim ? ` Limite ${best.lim}.` : ""}`);
   }
   amRenderRadar();
 }

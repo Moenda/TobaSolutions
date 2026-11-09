@@ -140,11 +140,60 @@ final class AutoStore {
      * Diário das viagens do carro ({at, end, km, dest, ...}); o site importa pro TOBA_DRIVE_DB.
      * v2.02: sim = true quando foi o botão Simular (teste no DHU): o site não conta.
      */
+    /** v2.03: viagem do diário que pode continuar (mesmo começo e os km que já rodou). */
+    static final class Resume {
+        final long at;
+        final double meters;
+
+        Resume(long at, double meters) {
+            this.at = at;
+            this.meters = meters;
+        }
+    }
+
+    static final long RESUME_MS = 15 * 60 * 1000L;
+    static final double RESUME_M = 250;
+
+    /**
+     * v2.03: começou rota pro MESMO destino (até 250 m) em até 15 min depois da última viagem
+     * terminar SEM chegar? Devolve o começo e os km dela: o motor segue a mesma viagem e, no
+     * fim, o logTrip grava POR CIMA dela (mesmo "at"; o site atualiza a que já importou em vez
+     * de criar outra). Viagem do Simular ou que chegou não volta.
+     */
+    static Resume takeResume(Context c, Place dest) {
+        if (dest == null) return null;
+        synchronized (LOCK) {
+            try {
+                JSONArray arr = new JSONArray(prefs(c).getString(KEY_TRIPS, "[]"));
+                if (arr.length() == 0) return null;
+                int i = arr.length() - 1;
+                JSONObject t = arr.optJSONObject(i);
+                if (t == null || t.optBoolean("arrived") || t.optBoolean("sim")) return null;
+                long end = t.optLong("end", 0);
+                long now = System.currentTimeMillis();
+                if (end <= 0 || now - end > RESUME_MS || now < end) return null;
+                double lat = t.optDouble("lat", 0), lon = t.optDouble("lon", 0);
+                if ((lat == 0 && lon == 0) || Geo.distance(lat, lon, dest.lat, dest.lon) > RESUME_M) return null;
+                long at = t.optLong("at", 0);
+                if (at <= 0) return null;
+                // não apaga nada agora: se o app cair no meio, o pedaço que já tinha fica no diário
+                return new Resume(at, t.optDouble("km", 0) * 1000.0);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+    }
+
     static void logTrip(Context c, Place dest, double meters, long startedAt, boolean arrived, boolean sim) {
         if (meters < 200) return;
         synchronized (LOCK) {
             try {
                 JSONArray arr = new JSONArray(prefs(c).getString(KEY_TRIPS, "[]"));
+                // v2.03: viagem que continuou (takeResume) grava por cima da mesma (mesmo "at")
+                for (int i = arr.length() - 1; i >= 0; i--) {
+                    JSONObject o = arr.optJSONObject(i);
+                    if (o != null && o.optLong("at", -1) == startedAt) arr.remove(i);
+                }
                 arr.put(new JSONObject()
                         .put("at", startedAt)
                         .put("end", System.currentTimeMillis())

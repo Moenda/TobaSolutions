@@ -19,7 +19,7 @@ function createEmptyDriveDb() {
     version: 1,
     favorites: [], // [{ id: "fv-..", name, emoji, lat, lng, address, createdAt }]
     recent: [], // [{ name, address, lat, lng, at (ms), placeId? }] (mais novo primeiro)
-    trips: [], // [{ id: "t-..", date, startedAt, endedAt, name, lat, lng, km, arrived, etaS?, source?: "auto", autoAt? }]
+    trips: [], // [{ id: "t-..", date, startedAt, endedAt, name, lat, lng, km, arrived, etaS?, source?: "auto", autoAt?, autoAts? (v2.03), joined? (v2.03: quantos pedaços) }]
     autoSkip: [], // v2.02: "at" das viagens do Android Auto que foram apagadas (não voltam no import)
   };
 }
@@ -122,10 +122,21 @@ function driveRememberRecent(dest) {
   saveDriveDb({ silent: true });
 }
 
+// v2.03: a viagem caiu no meio e tu seguiu pro MESMO destino em até 15 min sem ter chegado
+// (tobaTripToContinue do toba-common)? gruda na anterior: uma viagem só, km somados.
+// Devolve a viagem gravada (a nova ou a anterior que cresceu).
 function driveAddTrip(trip) {
+  const prev = typeof tobaTripToContinue === "function" ? tobaTripToContinue(driveDb.trips, trip) : null;
+  if (prev) {
+    tobaJoinTrip(prev, trip);
+    if (trip.autoAt && typeof tobaTripAddAutoAt === "function") tobaTripAddAutoAt(prev, Number(trip.autoAt));
+    saveDriveDb({ silent: true });
+    return prev;
+  }
   driveDb.trips.push({ id: driveNewId("t"), ...trip });
   if (driveDb.trips.length > DRIVE_TRIPS_MAX) driveDb.trips = driveDb.trips.slice(-DRIVE_TRIPS_MAX);
   saveDriveDb({ silent: true });
+  return driveDb.trips[driveDb.trips.length - 1];
 }
 
 function onDriveDataReplaced() {}

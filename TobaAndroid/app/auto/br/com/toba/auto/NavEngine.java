@@ -80,6 +80,9 @@ final class NavEngine implements LocationListener {
     private double remaining;
     private long remainingSec;
     private final Set<String> spoken = new HashSet<>();
+    /** v2.03: manobras já faladas (lat, lon, quando): rota recalculada não repete a mesma curva. */
+    private final java.util.ArrayList<double[]> spokenAt = new java.util.ArrayList<>();
+    private long reroutingSince;
 
     private long startedAt;
     private double driven;
@@ -186,6 +189,10 @@ final class NavEngine implements LocationListener {
         last = loc;
         if (loc.hasBearing() && loc.getSpeed() > 1.5f) heading = loc.getBearing();
 
+        if (rerouting && System.currentTimeMillis() - reroutingSince > 25000) {
+            rerouting = false; // v2.03: recálculo sem resposta há 25 s: segue na rota velha e tenta de novo
+            offCount = 0;
+        }
         if (state == State.NAVIGATING && route != null && !rerouting) {
             progress(loc);
         } else {
@@ -253,6 +260,15 @@ final class NavEngine implements LocationListener {
         driven = 0;
         tripSimulated = false;
         odo = null;
+        spokenAt.clear();
+        // v2.03: a viagem caiu (Android Auto reiniciou, recálculo travou e tu parou) e tu
+        // voltou pro MESMO destino em até 15 min? segue a MESMA viagem do diário: mesmo
+        // começo, km somados. Viagem que chegou ou foi pra outro lugar começa do zero.
+        AutoStore.Resume back = simulate ? null : AutoStore.takeResume(app, to);
+        if (back != null) {
+            startedAt = back.at;
+            driven = back.meters;
+        }
         useRoute(r);
         AutoStore.addRecent(app, to);
         try {
@@ -262,8 +278,12 @@ final class NavEngine implements LocationListener {
         }
         NavService.start(app, "Indo pra " + to.name);
         String transito = r.delay > 120 ? ", com uns " + Math.round(r.delay / 60.0) + " minutos de trânsito" : ", caminho livre";
-        voice.say("Bora! " + Geo.spokenDistance(r.length) + ", uns " + Math.max(1, Math.round(r.time / 60.0))
-                + " minutos" + transito + ".");
+        if (back != null) {
+            voice.say("Voltei! Mesma viagem, uns " + Math.max(1, Math.round(r.time / 60.0)) + " minutos daqui.");
+        } else {
+            voice.say("Bora! " + Geo.spokenDistance(r.length) + ", uns " + Math.max(1, Math.round(r.time / 60.0))
+                    + " minutos" + transito + ".");
+        }
         DriveSync.carStarted(to);
         if (simulate) startSimulation();
         else if (last != null) progress(last);
@@ -324,7 +344,9 @@ final class NavEngine implements LocationListener {
         if (dest == null || last == null) return;
         rerouting = true;
         lastReroute = System.currentTimeMillis();
-        voice.say("Recalculando. Calma que o Cloba acha outro caminho.");
+        reroutingSince = lastReroute;
+        // v2.03: recalcular é só trocar o desenho da rota (mesma viagem: começo, km e piadas
+        // seguem). Sem fala: o painel mostra "Recalculando" e a música não para.
         pushHud();
         changed();
         Location from = last;
@@ -345,6 +367,14 @@ final class NavEngine implements LocationListener {
                     rerouting = false;
                     offCount = 0;
                     CarToast.makeText(car, "Não deu pra recalcular: " + TobaApi.friendly(e), CarToast.LENGTH_LONG).show();
+                    changed();
+                });
+            } catch (RuntimeException e) {
+                // v2.03: antes um erro estranho aqui deixava o "Recalculando" preso pra sempre
+                // (a seta parava, a voz sumia e o jeito era encerrar e começar outra viagem)
+                main.post(() -> {
+                    rerouting = false;
+                    offCount = 0;
                     changed();
                 });
             }
@@ -431,30 +461,67 @@ final class NavEngine implements LocationListener {
         if (remaining < 30 || (r.instr.get(nextIdx).maneuver.startsWith("ARRIVE") && distToNext < 20)) arrive();
     }
 
+    /**
+     * v2.03 (pedido do Rafa: "interromper a música o mínimo possível"): UMA fala por manobra,
+     * na distância certa pra velocidade, sempre com número redondo:
+     *  - até 60 km/h: a uns 100 m ("Em cem metros, vire à direita na Rua X");
+     *  - 60 a 120 km/h: a 400 m;  - mais de 120 km/h: a 500 m.
+     * Só saída de rodovia/via expressa e rotatória ganham um "Agora" curtinho na hora.
+     * Manobra colada na seguinte (menos de 150 m) vai junto: "..., e logo depois, ...".
+     * A chegada não tem pré-aviso: quem fala é o "Chegou! Nunca foi sorte" (alerta).
+     */
+    static double announceAt(double speedMs) {
+        double kmh = speedMs * 3.6;
+        return kmh > 120 ? 500 : kmh >= 60 ? 400 : 100;
+    }
+
     private void speak(Route r, Location loc) {
         Route.Instr it = r.instr.get(nextIdx);
-        boolean arriving = it.maneuver.startsWith("ARRIVE");
+        if (it.maneuver.startsWith("ARRIVE")) return;
         double v = loc.hasSpeed() ? loc.getSpeed() : 0;
-        double far = v > 22 ? 1200 : v > 14 ? 600 : 350;
-        double near = v > 22 ? 400 : v > 14 ? 200 : 110;
-        double now = Math.max(30, v * 3);
         double d = distToNext;
-        String key = r.createdAt + ":" + nextIdx + ":";
-        String msg = Maneuvers.phrase(it);
-        if (d <= now) {
-            if (!arriving && spoken.add(key + "2")) {
-                spoken.add(key + "1");
-                spoken.add(key + "0");
-                voice.say(msg);
+        String key = r.createdAt + ":" + nextIdx;
+        if (!spoken.contains(key) && d <= announceAt(v) + 20) {
+            spoken.add(key);
+            if (saidRecently(it)) return; // a rota recalculou e essa curva já foi falada
+            markSaid(it);
+            String msg = Maneuvers.phrase(it);
+            String text = d < 60 ? msg : "Em " + Geo.roundSpoken(d) + ", " + lowerFirst(msg);
+            if (nextIdx + 1 < r.instr.size()) {
+                Route.Instr after = r.instr.get(nextIdx + 1);
+                if (!after.maneuver.startsWith("ARRIVE") && after.offset - it.offset < 150) {
+                    spoken.add(r.createdAt + ":" + (nextIdx + 1));
+                    markSaid(after);
+                    text += ", e logo depois, " + lowerFirst(Maneuvers.phrase(after));
+                }
             }
-        } else if (d <= near) {
-            if (spoken.add(key + "1")) {
-                spoken.add(key + "0");
-                voice.say("Em " + Geo.spokenDistance(d) + ", " + lowerFirst(msg));
-            }
-        } else if (d <= far && d > near + 60) {
-            if (spoken.add(key + "0")) voice.say("Em " + Geo.spokenDistance(d) + ", " + lowerFirst(msg));
+            if (d >= 150 && wantsNow(it)) spoken.add(key + ":now?");
+            voice.say(text + ".");
+            return;
         }
+        // "Agora" só pra saída/rotatória que foi avisada de longe
+        if (spoken.contains(key + ":now?") && d <= Math.max(25, v * 2.5) && spoken.add(key + ":now")) {
+            voice.say(it.maneuver.startsWith("ROUNDABOUT") && it.exit > 0 ? "Agora, " + it.exit + "ª saída." : "Agora.");
+        }
+    }
+
+    private static boolean wantsNow(Route.Instr it) {
+        String m = it.maneuver == null ? "" : it.maneuver;
+        return m.startsWith("ROUNDABOUT") || m.startsWith("MOTORWAY_EXIT") || "TAKE_EXIT".equals(m);
+    }
+
+    private boolean saidRecently(Route.Instr it) {
+        long now = System.currentTimeMillis();
+        for (double[] p : spokenAt) {
+            if (now - p[2] < 180000 && Geo.distance(p[0], p[1], it.lat, it.lon) < 40) return true;
+        }
+        return false;
+    }
+
+    private void markSaid(Route.Instr it) {
+        if (it.lat == 0 && it.lon == 0) return;
+        spokenAt.add(new double[] {it.lat, it.lon, System.currentTimeMillis()});
+        if (spokenAt.size() > 40) spokenAt.remove(0);
     }
 
     private static String lowerFirst(String s) {

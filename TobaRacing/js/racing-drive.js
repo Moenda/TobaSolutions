@@ -322,6 +322,7 @@ async function deleteDriveTrip(el) {
     // o carro também anotou essa viagem? não deixa o import trazer de volta
     const skip = Array.isArray(db.autoSkip) ? db.autoSkip : [];
     if (gone.autoAt) skip.push(Number(gone.autoAt));
+    if (Array.isArray(gone.autoAts)) gone.autoAts.forEach((n) => skip.push(Number(n))); // v2.03: pedaços que grudaram
     if (typeof tobaReadAutoTrips === "function") {
       const a = Number(gone.startedAt) || 0;
       const b = Number(gone.endedAt) || a;

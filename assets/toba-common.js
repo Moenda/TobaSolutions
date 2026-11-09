@@ -738,7 +738,7 @@ const TOBA_NATIVE = window.TobaNative || null;
 
 // v1.86: versão do patch, mostrada embaixo do backup na ⚙️ ("APK 2.1 · Patch v1.86").
 // TODO patch novo sobe aqui junto da entrada do PATCH-NOTES (CLAUDE.md seção 7).
-const TOBA_PATCH_VERSION = "v2.02";
+const TOBA_PATCH_VERSION = "v2.03";
 
 // Versão do APK pelo User-Agent ("... TobaApp/2.1"); "" no navegador.
 function tobaApkVersion() {
@@ -780,6 +780,75 @@ function tobaShareDriveFavs(db) {
 //   celular ganha autoAt e, se o carro rodou mais (o celular entrou no meio), fica com o km do carro;
 // - apagou do histórico? o at vai pro autoSkip e ela nunca volta.
 const TOBA_AUTO_TRIP_GAP_MS = 2 * 60 * 1000;
+// v2.03: a viagem caiu no meio (Android Auto reiniciou, recálculo travou e tu parou e
+// começou de novo) e tu seguiu pro MESMO destino em até 15 min sem ter chegado? é a MESMA
+// viagem: junta na anterior (km somados, fim novo). Só vale pra viagem nova: o que já tá
+// no histórico fica como está.
+const TOBA_TRIP_CONTINUE_MS = 15 * 60 * 1000;
+const TOBA_TRIP_CONTINUE_M = 250;
+
+function tobaTripDist(a, b) {
+  const R = 6371008.8;
+  const p1 = (a[0] * Math.PI) / 180;
+  const p2 = (b[0] * Math.PI) / 180;
+  const dl = ((b[1] - a[1]) * Math.PI) / 180;
+  const h = Math.sin((p2 - p1) / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+// A viagem nova (startedAt, lat, lng) continua a última do banco? devolve ela (ou null)
+function tobaTripToContinue(trips, next) {
+  if (!Array.isArray(trips) || !next) return null;
+  const start = Number(next.startedAt) || 0;
+  const lat = Number(next.lat);
+  const lng = Number(next.lng);
+  if (!start || !Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) return null;
+  let prev = null;
+  trips.forEach((t) => {
+    if (t && (Number(t.endedAt) || 0) <= start + TOBA_AUTO_TRIP_GAP_MS && (!prev || (Number(t.endedAt) || 0) > (Number(prev.endedAt) || 0))) prev = t;
+  });
+  if (!prev || prev.arrived) return null;
+  const gap = start - (Number(prev.endedAt) || 0);
+  if (gap < -TOBA_AUTO_TRIP_GAP_MS || gap > TOBA_TRIP_CONTINUE_MS) return null;
+  const pl = Number(prev.lat);
+  const pg = Number(prev.lng);
+  if (!Number.isFinite(pl) || !Number.isFinite(pg) || prev.lat === null) return null;
+  return tobaTripDist([pl, pg], [lat, lng]) <= TOBA_TRIP_CONTINUE_M ? prev : null;
+}
+
+// Gruda o pedaço novo na viagem anterior (mexe em prev)
+function tobaJoinTrip(prev, part) {
+  prev.endedAt = Math.max(Number(prev.endedAt) || 0, Number(part.endedAt) || 0);
+  prev.km = Math.round(((Number(prev.km) || 0) + (Number(part.km) || 0)) * 10) / 10;
+  if (part.arrived) prev.arrived = true;
+  if (part.maxKmh) prev.maxKmh = Math.max(Number(prev.maxKmh) || 0, Number(part.maxKmh) || 0);
+  if (part.radars) prev.radars = (Number(prev.radars) || 0) + Number(part.radars);
+  if (part.cleanSpeed === false) prev.cleanSpeed = false;
+  if (part.fuelStop) prev.fuelStop = true;
+  if (part.placeId && !prev.placeId) prev.placeId = part.placeId;
+  if (part.ghostWin !== undefined) prev.ghostWin = part.ghostWin;
+  prev.joined = (Number(prev.joined) || 1) + 1;
+  return prev;
+}
+
+// todos os "at" do carro que essa viagem já tem (autoAt + os que grudaram nela)
+function tobaTripAutoAts(t) {
+  const out = [];
+  if (t && Number(t.autoAt)) out.push(Number(t.autoAt));
+  if (t && Array.isArray(t.autoAts)) t.autoAts.forEach((n) => Number(n) && out.push(Number(n)));
+  return out;
+}
+
+function tobaTripAddAutoAt(t, at) {
+  if (!t.autoAt) {
+    t.autoAt = at;
+    return;
+  }
+  if (Number(t.autoAt) === at) return;
+  const list = Array.isArray(t.autoAts) ? t.autoAts.map(Number) : [];
+  if (!list.includes(at)) list.push(at);
+  t.autoAts = list.slice(-20);
+}
 
 function tobaReadAutoTrips() {
   if (!TOBA_NATIVE || typeof TOBA_NATIVE.autoTrips !== "function") return [];
@@ -795,21 +864,42 @@ function tobaReadAutoTrips() {
 function tobaMergeAutoTrips(db, carTrips = tobaReadAutoTrips()) {
   if (!db || !Array.isArray(db.trips) || !Array.isArray(carTrips) || !carTrips.length) return 0;
   const skip = new Set((Array.isArray(db.autoSkip) ? db.autoSkip : []).map(Number));
-  const have = new Set(db.trips.map((t) => Number(t && t.autoAt)).filter(Boolean));
+  // v2.03: "at" -> viagem do banco (autoAt e os autoAts das viagens que grudaram)
+  const owner = new Map();
+  db.trips.forEach((t) => tobaTripAutoAts(t).forEach((at) => owner.set(at, t)));
   let changed = 0;
   carTrips.forEach((c) => {
     const at = Number(c && c.at);
-    if (!at || c.sim === true || skip.has(at) || have.has(at)) return;
+    if (!at || c.sim === true || skip.has(at)) return;
     const end = Math.max(at, Number(c.end) || at);
     const km = Math.round((Number(c.km) || 0) * 10) / 10;
+    const mine = owner.get(at);
+    if (mine) {
+      // v2.03: o carro continuou essa viagem (mesmo "at", fim e km maiores): atualiza a que já entrou
+      let upd = false;
+      if (end > (Number(mine.endedAt) || 0) + 30000 && Number(mine.autoAt) === at && !(Array.isArray(mine.autoAts) && mine.autoAts.length)) {
+        mine.endedAt = end;
+        upd = true;
+      }
+      if (km > (Number(mine.km) || 0) && Number(mine.autoAt) === at && !(Array.isArray(mine.autoAts) && mine.autoAts.length)) {
+        mine.km = km;
+        upd = true;
+      }
+      if (c.arrived && !mine.arrived) {
+        mine.arrived = true;
+        upd = true;
+      }
+      if (upd) changed += 1;
+      return;
+    }
     if (km < 0.3 && !c.arrived) return;
     const twin = db.trips.find((t) => t && t.source !== "auto"
       && (Number(t.startedAt) || 0) <= end + TOBA_AUTO_TRIP_GAP_MS
       && (Number(t.endedAt) || Number(t.startedAt) || 0) >= at - TOBA_AUTO_TRIP_GAP_MS);
-    have.add(at);
     changed += 1;
     if (twin) {
-      twin.autoAt = at;
+      tobaTripAddAutoAt(twin, at); // v2.03: guarda os dois "at" (antes um apagava o outro)
+      owner.set(at, twin);
       if (km > (Number(twin.km) || 0)) {
         twin.km = km;
         twin.startedAt = Math.min(Number(twin.startedAt) || at, at);
@@ -820,7 +910,7 @@ function tobaMergeAutoTrips(db, carTrips = tobaReadAutoTrips()) {
     const lat = Number(c.lat);
     const lng = Number(c.lon ?? c.lng);
     const okPoint = Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0);
-    db.trips.push({
+    const part = {
       id: `t-auto-${at}`,
       date: toIsoDate(new Date(at)),
       startedAt: at,
@@ -832,7 +922,17 @@ function tobaMergeAutoTrips(db, carTrips = tobaReadAutoTrips()) {
       arrived: Boolean(c.arrived),
       source: "auto",
       autoAt: at,
-    });
+    };
+    // v2.03: viagem do carro que caiu e voltou pro mesmo destino = a mesma viagem
+    const prev = okPoint ? tobaTripToContinue(db.trips, part) : null;
+    if (prev) {
+      tobaJoinTrip(prev, part);
+      tobaTripAddAutoAt(prev, at);
+      owner.set(at, prev);
+      return;
+    }
+    db.trips.push(part);
+    owner.set(at, part);
   });
   if (changed) {
     db.trips.sort((a, b) => (Number(a.startedAt) || 0) - (Number(b.startedAt) || 0));

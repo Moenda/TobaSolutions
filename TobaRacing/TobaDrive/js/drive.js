@@ -1101,7 +1101,7 @@ function finishTrip(arrived) {
   let tripId = "";
   // Viagem de mentirinha (abriu e fechou parado) não entra no histórico
   if (arrived || trip.m >= 300) {
-    driveAddTrip({
+    const saved = driveAddTrip({
       date: toIsoDate(new Date(trip.startedAt)),
       startedAt: trip.startedAt,
       endedAt: Date.now(),
@@ -1113,7 +1113,7 @@ function finishTrip(arrived) {
       etaS: trip.etaS || 0,
       ...extras,
     });
-    tripId = driveDb.trips[driveDb.trips.length - 1]?.id || "";
+    tripId = saved?.id || driveDb.trips[driveDb.trips.length - 1]?.id || ""; // v2.03: pode ter grudado na anterior
     // Perfil confere as conquistas dv-* na hora (toba-player.js nesta página)
     if (typeof tobaPlayerCheck === "function") tobaPlayerCheck({ reason: "drive" });
   }

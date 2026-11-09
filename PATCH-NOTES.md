@@ -2553,3 +2553,36 @@ Pedidos do Rafa: "fiz tudo pelo Android Auto e nem coloquei a rota no app: ele c
 **Como testar:** instalar o APK 2.7 (pelo KingInstaller, como sempre). Abrir o 🏁 Toba Racing: a viagem que tu fez só no carro aparece no 🛣️ Km e nas 🧭 Viagens com 🚘. Tocar em cada quadradinho do Na estrada. Em ⭐ Favoritos: 📍 Onde eu tô e 🔍 Buscar lugar. Na ⚙️ deve aparecer "APK 2.7 · Patch v2.02".
 
 **Commit sugerido:** `v2.02 - Android Auto legivel + Na estrada do Racing com historico de km por mes, lista de viagens e favoritos, e rota feita so no Android Auto entra no historico (APK 2.7)`
+
+## v2.03 — 🚘 Toba Auto mais quietinho: uma fala por manobra e por radar, radar da ponte calado, trânsito grossão e viagem que não parte no meio (APK 2.8)
+
+**Arquivos alterados:** `TobaRacing/TobaDrive/js/auto-map.js`, `TobaRacing/TobaDrive/js/drive-core.js`, `TobaRacing/TobaDrive/js/drive.js`, `TobaRacing/js/racing-drive.js`, `assets/toba-common.js`, `sw.js`, `CLAUDE.md`, `TobaAndroid/app/auto/br/com/toba/auto/` (`NavEngine.java`, `AutoStore.java`, `Geo.java`), `TobaAndroid/app/build.gradle` (**APK 2.8 / versionCode 19**)
+
+Pedidos do Rafa depois de usar o Toba Auto no dia a dia: linhas de trânsito mais grossas como no celular; "recalcular não pode começar viagem nova" (de manhã ficou 08:05–08:25 parada + 08:29–08:36); radar falando uma vez só, com número redondo e na distância pela velocidade; radar de uma ponte por cima avisando enquanto ele passava embaixo; manobra com uma fala só, pra interromper a música o mínimo possível (as piadas do Cloba ficam).
+
+1. **🚦 Trânsito grossão no carro (igual ao Toba Drive do celular):** o amarelo/vermelho/vinho da rota virou uma faixa larga POR BAIXO do risco azul (aparece dos dois lados da rota); o trânsito das outras ruas também engrossou.
+2. **🔁 Viagem não parte mais no meio:**
+   - Recalcular continua sendo a MESMA viagem (só troca o desenho da rota, a chegada e o tempo). E agora é **calado**: o painel mostra "Recalculando", sem fala por cima da música.
+   - Achado no código: se o pedido de rota do recálculo desse um erro estranho (não de internet), o "Recalculando" **ficava preso pra sempre**: a seta parava, a voz sumia e o jeito era encerrar e começar outra viagem. Agora erro de qualquer tipo solta o recálculo, e se o TomTom não responder em 25 s ele segue na rota velha e tenta de novo.
+   - **Caiu e voltou pro mesmo destino?** Se a viagem do carro terminou SEM chegar (Android Auto reiniciou, tu encerrou, recálculo travou) e tu começa rota pro **mesmo destino** (até 250 m) em **até 15 min**, é a mesma viagem: mesmo horário de saída, km somados ("Voltei! Mesma viagem..."). No diário do carro fica uma linha só (grava por cima, com o mesmo horário de saída).
+   - Mesma regra no histórico do app: viagem do celular ou do carro que continua a anterior (mesmo destino, ≤ 15 min, a anterior sem 🏁) gruda nela em vez de virar outra.
+   - Viagem que chegou 🏁 ou foi pra outro lugar continua separada, como sempre.
+3. **📸 Radar: UMA fala, número redondo:** "Radar a trezentos metros. Limite 60." (de 100 em 100, por extenso). Fala quando o radar fica a: **até 60 km/h → 200 m**, **60 a 120 km/h → 400 m**, **mais de 120 km/h → 500 m**. Depois disso só a plaquinha 📸 na tela (aparece a até 500 m).
+4. **🌉 Radar da ponte não avisa mais quem passa embaixo:** antes bastava o radar estar a até 18 m da linha da rota. Agora ele também tem que estar na **mesma via e no mesmo sentido**: o app pega no OpenStreetMap a rua do radar (a via em que ele tá ou, se tá do lado da pista, a mais perto a até 15 m) e o sentido dele (`direction`) quando tem. Rua que cruza a rota (ponte/viaduto por cima, túnel por baixo) tem o rumo virado e fica fora. Radar sem rua conhecida segue a regra antiga. Cache novo só do carro (`toba_auto_radar_cache`, 7 dias); o do celular não mudou.
+5. **🗣️ Manobra: UMA fala por manobra** na distância pela velocidade, número redondo:
+   - **até 60 km/h → a uns 100 m**: "Em cem metros, vire à direita na Rua X."
+   - **60 a 120 km/h → a 400 m**; **mais de 120 km/h → a 500 m**.
+   - Só **saída de rodovia e rotatória** avisadas de longe ganham um "Agora." curtinho na hora (rotatória: "Agora, 2ª saída.").
+   - Duas manobras coladas (menos de 150 m) vão numa fala só: "..., e logo depois, vire à esquerda".
+   - Recalculou perto de uma curva que já foi falada? não repete.
+   - Sem pré-aviso de chegada: quem fala é o "Chegou! Nunca foi sorte" de sempre.
+   - Antes eram até 3 falas por manobra: de longe (350 m / 600 m / 1,2 km conforme a velocidade), perto (110 / 200 / 400 m) e "na hora" (uns 3 s antes), com distância quebrada tipo "350 metros".
+   - Piadas do Cloba, "Bora!", chegada e o aviso de radar continuam iguais (os modos 🔊 / ⚠️ / 🔇 seguem valendo).
+
+**Dados:** nada apagado e nada do histórico antigo mudou (as duas viagens de hoje de manhã continuam como estão; só viagem nova gruda). Campos novos opcionais nas viagens do `TOBA_DRIVE_DB.trips`: `autoAts` (outros horários de saída do carro que grudaram nessa viagem; antes o segundo apagava o primeiro do `autoAt`) e `joined` (quantos pedaços). Apagar uma viagem também pula os `autoAts` no import. Cache novo `toba_auto_radar_cache` (só cache de radar).
+
+**APK novo (2.8 / versionCode 19):** Android Studio › **Sync Gradle** › Build › **Generate Signed APK** (release, chave de sempre) › conferir `TobaAndroid/app/release/output-metadata.json` com `"versionCode": 19` e `"versionName": "2.8"` › instalar **pelo KingInstaller** (senão o Android Auto esconde o Toba). Nunca desinstalar. Sem o APK novo: trânsito grosso, radar (1 fala, ponte) e a viagem do app grudando já chegam com o push; as falas de manobra, o recálculo calado/destravado e a viagem do carro continuando precisam do APK.
+
+**Como testar:** DHU no PC com destino e **Simular** (50 km/h): cada curva fala uma vez a ~100 m ("Em cem metros, ..."); trânsito da rota em faixa larga por baixo do azul. Encerrar no meio e começar de novo pro mesmo destino: "Voltei! Mesma viagem" e no 🧭 Viagens do Racing fica uma viagem só (Simular não entra no histórico, então teste de verdade na rua). Na rua: radar fala uma vez, "trezentos/quatrocentos metros"; passar embaixo de ponte com radar sem aviso. Na ⚙️: "APK 2.8 · Patch v2.03".
+
+**Commit sugerido:** `v2.03 - Toba Auto: uma fala por manobra e por radar (distancia pela velocidade, numero redondo), radar da ponte filtrado por via e sentido, transito mais grosso, recalculo calado e viagem que cai e volta pro mesmo destino continua a mesma (APK 2.8)`
