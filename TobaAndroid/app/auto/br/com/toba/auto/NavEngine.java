@@ -73,6 +73,7 @@ final class NavEngine implements LocationListener {
     private int seg;
     private double along;
     private int offCount;
+    private int driftCount; // v2.02: leituras seguidas com o carro descolado da rota
     private long lastReroute;
     private int nextIdx = -1;
     private double distToNext;
@@ -85,6 +86,7 @@ final class NavEngine implements LocationListener {
     private Location odo;
 
     private boolean simulating;
+    private boolean tripSimulated; // v2.02: a viagem usou o Simular (o diário marca sim:true)
     private double simAlong;
     private final Runnable simTick = this::simStep;
     private final Runnable backToIdle = () -> {
@@ -100,7 +102,7 @@ final class NavEngine implements LocationListener {
         this.app = car.getApplicationContext();
         this.map = map;
         this.voice = new Voice(car);
-        map.setOnSay(voice::say); // v1.80: aviso de radar da página
+        map.setOnSay(voice::alert); // v1.80: aviso de radar e piada do Cloba da página (v2.02: contam como alerta)
         this.nav = car.getCarService(NavigationManager.class);
         nav.setNavigationManagerCallback(new NavigationManagerCallback() {
             @Override
@@ -249,6 +251,7 @@ final class NavEngine implements LocationListener {
         state = State.NAVIGATING;
         startedAt = System.currentTimeMillis();
         driven = 0;
+        tripSimulated = false;
         odo = null;
         useRoute(r);
         AutoStore.addRecent(app, to);
@@ -273,6 +276,7 @@ final class NavEngine implements LocationListener {
         seg = 0;
         along = 0;
         offCount = 0;
+        driftCount = 0;
         nextIdx = -1;
         spoken.clear();
         remaining = r.length;
@@ -296,14 +300,14 @@ final class NavEngine implements LocationListener {
         state = State.ARRIVED;
         DriveSync.carEnded(true);
         pushHud();
-        voice.say("Chegou! " + (dest == null ? "" : dest.name + ". ") + "Nunca foi sorte, Cloba. Nunca foi sorte.");
+        voice.alert("Chegou! " + (dest == null ? "" : dest.name + ". ") + "Nunca foi sorte, Cloba. Nunca foi sorte.");
         main.postDelayed(backToIdle, 20000);
         changed();
     }
 
     private void finishTrip(boolean arrived) {
         stopSimulation();
-        AutoStore.logTrip(app, dest, driven, startedAt, arrived);
+        AutoStore.logTrip(app, dest, driven, startedAt, arrived, tripSimulated);
         try {
             nav.navigationEnded();
         } catch (RuntimeException ignored) {
@@ -371,11 +375,30 @@ final class NavEngine implements LocationListener {
             }
         }
         if (bestI < 0) return;
-        double acc = loc.hasAccuracy() ? loc.getAccuracy() : 20;
-        if (best > Math.max(45, acc * 1.5)) {
-            offCount++;
+        // v2.02 (23 de Maio): a seta grudava na via lateral da rota mesmo com o carro seguindo
+        // na pista principal (correm lado a lado a uns 20-40 m e o limite era 45 m). Agora:
+        //  - descolou mais que "soft" (18 m, ou a precisão do GPS se for pior): a seta SOLTA e
+        //    mostra onde o GPS tá, com o rumo do GPS;
+        //  - 4 leituras seguidas descoladas (~4 s), ou rumo virado 35°+ andando (2 leituras),
+        //    ou longe demais de uma vez: recalcula (pode repetir depois de 8 s; era 12 s);
+        //  - o recálculo manda o rumo do carro pro TomTom (vehicleHeading): segue pela principal.
+        double acc = loc.hasAccuracy() ? Math.max(5, Math.min(50, loc.getAccuracy())) : 20;
+        double soft = Math.max(18, acc);
+        double hard = Math.max(35, Math.min(60, acc * 1.6));
+        double bHead = Geo.bearing(r.lat[bestI], r.lon[bestI], r.lat[bestI + 1], r.lon[bestI + 1]);
+        boolean moving = loc.hasSpeed() && loc.getSpeed() > 4f;
+        boolean turnedAway = moving && loc.hasBearing() && best > 10
+                && Math.abs(Geo.angleDiff(bHead, loc.getBearing())) > 35;
+        if (best > soft || turnedAway) driftCount++;
+        else driftCount = 0;
+        boolean off = best > hard || driftCount >= 4 || (turnedAway && driftCount >= 2);
+        if (off || best > soft) {
+            if (loc.hasBearing() && moving) heading = loc.getBearing();
             map.setCar(lat, lon, heading, speed());
-            if (offCount >= 3 && System.currentTimeMillis() - lastReroute > 12000) reroute();
+            if (off) {
+                offCount++;
+                if (System.currentTimeMillis() - lastReroute > 8000) reroute();
+            }
             return;
         }
         offCount = 0;
@@ -444,6 +467,7 @@ final class NavEngine implements LocationListener {
     void startSimulation() {
         if (route == null) return;
         simulating = true;
+        tripSimulated = true;
         simAlong = along;
         main.removeCallbacks(simTick);
         main.post(simTick);
@@ -639,15 +663,34 @@ final class NavEngine implements LocationListener {
         return map;
     }
 
-    boolean muted() {
-        return AutoStore.muted(app);
+    /** v2.02: modo de áudio (AutoStore.AUDIO_*). */
+    int audioMode() {
+        return AutoStore.audioMode(app);
     }
 
-    void toggleMute() {
-        boolean on = !AutoStore.muted(app);
-        AutoStore.setMuted(app, on);
-        if (on) voice.stop();
-        else voice.say("Voz ligada!");
+    /** v2.02: botão do som: 🔊 Tudo → ⚠️ Só alertas → 🔇 Silêncio → 🔊 Tudo. */
+    int nextAudioMode() {
+        int m = (AutoStore.audioMode(app) + 1) % 3;
+        AutoStore.setAudioMode(app, m);
+        voice.stop();
+        if (m == AutoStore.AUDIO_ALL) voice.say("Voz ligada. Falo tudo!");
+        else if (m == AutoStore.AUDIO_ALERTS) voice.alert("Só alertas: radar e as piadas do Cloba.");
+        changed();
+        return m;
+    }
+
+    /**
+     * v2.02: botão Y (outros caminhos) no meio da viagem: troca pro caminho escolhido sem
+     * encerrar a viagem (km, tempo e piadas seguem).
+     */
+    void switchRoute(Route r) {
+        if (state != State.NAVIGATING || r == null || r.size() < 2) return;
+        rerouting = false;
+        lastReroute = System.currentTimeMillis();
+        useRoute(r);
+        if (last != null) progress(last);
+        voice.say("Fechou, caminho trocado. Uns " + Math.max(1, Math.round(r.time / 60.0)) + " minutos daqui.");
+        pushHud();
         changed();
     }
 

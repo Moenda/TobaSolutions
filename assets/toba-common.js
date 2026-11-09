@@ -738,7 +738,7 @@ const TOBA_NATIVE = window.TobaNative || null;
 
 // v1.86: versão do patch, mostrada embaixo do backup na ⚙️ ("APK 2.1 · Patch v1.86").
 // TODO patch novo sobe aqui junto da entrada do PATCH-NOTES (CLAUDE.md seção 7).
-const TOBA_PATCH_VERSION = "v2.01";
+const TOBA_PATCH_VERSION = "v2.02";
 
 // Versão do APK pelo User-Agent ("... TobaApp/2.1"); "" no navegador.
 function tobaApkVersion() {
@@ -769,6 +769,103 @@ function tobaShareDriveFavs(db) {
   } catch (err) {
     console.error("Não deu pra mandar os favoritos pro carro", err);
   }
+}
+
+// v2.02 (APK 2.7): viagem feita SÓ no Android Auto entra no histórico do 🧭 Toba Drive.
+// O carro guarda um diário (toba_auto › trips: {at, end, km, dest, lat, lon, arrived, source:"auto", sim?})
+// e a ponte TOBA_NATIVE.autoTrips() entrega. Aqui vira viagem do TOBA_DRIVE_DB.trips com
+// source "auto" e autoAt = at (o id do carro). Regras:
+// - viagem de teste do botão Simular (sim) e de mentirinha (< 300 m sem chegar) ficam fora;
+// - o celular seguiu a mesma rota (horário encosta numa viagem dele)? não duplica: a do
+//   celular ganha autoAt e, se o carro rodou mais (o celular entrou no meio), fica com o km do carro;
+// - apagou do histórico? o at vai pro autoSkip e ela nunca volta.
+const TOBA_AUTO_TRIP_GAP_MS = 2 * 60 * 1000;
+
+function tobaReadAutoTrips() {
+  if (!TOBA_NATIVE || typeof TOBA_NATIVE.autoTrips !== "function") return [];
+  try {
+    const arr = JSON.parse(TOBA_NATIVE.autoTrips() || "[]");
+    return Array.isArray(arr) ? arr : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+// Junta as viagens do carro no banco do Drive (mexe no objeto). Devolve quantas mudaram.
+function tobaMergeAutoTrips(db, carTrips = tobaReadAutoTrips()) {
+  if (!db || !Array.isArray(db.trips) || !Array.isArray(carTrips) || !carTrips.length) return 0;
+  const skip = new Set((Array.isArray(db.autoSkip) ? db.autoSkip : []).map(Number));
+  const have = new Set(db.trips.map((t) => Number(t && t.autoAt)).filter(Boolean));
+  let changed = 0;
+  carTrips.forEach((c) => {
+    const at = Number(c && c.at);
+    if (!at || c.sim === true || skip.has(at) || have.has(at)) return;
+    const end = Math.max(at, Number(c.end) || at);
+    const km = Math.round((Number(c.km) || 0) * 10) / 10;
+    if (km < 0.3 && !c.arrived) return;
+    const twin = db.trips.find((t) => t && t.source !== "auto"
+      && (Number(t.startedAt) || 0) <= end + TOBA_AUTO_TRIP_GAP_MS
+      && (Number(t.endedAt) || Number(t.startedAt) || 0) >= at - TOBA_AUTO_TRIP_GAP_MS);
+    have.add(at);
+    changed += 1;
+    if (twin) {
+      twin.autoAt = at;
+      if (km > (Number(twin.km) || 0)) {
+        twin.km = km;
+        twin.startedAt = Math.min(Number(twin.startedAt) || at, at);
+      }
+      if (c.arrived) twin.arrived = true;
+      return;
+    }
+    const lat = Number(c.lat);
+    const lng = Number(c.lon ?? c.lng);
+    const okPoint = Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0);
+    db.trips.push({
+      id: `t-auto-${at}`,
+      date: toIsoDate(new Date(at)),
+      startedAt: at,
+      endedAt: end,
+      name: String(c.dest || "Destino"),
+      lat: okPoint ? lat : null,
+      lng: okPoint ? lng : null,
+      km,
+      arrived: Boolean(c.arrived),
+      source: "auto",
+      autoAt: at,
+    });
+  });
+  if (changed) {
+    db.trips.sort((a, b) => (Number(a.startedAt) || 0) - (Number(b.startedAt) || 0));
+    if (db.trips.length > 500) db.trips = db.trips.slice(-500);
+  }
+  return changed;
+}
+
+// Fora do Toba Drive (hub do Racing, portal...): junta direto no localStorage.
+// No Toba Drive quem junta é o drive-core (no driveDb da memória, pra não gravar por cima).
+function tobaSyncAutoTrips() {
+  if (window.TOBA_DRIVE_LIVE) return 0;
+  const cars = tobaReadAutoTrips();
+  if (!cars.length) return 0;
+  let raw = null;
+  let db;
+  try {
+    raw = localStorage.getItem("TOBA_DRIVE_DB");
+    db = raw ? JSON.parse(raw) : { version: 1, favorites: [], recent: [], trips: [] };
+  } catch (err) {
+    return 0; // banco ilegível: não grava por cima
+  }
+  if (!db || typeof db !== "object" || Array.isArray(db)) return 0;
+  if (!Array.isArray(db.trips)) db.trips = [];
+  const n = tobaMergeAutoTrips(db, cars);
+  if (!n) return 0;
+  try {
+    if (raw) localStorage.setItem("TOBA_DRIVE_DB_AUTO_BACKUP", raw);
+    localStorage.setItem("TOBA_DRIVE_DB", JSON.stringify(db));
+  } catch (err) {
+    return 0;
+  }
+  return n;
 }
 
 const TOBA_ICON_URL = (() => {
@@ -1145,5 +1242,6 @@ tobaActions({
 document.addEventListener("DOMContentLoaded", () => {
   ensureTobaShell();
   ensureTobaSettings();
+  tobaSyncAutoTrips(); // v2.02: viagens do Android Auto pro histórico do Drive
   tobaShareDriveFavs();
 });

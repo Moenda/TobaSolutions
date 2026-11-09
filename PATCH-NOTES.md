@@ -2502,3 +2502,54 @@ Pedidos do Rafa: "o papo reto tem tudo (coração e tal): fica no Raio-X geral e
 **Como testar:** Raio-X: o 🤡 aparece logo embaixo do anel, com a prontidão. 😴 Sono › Dia: 🤡 O Cloba sobre a noite + 🌙. 👟 tocar no anel/Passos › Dia: as seções novas e os ❔. Trocar pra Mês: 🔍 no lugar do Raio laser. No 🔍 do Sono não aparece mais −NaN.
 
 **Commit sugerido:** `v2.01 - Raio-X: Passos turbinados (fecha em honesto, sequencia e semana, de onde vieram, passada, dia da semana, mes com projecao, O que mexe nos teus passos) + Papo reto do Cloba geral com prontidao na tela principal e Cloba sobre a noite dentro do Sono + conserto do -NaN no O que mexe no teu sono`
+
+
+---
+
+## v2.02 — Commit com vários patches (cada um na sua seção abaixo)
+
+### 🚘 Android Auto: UI FOXA CLOBA DRIVER (tudo maior, áudio em 3 modos, luz pelo horário, botão Y e a seta solta da rota)
+
+**Arquivos alterados:** `TobaRacing/TobaDrive/TobaDrive-Auto.html`, `TobaRacing/TobaDrive/css/auto-map.css`, `TobaRacing/TobaDrive/js/auto-map.js`, `TobaAndroid/app/auto/br/com/toba/auto/` (`AutoStore.java`, `Voice.java`, `NavEngine.java`, `HomeScreen.java`, `PreviewScreen.java`, `CarMap.java`), `TobaAndroid/app/src/main/res/drawable/ic_car_alert.xml` (NOVO), `TobaAndroid/app/src/main/res/drawable/ic_car_routes.xml` (NOVO), `TobaAndroid/app/build.gradle` (**APK 2.7 / versionCode 18**), `CLAUDE.md`
+
+Pedidos do Rafa depois da 1ª viagem com o Toba Auto: "tá mt pequeno as coisas, difícil de ler", "o velocímetro fonte pequena", "o nome da rua sumido", "com a tela dividida tbm ficou pequeno e o nome da rua descentraliza", "o tempo de chegada a gente faz em 2 linhas maior", modos de áudio Tudo / Só alerta / Silêncio, "a skin auto pode ser por horário ao invés do farol?", "aquele Y nos botões de cima que dá mais opção de rota" e "na 23 ele pediu pra eu sair pra faixa lateral, eu não saí, mas ele mostrava que eu tava na lateral".
+
+1. **Tudo maior (régua = o cartão "🏁 Chegou em Casa!" do Android Auto, que o Rafa achou do tamanho certo):**
+   - Manobra: seta 68 px, distância 38 px, rua 24 px em até 2 linhas.
+   - Velocímetro 88 px com o número em 40 px; placa do limite 48 px.
+   - Rua atual 24 px, faixas, radar, balão do 🤡 Cloba (22 px) e avisos, tudo maior.
+2. **⏱️ Chegada em 2 linhas grandes** no canto de baixo à direita: **"22 min"** (cor do trânsito) em cima e **"🏁 22:19 · 10 km"** embaixo, com a barrinha até o destino.
+3. **Rua atual sempre no meio, debaixo da seta:** cabe entre o velocímetro e a chegada (nome comprido fica um tico menor antes das reticências); se não couber, sobe pra cima deles, ainda no meio. A câmera agora sobe o carrinho pra cima do painel de baixo (a chegada não cobre mais a seta).
+4. **Tela dividida (Spotify do lado):** layout próprio pra painel estreito: chegada em 3 linhas estreitas (min / 🏁 hora / km) pra rua caber no meio; o balão do Cloba fica por cima do velocímetro. Logo do Mapbox foi pro canto de cima à direita.
+5. **🔊 Modos de áudio** (o botão do som agora roda os 3): **🔊 Tudo** → **⚠️ Só alertas** (radar, piadas do Cloba e a chegada; sem as manobras) → **🔇 Silêncio total**. Quem tava no 🔇 antigo continua no Silêncio.
+6. **🎨 Luz Auto pelo horário** (no lugar do farol do carro): 5h–8h amanhecer, 8h–17h dia, 17h–19h30 entardecer, 19h30–5h noite. Troca sozinha na virada (confere a cada minuto). As luzes fixas (Amanhecer/Dia/Entardecer/Noite) seguem no 🎨.
+7. **"Y" nos botões de cima (navegando):** abre até 3 caminhos daqui até o destino (com tempo, trânsito e "via"); tocar mostra no mapa e **Trocar** troca a rota sem encerrar a viagem (km, tempo e piadas continuam).
+8. **Seta não gruda mais na rota quando você sai dela (caso da 23 de Maio):** antes ela grudava em qualquer coisa a menos de 45 m (a lateral corre a uns 20–40 m da principal). Agora: descolou mais de 18 m (ou a precisão do GPS, se for pior) a seta **solta** e mostra onde o carro tá de verdade; 4 leituras seguidas fora (~4 s), rumo virado 35°+ andando, ou muito longe de uma vez = **recalcula** (pode repetir depois de 8 s, era 12 s). O recálculo manda o rumo do carro pro TomTom, então segue pela pista onde você tá.
+9. **Diário do carro:** viagem feita no botão Simular agora grava `sim: true` (pro histórico do site não contar teste do DHU).
+
+**Dados:** nada apagado. Prefs novas em `toba_auto`: `audio` (0/1/2). `trips` ganhou `sim`.
+
+**APK novo (2.7 / versionCode 18):** Android Studio › Sync Gradle › Build › Generate Signed APK (release, chave de sempre) › conferir `TobaAndroid/app/release/output-metadata.json` com `"versionCode": 18` e `"versionName": "2.7"` › instalar **pelo KingInstaller** (senão o Android Auto esconde o Toba). Nunca desinstalar. A parte do site (painel maior, chegada, rua, luz pelo horário) chega sozinha com o push; o resto (áudio, Y, seta solta) precisa do APK.
+
+**Como testar:** DHU no PC (desktop-head-unit.exe) com um destino e **Simular**: painel grande, chegada embaixo à direita em 2 linhas, rua no meio debaixo da seta. Diminuir a janela do DHU pra simular a tela dividida. Botão do som: 🔊 → ⚠️ (só fala radar/piada/chegada) → 🔇. Botão Y: lista de caminhos, Trocar. 🎨 no Auto: luz conforme a hora. Na rua: sair da rota numa pista paralela e ver a seta soltar e recalcular em ~4 s.
+
+### 🧭 Na estrada turbinado no Toba Racing + 🚘 rota feita só no Android Auto entra no histórico (APK 2.7)
+
+**Arquivos novos/alterados:** `TobaRacing/js/racing-drive.js` (NOVO), `TobaRacing/TobaRacing-Index.html`, `TobaRacing/css/racing-base.css`, `TobaRacing/TobaDrive/TobaDrive.html`, `TobaRacing/TobaDrive/js/drive.js`, `TobaRacing/TobaDrive/js/drive-core.js`, `TobaRacing/TobaDrive/css/drive.css`, `assets/toba-common.js`, `sw.js`, `CLAUDE.md`, `TobaAndroid/app/auto/br/com/toba/auto/DriveSync.java`, `TobaAndroid/app/auto/br/com/toba/app/TobaBridge.java`
+
+Pedidos do Rafa: "fiz tudo pelo Android Auto e nem coloquei a rota no app: ele contabilizou?" e "clicou no Km abre o histórico dos meses, clicou em Viagens abre o histórico de viagens, clicou em Favoritos tem os favoritos e dá pra adicionar mais. Vou começar a usar o Drive todo dia".
+
+1. **🚘 Rota só no Android Auto agora conta:** antes, viagem feita no carro sem o Toba aberto no Toba Drive do celular ficava só no diário do carro e não aparecia no app. Agora o app puxa esse diário sozinho (ao abrir qualquer tela do Toba, o hub do Racing e o Toba Drive, e logo que a rota do carro termina). Entra no km do mês, nas viagens, no 🏁 Chegou, nas conquistas e no duelo com os amigos. As viagens que o carro já tinha guardado antes deste patch também entram.
+2. **Sem contar em dobro:** se o celular seguiu a mesma rota, fica uma viagem só (e se o celular entrou no meio do caminho, ela fica com o km do carro). Viagem de teste do botão Simular não entra.
+3. **🧭 Na estrada (hub do Racing) com toque:** os 4 quadradinhos viraram botões.
+   - **🛣️ Km no mês** → **Km mês a mês**: este mês x mês passado até o mesmo dia, mês passado, média por mês, 🏆 melhor mês e a lista de todos os meses com barrinha, viagens, 🏁 e tempo ao volante. Tocar num mês abre as viagens dele.
+   - **🧭 Viagens** → lista das corridas por dia (Hoje, Ontem, sáb 7 nov...), com hora de saída e chegada, duração, km e se foi 🚘 no carro, 📱 no celular ou nos dois. Filtros: Todas, 📅 Este mês, 🏁 Chegou, 🚘 Do carro. Tocar abre média de velocidade, **🧭 Ir de novo** e **🗑️ Apagar** (viagem do carro apagada não volta no próximo import).
+   - **🏁 Chegou** → a mesma lista já no filtro 🏁.
+   - **⭐ Favoritos** → lista com quantas vezes tu foi em cada um. Tocar = já abre o Toba Drive indo pra lá. ✏️ troca nome/emoji ou tira. **📍 Onde eu tô** favorita o lugar atual pelo GPS (só escolhe o emoji e o nome). **🔍 Buscar lugar** abre o Toba Drive no modo favoritar: busca ou toca no mapa, o ⭐ abre sozinho e, salvou, volta pros Favoritos do hub. Os ⭐ continuam indo pro Android Auto.
+4. **APK 2.7 (junto com o patch do Android Auto legível):** a ponte do app ganhou o `autoTrips` pro site ler o diário do carro. APK antigo: tudo funciona igual, só não puxa as viagens do carro.
+
+**Dados:** `TOBA_DRIVE_DB.trips` ganha viagens com `source: "auto"` e `autoAt` (horário de saída no carro); viagem do celular que bateu com uma do carro ganha só o `autoAt`. Campo novo `autoSkip` (lista de viagens do carro apagadas). Banco e backups antigos seguem funcionando. Nada apagado.
+
+**Como testar:** instalar o APK 2.7 (pelo KingInstaller, como sempre). Abrir o 🏁 Toba Racing: a viagem que tu fez só no carro aparece no 🛣️ Km e nas 🧭 Viagens com 🚘. Tocar em cada quadradinho do Na estrada. Em ⭐ Favoritos: 📍 Onde eu tô e 🔍 Buscar lugar. Na ⚙️ deve aparecer "APK 2.7 · Patch v2.02".
+
+**Commit sugerido:** `v2.02 - Android Auto legivel + Na estrada do Racing com historico de km por mes, lista de viagens e favoritos, e rota feita so no Android Auto entra no historico (APK 2.7)`

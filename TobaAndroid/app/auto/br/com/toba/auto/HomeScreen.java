@@ -28,6 +28,8 @@ import java.util.Arrays;
  * v1.78: com o mapa 3D (CarMap.drawsHud) a manobra, a chegada e as velocidades
  * são desenhadas no próprio mapa, sem os cartões pretos do Android Auto; os
  * botões 🧊 3D/2D e 🎨 skin ficam no canto do mapa.
+ * v2.02: botão do som com 3 modos (🔊 Tudo / ⚠️ Só alertas / 🔇 Silêncio) e o "Y"
+ * (outros caminhos) no meio da viagem.
  */
 final class HomeScreen extends Screen implements NavEngine.Listener {
     private final NavEngine engine;
@@ -91,14 +93,24 @@ final class HomeScreen extends Screen implements NavEngine.Listener {
         NavigationTemplate.Builder b = new NavigationTemplate.Builder();
         ActionStrip.Builder strip = new ActionStrip.Builder();
         boolean hud = engine.map().drawsHud();
-        Action mute = icon(engine.muted() ? R.drawable.ic_car_mute : R.drawable.ic_car_sound, () -> {
-            engine.toggleMute();
-            CarToast.makeText(getCarContext(), engine.muted() ? "🔇 Mudo" : "🔊 Com voz", CarToast.LENGTH_SHORT).show();
+        int audio = engine.audioMode();
+        int audioIcon = audio == AutoStore.AUDIO_OFF ? R.drawable.ic_car_mute
+                : audio == AutoStore.AUDIO_ALERTS ? R.drawable.ic_car_alert : R.drawable.ic_car_sound;
+        Action mute = icon(audioIcon, () -> {
+            int m = engine.nextAudioMode();
+            String txt = m == AutoStore.AUDIO_OFF ? "🔇 Silêncio total"
+                    : m == AutoStore.AUDIO_ALERTS ? "⚠️ Só alertas (radar e piadas)" : "🔊 Tudo";
+            CarToast.makeText(getCarContext(), txt, CarToast.LENGTH_SHORT).show();
             invalidate();
         });
         // v1.80: faixa de cima só com ícones (cabe até 4)
         if (engine.isNavigating()) {
             strip.addAction(icon(R.drawable.ic_car_stop, () -> engine.stop(true)));
+            // v2.02: o "Y" = outros caminhos daqui até o destino (igual Waze/Google Maps)
+            if (engine.destination() != null && !engine.isRerouting()) {
+                strip.addAction(icon(R.drawable.ic_car_routes, () -> getScreenManager().push(
+                        new PreviewScreen(getCarContext(), engine, engine.destination(), true))));
+            }
             strip.addAction(mute);
             if (!hud) {
                 // plano B (sem mapa 3D): cartões do Android Auto
@@ -126,8 +138,7 @@ final class HomeScreen extends Screen implements NavEngine.Listener {
                 // v1.80: lado direito = 2D/3D, centralizar e luz do mapa
                 b.setMapActionStrip(new ActionStrip.Builder().addAction(view).addAction(center).addAction(skin).build());
             } else if (engine.isNavigating()) {
-                strip.addAction(view); // host antigo: só 4 na faixa de cima
-                strip.addAction(skin);
+                strip.addAction(view); // host antigo: só 4 na faixa de cima (v2.02: o Y tomou o lugar da 🎨)
             }
         }
         b.setActionStrip(strip.build());

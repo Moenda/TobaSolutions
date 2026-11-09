@@ -20,6 +20,29 @@
   margin-bottom: 0.6rem;
 }
 
+/* v2.02: modo favoritar (➕ do ⭐ Favoritos no hub do Racing) */
+.dv-favmode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.55rem 0.7rem;
+  margin-bottom: 0.6rem;
+  border: 1px solid var(--drive);
+  border-radius: var(--radius);
+  background: rgba(251, 146, 60, 0.12);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.dv-favmode[hidden] {
+  display: none;
+}
+
+.dv-favmode span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .dv-gps-dot {
   flex: 0 0 auto;
   width: 9px;

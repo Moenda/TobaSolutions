@@ -2,7 +2,8 @@
  * Toba Drive · mapa da tela do carro (Android Auto, desde v1.78 / APK 1.7)
  * - O WebMap.java (TobaAndroid/app/auto/) desenha ESTA página na tela do carro
  *   (tela virtual em cima da Surface da Car App Library). Mesmo Mapbox Standard
- *   do 🧭 Toba Drive do celular: prédios 3D, luz de dia/noite pelo farol do carro.
+ *   do 🧭 Toba Drive do celular: prédios 3D, luz do mapa pelo horário (v2.02;
+ *   antes era pelo farol do carro).
  * - O Java manda tudo por window.tobaAuto:
  *     config({ dark, mode3d, skin, pad:{t,r,b,l} })   pad = área livre (px CSS)
  *     car({ lat, lon, head, speed })                   ~1 por segundo
@@ -17,10 +18,13 @@
  * - Sem trânsito da cidade inteira (Rafa: "cidade toda verde"): só os trechos
  *   parados do TomTom em cima da própria rota (amarelo/vermelho/vinho, igual v1.72).
  * - Nada aqui grava no localStorage: 3D/2D e skin ficam no app (toba_auto).
+ * - v2.02 (UI FOXA CLOBA DRIVER): painel bem maior (régua = cartão "🏁 Chegou" do
+ *   Android Auto), chegada em 2 linhas no canto de baixo à direita, rua atual sempre
+ *   centralizada debaixo da seta e a câmera sobe o carro pra cima do painel de baixo.
  * ===================================================================== */
 const AM_STYLE = "mapbox://styles/mapbox/standard";
 // mesma ordem do CarMap.SKINS (Java): o botão 🎨 do carro troca a LUZ do mapa
-// (igual a 🌗 do Toba Drive do celular). light null = Auto, segue o farol do carro.
+// (igual a 🌗 do Toba Drive do celular). light null = Auto, pelo horário (v2.02, amLightByClock).
 // A rota fica sempre no mesmo azul.
 const AM_ROUTE = { route: "#3b82f6", casing: "#1e3a8a", theme: "default" };
 const AM_SKINS = [
@@ -55,6 +59,7 @@ const am = {
   lastFrame: 0,
   lastPuck: "",
   lastJamAlong: -1,
+  floor: 0, // v2.02: px do painel de baixo debaixo da seta (a câmera sobe o carro pra cima dele)
 };
 
 /* ---------- avisar o Java ---------- */
@@ -207,31 +212,67 @@ function amRenderHud() {
   const road = document.getElementById("amRoad");
   road.hidden = Boolean(am.overview) || !h.road;
   road.textContent = h.road || "";
-  amPlaceRoad();
   amRenderRadar();
   const eta = document.getElementById("amEta");
   eta.hidden = !navOn || !h.eta;
   if (navOn && h.eta) {
-    // v1.81: minutos grandes (cor do trânsito); km e hora de chegada pequenos
+    // v2.02: 2 linhas grandes: minutos (cor do trânsito) em cima, 🏁 hora de chegada · km embaixo
     const clock = document.getElementById("amEtaClock");
     clock.textContent = `${h.min} min`;
     clock.className = `is-t${Number(h.traffic) || 1}`;
-    document.getElementById("amEtaRest").textContent = `${h.left || ""} · chega ${h.eta}`;
+    document.getElementById("amEtaAt").textContent = `🏁 ${h.eta}`;
+    document.getElementById("amEtaLeft").textContent = h.left || "";
   }
+  amPlaceRoad();
   amRenderBar();
   amJokeCheck(h);
 }
 
-// v1.81: rua atual no meio embaixo; se bater na pílula da chegada, desliza pra direita dela
+// v2.02: rua atual SEMPRE no meio, debaixo da seta (antes deslizava pra direita e saía do centro).
+// Cabe entre a velocidade (esquerda) e a chegada (direita)? fica embaixo, com a largura que sobra.
+// Tela dividida apertada? sobe pra cima delas, ainda no meio. No fim mede quanto do painel de
+// baixo fica debaixo da seta (am.floor) pra câmera subir o carro pra cima dele.
 function amPlaceRoad() {
+  const hudEl = document.getElementById("amHud");
   const road = document.getElementById("amRoad");
-  if (!road || road.hidden) return;
-  road.style.left = "";
-  const hud = document.getElementById("amHud").getBoundingClientRect();
-  const r = road.getBoundingClientRect();
-  const bottom = document.getElementById("amBottom").getBoundingClientRect();
-  const minLeft = bottom.right + 10;
-  if (r.left < minLeft) road.style.left = `${minLeft - hud.left + r.width / 2}px`;
+  const bottomEl = document.getElementById("amBottom");
+  const etaEl = document.getElementById("amEta");
+  if (!hudEl || !road) return;
+  const hud = hudEl.getBoundingClientRect();
+  if (!(hud.width > 0)) return;
+  // tela dividida (Spotify do lado): chegada em 3 linhas estreitas pra rua caber no meio
+  document.body.classList.toggle("am-narrow", hud.width < 620);
+  const gap = 12;
+  const mid = hud.left + hud.width / 2;
+  const shown = (el) => el && !el.hidden;
+  if (shown(road)) {
+    road.style.bottom = "";
+    road.style.maxWidth = "";
+    const leftEdge = shown(bottomEl) ? bottomEl.getBoundingClientRect().right : hud.left;
+    const rightEdge = shown(etaEl) ? etaEl.getBoundingClientRect().left : hud.right;
+    const room = 2 * Math.min(mid - leftEdge, rightEdge - mid) - 2 * gap;
+    road.classList.remove("is-tight");
+    if (room >= 150) {
+      road.style.maxWidth = `${Math.floor(room)}px`;
+      // nome comprido não coube? fonte um tico menor antes das reticências
+      if (road.scrollWidth > road.clientWidth + 1) road.classList.add("is-tight");
+    } else {
+      const rowH = Math.max(
+        shown(bottomEl) ? bottomEl.getBoundingClientRect().height : 0,
+        shown(etaEl) ? etaEl.getBoundingClientRect().height : 0,
+      );
+      road.style.bottom = `${Math.round(10 + rowH + 8)}px`;
+      road.style.maxWidth = `${Math.floor(hud.width * 0.8)}px`;
+    }
+  }
+  // quanto do painel de baixo tá na coluna do meio (onde a seta anda)
+  let floor = 0;
+  [bottomEl, etaEl, road].forEach((el) => {
+    if (!shown(el)) return;
+    const r = el.getBoundingClientRect();
+    if (r.left < mid + 45 && r.right > mid - 45) floor = Math.max(floor, hud.bottom - r.top);
+  });
+  am.floor = floor > 0 ? Math.round(floor + 10) : 0;
 }
 
 // v1.81: barrinha de progresso até o destino (rodado ÷ tamanho da rota)
@@ -417,9 +458,19 @@ function amEmojiImage(emoji, size) {
   return g.getImageData(0, 0, size, size);
 }
 
-// Luz do mapa: a da skin escolhida, ou dia/noite pelo farol do carro (Auto)
+// v2.02: Auto = pelo horário do celular (pedido do Rafa, no lugar do farol do carro):
+// 5h–8h amanhecer · 8h–17h dia · 17h–19h30 entardecer · 19h30–5h noite
+function amLightByClock(d = new Date()) {
+  const m = d.getHours() * 60 + d.getMinutes();
+  if (m >= 5 * 60 && m < 8 * 60) return "dawn";
+  if (m >= 8 * 60 && m < 17 * 60) return "day";
+  if (m >= 17 * 60 && m < 19 * 60 + 30) return "dusk";
+  return "night";
+}
+
+// Luz do mapa: a da skin escolhida, ou Auto pelo horário
 function amLight() {
-  return amSkin().light || (am.cfg.dark ? "night" : "day");
+  return amSkin().light || amLightByClock();
 }
 
 function amApplySkin() {
@@ -434,7 +485,7 @@ function amApplySkin() {
   amApplyLook(true);
 }
 
-// Luz (dia/noite pelo farol do carro) + tema da skin + 3D: só mexe se mudou
+// Luz (Auto = pelo horário) + tema da skin + 3D: só mexe se mudou
 function amApplyLook(force = false) {
   const map = am.map;
   if (!map || !am.styleOk) return;
@@ -518,10 +569,12 @@ function amCarNow(now) {
 function amCamPad(mode3d) {
   const p = am.cfg.pad;
   const h = window.innerHeight || 480;
-  const free = Math.max(80, h - p.t - p.b);
+  // v2.02: o painel de baixo (rua/chegada) não cobre a seta: ela fica logo acima dele
+  const floor = Math.min(am.floor || 0, Math.max(0, (h - p.t - p.b) * 0.4));
+  const free = Math.max(80, h - p.t - p.b - floor);
   // carro no terço de baixo da área livre (mais longe pra frente no 3D)
   const lower = mode3d ? 0.5 : 0.36;
-  return { top: p.t + free * lower, bottom: p.b, left: p.l, right: p.r };
+  return { top: p.t + free * lower, bottom: p.b + floor, left: p.l, right: p.r };
 }
 
 function amFrame(now) {
@@ -1030,7 +1083,7 @@ window.tobaAuto = {
       interactive: false,
       language: "pt",
       attributionControl: false,
-      logoPosition: "bottom-right",
+      logoPosition: "top-right", // v2.02: embaixo à direita agora é a chegada
       fadeDuration: 0,
       preserveDrawingBuffer: false,
     });
@@ -1039,7 +1092,7 @@ window.tobaAuto = {
     return;
   }
   am.map = map;
-  map.addControl(new mapboxgl.AttributionControl({ compact: true }), "bottom-right");
+  map.addControl(new mapboxgl.AttributionControl({ compact: true }), "top-right");
   const wait = setTimeout(() => {
     if (!am.styleOk) amFail("o Mapbox demorou demais");
   }, AM_READY_WAIT_MS);
@@ -1068,6 +1121,11 @@ window.tobaAuto = {
     if (n && typeof n.ready === "function") n.ready();
     am.ready = true;
     requestAnimationFrame(amFrame);
+    // v2.02: luz pelo horário: confere a cada minuto (só troca quando vira a faixa)
+    setInterval(() => amApplyLook(), 60000);
   });
-  window.addEventListener("resize", () => map.resize());
+  window.addEventListener("resize", () => {
+    map.resize();
+    amPlaceRoad();
+  });
 })();

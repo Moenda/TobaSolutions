@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2.02: botão do Android Auto: Só alertas (alto-falante com "!": radar e piadas do Cloba) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M3,9v6h4l5,5L12,4L7,9L3,9z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M16,5h3v9h-3zM16,16h3v3h-3z" />
+</vector>

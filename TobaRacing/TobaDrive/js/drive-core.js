@@ -19,7 +19,8 @@ function createEmptyDriveDb() {
     version: 1,
     favorites: [], // [{ id: "fv-..", name, emoji, lat, lng, address, createdAt }]
     recent: [], // [{ name, address, lat, lng, at (ms), placeId? }] (mais novo primeiro)
-    trips: [], // [{ id: "t-..", date, startedAt, endedAt, name, lat, lng, km, arrived, etaS? }]
+    trips: [], // [{ id: "t-..", date, startedAt, endedAt, name, lat, lng, km, arrived, etaS?, source?: "auto", autoAt? }]
+    autoSkip: [], // v2.02: "at" das viagens do Android Auto que foram apagadas (não voltam no import)
   };
 }
 
@@ -54,6 +55,7 @@ function normalizeDriveDb(db) {
     at: Number(r.at) || 0,
   }));
   out.trips = (Array.isArray(out.trips) ? out.trips : []).filter((t) => t && typeof t.date === "string");
+  out.autoSkip = (Array.isArray(out.autoSkip) ? out.autoSkip : []).map(Number).filter((n) => n > 0).slice(-400);
   out.trips.forEach((t) => {
     t.km = Number(t.km) || 0;
     t.arrived = Boolean(t.arrived);
@@ -79,6 +81,16 @@ function loadDriveDb() {
 }
 
 let driveDb = loadDriveDb();
+
+// v2.02 (APK 2.7): rota feita só no Android Auto entra no histórico (tobaMergeAutoTrips do toba-common).
+// Com esta página aberta o import é aqui, no driveDb da memória (o toba-common não grava por cima).
+window.TOBA_DRIVE_LIVE = true;
+function driveImportAutoTrips() {
+  if (!isDriveDbLoaded || typeof tobaMergeAutoTrips !== "function") return 0;
+  const n = tobaMergeAutoTrips(driveDb);
+  if (n) saveDriveDb({ silent: true });
+  return n;
+}
 
 function saveDriveDb(options = {}) {
   if (!isDriveDbLoaded) return false;
@@ -160,6 +172,8 @@ function driveOpenExternal(url) {
   const win = window.open(url, "_blank", "noopener");
   if (!win) window.location.href = url;
 }
+
+driveImportAutoTrips();
 
 tobaSetupApp({
   name: "Toba Drive",

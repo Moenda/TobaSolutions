@@ -418,3 +418,189 @@
 .rc-hint-top {
   margin: 0.6rem 0 0.2rem;
 }
+
+/* ---------- v2.02: 🧭 Na estrada (quadradinhos tocáveis + folhas do hub, js/racing-drive.js) ---------- */
+.rc-drive-tile {
+  font: inherit;
+  width: 100%;
+}
+
+.section-title .rc-count {
+  color: var(--muted);
+}
+
+.rc-drive-more {
+  color: var(--racing);
+  font-weight: 800;
+}
+
+.rc-drive-head {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rc-drive-head small {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.rc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 0.7rem;
+}
+
+.rc-chips:empty {
+  display: none;
+}
+
+.chip-btn.rc-pick {
+  height: 32px;
+}
+
+.chip-btn.rc-pick.is-on {
+  color: var(--text);
+  border-color: var(--racing);
+  background: rgba(240, 136, 62, 0.16);
+}
+
+.chip-btn.rc-emoji {
+  font-size: 1.05rem;
+  min-width: 40px;
+  justify-content: center;
+}
+
+.rc-drive-km-head {
+  margin-bottom: 0.2rem;
+}
+
+.rc-drive-month,
+.rc-drive-trip,
+.rc-drive-fav {
+  padding: 0.6rem 0.75rem;
+}
+
+.rc-drive-month.is-now {
+  border-color: var(--racing);
+}
+
+.rc-drive-month-text,
+.rc-drive-trip-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.rc-drive-month-text b,
+.rc-drive-trip-text b {
+  font-size: 0.86rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rc-drive-month-text b small {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.rc-drive-month-text small,
+.rc-drive-trip-text small {
+  font-size: 0.72rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rc-drive-bar {
+  display: block;
+  height: 5px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.rc-drive-bar i {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 999px;
+  background: var(--racing);
+}
+
+.rc-drive-month-km,
+.rc-drive-trip-km {
+  flex: 0 0 auto;
+  font-weight: 800;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-drive-month-km small,
+.rc-drive-trip-km small {
+  font-size: 0.68rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.rc-drive-day {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin: 0.5rem 0 0.1rem;
+}
+
+.rc-drive-day:first-child {
+  margin-top: 0;
+}
+
+.rc-drive-trip {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.rc-drive-trip.is-open {
+  border-color: var(--racing);
+}
+
+.rc-drive-trip-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.rc-drive-trip-icon,
+.rc-drive-fav-emoji {
+  flex: 0 0 auto;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.rc-drive-trip-more {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-soft);
+  cursor: default;
+}
+
+.rc-drive-trip-facts {
+  font-size: 0.76rem;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+
+.rc-drive-fav-edit {
+  flex: 0 0 auto;
+}

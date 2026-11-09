@@ -112,6 +112,19 @@ public final class DriveSync {
         return AutoStore.setFavorites(c, json);
     }
 
+    /**
+     * v2.02 (APK 2.7): diário das viagens do carro (toba_auto › trips) pro site importar
+     * no histórico do 🧭 Toba Drive. [{at, end, km, dest, lat, lon, arrived, source, sim?, min?}].
+     * Só lê: quem decide o que entra (sem viagem de teste, sem contar em dobro) é o site.
+     */
+    public static String trips(android.content.Context c) {
+        try {
+            return new org.json.JSONArray(AutoStore.prefs(c).getString("trips", "[]")).toString();
+        } catch (org.json.JSONException e) {
+            return "[]";
+        }
+    }
+
     /** Do site: json {name,lat,lng} = rota nova; "" = parou. Roda no carro pela main thread. */
     public static void fromPhone(String json) {
         Car c = car;

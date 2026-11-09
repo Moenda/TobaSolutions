@@ -51,7 +51,7 @@
       </a>
     </nav>
 
-    <div class="section-title">🧭 Na estrada</div>
+    <div class="section-title">🧭 Na estrada <small class="rc-count">toca pra ver o histórico</small></div>
     <div class="toba-stats" id="hubDriveStats"></div>
     <p class="rc-hint rc-hint-top">💡 No app Android o Toba Drive segue com a tela apagada e aparece sozinho no Android Auto 🚘. No navegador, deixa o Toba aberto na tela (site não usa GPS com a tela apagada).</p>
 
@@ -59,10 +59,78 @@
     <div class="toba-stats" id="hubStats"></div>
   </main>
 
+  <!-- v2.02: 🛣️ Km mês a mês -->
+  <div class="toba-modal" id="driveKmSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🛣️ Km mês a mês</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="driveKmBody"></div>
+    </div>
+  </div>
+
+  <!-- v2.02: 🧭 Viagens -->
+  <div class="toba-modal" id="driveTripsSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <div class="rc-drive-head">
+          <h3>🧭 Viagens</h3>
+          <small id="driveTripsSub"></small>
+        </div>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div class="rc-chips" id="driveTripsFilter"></div>
+      <div id="driveTripsBody"></div>
+    </div>
+  </div>
+
+  <!-- v2.02: ⭐ Favoritos -->
+  <div class="toba-modal" id="driveFavSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>⭐ Favoritos</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="driveFavBody"></div>
+      <div class="toba-sheet-footer">
+        <div class="btn-row">
+          <button type="button" class="btn btn-outline btn-grow-1" data-click="addDriveFavHere">📍 Onde eu tô</button>
+          <button type="button" class="btn btn-primary btn-grow-1" data-click="addDriveFavSearch">🔍 Buscar lugar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- v2.02: ⭐ novo / ✏️ editar favorito -->
+  <div class="toba-modal" id="driveFavEdit">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="driveFavEditTitle">⭐ Favorito novo</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form data-submit="saveDriveFav" autocomplete="off">
+        <p class="rc-hint rc-hint-top" id="driveFavEditWhere"></p>
+        <div class="rc-chips" id="driveFavEmojis"></div>
+        <div class="form-group">
+          <label for="driveFavName">Nome</label>
+          <input type="text" id="driveFavName" class="form-control" maxlength="30" placeholder="Ex: Casa" />
+        </div>
+        <div class="toba-sheet-footer">
+          <div class="btn-row">
+            <button type="button" class="btn btn-danger btn-grow-1" id="driveFavDelete" data-click="deleteDriveFav" hidden>🗑️ Tirar</button>
+            <button type="submit" class="btn btn-primary btn-grow-2">Salvar</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="../assets/toba-common.js"></script>
   <script src="../assets/toba-cloud.js"></script>
   <script src="js/racing-metrics.js"></script>
   <script src="TobaDrive/js/drive-metrics.js"></script>
+  <script src="js/racing-drive.js"></script>
   <script src="js/racing-core.js"></script>
   <script>
     // O Hub só mostra um resumo; quem grava é o módulo (e a ⚙️ com backup / Meu carro).
@@ -87,42 +155,22 @@
         + tile("📅 No mês", formatCurrency(s.monthSpent), s.monthKm ? `${formatRacingKm(s.monthKm)} km rodados` : "em combustível")
         + tile("📍 Odômetro", s.lastOdometer ? `${formatRacingKm(s.lastOdometer)} <small>km</small>` : "--", s.lastFillDaysAgo === null ? "nenhuma parada ainda" : s.lastFillDaysAgo === 0 ? "abasteceu hoje" : `última parada há ${s.lastFillDaysAgo} ${s.lastFillDaysAgo === 1 ? "dia" : "dias"}`);
     }
-    // 🧭 Toba Drive (mora dentro do Racing: TobaRacing/TobaDrive/ desde v1.83). Só LÊ o TOBA_DRIVE_DB;
-    // quem grava é o Toba Drive (TobaDrive/js/drive-core.js, com a ⚙️ e backup próprios).
-    function renderDriveHub() {
-      let data = null;
-      try {
-        data = JSON.parse(localStorage.getItem("TOBA_DRIVE_DB") || "null");
-      } catch (e) {
-        console.error("Erro ao ler os dados do Toba Drive", e);
-      }
-      const s = calcDriveSummary(data);
-      document.getElementById("hubNavDesc").textContent = s.last
-        ? `Última: ${s.last.name} · ${driveFormatKm((Number(s.last.km) || 0) * 1000)} km${s.last.arrived ? " 🏁" : ""}`
-        : "GPS com voz e trânsito ao vivo. Destino da busca, dos favoritos ou do Toba Places.";
-      const tile = (label, value, sub) => `
-        <div class="toba-stat">
-          <span class="toba-stat-label">${label}</span>
-          <span class="toba-stat-value">${value}</span>
-          <span class="toba-stat-sub">${sub}</span>
-        </div>`;
-      document.getElementById("hubDriveStats").innerHTML =
-        tile("🛣️ Km no mês", `<span class="text-racing">${driveFormatKm(s.monthKm * 1000)}</span>`, s.km ? `${driveFormatKm(s.km * 1000)} km na vida` : "bora rodar")
-        + tile("🧭 Viagens", String(s.monthTrips), s.trips ? `${s.trips} no total` : "nenhuma ainda")
-        + tile("🏁 Chegou", String(s.arrived), s.arrived ? "sem se perder" : "o destino te espera")
-        + tile("⭐ Favoritos", String(s.favorites), s.favorites ? "a um toque" : "🏠 Casa, 💼 Trampo...");
-    }
+    // 🧭 Na estrada: renderDriveHub e as folhas (km mês a mês, viagens, favoritos) moram em
+    // js/racing-drive.js desde v2.02. Quem é dono do TOBA_DRIVE_DB é o Toba Drive (TobaDrive/js/drive-core.js).
     function onRacingDataReplaced() {
       renderRacingHub();
     }
     window.addEventListener("pageshow", (event) => {
       if (event.persisted) {
         renderRacingHub();
+        tobaSyncAutoTrips(); // v2.02: viagens do Android Auto
         renderDriveHub();
       }
     });
     renderRacingHub();
+    tobaSyncAutoTrips(); // v2.02: rota feita só no Android Auto entra no histórico
     renderDriveHub();
+    driveHubOpenFromHash();
   </script>
   <script src="../assets/pwa-register.js"></script>
 </body>

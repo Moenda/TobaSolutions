@@ -24,6 +24,8 @@ import java.util.List;
  * Prévia da rota no mapa: tempo, km, trânsito e o botão "Bora!".
  * v1.80: até 3 caminhos ("via Av. 23 de Maio"); tocar num troca a rota azul do mapa
  * (os outros ficam cinza). Texto curto: o cartão é do Android Auto e a fonte é dele.
+ * v2.02: também é a tela do "Y" (outros caminhos) no meio da viagem: switching = true,
+ * o botão vira "Trocar" e a viagem continua (NavEngine.switchRoute).
  */
 final class PreviewScreen extends Screen {
     /** Quantos caminhos além do mais rápido o TomTom manda (custa a mesma 1 rota da cota). */
@@ -31,6 +33,7 @@ final class PreviewScreen extends Screen {
 
     private final NavEngine engine;
     private final Place dest;
+    private final boolean switching;
     private final List<Route> routes = new ArrayList<>();
     private final List<String> vias = new ArrayList<>();
     private int selected;
@@ -40,9 +43,14 @@ final class PreviewScreen extends Screen {
     private double originLat, originLon;
 
     PreviewScreen(CarContext car, NavEngine engine, Place dest) {
+        this(car, engine, dest, false);
+    }
+
+    PreviewScreen(CarContext car, NavEngine engine, Place dest, boolean switching) {
         super(car);
         this.engine = engine;
         this.dest = dest;
+        this.switching = switching;
         getLifecycle().addObserver(new DefaultLifecycleObserver() {
             @Override
             public void onStart(LifecycleOwner owner) {
@@ -134,7 +142,8 @@ final class PreviewScreen extends Screen {
 
     private void go(boolean simulate) {
         if (route == null) return;
-        engine.start(dest, route, simulate);
+        if (switching && engine.isNavigating()) engine.switchRoute(route);
+        else engine.start(dest, route, simulate);
         getScreenManager().popToRoot();
     }
 
@@ -151,7 +160,7 @@ final class PreviewScreen extends Screen {
                     .build();
         }
         RoutePreviewNavigationTemplate.Builder b = new RoutePreviewNavigationTemplate.Builder()
-                .setTitle(dest.name)
+                .setTitle(switching ? "Outros caminhos · " + dest.name : dest.name)
                 .setHeaderAction(Action.BACK);
         if (loading || route == null) return b.setLoading(true).build();
 
@@ -181,11 +190,14 @@ final class PreviewScreen extends Screen {
                 })
                 .setSelectedIndex(Math.min(selected, routes.size() - 1))
                 .build();
-        return b.setItemList(list)
-                .setNavigateAction(new Action.Builder().setTitle("Bora!").setOnClickListener(() -> go(false)).build())
-                .setActionStrip(new ActionStrip.Builder()
-                        .addAction(new Action.Builder().setTitle("Simular").setOnClickListener(() -> go(true)).build())
-                        .build())
-                .build();
+        b.setItemList(list)
+                .setNavigateAction(new Action.Builder().setTitle(switching ? "Trocar" : "Bora!")
+                        .setOnClickListener(() -> go(false)).build());
+        if (!switching) {
+            b.setActionStrip(new ActionStrip.Builder()
+                    .addAction(new Action.Builder().setTitle("Simular").setOnClickListener(() -> go(true)).build())
+                    .build());
+        }
+        return b.build();
     }
 }

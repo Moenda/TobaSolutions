@@ -714,6 +714,7 @@ async function setDestination(dest) {
   nav.loading = true;
   driveRememberRecent(nav.dest);
   await setMode("preview");
+  if (nav.favMode) favOpen(); // v2.02: veio pra favoritar
   drawRoute();
   if (nav.map) nav.map.setView([nav.dest.lat, nav.dest.lng], 15);
   const target = nav.dest;
@@ -1207,6 +1208,17 @@ function favEmojiPick(el) {
   renderFavEmojis();
 }
 
+// v2.02: modo favoritar (veio do ➕ do hub): faixa em cima e, com o destino escolhido, abre o ⭐ sozinho
+function renderFavMode() {
+  const el = document.getElementById("favModeBanner");
+  if (el) el.hidden = !nav.favMode;
+}
+
+function cancelFavMode() {
+  nav.favMode = false;
+  renderFavMode();
+}
+
 function saveFav() {
   if (!nav.dest) return;
   const name = document.getElementById("favName").value.trim() || nav.dest.name || "Favorito";
@@ -1219,6 +1231,12 @@ function saveFav() {
   }
   saveDriveDb();
   closeTobaModal("favSheet");
+  if (nav.favMode) {
+    // voltou pro ⭐ Favoritos do hub, já com o novo na lista
+    nav.favMode = false;
+    window.location.href = "../TobaRacing-Index.html#favs";
+    return;
+  }
   renderRoute();
 }
 
@@ -1278,6 +1296,7 @@ function onDriveDataReplaced() {
 }
 
 tobaActions({
+  cancelFavMode,
   searchSubmit,
   goResult,
   goRecent,
@@ -1495,6 +1514,10 @@ async function driveFollowAuto(d) {
 window.onTobaAutoRoute = function onTobaAutoRoute(d) {
   if (!d) return;
   if (d.end) {
+    // v2.02: o carro já anotou a viagem no diário dele: puxa pro histórico (sem duplicar a do celular)
+    setTimeout(() => {
+      if (driveImportAutoTrips() && nav.mode === "pick") renderPick();
+    }, 1500);
     // só encerra se for a MESMA rota (o carro pode estar trocando de destino)
     if (nav.mode !== "nav" || !driveSameDest(nav.dest, d)) return;
     nav.autoQuiet = true;
@@ -1543,6 +1566,14 @@ window.onTobaAutoRoute = function onTobaAutoRoute(d) {
   if (carRoute) {
     startGps();
     driveFollowAuto(carRoute);
+    return;
+  }
+  // v2.02: ➕ do ⭐ Favoritos do hub do Racing (?fav=1): escolhe o lugar e já abre o Favoritar
+  if (qs.get("fav") === "1") {
+    nav.favMode = true;
+    setMode("pick");
+    renderFavMode();
+    setTimeout(() => document.getElementById("driveQuery")?.focus(), 200);
     return;
   }
   if (hasQs) {

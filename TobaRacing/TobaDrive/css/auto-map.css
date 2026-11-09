@@ -1,6 +1,6 @@
 /* Toba Drive · mapa da tela do carro (Android Auto, v1.78)
- * Painel enxuto estilo Waze: pílula da manobra em cima, velocidade + placa da rua
- * + chegada embaixo. Fica dentro da área livre que o Android Auto informa
+ * Painel enxuto estilo Waze: manobra em cima, velocidade + placa embaixo à esquerda,
+ * rua no meio e chegada embaixo à direita (v2.02: tudo maior, dá pra ler dirigindo). Fica dentro da área livre que o Android Auto informa
  * (--am-t/--am-r/--am-b/--am-l, vindos do WebMap.java). */
 :root {
   --am-t: 0px;
@@ -55,26 +55,29 @@ body.am-light {
   color: var(--am-ink);
 }
 
-/* ---------- manobra (pílula pequena em cima à esquerda) ---------- */
-/* v1.80: manobra, faixas e radar empilhados */
+/* ---------- manobra (cartão em cima à esquerda) ----------
+ * v2.02 (UI FOXA CLOBA DRIVER): tudo maior. Régua = o cartão "🏁 Chegou em Casa!" do
+ * próprio Android Auto (~22px no texto). Distância 38px, rua 24px em até 2 linhas. */
 .am-top {
   position: absolute;
   top: 10px;
   left: 10px;
-  max-width: min(52%, 360px);
+  max-width: min(60%, 520px);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  gap: 8px;
+  z-index: 2; /* balão do Cloba por cima da velocidade na tela dividida */
 }
 
 .am-turn {
   max-width: 100%;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 14px 8px 8px;
-  border-radius: 999px;
+  gap: 14px;
+  padding: 10px 20px 10px 10px;
+  border-radius: 28px;
   background: var(--am-glass);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
   border: 1px solid var(--am-line);
@@ -82,8 +85,8 @@ body.am-light {
 
 .am-turn-icon {
   flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   background: var(--am-accent);
   display: grid;
@@ -91,12 +94,12 @@ body.am-light {
 }
 
 .am-turn-icon svg {
-  width: 30px;
-  height: 30px;
+  width: 48px;
+  height: 48px;
 }
 
 .am-turn-icon .am-flag {
-  font-size: 24px;
+  font-size: 38px;
   line-height: 1;
 }
 
@@ -104,41 +107,48 @@ body.am-light {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  line-height: 1.15;
+  line-height: 1.12;
 }
 
 .am-turn-txt b {
-  font-size: 22px;
-  font-weight: 800;
+  font-size: 38px;
+  font-weight: 900;
   letter-spacing: -0.02em;
 }
 
 .am-turn-txt span {
-  font-size: 14px;
-  color: var(--am-soft);
-  white-space: nowrap;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--am-ink);
+  opacity: 0.9;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .am-turn.is-wait .am-turn-icon {
   background: #6e7681;
 }
 
-/* ---------- v1.80: faixas (embaixo da manobra) ---------- */
+.am-turn.is-wait .am-turn-txt b {
+  font-size: 28px;
+}
+
+/* ---------- faixas (embaixo da manobra) ---------- */
 .am-lanes {
   display: flex;
   gap: 2px;
-  padding: 5px 8px;
-  border-radius: 12px;
+  padding: 6px 10px;
+  border-radius: 14px;
   background: var(--am-glass);
   border: 1px solid var(--am-line);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
 }
 
 .am-lane {
-  width: 26px;
-  height: 30px;
+  width: 40px;
+  height: 44px;
   display: grid;
   place-items: center;
   opacity: 0.35;
@@ -154,50 +164,52 @@ body.am-light {
 }
 
 .am-lane svg {
-  width: 22px;
-  height: 22px;
+  width: 34px;
+  height: 34px;
 }
 
 .am-lane.is-go svg path {
   stroke: var(--am-accent);
 }
 
-/* ---------- v1.80: radar na frente ---------- */
+/* ---------- radar na frente ---------- */
 .am-radar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px 6px 6px;
+  gap: 10px;
+  padding: 6px 16px 6px 8px;
   border-radius: 999px;
   background: #fff;
   color: #111;
-  border: 3px solid #dc2626;
+  border: 4px solid #dc2626;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  font-size: 14px;
+  font-size: 22px;
+  font-weight: 700;
   white-space: nowrap;
 }
 
 .am-radar b {
-  font-size: 17px;
+  font-size: 28px;
   font-weight: 900;
 }
 
 .am-radar-ic {
-  font-size: 18px;
+  font-size: 28px;
   line-height: 1;
 }
 
-/* ---------- v1.81: balão do Cloba (piadinha nos marcos da viagem) ---------- */
+/* ---------- 🤡 balão do Cloba (piadinha nos marcos da viagem) ---------- */
 .am-cloba {
   max-width: 100%;
-  padding: 8px 12px;
-  border-radius: 14px;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border-radius: 18px;
   background: var(--am-glass);
   border: 1px solid var(--am-line);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.3;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.25;
   animation: am-pop 0.25s ease-out;
 }
 
@@ -208,38 +220,40 @@ body.am-light {
   }
 }
 
-/* ---------- v1.80: rua atual (v1.81: embaixo, no meio, debaixo da seta) ---------- */
+/* ---------- rua atual: embaixo, no meio, debaixo da seta ----------
+ * v2.02: sempre centralizada. Largura máxima e altura calculadas no JS (amPlaceRoad):
+ * cabe entre a velocidade e a chegada; tela dividida apertada = sobe pra cima delas. */
 .am-road {
   position: absolute;
   left: 50%;
-  bottom: 12px; /* tela estreita: o JS empurra pra direita da chegada (amPlaceRoad) */
+  bottom: 10px;
   transform: translateX(-50%);
-  max-width: 34%;
-  padding: 6px 14px;
+  max-width: 40%;
+  box-sizing: border-box;
+  padding: 8px 20px;
   border-radius: 999px;
   background: var(--am-glass);
   border: 1px solid var(--am-line);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 800;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* ---------- embaixo: velocidade, placa e chegada ---------- */
+/* ---------- embaixo: velocidade + placa (esquerda) e chegada (direita) ---------- */
 .am-bottom {
   position: absolute;
   left: 10px;
   bottom: 10px;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-end;
 }
 
 .am-speed {
-  width: 58px;
-  height: 58px;
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
   background: var(--am-glass);
   border: 1px solid var(--am-line);
@@ -252,12 +266,14 @@ body.am-light {
 }
 
 .am-speed b {
-  font-size: 22px;
-  font-weight: 800;
+  font-size: 40px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
 }
 
 .am-speed small {
-  font-size: 9px;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--am-soft);
   margin-top: 2px;
 }
@@ -272,28 +288,28 @@ body.am-light {
   color: rgba(255, 255, 255, 0.85);
 }
 
-/* v1.81: placa grudada em cima à direita da bolinha */
+/* placa grudada em cima à direita da bolinha */
 .am-gauge {
   position: relative;
-  padding: 14px 14px 0 0;
+  padding: 18px 18px 0 0;
 }
 
 .am-gauge .am-limit {
   position: absolute;
   top: 0;
   right: 0;
-  width: 34px;
-  height: 34px;
-  border-width: 4px;
+  width: 48px;
+  height: 48px;
+  border-width: 5px;
 }
 
 .am-gauge .am-limit b {
-  font-size: 13px;
+  font-size: 19px;
 }
 
 .am-limit {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: #fff;
   border: 5px solid #dc2626;
@@ -305,37 +321,122 @@ body.am-light {
 }
 
 .am-limit b {
-  font-size: 15px;
+  font-size: 19px;
   font-weight: 900;
 }
 
+/* v2.02: chegada em 2 linhas grandes, no canto de baixo à direita */
 .am-eta {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 8px 14px 8px;
-  border-radius: 16px;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 10px 18px 10px;
+  border-radius: 20px;
   background: var(--am-glass);
   border: 1px solid var(--am-line);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
   white-space: nowrap;
-}
-
-.am-eta-row {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
+  line-height: 1.05;
 }
 
 .am-eta b {
-  font-size: 20px;
-  font-weight: 800;
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
 }
 
-/* v1.81: barrinha até o destino */
+.am-eta span {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--am-ink);
+  opacity: 0.85;
+}
+
+.am-eta-sub {
+  display: flex;
+  gap: 8px;
+}
+
+.am-eta-sub span:empty {
+  display: none;
+}
+
+.am-eta-sub span + span::before {
+  content: "· ";
+}
+
+/* v2.02: tela dividida (Spotify do lado, painel estreito): um tiquinho menor e a chegada
+ * em 3 linhas estreitas (min / 🏁 hora / km) pra rua caber no meio, debaixo da seta */
+body.am-narrow .am-top {
+  max-width: 66%;
+}
+
+body.am-narrow .am-turn-icon {
+  width: 60px;
+  height: 60px;
+}
+
+body.am-narrow .am-turn-icon svg {
+  width: 42px;
+  height: 42px;
+}
+
+body.am-narrow .am-turn-txt b {
+  font-size: 34px;
+}
+
+body.am-narrow .am-turn-txt span {
+  font-size: 22px;
+}
+
+body.am-narrow .am-speed {
+  width: 80px;
+  height: 80px;
+}
+
+body.am-narrow .am-speed b {
+  font-size: 36px;
+}
+
+body.am-narrow .am-eta {
+  padding: 8px 14px;
+}
+
+body.am-narrow .am-eta b {
+  font-size: 30px;
+}
+
+body.am-narrow .am-eta-sub {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+body.am-narrow .am-eta-sub span + span::before {
+  content: none;
+}
+
+body.am-narrow .am-road {
+  font-size: 22px;
+  padding: 8px 16px;
+}
+
+.am-road.is-tight,
+body.am-narrow .am-road.is-tight {
+  font-size: 19px;
+  padding: 9px 14px;
+}
+
+/* barrinha até o destino */
 .am-eta-bar {
-  height: 4px;
-  border-radius: 2px;
+  align-self: stretch;
+  height: 6px;
+  margin-top: 4px;
+  border-radius: 3px;
   background: var(--am-line);
   overflow: hidden;
 }
@@ -344,14 +445,9 @@ body.am-light {
   display: block;
   height: 100%;
   width: 0;
-  border-radius: 2px;
+  border-radius: 3px;
   background: var(--am-accent);
   transition: width 0.6s linear;
-}
-
-.am-eta span {
-  font-size: 13px;
-  color: var(--am-soft);
 }
 
 .am-eta .is-t1 {
@@ -374,21 +470,22 @@ body.am-light {
   transform: translate(-50%, -50%);
   max-width: 80%;
   text-align: center;
-  padding: 12px 18px;
-  border-radius: 14px;
+  padding: 14px 22px;
+  border-radius: 18px;
   background: var(--am-glass);
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 24px;
+  font-weight: 700;
 }
 
-/* Mapbox: logo e créditos pequenos, dentro da área livre */
-.mapboxgl-ctrl-bottom-right {
+/* Mapbox: logo e créditos pequenos, dentro da área livre.
+ * v2.02: em cima à direita (embaixo à direita agora é a chegada). */
+.mapboxgl-ctrl-top-right {
+  top: var(--am-t) !important;
   right: var(--am-r) !important;
-  bottom: var(--am-b) !important;
 }
 
-.mapboxgl-ctrl-bottom-right .mapboxgl-ctrl {
-  margin: 0 6px 6px 0 !important;
+.mapboxgl-ctrl-top-right .mapboxgl-ctrl {
+  margin: 6px 6px 0 0 !important;
 }
 
 .mapboxgl-ctrl-attrib.mapboxgl-compact {

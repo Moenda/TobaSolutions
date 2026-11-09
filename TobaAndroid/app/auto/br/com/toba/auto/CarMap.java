@@ -20,7 +20,8 @@ import java.util.Locale;
  */
 final class CarMap implements SurfaceCallback, WebMap.Host {
     /** Luz do mapa no botão 🎨 (mesma ordem do AM_SKINS em TobaRacing/TobaDrive/js/auto-map.js). */
-    static final String[] SKINS = {"Auto (farol do carro)", "Amanhecer", "Dia", "Entardecer", "Noite"};
+    // v2.02: Auto = pelo horário (5h–8h amanhecer, 8h–17h dia, 17h–19h30 entardecer, 19h30–5h noite)
+    static final String[] SKINS = {"Auto (pelo horário)", "Amanhecer", "Dia", "Entardecer", "Noite"};
 
     private final CarContext car;
     private final MapRenderer still;

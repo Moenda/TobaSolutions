@@ -59,12 +59,26 @@ final class AutoStore {
         }
     }
 
-    static boolean muted(Context c) {
-        return prefs(c).getBoolean("muted", false);
+    /**
+     * v2.02: modos de áudio do carro (pedido do Rafa). 0 = 🔊 Tudo, 1 = ⚠️ Só alertas
+     * (radar, piadas do Cloba e a chegada; sem as manobras), 2 = 🔇 Silêncio total.
+     * Quem tinha o 🔇 antigo ligado começa no Silêncio.
+     */
+    static final int AUDIO_ALL = 0, AUDIO_ALERTS = 1, AUDIO_OFF = 2;
+
+    static int audioMode(Context c) {
+        SharedPreferences p = prefs(c);
+        if (p.contains("audio")) return Math.floorMod(p.getInt("audio", AUDIO_ALL), 3);
+        return p.getBoolean("muted", false) ? AUDIO_OFF : AUDIO_ALL;
     }
 
-    static void setMuted(Context c, boolean on) {
-        prefs(c).edit().putBoolean("muted", on).apply();
+    static void setAudioMode(Context c, int mode) {
+        int m = Math.floorMod(mode, 3);
+        prefs(c).edit().putInt("audio", m).putBoolean("muted", m == AUDIO_OFF).apply();
+    }
+
+    static boolean muted(Context c) {
+        return audioMode(c) == AUDIO_OFF;
     }
 
     /** v1.78: mapa do carro em 3D (padrão) ou 2D. */
@@ -122,8 +136,11 @@ final class AutoStore {
         }
     }
 
-    /** Diário das viagens do carro ({at, km, min, dest}); um dia o site importa pro TOBA_DRIVE_DB. */
-    static void logTrip(Context c, Place dest, double meters, long startedAt, boolean arrived) {
+    /**
+     * Diário das viagens do carro ({at, end, km, dest, ...}); o site importa pro TOBA_DRIVE_DB.
+     * v2.02: sim = true quando foi o botão Simular (teste no DHU): o site não conta.
+     */
+    static void logTrip(Context c, Place dest, double meters, long startedAt, boolean arrived, boolean sim) {
         if (meters < 200) return;
         synchronized (LOCK) {
             try {
@@ -136,6 +153,7 @@ final class AutoStore {
                         .put("lat", dest == null ? 0 : dest.lat)
                         .put("lon", dest == null ? 0 : dest.lon)
                         .put("arrived", arrived)
+                        .put("sim", sim)
                         .put("source", "auto"));
                 while (arr.length() > TRIPS_MAX) arr.remove(0);
                 prefs(c).edit().putString(KEY_TRIPS, arr.toString()).apply();

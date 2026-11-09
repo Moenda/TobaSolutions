@@ -44,7 +44,7 @@ final class TobaBridge {
 
     @JavascriptInterface
     public int version() {
-        return 14; // 14 = APK 2.6 (healthRead: sono com a linha do tempo das fases + FC/oxigênio/respiração/HRV/temperatura de dentro da noite, + samsung com temperatura da pele/Energy Score/nota de sono pelo SDK do Samsung; samsungStatus/samsungAsk; 😴 Sono turbinado); 13 = APK 2.5 (healthRead: + HRV, oxigenação, respiração da noite e andares; 🩻 RAIO ULTRA X); 12 = APK 2.4 (healthRead: passos/km/kcal de UMA fonte por dia, sem somar celular + Samsung Health; manda "sources"); 11 = APK 2.3 (exercícios do healthRead com kcal/km/passos/FC da sessão, pro mesclar); 10 = APK 2.2 (healthStatus/healthAsk/healthRead: ⌚ Relógio do Toba Health); 9 = APK 2.1 (clipboardText: 📋 Colar do Maps no Places); 8 = APK 1.8 (autoFavorites: ⭐ no Android Auto); 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
+        return 15; // 15 = APK 2.7 (autoTrips: viagens feitas só no Android Auto entram no histórico do 🧭 Toba Drive); 14 = APK 2.6 (healthRead: sono com a linha do tempo das fases + FC/oxigênio/respiração/HRV/temperatura de dentro da noite, + samsung com temperatura da pele/Energy Score/nota de sono pelo SDK do Samsung; samsungStatus/samsungAsk; 😴 Sono turbinado); 13 = APK 2.5 (healthRead: + HRV, oxigenação, respiração da noite e andares; 🩻 RAIO ULTRA X); 12 = APK 2.4 (healthRead: passos/km/kcal de UMA fonte por dia, sem somar celular + Samsung Health; manda "sources"); 11 = APK 2.3 (exercícios do healthRead com kcal/km/passos/FC da sessão, pro mesclar); 10 = APK 2.2 (healthStatus/healthAsk/healthRead: ⌚ Relógio do Toba Health); 9 = APK 2.1 (clipboardText: 📋 Colar do Maps no Places); 8 = APK 1.8 (autoFavorites: ⭐ no Android Auto); 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
     }
 
     /* ---------------- v1.87 (APK 2.2): ⌚ Relógio (Health Connect) ---------------- */
@@ -330,6 +330,13 @@ final class TobaBridge {
     @JavascriptInterface
     public boolean autoFavorites(String json) {
         return DriveSync.setFavorites(activity, json);
+    }
+
+    // v2.02 (APK 2.7): diário das viagens do carro ([{at, end, km, dest, lat, lon, arrived, source, sim?}])
+    // pro histórico do 🧭 Toba Drive (tobaMergeAutoTrips no toba-common.js)
+    @JavascriptInterface
+    public String autoTrips() {
+        return DriveSync.trips(activity);
     }
 
     /* ---------------- Toba Routine ---------------- */
