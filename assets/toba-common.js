@@ -738,7 +738,7 @@ const TOBA_NATIVE = window.TobaNative || null;
 
 // v1.86: versão do patch, mostrada embaixo do backup na ⚙️ ("APK 2.1 · Patch v1.86").
 // TODO patch novo sobe aqui junto da entrada do PATCH-NOTES (CLAUDE.md seção 7).
-const TOBA_PATCH_VERSION = "v2.04";
+const TOBA_PATCH_VERSION = "v2.05";
 
 // Versão do APK pelo User-Agent ("... TobaApp/2.1"); "" no navegador.
 function tobaApkVersion() {
@@ -784,7 +784,11 @@ const TOBA_AUTO_TRIP_GAP_MS = 2 * 60 * 1000;
 // começou de novo) e tu seguiu pro MESMO destino em até 15 min sem ter chegado? é a MESMA
 // viagem: junta na anterior (km somados, fim novo). Só vale pra viagem nova: o que já tá
 // no histórico fica como está.
-const TOBA_TRIP_CONTINUE_MS = 15 * 60 * 1000;
+// v2.05: PARADA no caminho (posto, mercado) também: até 1 hora parado, sem ter chegado, e
+// seguiu pro mesmo destino = a mesma viagem com uma parada (stops). Pra parada que virou
+// viagem separada (ex.: botou o posto como destino), o histórico do Racing tem 🔗 Juntar.
+const TOBA_TRIP_CONTINUE_MS = 60 * 60 * 1000;
+const TOBA_TRIP_STOP_MS = 3 * 60 * 1000; // parado mais que isso no meio = conta como parada
 const TOBA_TRIP_CONTINUE_M = 250;
 
 function tobaTripDist(a, b) {
@@ -818,6 +822,12 @@ function tobaTripToContinue(trips, next) {
 
 // Gruda o pedaço novo na viagem anterior (mexe em prev)
 function tobaJoinTrip(prev, part) {
+  // v2.05: ficou parado um tempo entre os pedaços? conta como parada no caminho
+  const gap = (Number(part.startedAt) || 0) - (Number(prev.endedAt) || 0);
+  if (gap > TOBA_TRIP_STOP_MS) {
+    prev.stops = (Number(prev.stops) || 0) + 1;
+    prev.stopMs = (Number(prev.stopMs) || 0) + gap; // tempo parado (sai da média de km/h)
+  }
   prev.endedAt = Math.max(Number(prev.endedAt) || 0, Number(part.endedAt) || 0);
   prev.km = Math.round(((Number(prev.km) || 0) + (Number(part.km) || 0)) * 10) / 10;
   if (part.arrived) prev.arrived = true;

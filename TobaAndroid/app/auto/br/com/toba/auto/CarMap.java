@@ -22,6 +22,8 @@ final class CarMap implements SurfaceCallback, WebMap.Host {
     /** Luz do mapa no botão 🎨 (mesma ordem do AM_SKINS em TobaRacing/TobaDrive/js/auto-map.js). */
     // v2.02: Auto = pelo horário (5h–8h amanhecer, 8h–17h dia, 17h–19h30 entardecer, 19h30–5h noite)
     static final String[] SKINS = {"Auto (pelo horário)", "Amanhecer", "Dia", "Entardecer", "Noite"};
+    /** v2.05: o Amanhecer continua no índice 1 (a ordem é a do site e das prefs), mas o 🎨 pula ele. */
+    static final int SKIN_DAWN = 1;
 
     private final CarContext car;
     private final MapRenderer still;
@@ -42,6 +44,7 @@ final class CarMap implements SurfaceCallback, WebMap.Host {
         this.web = new WebMap(car, this);
         this.map3d = AutoStore.map3d(car);
         this.skin = Math.floorMod(AutoStore.skin(car), SKINS.length);
+        if (this.skin == SKIN_DAWN) this.skin = SKIN_DAWN + 1; // v2.05: Amanhecer saiu, vira Dia
         sendConfig();
     }
 
@@ -150,6 +153,7 @@ final class CarMap implements SurfaceCallback, WebMap.Host {
 
     String nextSkin() {
         skin = (skin + 1) % SKINS.length;
+        if (skin == SKIN_DAWN) skin = (skin + 1) % SKINS.length; // v2.05: pula o Amanhecer (Rafa: "feioso")
         AutoStore.setSkin(car, skin);
         sendConfig();
         return SKINS[skin];

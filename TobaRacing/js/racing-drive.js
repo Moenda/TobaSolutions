@@ -79,7 +79,8 @@ function driveHubAddMonths(key, delta) {
 }
 
 function driveHubTripSecs(t) {
-  const s = ((Number(t.endedAt) || 0) - (Number(t.startedAt) || 0)) / 1000;
+  // v2.05: tempo parado no posto/mercado (stopMs) não conta como tempo dirigindo
+  const s = ((Number(t.endedAt) || 0) - (Number(t.startedAt) || 0) - (Number(t.stopMs) || 0)) / 1000;
   return s > 0 && s < 24 * 3600 ? s : 0;
 }
 
@@ -234,10 +235,12 @@ function renderDriveTripsSheet() {
     const start = Number(t.startedAt) || 0;
     const end = Number(t.endedAt) || 0;
     const fromCar = t.source === "auto" ? "🚘 carro" : t.autoAt ? "📱🚘 celular + carro" : "📱 celular";
+    const stops = Number(t.stops) || 0;
     const avg = secs >= 120 ? Math.round((Number(t.km) || 0) / (secs / 3600)) : 0;
     const sub = [
       start ? `${driveFormatClock(start)}${end > start ? ` → ${driveFormatClock(end)}` : ""}` : "",
       secs >= 60 ? driveFormatDuration(secs) : "",
+      stops ? `⛽ ${stops} ${stops === 1 ? "parada" : "paradas"}` : "",
       fromCar,
     ].filter(Boolean).join(" · ");
     const open = driveHub.openTrip === String(t.id);
@@ -246,7 +249,9 @@ function renderDriveTripsSheet() {
       <div class="rc-drive-trip-more">
         <div class="rc-drive-trip-facts">
           ${t.arrived ? "🏁 Chegou no destino" : "🛑 Encerrou antes de chegar"}${avg ? ` · média ${avg} km/h` : ""}${Number(t.maxKmh) ? ` · máx ${Math.round(Number(t.maxKmh))} km/h` : ""}${Number(t.radars) ? ` · 📸 ${Number(t.radars)} radares` : ""}
+          ${driveHubStopsText(t)}
         </div>
+        ${driveHubJoinRow(t, all)}
         <div class="btn-row">
           ${canGo ? `<button type="button" class="btn btn-primary btn-sm btn-grow-2" data-click="goDriveTrip" data-id="${escapeHtml(String(t.id))}">🧭 Ir de novo</button>` : ""}
           <button type="button" class="btn btn-outline btn-sm btn-grow-1" data-click="deleteDriveTrip" data-id="${escapeHtml(String(t.id))}">🗑️ Apagar</button>
@@ -268,6 +273,133 @@ function renderDriveTripsSheet() {
     : all.length
       ? tobaEmpty("🔍", "Nada nesse filtro", "Troca o filtro aí em cima.", { compact: true })
       : tobaEmpty("🧭", "Nenhuma viagem ainda", "Toda rota do Toba Drive (no celular ou no Android Auto 🚘) aparece aqui.", { compact: true });
+}
+
+/* ---------------------------------------------------------------------
+ * 🔗 v2.05: juntar a viagem com a anterior (parada no posto / mercado)
+ * Junta na mão o que virou duas viagens. Guarda os pedaços originais em
+ * `parts` pra dar ✂️ Separar de volta igualzinho. Nada de km se perde.
+ * ------------------------------------------------------------------- */
+const DRIVE_HUB_JOIN_GAP_MS = 4 * 3600 * 1000; // até 4 h entre o fim de uma e o começo da outra
+
+function driveHubStopsText(t) {
+  const n = Number(t.stops) || 0;
+  if (!n) return "";
+  const names = Array.isArray(t.stopNames) ? t.stopNames.filter(Boolean) : [];
+  const min = Math.round((Number(t.stopMs) || 0) / 60000);
+  return `<br>⛽ ${n} ${n === 1 ? "parada" : "paradas"} no caminho${names.length ? `: ${escapeHtml(names.join(", "))}` : ""}${min >= 1 ? ` (${min} min parado)` : ""}`;
+}
+
+// a viagem que veio logo antes desta (no mesmo dia ou até 4 h antes)
+function driveHubPrevTrip(t, all) {
+  const start = Number(t.startedAt) || 0;
+  if (!start) return null;
+  let prev = null;
+  all.forEach((x) => {
+    if (!x || x === t || String(x.id) === String(t.id)) return;
+    const end = Number(x.endedAt) || Number(x.startedAt) || 0;
+    if (!(Number(x.startedAt) < start) || end > start + TOBA_AUTO_TRIP_GAP_MS || start - end > DRIVE_HUB_JOIN_GAP_MS) return;
+    if (!prev || (Number(x.startedAt) || 0) > (Number(prev.startedAt) || 0)) prev = x;
+  });
+  return prev;
+}
+
+function driveHubJoinRow(t, all) {
+  const id = escapeHtml(String(t.id));
+  const prev = driveHubPrevTrip(t, all);
+  const join = prev ? `<button type="button" class="btn btn-outline btn-sm btn-grow-1" data-click="joinDriveTrip" data-id="${id}">🔗 Juntar com a anterior (${escapeHtml(prev.name || "Destino")})</button>` : "";
+  const split = Array.isArray(t.parts) && t.parts.length >= 2
+    ? `<button type="button" class="btn btn-outline btn-sm btn-grow-1" data-click="splitDriveTrip" data-id="${id}">✂️ Separar de novo</button>` : "";
+  return join || split ? `<div class="btn-row">${join}${split}</div>` : "";
+}
+
+// junta a (mais cedo) + b (mais tarde): destino, chegada e nome ficam os de b
+function driveHubJoined(a, b) {
+  const clean = (x) => {
+    const c = { ...x };
+    delete c.parts;
+    return c;
+  };
+  const partsOf = (x) => (Array.isArray(x.parts) && x.parts.length ? x.parts : [clean(x)]);
+  const out = { ...a, ...b };
+  out.id = a.id;
+  out.date = a.date;
+  out.startedAt = Math.min(Number(a.startedAt) || 0, Number(b.startedAt) || 0) || a.startedAt;
+  out.endedAt = Math.max(Number(a.endedAt) || 0, Number(b.endedAt) || 0);
+  out.km = Math.round(((Number(a.km) || 0) + (Number(b.km) || 0)) * 10) / 10;
+  out.arrived = Boolean(b.arrived);
+  const max = Math.max(Number(a.maxKmh) || 0, Number(b.maxKmh) || 0);
+  if (max) out.maxKmh = max;
+  const radars = (Number(a.radars) || 0) + (Number(b.radars) || 0);
+  if (radars) out.radars = radars;
+  if (a.cleanSpeed === false || b.cleanSpeed === false) out.cleanSpeed = false;
+  if (a.fuelStop || b.fuelStop) out.fuelStop = true;
+  const gap = Math.max(0, (Number(b.startedAt) || 0) - (Number(a.endedAt) || 0));
+  out.stops = (Number(a.stops) || 0) + (Number(b.stops) || 0) + 1;
+  out.stopMs = (Number(a.stopMs) || 0) + (Number(b.stopMs) || 0) + gap;
+  out.stopNames = [...(a.stopNames || []), a.name || "Parada", ...(b.stopNames || [])].slice(0, 10);
+  out.joined = (Number(a.joined) || 1) + (Number(b.joined) || 1);
+  // origem: as duas do carro = "auto"; senão é do celular (com ou sem carro junto)
+  if (!(a.source === "auto" && b.source === "auto")) delete out.source;
+  delete out.autoAt;
+  delete out.autoAts;
+  [...tobaTripAutoAts(a), ...tobaTripAutoAts(b)].forEach((at) => tobaTripAddAutoAt(out, at));
+  out.parts = [...partsOf(a), ...partsOf(b)].slice(0, 12);
+  return out;
+}
+
+async function joinDriveTrip(el) {
+  const id = el.dataset.id;
+  const all = driveHubTrips();
+  const t = all.find((x) => String(x.id) === id);
+  const prev = t ? driveHubPrevTrip(t, all) : null;
+  if (!t || !prev) return;
+  const ok = await showPageMessage(`Juntar "${prev.name || "Destino"}" (${driveHubKmText(prev.km)} km) com "${t.name || "Destino"}" (${driveHubKmText(t.km)} km) numa viagem só? Fica ${driveHubKmText((Number(prev.km) || 0) + (Number(t.km) || 0))} km, com "${prev.name || "Destino"}" como parada no caminho. Dá pra ✂️ Separar de novo depois.`, { title: "Juntar viagens?", icon: "🔗", confirm: true, confirmLabel: "Juntar" });
+  if (!ok) return;
+  let joinedId = "";
+  const done = driveHubWrite((db) => {
+    const a = db.trips.find((x) => x && String(x.id) === String(prev.id));
+    const b = db.trips.find((x) => x && String(x.id) === id);
+    if (!a || !b) return false;
+    const out = driveHubJoined(a, b);
+    joinedId = String(out.id);
+    db.trips = db.trips.filter((x) => x !== a && x !== b);
+    db.trips.push(out);
+    db.trips.sort((x, y) => (Number(x.startedAt) || 0) - (Number(y.startedAt) || 0));
+    return true;
+  });
+  if (!done) return;
+  driveHub.openTrip = joinedId;
+  tobaToast("🔗 Viagens juntadas. Nunca foi sorte!");
+  renderDriveTripsSheet();
+  renderDriveHub();
+}
+
+async function splitDriveTrip(el) {
+  const id = el.dataset.id;
+  const t = driveHubTrips().find((x) => String(x.id) === id);
+  if (!t || !Array.isArray(t.parts) || t.parts.length < 2) return;
+  const ok = await showPageMessage(`Separar de novo em ${t.parts.length} viagens, do jeitinho que eram antes de juntar?`, { title: "Separar viagem?", icon: "✂️", confirm: true, confirmLabel: "Separar" });
+  if (!ok) return;
+  const done = driveHubWrite((db) => {
+    const cur = db.trips.find((x) => x && String(x.id) === id);
+    if (!cur || !Array.isArray(cur.parts) || cur.parts.length < 2) return false;
+    const used = new Set(db.trips.filter((x) => x !== cur).map((x) => String(x && x.id)));
+    const back = cur.parts.map((p, i) => {
+      const c = { ...p };
+      if (!c.id || used.has(String(c.id))) c.id = `${cur.id}-p${i}`;
+      used.add(String(c.id));
+      return c;
+    });
+    db.trips = db.trips.filter((x) => x !== cur).concat(back);
+    db.trips.sort((x, y) => (Number(x.startedAt) || 0) - (Number(y.startedAt) || 0));
+    return true;
+  });
+  if (!done) return;
+  driveHub.openTrip = "";
+  tobaToast("✂️ Separadas de novo");
+  renderDriveTripsSheet();
+  renderDriveHub();
 }
 
 function openDriveTripsWith(filter) {
@@ -520,6 +652,8 @@ tobaActions({
   toggleDriveTrip,
   goDriveTrip,
   deleteDriveTrip,
+  joinDriveTrip,
+  splitDriveTrip,
   openDriveFavs,
   goDriveFav,
   editDriveFav,

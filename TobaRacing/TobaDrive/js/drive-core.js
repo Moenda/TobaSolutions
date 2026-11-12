@@ -19,7 +19,7 @@ function createEmptyDriveDb() {
     version: 1,
     favorites: [], // [{ id: "fv-..", name, emoji, lat, lng, address, createdAt }]
     recent: [], // [{ name, address, lat, lng, at (ms), placeId? }] (mais novo primeiro)
-    trips: [], // [{ id: "t-..", date, startedAt, endedAt, name, lat, lng, km, arrived, etaS?, source?: "auto", autoAt?, autoAts? (v2.03), joined? (v2.03: quantos pedaços) }]
+    trips: [], // [{ id: "t-..", date, startedAt, endedAt, name, lat, lng, km, arrived, etaS?, source?: "auto", autoAt?, autoAts? (v2.03), joined? (v2.03: quantos pedaços), stops?/stopMs?/stopNames? (v2.05: paradas no caminho), parts? (v2.05: pedaços originais de um 🔗 Juntar, pro ✂️ Separar) }]
     autoSkip: [], // v2.02: "at" das viagens do Android Auto que foram apagadas (não voltam no import)
   };
 }

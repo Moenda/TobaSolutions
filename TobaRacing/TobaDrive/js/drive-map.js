@@ -54,7 +54,6 @@ const DRIVE_TRAFFIC_CITY_WIDTH = ["interpolate", ["linear"], ["zoom"], 10, 1.2, 
 const DRIVE_TRAFFIC_WIDTH = ["interpolate", ["linear"], ["zoom"], 10, 3, 13, 7, 15, 11, 16, 14, 18, 22, 19, 28];
 const DRIVE_LIGHTS = [
   { id: "auto", icon: "🌗", name: "Automático (pelo sol)" },
-  { id: "dawn", icon: "🌅", name: "Amanhecer" },
   { id: "day", icon: "☀️", name: "Dia" },
   { id: "dusk", icon: "🌇", name: "Pôr do sol" },
   { id: "night", icon: "🌙", name: "Noite" },

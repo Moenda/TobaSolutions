@@ -260,7 +260,13 @@ final class WebMap {
 
         @JavascriptInterface
         public int version() {
-            return 2; // 2 = v1.80 (say)
+            return 3; // 2 = v1.80 (say), 3 = v2.05 (audioMode)
+        }
+
+        /** v2.05 (APK 3.0): modo de áudio do carro (0 Tudo, 1 Só alertas, 2 Silêncio) pra página encurtar a fala do radar. */
+        @JavascriptInterface
+        public int audioMode() {
+            return AutoStore.audioMode(car);
         }
 
         /** v1.80: aviso falado da página (radar). Respeita o mudo do carro. */

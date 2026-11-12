@@ -29,22 +29,25 @@ const AM_STYLE = "mapbox://styles/mapbox/standard";
 const AM_ROUTE = { route: "#3b82f6", casing: "#1e3a8a", theme: "default" };
 const AM_SKINS = [
   { id: "auto", light: null, ...AM_ROUTE },
-  { id: "dawn", light: "dawn", ...AM_ROUTE },
+  // v2.05: Amanhecer saiu (Rafa: "ninguém usa, é feioso"). Fica o lugar (índice do Java/prefs);
+  // o APK 3.0 pula ele no 🎨 e o APK antigo que cair aqui ganha o Dia.
+  { id: "dawn", light: "day", ...AM_ROUTE },
   { id: "day", light: "day", ...AM_ROUTE },
   { id: "dusk", light: "dusk", ...AM_ROUTE },
   { id: "night", light: "night", ...AM_ROUTE },
 ];
 const AM_JAM_COLORS = { 1: "#facc15", 2: "#ef4444", 3: "#b91c1c" };
 const AM_PITCH_3D = 60;
-// v1.80: rota mais fininha (dá pra ver o trânsito) e aparecendo por trás dos prédios
-const AM_W_CASING = ["interpolate", ["linear"], ["zoom"], 11, 4.5, 15, 9, 18, 18];
-const AM_W_LINE = ["interpolate", ["linear"], ["zoom"], 11, 2.5, 15, 6, 18, 12.5];
+// v2.05: rota GROSSONA na tela do carro (Rafa: "ainda tá pequeno as linhas"), aparecendo por trás dos prédios.
+// O carro anda em zoom ~16.5, então é ali que a linha tem que encorpar.
+const AM_W_CASING = ["interpolate", ["linear"], ["zoom"], 11, 7, 15, 14, 16.5, 19, 18, 28, 19, 34];
+const AM_W_LINE = ["interpolate", ["linear"], ["zoom"], 11, 4.5, 15, 9.5, 16.5, 13, 18, 20, 19, 25];
 const AM_SEE_THROUGH = 0.55;
-// v2.03: trânsito grossão igual ao Toba Drive do celular (drive-map.js DRIVE_TRAFFIC_*):
-// o da rota é uma faixa larga POR BAIXO do risco azul (sobra amarelo/vermelho dos dois lados);
-// o das outras ruas ficou mais encorpado também.
-const AM_W_JAM = ["interpolate", ["linear"], ["zoom"], 10, 4, 13, 9, 15, 15, 16, 18, 18, 28, 19, 34];
-const AM_W_CITY_TRAFFIC = ["interpolate", ["linear"], ["zoom"], 10, 1.6, 13, 2.6, 15, 3.8, 16, 4.6, 18, 7, 19, 8.5];
+// v2.05: trânsito da rota vai POR CIMA do azul, pintando a própria rota de amarelo/vermelho/vinho
+// (estilo Waze). Na v2.03 era uma faixa por baixo e o azul cobria quase tudo: o Rafa só via azul.
+// Um tico mais larga que o risco azul pra não sobrar fiapo azul na borda; o contorno escuro emoldura.
+const AM_W_JAM = ["interpolate", ["linear"], ["zoom"], 11, 5, 15, 10.5, 16.5, 14, 18, 21.5, 19, 26.5];
+const AM_W_CITY_TRAFFIC = ["interpolate", ["linear"], ["zoom"], 10, 2, 13, 3.4, 15, 5, 16, 6.5, 18, 10, 19, 12];
 const AM_FRAME_MS = 33; // ~30 quadros por segundo (o celular também está dirigindo o carro)
 const AM_READY_WAIT_MS = 20000;
 
@@ -57,6 +60,9 @@ const am = {
   car: null, // { from:{lat,lon,head}, to:{...}, t0, dur, speed }
   route: null, // { id, pts, cum, len, jams, dest }
   along: 0,
+  // v2.05: metros já rodados nas rotas anteriores da MESMA viagem (troca de rota no Y / recálculo).
+  // A barrinha soma isso e não volta pro 0. Desligar o carro recarrega a página e zera (ok pro Rafa).
+  tripDone: 0,
   overview: null,
   hud: null,
   zoom: 16.5,
@@ -285,7 +291,8 @@ function amRenderBar() {
   const bar = document.getElementById("amEtaBar");
   if (!bar) return;
   const r = am.route;
-  const f = r && r.len > 0 ? Math.max(0, Math.min(1, am.along / r.len)) : 0;
+  const done = (am.tripDone || 0) + am.along;
+  const f = r && r.len > 0 ? Math.max(0, Math.min(1, done / (am.tripDone + r.len))) : 0;
   bar.style.width = `${(f * 100).toFixed(1)}%`;
 }
 
@@ -307,21 +314,7 @@ function amAddLayers() {
     paint: {
       "line-color": "#94a3b8",
       "line-opacity": 0.85,
-      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 3, 15, 6, 18, 12],
-      "line-emissive-strength": 1,
-      "line-occlusion-opacity": AM_SEE_THROUGH,
-    },
-  });
-  // v2.03: trânsito da rota = faixa larga por baixo do risco (igual ao celular)
-  map.addLayer({
-    id: "am-jam-line",
-    type: "line",
-    source: "am-jams",
-    layout: { "line-cap": "round", "line-join": "round" },
-    paint: {
-      "line-color": ["match", ["get", "lvl"], 3, AM_JAM_COLORS[3], 2, AM_JAM_COLORS[2], AM_JAM_COLORS[1]],
-      "line-width": AM_W_JAM,
-      "line-opacity": 0.95,
+      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 5, 15, 10, 16.5, 13, 18, 20],
       "line-emissive-strength": 1,
       "line-occlusion-opacity": AM_SEE_THROUGH,
     },
@@ -347,6 +340,20 @@ function amAddLayers() {
       "line-color": skin.route,
       "line-width": AM_W_LINE,
       "line-trim-offset": [0, 0],
+      "line-emissive-strength": 1,
+      "line-occlusion-opacity": AM_SEE_THROUGH,
+    },
+  });
+  // v2.05: trânsito da rota POR CIMA do risco azul (só amarelo / vermelho / vinho, nunca verde)
+  map.addLayer({
+    id: "am-jam-line",
+    type: "line",
+    source: "am-jams",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: {
+      "line-color": ["match", ["get", "lvl"], 3, AM_JAM_COLORS[3], 2, AM_JAM_COLORS[2], AM_JAM_COLORS[1]],
+      "line-width": AM_W_JAM,
+      "line-opacity": 1,
       "line-emissive-strength": 1,
       "line-occlusion-opacity": AM_SEE_THROUGH,
     },
@@ -417,7 +424,8 @@ function amAddLayers() {
 }
 
 // v1.80: 🚦 trânsito das ruas em volta (Mapbox Traffic), SÓ amarelo / vermelho / vinho,
-// por baixo da rota (v2.03: mais grosso, igual ao celular). Rua livre (verde) não aparece.
+// por baixo da rota (v2.05: mais grosso ainda; o da PRÓPRIA rota vai por cima, em am-jam-line).
+// Rua livre (verde) não aparece.
 function amAddTraffic() {
   const map = am.map;
   try {
@@ -433,7 +441,7 @@ function amAddTraffic() {
         "line-color": ["match", ["get", "congestion"], "severe", AM_JAM_COLORS[3], "heavy", AM_JAM_COLORS[2], AM_JAM_COLORS[1]],
         "line-width": AM_W_CITY_TRAFFIC,
         "line-offset": ["interpolate", ["linear"], ["zoom"], 12, 1, 16, 3, 19, 6],
-        "line-opacity": 0.8,
+        "line-opacity": 0.9,
         "line-emissive-strength": 1,
         "line-occlusion-opacity": AM_SEE_THROUGH,
       },
@@ -466,11 +474,10 @@ function amEmojiImage(emoji, size) {
 }
 
 // v2.02: Auto = pelo horário do celular (pedido do Rafa, no lugar do farol do carro):
-// 5h–8h amanhecer · 8h–17h dia · 17h–19h30 entardecer · 19h30–5h noite
+// v2.05 (sem amanhecer): 6h–17h dia · 17h–19h30 entardecer · 19h30–6h noite
 function amLightByClock(d = new Date()) {
   const m = d.getHours() * 60 + d.getMinutes();
-  if (m >= 5 * 60 && m < 8 * 60) return "dawn";
-  if (m >= 8 * 60 && m < 17 * 60) return "day";
+  if (m >= 6 * 60 && m < 17 * 60) return "day";
   if (m >= 17 * 60 && m < 19 * 60 + 30) return "dusk";
   return "night";
 }
@@ -517,6 +524,12 @@ function amApplyLook(force = false) {
 }
 
 /* ---------- rota ---------- */
+// v2.05: rota nova é da mesma viagem se o destino é o mesmo (até 250 m, igual à continuação da v2.03)
+function amSameDest(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  return amDist(a, b) <= 250;
+}
+
 function amSetRouteData(r) {
   if (!am.map || !am.styleOk) return;
   am.map.getSource("am-route").setData(r ? amLine(r.pts) : amEmpty());
@@ -937,7 +950,18 @@ function amRadarCheck(lat, lon, head, speed) {
   if (best && moving && !amRadar.warned.has(best.id) && best.d <= amRadarSayAt(speed) + 20) {
     amRadar.warned.add(best.id);
     const n = amNative();
-    if (n && typeof n.say === "function") n.say(`Radar a ${amSpokenRound(best.d)}.${best.lim ? ` Limite ${best.lim}.` : ""}`);
+    // v2.05: no ⚠️ Só alertas a fala é curtinha, sem o limite ("Radar em trezentos metros").
+    // No 🔊 Tudo continua com o limite. audioMode() só existe no APK 3.0+.
+    let mode = 0;
+    try {
+      mode = n && typeof n.audioMode === "function" ? Number(n.audioMode()) || 0 : 0;
+    } catch (err) {
+      mode = 0;
+    }
+    const line = mode === 1
+      ? `Radar em ${amSpokenRound(best.d)}.`
+      : `Radar a ${amSpokenRound(best.d)}.${best.lim ? ` Limite ${best.lim}.` : ""}`;
+    if (n && typeof n.say === "function") n.say(line);
   }
   amRenderRadar();
 }
@@ -964,42 +988,69 @@ const AM_JOKES = {
     "{min} minutos de viagem. Playlist no talo e bora!",
     "Bora que bora, piloto. O copiloto aqui nem tem carta, mas tem opinião.",
     "Motor ligado. Já foi no banheiro? Depois não adianta chorar.",
+    "Rota traçada. Se der ruim, a culpa é do GPS. Se der bom, nunca foi sorte.",
+    "Partiu! Hoje o copiloto tá de bom humor, aproveita.",
+    "Bora, piloto. Missão do dia: chegar inteiro e sem multa. XP garantido.",
+    "Saindo! Se esqueceu alguma coisa, finge que foi de propósito.",
+    "Viagem iniciada. Loot no final: chegar em casa e tirar o tênis.",
   ],
   half: [
     "Metade do caminho! Daqui pra frente é ladeira abaixo. Modo de dizer, não solta o freio.",
     "Cinquenta por cento concluído. Barra de loading do Toba tá orgulhosa.",
     "Metade já foi. A outra metade tá te esperando com um café.",
     "Meio caminho andado. Literalmente. O Cloba não perde uma.",
+    "Metade! Se fosse dungeon do Diablo, agora vinha o chefão.",
+    "Cinquenta por cento. Já pode ir esquentando a água da V60.",
+    "Metade do caminho. Os gatos já tão te esperando na porta. Ou dormindo, mais provável.",
+    "Chegou na metade. Checkpoint salvo, pode morrer tranquilo. Brincadeira, não morre não.",
   ],
   ten: [
     "Faltam 10 minutos. Segura o xixi que tá chegando!",
     "Dez minutinhos. Já pode ir pensando onde vai estacionar.",
     "10 minutos pra chegar. Se tá com fome, segura que é logo ali.",
     "Faltam dez. Hora de ensaiar a cara de quem não se atrasou.",
+    "Dez minutos. Tempo exato de uma música e meia de pagode.",
+    "Faltam 10. Se tiver atrasado, já começa a inventar a desculpa.",
+    "Dez minutinhos. Barra de XP da viagem quase cheia.",
   ],
   five: [
     "Cinco minutos! Avisa o povo que tá chegando. Por áudio não, tá dirigindo!",
     "Faltam 5. Arruma o cabelo no retrovisor no próximo sinal vermelho.",
     "Cinco minutos. O xixi agradece a paciência.",
+    "Cinco minutos! Reta final, não vacila agora.",
+    "Faltam 5. Desliga o modo Velozes e Furiosos e liga o modo baliza.",
+    "Cinco minutos. Já dá pra sentir o cheiro de casa. Ou do vizinho fritando alguma coisa.",
   ],
   last: [
     "Último quilômetro! Nunca foi sorte, Cloba.",
     "Tá logo ali. Olho na vaga, piloto!",
     "Chegando! Pode tirar o pé que o Cloba assume. Mentira, não assume.",
+    "Último quilômetro. Se tiver vaga na porta, foi o Cloba que guardou.",
+    "Tá chegando! Agora só falta a baliza, a parte que separa os homens dos meninos.",
+    "Reta final! Missão quase cumprida, piloto.",
   ],
   jam: [
     "Trânsito parado na frente. Respira e coloca um pagodinho.",
     "Vai ter fila. Mais parado que fila de banco no quinto dia útil.",
     "Lentidão pesada. Dá tempo de pensar na vida. Ou não.",
+    "Trânsito na frente. Isso aqui é mais lento que respawn de boss raro.",
+    "Lentidão à vista. Bom momento pra cantar alto, ninguém tá ouvindo. Só eu.",
+    "Vem fila aí. Paciência é atributo, e tu tá upando agora.",
+    "Trânsito pesado. Mais travado que servidor em dia de lançamento.",
   ],
   speeding: [
     "Ô Max Tobasten, aqui é {limit}! Multa não dá XP.",
     "Calma, Velozes e Furiosos 47. O limite é {limit}.",
     "Pé no freio, piloto! {limit} aqui, não é Interlagos.",
+    "Opa, aqui é {limit}! Radar não aceita desculpa, piloto.",
+    "Devagar, Toretto! O limite é {limit} e o boleto da multa é real.",
+    "Tá voando, hein! {limit} aqui. O Cloba quer chegar vivo.",
   ],
   long: [
     "Mais de uma hora de estrada. Se bater o sono, para num posto. O Cloba espera.",
     "Viagem longa, hein. Água do lado e pausa a cada duas horas, combinado?",
+    "Estrada comprida! Se o olho pesar, para. Cochilo no volante não tem respawn.",
+    "Viagem de mais de uma hora. Hidrata, piloto. O Cloba não sabe fazer massagem cardíaca.",
   ],
 };
 const amJoke = { id: null, done: new Set(), pending: null, shownAt: 0, lastSpeed: 0, timer: null, startMin: 0 };
@@ -1020,15 +1071,18 @@ function amTurnNear(h) {
 
 function amJokeCheck(h) {
   if (!h || !h.nav || am.overview || !am.route) return;
-  if (amJoke.id !== am.route.id) {
+  // v2.05: piada segue a VIAGEM (troca de rota / recálculo pro mesmo destino não reinicia os marcos)
+  if (amJoke.id !== am.route.id && !(am.tripDone > 0 && amJoke.id !== null)) {
     amJoke.id = am.route.id;
     amJoke.done = new Set();
     amJoke.pending = null;
     amJoke.startMin = Number(h.min) || 0;
   }
   const min = Number(h.min) || 0;
-  const frac = am.route.len > 0 ? am.along / am.route.len : 0;
-  const left = (1 - frac) * am.route.len;
+  amJoke.id = am.route.id;
+  const total = (am.tripDone || 0) + am.route.len;
+  const frac = total > 0 ? ((am.tripDone || 0) + am.along) / total : 0;
+  const left = Math.max(0, am.route.len - am.along);
   const want = (kind, vars = {}) => {
     if (amJoke.done.has(kind) || amJoke.pending) return;
     amJoke.done.add(kind);
@@ -1103,7 +1157,16 @@ window.tobaAuto = {
     amRadarCheck(to.lat, to.lon, to.head, c.speed || 0);
   },
   route(r) {
-    am.route = amPrepRoute(r);
+    const old = am.route;
+    const nr = amPrepRoute(r);
+    if (nr && old && nr.id === old.id) {
+      // mesma rota mandada de novo: não mexe no que já rodou
+    } else if (nr && old && amSameDest(old.dest, nr.dest)) {
+      am.tripDone += am.along; // v2.05: trocou de rota / recalculou pro mesmo destino = mesma viagem
+    } else {
+      am.tripDone = 0;
+    }
+    am.route = nr;
     am.along = 0;
     if (!am.overview) amSetRouteData(am.route);
   },
