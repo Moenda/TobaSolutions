@@ -137,6 +137,106 @@
   color: var(--muted);
 }
 
+/* v2.07: risquinho do ritmo do orçamento na barra */
+.hero-progress {
+  cursor: pointer;
+}
+
+.hero-bar {
+  position: relative;
+}
+
+.hero-bar .progress-track {
+  position: relative;
+  height: 10px;
+  border-radius: 5px;
+}
+
+.hero-bar-over {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  display: none;
+  background: repeating-linear-gradient(
+    -45deg,
+    #f85149 0 5px,
+    #b62324 5px 10px
+  );
+}
+
+.hero-bar-over.is-on {
+  display: block;
+}
+
+.hero-pace-mark {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 4px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: #ffffff;
+  box-shadow: 0 0 0 1.5px rgba(13, 17, 23, 0.9);
+  pointer-events: none;
+  transition: left 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hero-pace {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 8px;
+  margin-top: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.hero-pace span {
+  white-space: nowrap;
+}
+
+.hero-pace b {
+  color: var(--text);
+}
+
+.hero-pace-diff {
+  font-weight: 800;
+  margin-left: auto;
+}
+
+.hero-pace-diff.is-over {
+  color: var(--red);
+}
+
+.hero-pace-diff.is-under {
+  color: var(--green);
+}
+
+.sobra-pace {
+  padding: 0.7rem;
+  background: rgba(88, 166, 255, 0.08);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(88, 166, 255, 0.25);
+}
+
+.sobra-pace-title {
+  color: var(--blue);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+
+.sobra-pace p {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+
 .hero-stats {
   position: relative;
   z-index: 1;

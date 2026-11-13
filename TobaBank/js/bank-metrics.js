@@ -144,6 +144,16 @@ function calcBankMonthSummary(bankDb, now = new Date()) {
   // descontando os gastos variáveis já lançados no mês.
   const vaultBalance = netDailyBudget * diasPassados - monthlySpentVista;
 
+  // Ritmo do orçamento (v2.07, o "risquinho" da barra do Gastos): onde o
+  // total gasto DEVIA estar hoje pra fechar o mês no orçamento. Fixos e
+  // parcelas já entram inteiros na barra desde o dia 1, então entram inteiros
+  // aqui também; o resto anda o orçamento diário líquido por dia passado.
+  // ritmoDiff = totalMonthlySpent - ritmoHoje = -vaultBalance (mesma conta do
+  // Cofre do mês, só com o sinal trocado: positivo = acima do ritmo).
+  const ritmoHoje =
+    fixedTotal + monthInstallmentsTotal + netDailyBudget * diasPassados;
+  const ritmoDiff = totalMonthlySpent - ritmoHoje;
+
   // Livre hoje: estourou ontem, hoje começa no negativo. A dívida passa de
   // um dia para o outro até ser paga; a sobra NÃO passa (essa vai pro cofre).
   // Só olha os dias deste mês, desde o início do período.
@@ -176,6 +186,7 @@ function calcBankMonthSummary(bankDb, now = new Date()) {
     diasPassados, diasRestantes, mediaDiariaVista, mediaDiariaTotal,
     projecaoRestanteVista, projecaoTotalMes, sobraPrevista,
     vaultBalance, todayAvailable, carryDebt,
+    ritmoHoje, ritmoDiff,
     recoveryDays, recoveryInMonth,
   };
 }

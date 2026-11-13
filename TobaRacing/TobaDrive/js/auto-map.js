@@ -432,6 +432,14 @@ function amAddTraffic() {
         "line-occlusion-opacity": AM_SEE_THROUGH,
       },
     }, "am-alts");
+    // v2.07: casa o trânsito ao vivo na rota (a TomTom só manda na hora de traçar)
+    setInterval(() => {
+      try {
+        amMatchLiveTraffic();
+      } catch (err) {
+        console.warn("Trânsito ao vivo na rota:", err?.message || err);
+      }
+    }, AM_LIVE_TRAFFIC_MS);
     setInterval(() => {
       try {
         map.getSource("am-traffic")?.reload();
@@ -528,28 +536,179 @@ function amSetRouteData(r) {
 }
 
 // v2.06: cor da linha ao longo da rota. Azul onde tá livre, amarelo/vermelho/vinho nos trechos
-// de trânsito da TomTom (jams = índices dos pontos -> fração do caminho, 0 a 1).
+// de trânsito. v2.07: nível por pedaço da rota = o maior entre a TomTom (r.jams, só da hora que a
+// rota foi traçada) e o trânsito AO VIVO do Mapbox casado na rota (r.live, amMatchLiveTraffic).
+function amRouteLevels(r) {
+  const n = r.pts.length - 1;
+  const lv = new Uint8Array(Math.max(0, n));
+  const put = (list) => (Array.isArray(list) ? list : []).forEach((j) => {
+    for (let i = Math.max(0, j.a); i < Math.min(n, j.b); i++) if (j.lvl > lv[i]) lv[i] = j.lvl;
+  });
+  put(r.jams);
+  put(r.live);
+  return lv;
+}
+
 function amRouteGradient(r) {
   const blue = amSkin().route;
-  const jams = r && Array.isArray(r.jams) && r.len > 0 ? r.jams.slice().sort((x, y) => x.a - y.a) : [];
-  const stops = []; // [entrada, cor, entrada, cor...] sempre subindo (exigência do step)
-  const lastIn = () => (stops.length ? stops[stops.length - 2] : 0);
-  jams.forEach((j) => {
-    const color = AM_JAM_COLORS[j.lvl] || AM_JAM_COLORS[1];
-    let f0 = Math.max(1e-7, Math.min(1, r.cum[j.a] / r.len));
-    const f1 = Math.min(1, r.cum[j.b] / r.len);
-    // trecho grudado no anterior: troca o "volta pro azul" pela cor deste
-    if (stops.length && stops[stops.length - 1] === blue && f0 <= lastIn() + 1e-6) {
-      f0 = lastIn();
-      stops.length -= 2;
-    }
-    if (stops.length && f0 <= lastIn()) f0 = lastIn() + 1e-7;
-    if (f1 - f0 < 1e-6) return;
-    stops.push(f0, color);
-    if (f1 < 1) stops.push(f1, blue);
+  const flat = ["interpolate", ["linear"], ["line-progress"], 0, blue, 1, blue];
+  if (!r || !Array.isArray(r.pts) || r.pts.length < 2 || !(r.len > 0)) return flat;
+  const lv = amRouteLevels(r);
+  const stops = []; // [entrada, cor, ...] sempre subindo (exigência do step)
+  let cur = 0;
+  for (let i = 0; i <= lv.length; i++) {
+    const l = i < lv.length ? lv[i] : 0;
+    if (l === cur) continue;
+    let f = Math.min(1, r.cum[i] / r.len);
+    if (f >= 1) break;
+    f = Math.max(f, stops.length ? stops[stops.length - 2] + 1e-7 : 1e-7);
+    stops.push(f, l ? AM_JAM_COLORS[l] || AM_JAM_COLORS[1] : blue);
+    cur = l;
+  }
+  return stops.length ? ["step", ["line-progress"], blue, ...stops] : flat;
+}
+
+/* ---------- v2.07: trânsito AO VIVO casado na rota ----------
+ * A TomTom só manda o trânsito na hora de traçar/recalcular. O Mapbox Traffic (o mesmo das
+ * listrinhas das ruas em volta) atualiza a cada 2 min: aqui a gente pega as linhas dele que
+ * passam EM CIMA da rota (até 14 m) e no MESMO sentido (até 35°; as linhas do Mapbox são
+ * desenhadas no sentido do fluxo, então pista contrária e rua paralela ficam de fora) e pinta
+ * o pedaço da rota. Só da posição do carro até 6 km pra frente. Não gasta TomTom. */
+const AM_LIVE_TRAFFIC_MS = 20000;
+const AM_LIVE_NEAR_M = 14;
+const AM_LIVE_HEAD_DEG = 35;
+const AM_LIVE_AHEAD_M = 6000;
+const AM_LIVE_MIN_RUN_M = 40;
+const AM_LIVE_LVL = { moderate: 1, heavy: 2, severe: 3 };
+
+function amLiveSegments() {
+  const map = am.map;
+  let feats = [];
+  try {
+    feats = map.querySourceFeatures("am-traffic", { sourceLayer: "traffic" });
+  } catch (err) {
+    return [];
+  }
+  const out = [];
+  feats.forEach((f) => {
+    const lvl = AM_LIVE_LVL[f.properties && f.properties.congestion];
+    if (!lvl || !f.geometry) return;
+    const g = f.geometry;
+    const lines = g.type === "LineString" ? [g.coordinates] : g.type === "MultiLineString" ? g.coordinates : [];
+    lines.forEach((line) => {
+      for (let i = 1; i < line.length; i++) out.push({ a: line[i - 1], b: line[i], lvl });
+    });
   });
-  if (!stops.length) return ["interpolate", ["linear"], ["line-progress"], 0, blue, 1, blue];
-  return ["step", ["line-progress"], blue, ...stops];
+  return out;
+}
+
+// metros locais (equiretangular) em volta de lat0: [x, y]
+function amLocalXY(lng, lat, lat0) {
+  const k = 111320;
+  return [lng * k * Math.cos((lat0 * Math.PI) / 180), lat * k];
+}
+
+function amSegDist(p, a, b) {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const L = dx * dx + dy * dy;
+  const t = L > 0 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L)) : 0;
+  const x = a[0] + t * dx - p[0];
+  const y = a[1] + t * dy - p[1];
+  return Math.sqrt(x * x + y * y);
+}
+
+function amHeadDiff(a, b) {
+  const d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
+function amMatchLiveTraffic() {
+  const map = am.map;
+  const r = am.overview ? null : am.route;
+  if (!map || !am.styleOk || !r || !map.getSource("am-traffic")) return;
+  const segs = amLiveSegments();
+  const lat0 = r.pts[0][0];
+  // grade de ~60 m com os pedaços de trânsito
+  const CELL = 60;
+  const grid = new Map();
+  const key = (x, y) => `${Math.floor(x / CELL)}|${Math.floor(y / CELL)}`;
+  segs.forEach((s) => {
+    const A = amLocalXY(s.a[0], s.a[1], lat0);
+    const B = amLocalXY(s.b[0], s.b[1], lat0);
+    const len = Math.hypot(B[0] - A[0], B[1] - A[1]);
+    if (len < 0.5) return;
+    const head = (Math.atan2(B[0] - A[0], B[1] - A[1]) * 180) / Math.PI;
+    const item = { A, B, head, lvl: s.lvl };
+    const steps = Math.max(1, Math.ceil(len / CELL));
+    const seen = new Set();
+    for (let k = 0; k <= steps; k++) {
+      const x = A[0] + ((B[0] - A[0]) * k) / steps;
+      const y = A[1] + ((B[1] - A[1]) * k) / steps;
+      const c = key(x, y);
+      if (seen.has(c)) continue;
+      seen.add(c);
+      if (!grid.has(c)) grid.set(c, []);
+      grid.get(c).push(item);
+    }
+  });
+  const n = r.pts.length - 1;
+  const lv = new Uint8Array(Math.max(0, n));
+  if (grid.size) {
+    for (let i = 0; i < n; i++) {
+      if (r.cum[i + 1] < am.along - 30) continue;
+      if (r.cum[i] > am.along + AM_LIVE_AHEAD_M) break;
+      const P = amLocalXY(r.pts[i][1], r.pts[i][0], lat0);
+      const Q = amLocalXY(r.pts[i + 1][1], r.pts[i + 1][0], lat0);
+      const len = Math.hypot(Q[0] - P[0], Q[1] - P[1]);
+      if (len < 0.5) continue;
+      const head = (Math.atan2(Q[0] - P[0], Q[1] - P[1]) * 180) / Math.PI;
+      // amostra o pedaço da rota a cada ~15 m; pinta se a maioria das amostras casar
+      const k = Math.max(1, Math.round(len / 15));
+      let hits = 0;
+      let best = 0;
+      for (let s = 0; s <= k; s++) {
+        const X = [P[0] + ((Q[0] - P[0]) * s) / k, P[1] + ((Q[1] - P[1]) * s) / k];
+        const cx = Math.floor(X[0] / CELL);
+        const cy = Math.floor(X[1] / CELL);
+        let got = 0;
+        for (let gx = cx - 1; gx <= cx + 1 && !got; gx++) {
+          for (let gy = cy - 1; gy <= cy + 1; gy++) {
+            const list = grid.get(`${gx}|${gy}`);
+            if (!list) continue;
+            for (const it of list) {
+              if (amHeadDiff(it.head, head) > AM_LIVE_HEAD_DEG) continue;
+              if (amSegDist(X, it.A, it.B) > AM_LIVE_NEAR_M) continue;
+              got = Math.max(got, it.lvl);
+            }
+          }
+        }
+        if (got) {
+          hits++;
+          best = Math.max(best, got);
+        }
+      }
+      if (hits * 2 >= k + 1) lv[i] = best;
+    }
+  }
+  // vira trechos [a, b, nível]; trecho curtinho (< 40 m) é ruído e fica azul
+  const live = [];
+  let i = 0;
+  while (i < n) {
+    if (!lv[i]) {
+      i++;
+      continue;
+    }
+    const a = i;
+    let top = 0;
+    while (i < n && lv[i]) top = Math.max(top, lv[i++]);
+    if (r.cum[i] - r.cum[a] >= AM_LIVE_MIN_RUN_M) live.push({ a, b: i, lvl: top });
+  }
+  const sig = live.map((j) => `${j.a}-${j.b}-${j.lvl}`).join(",");
+  if (sig === r.liveSig) return;
+  r.live = live;
+  r.liveSig = sig;
+  amPaintRouteTraffic(r);
 }
 
 function amPaintRouteTraffic(r) {
@@ -1180,6 +1339,14 @@ window.tobaAuto = {
     }
     am.route = nr;
     am.along = 0;
+    // v2.07: rota nova já sai casando o trânsito ao vivo (sem esperar os 20 s)
+    setTimeout(() => {
+      try {
+        amMatchLiveTraffic();
+      } catch (err) {
+        /* mapa carregando */
+      }
+    }, 1500);
     if (!am.overview) amSetRouteData(am.route);
   },
   progress(p) {

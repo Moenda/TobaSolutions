@@ -2710,3 +2710,41 @@ Pedido do Rafa: comprou o kit Super Band Odin Fit (verde, preto, roxo, azul) por
 **Dados:** o treino continua `type: "home"` (planos novos `el-corpo`, `el-um`, `el-costas`, `el-biceps`). Campos novos opcionais em `home`: `bands` (cor de cada exercício), `levels` (1 = mais leve), `kg` (kg de cada um na hora) e `feel` ("leve"/"certo"/"pesado"). Prefs novas no `toba_health_live_prefs`: `elasticOrder`, `elasticKg`, `elasticPick`. Treino antigo e backup antigo continuam iguais. Mudar o kg depois não mexe nos treinos já salvos.
 
 **Como testar:** ▶ Iniciar treino › 🏠 › 💪 Força e abdômen › 🧍 Corpo todo com elástico › ✏️ Ajustar (toca as 4 cores na ordem, muda um kg) › toca num chip de cor › ▶ Iniciar › no meio troca a cor no chip › 🏁 Terminar agora › "Leve demais" › Salvar. A página do treino mostra a cor e o kg de cada exercício e o 💪 Peso levantado. Abre de novo o Corpo todo: as cores subiram uma. Testado no Playwright em 360 px (sem voz real e sem celular).
+
+## v2.07 — Commit com vários patches (cada um na sua seção abaixo)
+
+### 🚦 Toba Auto: trânsito AO VIVO pintando a rota
+
+**Arquivos alterados:** `TobaRacing/TobaDrive/js/auto-map.js`, `assets/toba-common.js` (Patch v2.07), `sw.js` (toba-v62), `CLAUDE.md`
+
+Rafa testou a v2.06 no carro: "funcionou pintar o risco azul de amarelo, mas só em uma parte; chegando em casa não funcionou. Não sei se é porque tava amarelo na pista do lado ou se é um trânsito que apareceu depois que a rota startou".
+
+**Por quê:** era o trânsito que apareceu depois. A TomTom só manda os trechos lentos na hora de traçar (ou recalcular) a rota; depois disso o risco não sabia de mais nada. O amarelo da pista do lado são as listrinhas de trânsito das ruas em volta (Mapbox), que atualizam sozinhas e às vezes são o sentido contrário.
+
+1. **Rota repinta sozinha:** a cada 20 s o risco olha as listrinhas de trânsito do Mapbox que passam EM CIMA da tua rota, até 6 km pra frente, e pinta de 🟡/🔴/🟥 o que tiver lento. O Mapbox atualiza o trânsito a cada 2 min, então trânsito novo aparece no risco sem recalcular.
+2. **Só o teu sentido:** a listrinha tem que estar colada na rota (até 14 m) e no mesmo sentido (até 35°). Pista contrária e rua paralela ficam de fora. Pedacinho de menos de 40 m é ignorado (ruído).
+3. **TomTom + Mapbox juntos:** vale a cor mais forte entre o trânsito da TomTom (na hora da rota) e o do Mapbox (ao vivo).
+
+**Dados:** nada muda no banco. **APK:** não precisa, é só site (continua o APK 3.0). Não gasta consulta da TomTom. Depois do push, desliga e liga o Auto pra página do carro recarregar.
+
+**Como testar:** DHU ou carro › rota passando por avenida com listrinha amarela/vermelha no teu sentido › em até ~20 s o risco fica da cor dela; listrinha só na pista contrária não pinta o risco. Na ⚙️: "APK 3.0 · Patch v2.07".
+
+**Commit sugerido:** `v2.07 - Toba Auto: rota repinta sozinha com o transito ao vivo do Mapbox no mesmo sentido + Gastos com risquinho do ritmo do orcamento na barra (onde devia estar hoje, excesso listrado de vermelho, acima/abaixo em R$) e explicacao no ? do card`
+
+### 📍 Gastos: risquinho do ritmo do orçamento na barra
+
+**Arquivos alterados:** `TobaBank/TobaBank-Gastos.html`, `TobaBank/js/gastos.js`, `TobaBank/js/bank-metrics.js`, `TobaBank/css/gastos.css`, ``CLAUDE.md`, `PATCH-NOTES.md`.
+
+Ideia do Rafa: "se na barrinha dos gastos tivesse um risquinho mostrando onde eu deveria estar se fosse cumprir o orçamento... tipo fudeu tenho que economizar".
+
+1. **📍 Risquinho branco** na barra "R$ X gastos de R$ orçamento" do card Sobra prevista: marca onde o gasto total **devia estar hoje** pra fechar o mês no orçamento.
+2. **Conta (coerente com o resto do card):** fixos e parcelas do mês já entram inteiros na barra desde o dia 1, então entram inteiros no risco também; o resto anda o orçamento livre do dia (orçamento diário − fixos/dia − parcelas/dia, o mesmo que enche o 🐖 Cofre) × dias passados. Por isso o risco não começa no 0%: com fixos e parcelas pesados ele já nasce lá na frente. A diferença (gasto − risco) é exatamente o Cofre do mês com o sinal trocado.
+3. **Passou do risco:** a barra fica laranja até o risco e o pedaço além dele fica **listrado de vermelho** (o excesso). Antes do risco a barra fica verde. Passou do orçamento inteiro = vermelho, igual antes. Sem orçamento cadastrado, volta o semáforo antigo (65%/85%) e o risco some.
+4. **Legenda embaixo da barra:** "📍 Devia estar em R$ X" + "🔥 R$ Y acima" (vermelho) ou "😎 R$ Y abaixo" (verde).
+5. **❔ do card** ganhou o bloco "📍 O risquinho branco da barra" com a conta passo a passo (fixos + parcelas + livre/dia × dias = devia estar; gastou de verdade; acima/abaixo). **Ideia extra:** tocar na barra também abre essa explicação.
+
+**Dados:** nada muda no banco. `calcBankMonthSummary` ganhou `ritmoHoje` e `ritmoDiff` (só cálculo; o portal não usa). **APK:** não precisa, continua o 3.0.
+
+**Como testar:** Gastos › aba Mês: aparece o risquinho branco na barra e a legenda embaixo. Com o mês estourado (ex.: bike ergométrica 😂) o pedaço depois do risco fica listrado de vermelho e a legenda diz "🔥 R$ ... acima", o mesmo valor do Cofre do mês (negativo). Toca na barra ou no ❔: no fim da folha tem a explicação do risquinho. ⚙️ mostra "Patch v2.07". Testado no Playwright em 360 px (acima e abaixo do ritmo).
+
+**Commit sugerido (da v2.07 inteira):** `v2.07 - Toba Auto: rota repinta sozinha com o transito ao vivo do Mapbox no mesmo sentido + Gastos com risquinho do ritmo do orcamento na barra (onde devia estar hoje, excesso listrado de vermelho, acima/abaixo em R$) e explicacao no ? do card`

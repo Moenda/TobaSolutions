@@ -7,7 +7,7 @@
  *   cota grátis do TomTom e o mapa já visto abre offline. Trânsito NÃO entra.
  * - NUNCA mexe no localStorage: seus dados não passam por aqui.
  * Mudou a lista de arquivos? Aumente a versão abaixo. */
-const VERSION = "toba-v61";
+const VERSION = "toba-v62";
 const TILE_CACHE = "toba-tiles-v1";
 const TILE_MAX = 3000;
 const NETWORK_TIMEOUT_MS = 4000;

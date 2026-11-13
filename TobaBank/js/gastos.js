@@ -103,6 +103,7 @@ function renderDashboard() {
     dailyFixedDeduction, dailyInstallmentDeduction,
     projecaoRestanteVista, projecaoTotalMes, sobraPrevista,
     totalMonthlySpent, vaultBalance, todayAvailable,
+    netDailyBudget, ritmoHoje, ritmoDiff,
   } = summary;
   const currentMonthTransactions = summary.monthTransactions;
   const activeInstallmentsMonth = summary.activeInstallments;
@@ -111,7 +112,8 @@ function renderDashboard() {
     monthlySpentVista, monthInstallmentsTotal, fixedTotal, grossMonthlyBudget,
     diasPassados, diasRestantes, mediaDiariaVista, mediaDiariaTotal,
     dailyFixedDeduction, dailyInstallmentDeduction,
-    projecaoRestanteVista, projecaoTotalMes, sobraPrevista
+    projecaoRestanteVista, projecaoTotalMes, sobraPrevista,
+    totalMonthlySpent, netDailyBudget, ritmoHoje, ritmoDiff,
   };
 
   document.getElementById("dashMonthBadge").innerText = monthFormatted;
@@ -141,14 +143,7 @@ function renderDashboard() {
   const barraEl = document.getElementById("heroProgressBar");
   barraEl.style.width = `${Math.min(percentGasto, 100)}%`;
 
-  // Semáforo da Barra (Verde < 65% < Laranja < 85% < Vermelho)
-  if (percentGasto < 65) {
-    barraEl.style.background = '#3fb950';
-  } else if (percentGasto < 85) {
-    barraEl.style.background = '#d29922'; // Laranja alerta
-  } else {
-    barraEl.style.background = '#f85149'; // Sangrando
-  }
+  renderHeroPace(summary, percentGasto);
 
   // Faixa "pisou na jaca" em cima do card (Livre hoje negativo)
   renderJacaBanner(summary);
@@ -1000,6 +995,62 @@ function updateMonthlyProjection() {
     `Orçamento previsto de ${monthFormatted} (${effectiveDays} dias): ${formatCurrency(monthlyTotal)}`;
 }
 
+// v2.07: risquinho do ritmo na barra do card. O risco = onde o gasto total
+// devia estar hoje pra fechar o mês no orçamento (ritmoHoje do bank-metrics).
+// Passou do risco: o pedaço além dele fica listrado de vermelho.
+function renderHeroPace(summary, percentGasto) {
+  const barraEl = document.getElementById("heroProgressBar");
+  const overEl = document.getElementById("heroProgressOver");
+  const markEl = document.getElementById("heroPaceMark");
+  const lineEl = document.getElementById("heroPaceLine");
+  const budget = summary.grossMonthlyBudget;
+  const fillPct = Math.min(percentGasto, 100);
+
+  if (!(budget > 0) || summary.diasPassados <= 0) {
+    // Sem orçamento (ou período nem começou): volta o semáforo antigo.
+    markEl.hidden = true;
+    lineEl.hidden = true;
+    overEl.classList.remove("is-on");
+    barraEl.style.background = percentGasto < 65 ? "#3fb950" : percentGasto < 85 ? "#d29922" : "#f85149";
+    return;
+  }
+
+  const pacePct = Math.min(Math.max((summary.ritmoHoje / budget) * 100, 0), 100);
+  // Centavo de diferença não conta como estouro.
+  const isOver = summary.ritmoDiff > 0.005;
+  const diffAbs = Math.abs(summary.ritmoDiff);
+
+  markEl.hidden = false;
+  markEl.style.left = `${pacePct}%`;
+  lineEl.hidden = false;
+  document.getElementById("heroPaceValue").innerText = formatCurrency(summary.ritmoHoje);
+
+  const diffEl = document.getElementById("heroPaceDiff");
+  if (isOver) {
+    diffEl.innerText = `🔥 ${formatCurrency(diffAbs)} acima`;
+    diffEl.className = "hero-pace-diff is-over";
+  } else {
+    diffEl.innerText = `😎 ${formatCurrency(diffAbs)} abaixo`;
+    diffEl.className = "hero-pace-diff is-under";
+  }
+
+  if (percentGasto >= 100) {
+    barraEl.style.background = "#f85149"; // Estourou o mês inteiro
+  } else if (isOver) {
+    barraEl.style.background = "#d29922"; // Até o risco = ok; além = listrado
+  } else {
+    barraEl.style.background = "#3fb950";
+  }
+
+  if (isOver && fillPct > pacePct) {
+    overEl.style.left = `${pacePct}%`;
+    overEl.style.width = `${fillPct - pacePct}%`;
+    overEl.classList.add("is-on");
+  } else {
+    overEl.classList.remove("is-on");
+  }
+}
+
 function openSobraHelp() {
   // Usa os números que o painel acabou de calcular.
   if (!window.dadosSobra) return;
@@ -1032,8 +1083,37 @@ function openSobraHelp() {
       <div class="kv-row"><span>🔒 Contas fixas</span><span>-${formatCurrency(d.fixedTotal)}</span></div>
       <div class="kv-row is-total sobra-final ${d.sobraPrevista >= 0 ? "text-green" : "text-red"}"><span>Sobra prevista</span><span>${formatCurrency(d.sobraPrevista)}</span></div>
     </div>
+    ${d.grossMonthlyBudget > 0 && d.diasPassados > 0 ? sobraPaceHelpHtml(d) : ""}
   `;
   openTobaModal("modalSobra");
+}
+
+// v2.07: explicação do risquinho da barra (ritmo do orçamento).
+function sobraPaceHelpHtml(d) {
+  const isOver = d.ritmoDiff > 0.005;
+  const diffAbs = Math.abs(d.ritmoDiff);
+  const verdict = isOver
+    ? `<div class="kv-row is-total text-red"><span>🔥 Acima do ritmo</span><span>${formatCurrency(diffAbs)}</span></div>`
+    : `<div class="kv-row is-total text-green"><span>😎 Abaixo do ritmo</span><span>${formatCurrency(diffAbs)}</span></div>`;
+  const tip = isOver
+    ? `Passou do risco = tá gastando mais rápido que o orçamento aguenta. O pedaço listrado de vermelho é o excesso. Pra voltar pro risco é segurar a onda: cada dia que passa o risco anda ${formatCurrency(d.netDailyBudget)} pra frente. Bora economizar, chefia 💸`
+    : `Barra antes do risco = tá no ritmo, sobrando. Segue assim que o mês fecha no verde 😎`;
+  return `
+    <hr class="divider" />
+    <div class="sobra-block sobra-pace">
+      <div class="sobra-pace-title">📍 O risquinho branco da barra</div>
+      <p>É onde a barra <b>devia estar hoje</b> se você tivesse gastado certinho no ritmo do orçamento. Fixos e parcelas já entram inteiros na barra desde o dia 1, então o risco também já nasce com eles; o resto anda o orçamento livre de cada dia (o mesmo que enche o 🐖 Cofre).</p>
+    </div>
+    <div class="sobra-block kv-list">
+      <div class="kv-row"><span>🔒 Contas fixas</span><span>${formatCurrency(d.fixedTotal)}</span></div>
+      <div class="kv-row"><span>💳 Parcelas do mês</span><span>${formatCurrency(d.monthInstallmentsTotal)}</span></div>
+      <div class="kv-row"><span>💵 Livre ${formatCurrency(d.netDailyBudget)}/dia × ${d.diasPassados} ${d.diasPassados === 1 ? "dia" : "dias"}</span><span>${formatCurrency(d.netDailyBudget * d.diasPassados)}</span></div>
+      <div class="kv-row is-total text-blue"><span>📍 Devia estar em</span><span>${formatCurrency(d.ritmoHoje)}</span></div>
+      <div class="kv-row"><span>💸 Gastou de verdade</span><span>${formatCurrency(d.totalMonthlySpent)}</span></div>
+      ${verdict}
+    </div>
+    <p class="text-muted" style="font-size: 0.78rem; margin: 8px 0 0; line-height: 1.4">${tip} Esse número é o mesmo do 🐖 Cofre do mês, só que com o sinal trocado. Toque na barra pra abrir esta explicação.</p>
+  `;
 }
 
 // Redesenha a tela depois de cada gravação no banco.

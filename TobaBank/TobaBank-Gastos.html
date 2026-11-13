@@ -65,13 +65,22 @@
           <button type="button" class="round-btn" data-click="openSobraHelp" aria-label="Como calculamos a sobra?">?</button>
         </div>
 
-        <div class="hero-progress">
+        <div class="hero-progress" data-click="openSobraHelp" role="button" aria-label="Ver o ritmo do orçamento">
           <div class="hero-progress-row">
             <span><b id="dashVarSpentHero">R$ 0,00</b> gastos</span>
             <span id="dashLimitHero">de R$ 0,00</span>
           </div>
-          <div class="progress-track">
-            <div class="progress-fill" id="heroProgressBar"></div>
+          <!-- v2.07: risquinho = onde o gasto devia estar hoje (ritmo do orçamento) -->
+          <div class="hero-bar">
+            <div class="progress-track">
+              <div class="progress-fill" id="heroProgressBar"></div>
+              <div class="hero-bar-over" id="heroProgressOver"></div>
+            </div>
+            <div class="hero-pace-mark" id="heroPaceMark" hidden></div>
+          </div>
+          <div class="hero-pace" id="heroPaceLine" hidden>
+            <span class="hero-pace-target">📍 Devia estar em <b id="heroPaceValue">R$ 0,00</b></span>
+            <span class="hero-pace-diff" id="heroPaceDiff"></span>
           </div>
         </div>
 
