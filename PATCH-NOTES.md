@@ -2652,3 +2652,61 @@ Pedidos do Rafa: "ainda tá pequeno as linhas, eu só vejo a azul, não vejo qua
 **Como testar:** DHU › rota com trânsito (ou Simular) › a rota tem que estar grossa e os trechos lentos amarelos/vermelhos POR CIMA do azul. Botão Y › Trocar: a barrinha da chegada não volta pro 0. Racing › 🧭 Na estrada › Viagens › toca na viagem de casa de hoje › 🔗 Juntar com a anterior (2x pra posto + mercado) › ✂️ Separar de novo volta as 3. Áudio ⚠️ Só alertas + Simular perto de um radar: fala "Radar em ... metros" sem limite; 🔊 Tudo fala com limite. Na ⚙️: "APK 3.0 · Patch v2.05".
 
 **Commit sugerido:** `v2.05 - Toba Auto com rota grossa e transito por cima do azul, barrinha da chegada nao zera ao trocar de rota, parada no caminho vira a mesma viagem e Juntar/Separar viagens no historico do Racing, radar curto no modo so alertas sem amanhecer na luz do mapa e mais piadas do Cloba (APK 3.0)`
+
+---
+
+## v2.06 — Commit com vários patches (cada um na sua seção abaixo)
+
+### 💳 Toba Bank: compra parcelada direto na aprovação + respiro no card
+
+**Arquivos alterados:** `TobaBank/js/gastos.js`, `TobaBank/css/gastos.css`, `assets/toba-common.js` (Patch v2.06 na ⚙️), `sw.js` (toba-v61), `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **💳 Compra parcelada?:** cada compra pra aprovar ganhou um botão "💳 À vista · Compra parcelada?". Tocou, aparecem chips À vista, 2x … 12x. Escolheu 3x, o botão fica dourado com "💳 3x de R$ 91,45" e o ✅ Lançar já manda pra aba de parcelas (a 1ª parcela no mês da compra). O valor da notificação conta como o total da compra.
+2. **Palpite sozinho:** se a notificação do banco fala "em 10x" ou "10 parcelas", a compra já chega marcada como 10x (dá pra voltar pra À vista).
+3. **Lançar todas** respeita o parcelado de cada uma e avisa quantas são parceladas.
+4. **Respiro embaixo:** o card da última compra não fica mais colado na borda da folha (os botões Descartar/Lançar ganharam espaço).
+
+**Dados:** compra parcelada lançada daqui ganha `notifId` (opcional) no item de `installments`, igual o gasto à vista, pra nunca entrar duas vezes. Bancos e backups antigos continuam funcionando.
+
+**Como testar:** no APK com uma compra pendente: Gastos › card 🤖 › "Compra parcelada?" › 3x › ✅ Lançar: aparece "✅ R$ ... em 3x" e a compra está na aba Parcelas (Parcela 1 de 3). Com uma só compra, embaixo do card tem espaço antes da borda. ⚙️ mostra "Patch v2.06".
+
+**Commit sugerido:** `v2.06 - Compras pra aprovar com Compra parcelada (2x a 12x, palpite pelo texto do banco) e respiro embaixo do card + Toba Auto com a propria linha da rota amarela, vermelha ou vinho no transito + Treinos com elastico (Corpo todo, Um elastico so, Costas e Biceps, dos videos do Rafa) com cor por exercicio, kg levantado e trofeus + ...`
+
+### 🚦 Toba Auto: a própria rota muda de cor no trânsito
+
+**Arquivos alterados:** `TobaRacing/TobaDrive/js/auto-map.js`, `CLAUDE.md`
+
+Ideia do Rafa: "e se ao invés de colocar a faixa de trânsito embaixo, a faixa do trajeto azul VIRA AMARELO E VERMELHO quando tiver trânsito? CAPISCE??"
+
+1. **Uma linha só:** a linha azul da rota no carro muda de cor sozinha nos trechos com trânsito: 🟡 amarelo (lento), 🔴 vermelho (pesado), 🟥 vinho (parado/fechado). Livre = azul, com o contorno escuro em volta. Estilo Google Maps.
+2. **Saiu a faixa separada de trânsito** (a de baixo da v2.03 e a de cima da v2.05). Era uma camada a mais, e o Rafa seguia vendo só azul.
+3. Vale navegando e na prévia de caminhos. O que já passou some junto (trim), igual antes. O trânsito das ruas em volta (Mapbox) continua por baixo, igual.
+
+**De onde vem o trânsito:** dos trechos TRAFFIC que a TomTom manda junto com a rota (o mesmo dado de sempre). Rua sem atraso pra TomTom fica azul. Recalculou ou trocou de rota = cores novas.
+
+**Dados:** nada muda no banco. **APK:** não precisa, é só site (continua o APK 3.0). Depois do push, desliga e liga o Auto pra página do carro recarregar.
+
+**Como testar:** DHU › rota em horário de trânsito › os trechos lentos aparecem pintados NA PRÓPRIA linha, sem faixa extra.
+
+### 🟣 Toba Health: treinos com elástico (o dia do puxa)
+
+**Arquivos alterados:** `TobaHealth/js/health-metrics.js`, `TobaHealth/js/sessao-casa.js`, `TobaHealth/css/casa.css`, `assets/toba-player.js`, `CLAUDE.md`
+
+Pedido do Rafa: comprou o kit Super Band Odin Fit (verde, preto, roxo, azul) porque o Saitama só empurra e as costas e o bíceps ficam de fora. Os exercícios vêm dos vídeos que ele mandou.
+
+1. **4 treinos novos na seção 💪 Força e abdômen** (▶ Iniciar treino › 🏠), em cima do Saitama, com a mesma tela de abertura, ❔ Papo do Cloba, voz, timer, ⌚ mesclar com o relógio, XP e sequência dos outros:
+   - 🧍 **Corpo todo com elástico 22 min** (o vídeo do Roman, na ordem): supino deitado, remada sentada, desenvolvimento, rosca direta, tríceps, agachamento e abdominal sentado. O tríceps do vídeo é preso na porta: virou **tríceps acima da cabeça** (pisa numa ponta, sem porta).
+   - 🎯 **Um elástico só 16 min** (o vídeo "What can you do with just one band?", 2 voltas): remada curvada, supino deitado, rosca martelo, tríceps acima da cabeça, encolhimento (trapézio), agachamento com desenvolvimento, abdominal com elástico e coice de glúteo (troca de perna na metade).
+   - 🦍 **Costas com elástico 17 min** (o vídeo de costas): remada sentada, face pull sentado, remada curvada, crucifixo invertido e terra.
+   - 🥬 **Bíceps com elástico 13 min**: rosca direta, remada com um braço (a voz avisa "troca de lado" na metade), rosca martelo e rosca inversa.
+   - O "Força em casa 20 min" continua lá (desceu na lista).
+2. **Cor de cada exercício:** cada exercício com elástico tem um chip "🟣 Roxo · 18 kg". Tocou, vai pra próxima cor (do leve pro forte, e dá a volta). Vale na abertura e no meio do treino (no vídeo ele sobe o peso a cada série: é só tocar no chip na volta 2 e 3). O Toba lembra a última cor de cada exercício. O bonequinho desenha o elástico na cor escolhida, e a voz fala a cor ("Próximo: remada sentada, elástico roxo") no descanso pra dar tempo de trocar.
+3. **🎨 Meus elásticos** (botão ✏️ Ajustar na abertura): já vem com o kit Odin Fit do Rafa pelo anúncio do Mercado Livre, do mais leve pro mais forte: 🔵 azul 4,5–16 kg (conta 10), 🟣 roxo 14–27 (20,5), ⚫ preto 18–36 (27) e 🟢 verde 23–57 (40). Dá pra mudar a ordem (toca nos 4 do leve pro forte) e o kg de cada um.
+4. **💪 Kg levantado:** repetições (pelo tempo: uns 10 a 12 por tiro) × kg do elástico. Nos que também levantam o corpo soma a fatia do peso do corpo, igual o Saitama: agachamento e agachamento com desenvolvimento 70%, terra 50%, abdominais 30%, coice 15% (puxada, remada e rosca não levantam o corpo). Entra no card "Peso levantado" do treino e soma nos troféus do Kg levantado (gato, Fusca, baleia... partiu Lua 🌕).
+5. **Como tava o peso?** No fim: 😴 Leve demais / 👌 No ponto / 💀 Pesadão. Leve demais = no próximo treino cada exercício já começa uma cor acima; pesadão = uma abaixo. A abertura avisa.
+6. **📅 Dia de quê?** Embaixo do título 💪 aparece a dica: "Último foi 👊 Saitama: hoje é dia de 🟣 elástico" (e vice-versa). É só dica: não mexe em sequência, Hall dos Heróis nem nas conquistas do Saitama.
+7. **Conquistas novas:** 🪢 Estilingue humano (1º treino com elástico), 🏹 Arqueiro de apê (10), 🦍 Costas de gorila (30, título), 🌈 Arco-íris de borracha (usou as 4 cores), 🎒 Kit completo (os 4 treinos) e ☯️ Empurra e puxa (Saitama num dia e elástico no dia seguinte, 10 vezes). O "Cardápio completo" continua contando só os 5 sem equipamento.
+
+**Dados:** o treino continua `type: "home"` (planos novos `el-corpo`, `el-um`, `el-costas`, `el-biceps`). Campos novos opcionais em `home`: `bands` (cor de cada exercício), `levels` (1 = mais leve), `kg` (kg de cada um na hora) e `feel` ("leve"/"certo"/"pesado"). Prefs novas no `toba_health_live_prefs`: `elasticOrder`, `elasticKg`, `elasticPick`. Treino antigo e backup antigo continuam iguais. Mudar o kg depois não mexe nos treinos já salvos.
+
+**Como testar:** ▶ Iniciar treino › 🏠 › 💪 Força e abdômen › 🧍 Corpo todo com elástico › ✏️ Ajustar (toca as 4 cores na ordem, muda um kg) › toca num chip de cor › ▶ Iniciar › no meio troca a cor no chip › 🏁 Terminar agora › "Leve demais" › Salvar. A página do treino mostra a cor e o kg de cada exercício e o 💪 Peso levantado. Abre de novo o Corpo todo: as cores subiram uma. Testado no Playwright em 360 px (sem voz real e sem celular).

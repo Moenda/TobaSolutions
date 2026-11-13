@@ -1115,6 +1115,57 @@ let nativePending = [];
 const pendingCategoryPick = {};
 const pendingNamePick = {};
 let pendingNameEditing = "";
+// v2.06: 💳 Compra parcelada? (id da pendente -> nº de parcelas; 0 = à vista).
+// Lançada parcelada vira item de db.installments (com notifId, igual o gasto).
+const pendingParcelPick = {};
+let pendingParcelOpen = "";
+const PENDING_PARCEL_CHOICES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+// "em 3x" / "3 parcelas" no texto da notificação = palpite de parcelado.
+function guessPendingParcels(raw) {
+  const m = plainText(raw).match(/\bem\s*(\d{1,2})\s*x\b|\b(\d{1,2})\s*parcelas\b/);
+  const n = m ? parseInt(m[1] || m[2], 10) : 0;
+  return n >= 2 && n <= 24 ? n : 0;
+}
+
+function pendingParcels(p) {
+  return Object.prototype.hasOwnProperty.call(pendingParcelPick, p.id) ? pendingParcelPick[p.id] : guessPendingParcels(p.raw);
+}
+
+// Já lançada (gasto ou parcelada) com esse id da notificação?
+function pendingAlreadySaved(id) {
+  return db.transactions.some((t) => String(t.notifId) === id) || (db.installments || []).some((i) => String(i.notifId) === id);
+}
+
+// O que a pendente vira no banco: gasto à vista ou compra parcelada (valor = total da compra).
+function pendingRecord(p, recordId) {
+  const n = pendingParcels(p);
+  if (n >= 2) {
+    return { list: "installments", item: { id: recordId, description: p.desc, totalAmount: p.amount, totalInstallments: n, startDate: p.date, category: p.category, notifId: p.id } };
+  }
+  return { list: "transactions", item: { id: recordId, description: p.desc, amount: p.amount, category: p.category, date: p.date, notifId: p.id } };
+}
+
+// Grava várias pendentes de uma vez; se o salvar falhar, desfaz e tudo fica na fila.
+function savePendingRecords(items) {
+  const baseId = Date.now();
+  const recs = items.map((p, i) => pendingRecord(p, (baseId + i).toString()));
+  if (!db.installments) db.installments = [];
+  recs.forEach((r) => db[r.list].push(r.item));
+  if (!saveDatabase({ silent: true })) {
+    const added = recs.map((r) => r.item);
+    db.transactions = db.transactions.filter((t) => !added.includes(t));
+    db.installments = db.installments.filter((t) => !added.includes(t));
+    return false;
+  }
+  TOBA_NATIVE.ackPurchases(JSON.stringify(items.map((p) => p.id)));
+  items.forEach((p) => {
+    delete pendingCategoryPick[p.id];
+    delete pendingNamePick[p.id];
+    delete pendingParcelPick[p.id];
+  });
+  return true;
+}
 
 // Lê a fila do app, tira o lixo e o que já foi lançado; devolve as pendentes.
 function readNativePending() {
@@ -1137,7 +1188,7 @@ function readNativePending() {
       drop.push(id); // lixo
       return;
     }
-    if (db.transactions.some((t) => String(t.notifId) === id)) {
+    if (pendingAlreadySaved(id)) {
       drop.push(id); // já lançado numa abertura anterior
       return;
     }
@@ -1223,6 +1274,7 @@ function renderPendingList() {
           <span class="pending-cat">${cat.emoji} ${escapeHtml(cat.name)}</span>
           <span class="pending-cat-edit">🏷️ Ajustar categoria</span>
         </button>
+        ${pendingParcelHtml(p)}
         ${p.old ? '<div class="pending-flag">⏳ Notificação antiga reenviada pelo app. Confere se não é repetida.</div>' : ""}
         ${twin ? `<div class="pending-flag">⚠️ Parece repetida: ${twin}.</div>` : ""}
         ${p.raw ? `<details class="pending-raw"><summary>Texto da notificação</summary><p>${escapeHtml(p.raw)}</p></details>` : ""}
@@ -1237,6 +1289,37 @@ function renderPendingList() {
     input.focus();
     input.select();
   }
+}
+
+// 💳 Compra parcelada?: botão que abre os chips 2x…12x (tocar no escolhido de novo = à vista).
+function pendingParcelHtml(p) {
+  const id = escapeHtml(p.id);
+  const n = pendingParcels(p);
+  const open = pendingParcelOpen === p.id;
+  const label = n >= 2 ? `💳 ${n}x de ${formatCurrency(p.amount / n)}` : "💳 À vista";
+  const chips = open ? `
+        <div class="pending-parcel-chips">
+          <button type="button" class="pending-chip${n < 2 ? " is-on" : ""}" data-click="pickPendingParcels" data-id="${id}" data-n="0">À vista</button>
+          ${PENDING_PARCEL_CHOICES.map((c) => `<button type="button" class="pending-chip${c === n ? " is-on" : ""}" data-click="pickPendingParcels" data-id="${id}" data-n="${c}">${c}x</button>`).join("")}
+        </div>
+        <p class="pending-parcel-hint">O valor da notificação é o total: ele é dividido nas parcelas, a 1ª no mês da compra.</p>` : "";
+  return `
+        <button type="button" class="pending-cat-btn${n >= 2 ? " is-parcel" : ""}${open ? " is-open" : ""}" data-click="togglePendingParcels" data-id="${id}">
+          <span class="pending-cat">${label}</span>
+          <span class="pending-cat-edit">${open ? "Fechar ▴" : "Compra parcelada?"}</span>
+        </button>${chips}`;
+}
+
+function togglePendingParcels(el) {
+  pendingParcelOpen = pendingParcelOpen === el.dataset.id ? "" : el.dataset.id;
+  renderPendingList();
+}
+
+function pickPendingParcels(el) {
+  const n = parseInt(el.dataset.n, 10) || 0;
+  pendingParcelPick[el.dataset.id] = n >= 2 ? n : 0;
+  pendingParcelOpen = "";
+  renderPendingList();
 }
 
 // Troca a categoria de uma pendente. As outras da mesma loja que você ainda
@@ -1298,6 +1381,7 @@ function savePendingName(el, event) {
 
 function openPendingPurchases() {
   pendingNameEditing = "";
+  pendingParcelOpen = "";
   refreshPendingPurchases();
   renderPendingList();
   openTobaModal("pendingModal");
@@ -1313,20 +1397,14 @@ function launchPending(el) {
     if (typed) p.desc = typed;
     pendingNameEditing = "";
   }
-  if (db.transactions.some((t) => String(t.notifId) === p.id)) return; // toque duplo
-  const added = { id: Date.now().toString(), description: p.desc, amount: p.amount, category: p.category, date: p.date, notifId: p.id };
-  db.transactions.push(added);
-  if (!saveDatabase({ silent: true })) {
-    db.transactions = db.transactions.filter((t) => t !== added);
-    return; // fica na fila
-  }
-  TOBA_NATIVE.ackPurchases(JSON.stringify([p.id]));
-  delete pendingCategoryPick[p.id];
-  delete pendingNamePick[p.id];
+  if (pendingAlreadySaved(p.id)) return; // toque duplo
+  const n = pendingParcels(p);
+  if (!savePendingRecords([p])) return; // fica na fila
+  pendingParcelOpen = "";
   refreshPendingPurchases();
   renderPendingList();
   const cat = getBankCategory(p.category);
-  tobaToast(`✅ ${formatCurrency(p.amount)} · ${p.desc} (${cat.emoji} ${cat.short || cat.name})`);
+  tobaToast(`✅ ${formatCurrency(p.amount)}${n >= 2 ? ` em ${n}x` : ""} · ${p.desc} (${cat.emoji} ${cat.short || cat.name})`);
   if (!nativePending.length) closeTobaModal("pendingModal");
 }
 
@@ -1354,18 +1432,12 @@ async function launchAllPending() {
   if (!nativePending.length) return;
   const items = [...nativePending];
   const total = items.reduce((s, p) => s + p.amount, 0);
-  const ok = await showPageMessage(`${items.length} compras (${formatCurrency(total)}) entram no mês com a categoria que está em cada uma. Dá pra editar cada uma depois no histórico.`, {
+  const parcelled = items.filter((p) => pendingParcels(p) >= 2).length;
+  const ok = await showPageMessage(`${items.length} compras (${formatCurrency(total)}) entram com a categoria que está em cada uma${parcelled ? ` (${parcelled} parcelada${parcelled > 1 ? "s" : ""})` : ""}. Dá pra editar cada uma depois no histórico.`, {
     title: "Lançar todas?", icon: "✅", confirm: true, confirmLabel: "Lançar todas",
   });
   if (!ok) return;
-  const baseId = Date.now();
-  const added = items.map((p, i) => ({ id: (baseId + i).toString(), description: p.desc, amount: p.amount, category: p.category, date: p.date, notifId: p.id }));
-  db.transactions.push(...added);
-  if (!saveDatabase({ silent: true })) {
-    db.transactions = db.transactions.filter((t) => !added.includes(t));
-    return; // fica tudo na fila
-  }
-  TOBA_NATIVE.ackPurchases(JSON.stringify(items.map((p) => p.id)));
+  if (!savePendingRecords(items)) return; // fica tudo na fila
   closeTobaModal("pendingModal");
   refreshPendingPurchases();
   tobaToast(`✅ ${items.length} gastos lançados`);
@@ -1480,6 +1552,8 @@ tobaActions({
   morePendingCategories,
   editPendingName,
   savePendingName,
+  togglePendingParcels,
+  pickPendingParcels,
   launchAllPending,
   openExpenseReminder: () =>
     tobaOpenReminder({

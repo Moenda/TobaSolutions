@@ -226,3 +226,181 @@
   flex: 0 0 64px;
   font-size: 1.8rem;
 }
+
+/* ---------- 🟣 Elástico (v2.06) ---------- */
+.home-fig .sf-band,
+.home-fig .sf-band-edge {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.home-fig .sf-band-edge {
+  stroke: rgba(230, 237, 243, 0.4);
+  stroke-width: 5;
+}
+
+.home-fig .sf-band {
+  stroke: var(--band, #8b949e);
+  stroke-width: 3;
+}
+
+.elastic-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 0.25rem 0.6rem;
+  border: 2px solid var(--band, var(--border));
+  border-radius: 999px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  color: var(--text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.elastic-chip:active {
+  transform: scale(0.96);
+}
+
+.home-intro-row.has-band .stretch-row-text {
+  align-items: flex-start;
+}
+
+.elastic-box {
+  margin: 10px 0 4px;
+  padding: 0.7rem 0.8rem;
+}
+
+.elastic-box-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.elastic-box-row span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.elastic-box-row small {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.elastic-box .live-hint {
+  margin: 8px 0 0;
+}
+
+.elastic-feel-tip {
+  color: var(--text-2);
+}
+
+.elastic-live {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: 4px 0 6px;
+}
+
+.elastic-live .elastic-chip {
+  font-size: 0.95rem;
+  padding: 0.35rem 0.85rem;
+}
+
+.elastic-live small {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.stretch-next span small + strong + small {
+  display: block;
+}
+
+.home-day-hint {
+  margin: 0 0 6px;
+}
+
+/* 🎨 Meus elásticos */
+.elastic-order {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.elastic-order-chip {
+  justify-content: center;
+  padding: 0.6rem;
+  font-size: 0.95rem;
+  border-radius: var(--radius-lg, 12px);
+}
+
+.elastic-order-chip.is-tapped {
+  background: color-mix(in srgb, var(--band) 30%, transparent);
+}
+
+.elastic-order-chip b {
+  color: var(--gold, #d29922);
+}
+
+.elastic-kg {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.elastic-kg-row {
+  display: grid;
+  grid-template-columns: 1fr 90px auto;
+  align-items: center;
+  gap: 8px;
+  padding-left: 8px;
+  border-left: 4px solid var(--band);
+}
+
+.elastic-kg-row small {
+  color: var(--muted);
+}
+
+/* Fim do treino: kg levantado + como tava */
+.elastic-done {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 10px 0;
+  padding: 0.75rem;
+}
+
+.elastic-done small {
+  color: var(--muted);
+}
+
+.elastic-feels {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.elastic-feel {
+  padding: 0.55rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, 12px);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.elastic-feel.is-on {
+  border-color: var(--home-work);
+  background: rgba(240, 136, 62, 0.18);
+}

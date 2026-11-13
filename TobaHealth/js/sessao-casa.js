@@ -22,6 +22,15 @@
  *     home: { plan, done }, ... campos de número null }
  * Vale XP, sequência, conquistas e Hall como qualquer treino.
  *
+ * 🟣 Elástico (v2.06, pedido do Rafa: kit de super band, treinar o que o
+ * Saitama não treina = puxar). Planos "el-*" na seção 💪 Força, mesmo motor.
+ * Cada exercício com elástico tem um chip de cor (toca = troca) que vale na
+ * abertura e ao vivo. Extras no liveSession.home: bands { exerciseId: cor },
+ * feel "leve"|"certo"|"pesado". O treino salvo ganha home.bands, home.levels
+ * (1 = mais leve) e home.kg (kg de cada exercício na hora) + home.feel.
+ * Prefs (TOBA_HEALTH_LIVE_PREFS): elasticOrder [cores do leve pro forte],
+ * elasticKg { cor: kg }, elasticPick { exerciseId: cor } (o último usado).
+ *
  * Carregado DEPOIS de sessao.js / sessao-saitama.js / sessao-alongamento.js
  * e ANTES de treinos.js.
  * ===================================================================== */
@@ -119,13 +128,82 @@ const HOME_FIGURES = {
   "cadeira-parede": { key: 0, frames: [
     { head: [36, 22], base: [[36, 30, 36, 58], [64, 58, 64, 86, 74, 86], [36, 36, 50, 52]], hl: [[36, 58, 64, 58]], extra: HOME_WALL },
   ] },
+  // v2.06: 🟣 elástico. band = traço do elástico (pinta na cor escolhida)
+  "remada-curvada": { key: 1, frames: [
+    { head: [86, 32], base: [[50, 54, 54, 70, 50, 86], [78, 38, 78, 62]], hl: [[50, 54, 78, 38]], band: [[52, 86, 78, 62]] },
+    { head: [86, 32], base: [[50, 54, 54, 70, 50, 86], [78, 38, 66, 46, 72, 56]], hl: [[50, 54, 78, 38]], band: [[52, 86, 72, 56]] },
+  ] },
+  "remada-sentada": { key: 1, frames: [
+    { head: [46, 46], base: [[40, 82, 96, 84], [44, 58, 80, 70]], hl: [[40, 82, 44, 54]], band: [[80, 70, 98, 80]] },
+    { head: [46, 46], base: [[40, 82, 96, 84], [44, 58, 30, 66, 46, 70]], hl: [[40, 82, 44, 54]], band: [[46, 70, 98, 80]] },
+  ] },
+  encolhimento: { key: 1, frames: [
+    { head: [60, 16], base: [[60, 24, 60, 54], [60, 54, 54, 86], [60, 54, 66, 86]], hl: [[60, 30, 50, 34, 50, 58], [60, 30, 70, 34, 70, 58]], band: [[54, 86, 50, 58], [66, 86, 70, 58]] },
+    { head: [60, 16], base: [[60, 24, 60, 54], [60, 54, 54, 86], [60, 54, 66, 86]], hl: [[60, 26, 50, 28, 50, 52], [60, 26, 70, 28, 70, 52]], band: [[54, 86, 50, 52], [66, 86, 70, 52]] },
+  ] },
+  "thruster-elastico": { key: 1, frames: [
+    { head: [58, 30], base: [[44, 62, 54, 38]], hl: [[44, 62, 66, 64, 60, 86], [54, 40, 66, 50, 64, 38]], band: [[62, 86, 64, 38]] },
+    { head: [60, 14], base: [[60, 22, 60, 52], [60, 52, 54, 86], [60, 52, 66, 86]], hl: [[60, 28, 52, 4], [60, 28, 68, 4]], band: [[54, 86, 52, 4], [66, 86, 68, 4]] },
+  ] },
+  "abdominal-crunch-elastico": { key: 1, frames: [
+    { head: [16, 78], base: [[23, 82, 58, 82], [58, 82, 74, 64, 88, 84], [30, 82, 60, 74]], hl: [[30, 82, 52, 82]], band: [[28, 84, 60, 74]] },
+    { head: [30, 62], base: [[58, 82, 74, 64, 88, 84], [38, 68, 66, 68]], hl: [[58, 82, 36, 68]], band: [[40, 74, 66, 68]] },
+  ] },
+  "coice-gluteo": { key: 1, frames: [
+    { head: [92, 52], base: [[44, 62, 84, 58], [84, 58, 86, 86], [44, 62, 44, 86, 30, 86]], hl: [[44, 62, 60, 74, 50, 86]], band: [[86, 86, 50, 86]] },
+    { head: [92, 52], base: [[44, 62, 84, 58], [84, 58, 86, 86], [44, 62, 44, 86, 30, 86]], hl: [[44, 62, 22, 52, 6, 46]], band: [[86, 86, 6, 46]] },
+  ] },
+  "face-pull": { key: 1, frames: [
+    { head: [46, 46], base: [[40, 82, 96, 84]], hl: [[44, 58, 80, 66]], band: [[80, 66, 98, 80]] },
+    { head: [46, 46], base: [[40, 82, 96, 84]], hl: [[44, 58, 34, 46, 52, 44]], band: [[52, 44, 98, 80]] },
+  ] },
+  "crucifixo-invertido": { key: 1, frames: [
+    { head: [86, 32], base: [[50, 54, 54, 70, 50, 86], [50, 54, 78, 38]], hl: [[78, 38, 80, 62]], band: [[52, 86, 80, 62]] },
+    { head: [86, 32], base: [[50, 54, 54, 70, 50, 86], [50, 54, 78, 38]], hl: [[78, 38, 84, 16]], band: [[52, 86, 84, 16]] },
+  ] },
+  "terra-elastico": { key: 1, frames: [
+    { head: [84, 34], base: [[50, 52, 76, 40], [76, 40, 72, 70], [56, 70, 52, 86]], hl: [[50, 52, 56, 70]], band: [[54, 86, 72, 70]] },
+    { head: [58, 14], base: [[58, 22, 58, 52], [58, 28, 60, 56], [58, 70, 58, 86]], hl: [[58, 52, 58, 70]], band: [[58, 86, 60, 56]] },
+  ] },
+  "remada-unilateral": { key: 1, frames: [
+    { head: [80, 28], base: [[54, 52, 72, 70, 72, 86], [54, 52, 36, 86], [70, 38, 72, 66]], hl: [[54, 52, 74, 34]], band: [[72, 86, 64, 64]], extra: '<path d="M70 38 L64 64" class="sf-body"/>' },
+    { head: [80, 28], base: [[54, 52, 72, 70, 72, 86], [54, 52, 36, 86], [70, 38, 72, 66], [70, 38, 56, 44, 60, 54]], hl: [[54, 52, 74, 34]], band: [[72, 86, 60, 54]] },
+  ] },
+  "rosca-direta": { key: 1, frames: [
+    { head: [58, 14], base: [[58, 22, 58, 52], [58, 52, 56, 86], [58, 52, 64, 86], [60, 48, 62, 64]], hl: [[58, 28, 60, 48]], band: [[60, 86, 62, 64]] },
+    { head: [58, 14], base: [[58, 22, 58, 52], [58, 52, 56, 86], [58, 52, 64, 86], [60, 48, 70, 32]], hl: [[58, 28, 60, 48]], band: [[60, 86, 70, 32]] },
+  ] },
+  "agachamento-elastico": { key: 1, frames: [
+    { head: [56, 14], base: [[56, 22, 56, 52], [56, 30, 66, 40, 62, 28]], hl: [[56, 52, 56, 86]], band: [[58, 86, 62, 28]] },
+    { head: [58, 30], base: [[44, 62, 54, 38], [54, 40, 66, 50, 64, 38]], hl: [[44, 62, 66, 64, 60, 86]], band: [[62, 86, 64, 38]] },
+  ] },
+  "supino-chao": { key: 1, frames: [
+    { head: [16, 78], base: [[23, 82, 58, 82], [58, 82, 74, 64, 88, 84]], hl: [[30, 80, 40, 70, 34, 62]], band: [[34, 62, 26, 84]] },
+    { head: [16, 78], base: [[23, 82, 58, 82], [58, 82, 74, 64, 88, 84]], hl: [[30, 80, 32, 46]], band: [[32, 46, 26, 84]] },
+  ] },
+  "triceps-cabeca": { key: 1, frames: [
+    { head: [58, 18], base: [[58, 26, 58, 54], [58, 54, 56, 86], [58, 54, 64, 86], [64, 12, 52, 22]], hl: [[58, 30, 64, 12]], band: [[56, 86, 52, 22]] },
+    { head: [58, 18], base: [[58, 26, 58, 54], [58, 54, 56, 86], [58, 54, 64, 86], [64, 12, 66, 2]], hl: [[58, 30, 64, 12]], band: [[56, 86, 66, 2]] },
+  ] },
+  "abdominal-elastico": { key: 1, frames: [
+    { head: [48, 46], base: [[40, 82, 96, 82], [44, 60, 30, 80]], hl: [[40, 82, 46, 54]], band: [[46, 56, 98, 80]] },
+    { head: [18, 54], base: [[40, 82, 96, 82], [28, 64, 40, 78]], hl: [[40, 82, 24, 62]], band: [[26, 62, 98, 80]] },
+  ] },
+  "desenvolvimento-elastico": { key: 1, frames: [
+    { head: [60, 14], base: [[60, 22, 60, 52], [60, 52, 54, 86], [60, 52, 66, 86]], hl: [[60, 28, 46, 30, 46, 18], [60, 28, 74, 30, 74, 18]], band: [[54, 86, 46, 18], [66, 86, 74, 18]] },
+    { head: [60, 14], base: [[60, 22, 60, 52], [60, 52, 54, 86], [60, 52, 66, 86]], hl: [[60, 28, 50, 4], [60, 28, 70, 4]], band: [[54, 86, 50, 4], [66, 86, 70, 4]] },
+  ] },
 };
+
+HOME_FIGURES["rosca-martelo"] = HOME_FIGURES["rosca-direta"];
+HOME_FIGURES["rosca-inversa"] = HOME_FIGURES["rosca-direta"];
 
 function homeFrameSvg(frame, cls) {
   const lines = (list, kind) => (list || []).map((pts) => `<path d="${stretchPolyPath(pts)}" class="${kind}"/>`).join("");
   return `
         <g class="${cls}">
           ${frame.extra || ""}
+          ${lines(frame.band, "sf-band-edge")}${lines(frame.band, "sf-band")}
           ${lines(frame.base, "sf-body")}
           ${lines(frame.hl, "sf-hl")}
           <circle cx="${frame.head[0]}" cy="${frame.head[1]}" r="7" class="sf-head"/>
@@ -133,7 +211,8 @@ function homeFrameSvg(frame, cls) {
 }
 
 // size "lg": todas as poses (o CSS alterna no trabalho); "sm": só a pose key
-function homeFigureSvg(exerciseId, { size = "lg" } = {}) {
+// band (v2.06): id da cor do elástico (pinta o traço do elástico)
+function homeFigureSvg(exerciseId, { size = "lg", band = "" } = {}) {
   const fig = HOME_FIGURES[exerciseId] || HOME_FIGURES.agachamento;
   const name = getHomeExercise(exerciseId)?.name || HOME_TYPE_TITLE;
   const frames = size === "lg"
@@ -141,10 +220,16 @@ function homeFigureSvg(exerciseId, { size = "lg" } = {}) {
     : homeFrameSvg(fig.frames[fig.key] || fig.frames[0], "hf");
   const moves = size === "lg" && fig.frames.length > 1 ? " is-moving" : "";
   return `
-    <svg class="stretch-fig home-fig is-${size}${moves}" viewBox="0 0 120 90" role="img" aria-label="Bonequinho: ${escapeHtml(name)}">
+    <svg class="stretch-fig home-fig is-${size}${moves}" viewBox="0 0 120 90" role="img" aria-label="Bonequinho: ${escapeHtml(name)}"${homeBandStyle(exerciseId, band)}>
       <line x1="2" y1="87" x2="118" y2="87" class="sf-floor"/>
       ${frames}
     </svg>`;
+}
+
+function homeBandStyle(exerciseId, band) {
+  if (!getHomeExercise(exerciseId)?.band) return "";
+  const color = getElasticBand(band || elasticPick(exerciseId))?.color;
+  return color ? ` style="--band: ${color}"` : "";
 }
 
 /* ---------------------------------------------------------------------
@@ -160,8 +245,16 @@ function normalizeHomeLive(raw) {
       if (getHomeExercise(id) && Number(secs) > 0) done[id] = Math.round(Number(secs));
     });
   }
+  const bands = {};
+  if (data.bands && typeof data.bands === "object") {
+    Object.entries(data.bands).forEach(([id, band]) => {
+      if (getHomeExercise(id)?.band && getElasticBand(band)) bands[id] = band;
+    });
+  }
   return {
     plan,
+    bands,
+    feel: ["leve", "certo", "pesado"].includes(data.feel) ? data.feel : "",
     step: Math.min(Math.max(0, Math.round(Number(data.step) || 0)), Math.max(0, total - 1)),
     endsAt: Number(data.endsAt) || null,
     left: Math.max(0, Number(data.left) || 0),
@@ -237,7 +330,8 @@ function homeSpeak(text) {
 function homeAnnounce(step, steps) {
   if (!step) return;
   const exercise = getHomeExercise(step.exerciseId);
-  const name = exercise?.name || "";
+  const bandName = exercise?.band ? getElasticBand(liveSession?.home?.bands?.[step.exerciseId] || elasticPick(step.exerciseId))?.name : "";
+  const name = `${exercise?.name || ""}${bandName ? `, elástico ${bandName.toLowerCase()}` : ""}`;
   if (step.kind === "prep") {
     liveBuzz(120);
     homeSpeak(`Prepara. Primeiro: ${name}`);
@@ -263,6 +357,180 @@ function homeCountdown(session, step, leftMs) {
   homeCountdownKey = key;
   liveBuzz(60);
   homeSpeak("3, 2, 1");
+}
+
+// v2.06: exercício de um lado só (remada com um braço): avisa na metade
+let homeHalfKey = "";
+function homeHalfway(session, step, leftMs) {
+  if (!step || step.kind !== "work" || !session.home.endsAt) return;
+  if (!getHomeExercise(step.exerciseId)?.sides) return;
+  const half = (step.secs * 1000) / 2;
+  if (leftMs > half || leftMs < half - 2000) return;
+  const key = `${session.id}:${session.home.step}`;
+  if (homeHalfKey === key) return;
+  homeHalfKey = key;
+  liveBuzz([120, 80, 120]);
+  homeSpeak("Troca de lado");
+}
+
+/* ---------------------------------------------------------------------
+ * 🟣 Elástico (v2.06): ordem das cores, kg, cor de cada exercício
+ * ------------------------------------------------------------------- */
+// Ordem do kit do Rafa pelo anúncio (azul < roxo < preto < verde). Outro
+// kit? A pessoa acerta a ordem e o kg uma vez no 🎨 Meus elásticos.
+const ELASTIC_DEFAULT_ORDER = ["azul", "roxo", "preto", "verde"];
+
+function elasticOrder() {
+  const saved = readLivePrefs().elasticOrder;
+  const ids = ELASTIC_BANDS.map((band) => band.id);
+  if (Array.isArray(saved) && saved.length === ids.length && ids.every((id) => saved.includes(id))) return saved.slice();
+  return ELASTIC_DEFAULT_ORDER.slice();
+}
+
+function elasticLevel(bandId) {
+  const index = elasticOrder().indexOf(bandId);
+  return index >= 0 ? index + 1 : 2;
+}
+
+function elasticAtLevel(level) {
+  const order = elasticOrder();
+  return order[Math.min(order.length, Math.max(1, Math.round(level) || 2)) - 1];
+}
+
+function elasticKg(bandId) {
+  const kg = Number((readLivePrefs().elasticKg || {})[bandId]);
+  return kg > 0 ? kg : getElasticBand(bandId)?.kg || ELASTIC_LEVEL_KG[elasticLevel(bandId)];
+}
+
+// Cor do exercício: a última que a pessoa usou; nunca usou = nível sugerido
+function elasticPick(exerciseId) {
+  const pick = (readLivePrefs().elasticPick || {})[exerciseId];
+  if (getElasticBand(pick)) return pick;
+  return elasticAtLevel(getHomeExercise(exerciseId)?.lvl || 2);
+}
+
+function elasticStorePicks(patch) {
+  storeLivePrefs({ elasticPick: { ...(readLivePrefs().elasticPick || {}), ...patch } });
+}
+
+function elasticNext(bandId) {
+  const order = elasticOrder();
+  return order[(order.indexOf(bandId) + 1) % order.length];
+}
+
+function elasticBandLabel(bandId) {
+  const band = getElasticBand(bandId);
+  const kg = elasticKg(bandId);
+  return band ? `${band.dot} ${band.name} · ${formatWorkoutNumber(kg, Number.isInteger(kg) ? 0 : 1)} kg` : "";
+}
+
+// Chip da cor (toca = próxima cor, do leve pro forte, e dá a volta)
+function elasticChip(exerciseId, bandId, click, attrs = "") {
+  const band = getElasticBand(bandId);
+  if (!band) return "";
+  return `<button type="button" class="elastic-chip" style="--band: ${band.color}" data-click="${click}" data-ex="${exerciseId}"${attrs} aria-label="Elástico ${escapeHtml(band.name)}: toca pra trocar">${escapeHtml(elasticBandLabel(bandId))}</button>`;
+}
+
+function elasticOrderLine() {
+  return elasticOrder().map((id) => getElasticBand(id)?.dot || "").join(" → ");
+}
+
+// Último treino de elástico desse plano com "como tava" respondido
+function elasticLastFeel(planId) {
+  const list = (healthDb.workouts || [])
+    .filter((workout) => workout.type === "home" && workout.home?.plan === planId && workout.home?.feel)
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.id).localeCompare(String(a.id)));
+  return list[0]?.home?.feel || "";
+}
+
+// 📅 Ideia do Rafa: dia de 👊 Saitama, dia de 🟣 elástico (só a dica, não
+// mexe em sequência nem conquista de ninguém)
+function elasticDayHint() {
+  const last = (healthDb.workouts || [])
+    .filter((workout) => workout.type === "saitama" || (workout.type === "home" && isElasticPlan(workout.home?.plan || "")))
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.id).localeCompare(String(a.id)))[0];
+  if (!last) return "📅 Dica do Cloba: alterna um dia 👊 Saitama (empurrar) e um dia 🟣 elástico (puxar).";
+  const wasSaitama = last.type === "saitama";
+  const other = wasSaitama ? "🟣 elástico" : "👊 Saitama";
+  if (last.date === toIsoDate()) return `📅 Hoje já foi ${wasSaitama ? "👊 Saitama" : "🟣 elástico"} ✅ Amanhã é dia de ${other}.`;
+  return `📅 Último foi ${wasSaitama ? "👊 Saitama" : "🟣 elástico"}: hoje é dia de ${other}.`;
+}
+
+/* 🎨 Meus elásticos: toca do mais leve pro mais forte + kg de cada um.
+ * Salva sozinho (a ordem quando tocar as 4; o kg ao mudar o número). */
+let elasticSetupTaps = [];
+let elasticSetupPlan = "";
+
+function openElasticSetup(planId) {
+  elasticSetupTaps = [];
+  if (planId) elasticSetupPlan = planId;
+  renderElasticSetup();
+  openTobaModal("homeHelpModal");
+}
+
+function renderElasticSetup() {
+  const order = elasticOrder();
+  const chips = ELASTIC_BANDS.map((band) => {
+    const tapped = elasticSetupTaps.indexOf(band.id);
+    const badge = tapped >= 0 ? tapped + 1 : elasticSetupTaps.length ? "" : order.indexOf(band.id) + 1;
+    return `<button type="button" class="elastic-chip elastic-order-chip${tapped >= 0 ? " is-tapped" : ""}" style="--band: ${band.color}" data-click="elasticSetupTap" data-band="${band.id}">${band.dot} ${escapeHtml(band.name)}${badge ? ` <b>${badge}º</b>` : ""}</button>`;
+  }).join("");
+  const kgRows = order.map((id) => {
+    const band = getElasticBand(id);
+    return `
+      <label class="elastic-kg-row" style="--band: ${band.color}">
+        <span>${band.dot} ${escapeHtml(band.name)} <small>${elasticLevel(id)}º</small></span>
+        <input type="number" class="form-control" inputmode="decimal" min="1" max="150" step="0.5" value="${elasticKg(id)}" data-change="elasticSetupKg" data-band="${id}" aria-label="Kg do elástico ${escapeHtml(band.name)}" />
+        <small>kg</small>
+      </label>`;
+  }).join("");
+  document.getElementById("homeHelpTitle").textContent = "🎨 Meus elásticos";
+  document.getElementById("homeHelpBody").innerHTML = `
+    <p class="toba-sheet-text">Toca nos 4 elásticos na ordem, do <b>mais leve</b> pro <b>mais forte</b>${elasticSetupTaps.length ? ` (${elasticSetupTaps.length}/4)` : ""}.</p>
+    <div class="elastic-order">${chips}</div>
+    ${elasticSetupTaps.length ? '<button type="button" class="btn btn-secondary btn-sm" data-click="elasticSetupReset">↺ Recomeçar</button>' : `<p class="live-hint">Agora: ${elasticOrderLine()} (leve → forte)</p>`}
+    <div class="hub-title">Kg de cada um (escrito no elástico)</div>
+    <div class="elastic-kg">${kgRows}</div>
+    <p class="live-hint">Já vem com o meio da faixa do teu kit (azul 4,5–16, roxo 14–27, preto 18–36, verde 23–57 kg). Outro elástico? Bota o número do meio da faixa dele. É o que soma no 💪 Kg levantado dos troféus: repetições × kg. Treino já salvo não muda.</p>`;
+}
+
+function elasticSetupTap(el) {
+  const id = el.dataset.band;
+  if (!getElasticBand(id) || elasticSetupTaps.includes(id)) return;
+  elasticSetupTaps.push(id);
+  if (elasticSetupTaps.length === ELASTIC_BANDS.length) {
+    storeLivePrefs({ elasticOrder: elasticSetupTaps.slice() });
+    elasticSetupTaps = [];
+    tobaToast(`🎨 Ordem salva: ${elasticOrderLine()}`);
+    elasticRefreshIntro();
+  }
+  renderElasticSetup();
+}
+
+function elasticSetupReset() {
+  elasticSetupTaps = [];
+  renderElasticSetup();
+}
+
+function elasticSetupKg(el) {
+  const kg = Number(String(el.value).replace(",", "."));
+  if (!(kg > 0)) return;
+  storeLivePrefs({ elasticKg: { ...(readLivePrefs().elasticKg || {}), [el.dataset.band]: Math.round(kg * 2) / 2 } });
+  tobaToast(`${getElasticBand(el.dataset.band)?.dot || ""} ${formatWorkoutNumber(kg, 1)} kg salvo`);
+  elasticRefreshIntro();
+}
+
+// Abertura aberta atrás? Redesenha sem pular pro topo
+function elasticRefreshIntro() {
+  if (!elasticSetupPlan || !document.getElementById("liveStartModal")?.classList.contains("is-open")) return;
+  if (!document.querySelector("#liveStartList .home-intro")) return;
+  openHomeIntro(elasticSetupPlan, { keepScroll: true });
+}
+
+function elasticCycleIntro(el) {
+  const id = el.dataset.ex;
+  elasticStorePicks({ [id]: elasticNext(elasticPick(id)) });
+  openHomeIntro(el.dataset.plan, { keepScroll: true });
 }
 
 /* ---------------------------------------------------------------------
@@ -309,13 +577,15 @@ function renderHomeLiveStartSection() {
   })).join("");
   return `
     <div class="home-section">
-      <p class="toba-sheet-text home-section-sub">Sem equipamento, no tapete da sala${total ? ` · feito ${total}×` : ""}</p>
+      <p class="toba-sheet-text home-section-sub">No tapete da sala, no máximo um elástico${total ? ` · feito ${total}×` : ""}</p>
       <div class="hub-title">🔥 HIIT e cardio</div>
       <div class="toba-menu">${plans(["cardio"])}</div>
       <div class="hub-title">💪 Força e abdômen</div>
+      <p class="live-hint home-day-hint">${escapeHtml(elasticDayHint())}</p>
       <div class="toba-menu">
-        ${plans(["forca"])}
+        ${plans(["elastico"])}
         ${homeMenuButton({ click: "openSaitamaIntro", icon: "👊", title: "Treino do Saitama", desc: `Flexão, abdominal e agachamento no contador${saitamaCount ? ` · feito ${saitamaCount}×` : ""}` })}
+        ${plans(["forca"])}
       </div>
       <div class="hub-title">🧘 Alongamento${count("stretch") ? ` · feito ${count("stretch")}×` : ""}</div>
       <div class="toba-menu">${stretch}</div>
@@ -339,6 +609,10 @@ const HOME_PLAN_CLOBA = {
   tabata4: "Tabata é o japonês mais cruel da academia: 20 s no talo, 10 s de folga, 8 vezes. São só 4 minutos, então o combinado é ir com tudo do começo ao fim. Se no 6º tiro tu achar que vai morrer, tá fazendo certo 💀",
   silencioso15: "Cardio sem nenhum pulo: dá pra fazer de madrugada, de meia, com o Gon dormindo do lado. Não é treino fraco não: mantém o ritmo constante que o coração sobe igual, só não acorda o vizinho de baixo.",
   forca20: "Circuito de força só com o peso do corpo: perna, peito, tríceps, glúteo e core. São 45 s em cada, sem pressa: movimento bem feito vale mais que número de repetição. No fim de cada volta tem 1min30 de descanso pra beber água e xingar o Cloba.",
+  "el-corpo": "O treino do vídeo do Roman, na mesma ordem: supino deitado, remada sentada, desenvolvimento, rosca, tríceps, agachamento e abdominal, tudo com o elástico. O tríceps dele é preso na porta e o teu elástico não prende, então troquei pelo tríceps acima da cabeça (pisa numa ponta, sem porta). Cada exercício tem a cor dele: toca no chip pra trocar, e o Toba lembra da próxima vez.",
+  "el-um": "O vídeo \"What can you do with just one band?\" que tu mandou, na ordem dele: remada curvada, supino deitado, rosca martelo, tríceps acima da cabeça, encolhimento (trapézio, que nenhum outro treino pega), agachamento com desenvolvimento, abdominal e coice de glúteo. Corpo inteiro com UM elástico. São 2 voltas: na 2ª, se tiver sobrando, toca no chip e sobe a cor.",
+  "el-costas": "O Saitama é só empurrar (flexão, abdominal, agachamento) e as costas ficam de fora. Aqui é só PUXAR, igual o vídeo que tu mandou: remada sentada, face pull, remada curvada, crucifixo invertido e terra. É isso que segura o ombro no lugar e tira a corcunda da cadeira gamer. No vídeo ele pesa mais a cada série: aqui é só tocar no chip e subir a cor na volta 2 e 3. Puxa com as costas, cotovelo indo pra trás, e volta o elástico DEVAGAR.",
+  "el-biceps": "Braço de Popeye 🥬: rosca direta, rosca martelo, rosca inversa e uma remada de um braço pra dar respiro. Cotovelo colado no corpo o tempo todo. Se o ombro começa a ajudar, o elástico tá pesado: desce uma cor sem vergonha.",
   core10: "Tanquinho se faz na cozinha, mas se fortalece aqui. Abdômen, lombar e a cadeirinha na parede pra fechar. Barriga encolhida o tempo todo e solta o ar na hora da força.",
 };
 
@@ -355,13 +629,16 @@ function homeIntroChips(plan) {
     `⏱️ ~${minutes} min`,
     `🔁 ${plan.rounds} ${plan.rounds === 1 ? "volta" : "voltas"}`,
     `🔥 ${plan.work} s / 😮‍💨 ${plan.rest} s`,
+    isElasticPlan(plan) ? "🟣 com elástico" : "",
     kcal ? `⚡ ~${kcal} kcal` : "",
   ].filter(Boolean).map((chip) => `<span class="workout-chip">${chip}</span>`).join("");
 }
 
-function openHomeIntro(planId) {
+function openHomeIntro(planId, { keepScroll = false } = {}) {
   const plan = getHomePlan(planId);
   if (!plan) return;
+  const sheet = document.querySelector("#liveStartModal .toba-sheet");
+  const scroll = keepScroll && sheet ? sheet.scrollTop : 0;
   const { session } = readLiveSession();
   if (session) { // já tem treino rolando: volta pra ele
     liveSession = session;
@@ -371,12 +648,30 @@ function openHomeIntro(planId) {
   }
   const rows = plan.list.filter((id) => getHomeExercise(id)).map((id, index) => {
     const exercise = getHomeExercise(id);
+    const chip = exercise.band ? elasticChip(id, elasticPick(id), "elasticCycleIntro", ` data-plan="${plan.id}"`) : "";
     return `
-      <div class="stretch-row home-intro-row">
+      <div class="stretch-row home-intro-row${chip ? " has-band" : ""}">
         ${homeFigureSvg(id, { size: "sm" })}
-        <span class="stretch-row-text"><strong>${index + 1}. ${escapeHtml(exercise.name)}</strong><small>${plan.work} s${exercise.jump ? " · tem pulo" : ""}</small></span>
+        <span class="stretch-row-text"><strong>${index + 1}. ${escapeHtml(exercise.name)}</strong><small>${plan.work} s${exercise.jump ? " · tem pulo" : ""}${exercise.sides ? " · troca de lado na metade" : ""}</small>${chip}</span>
       </div>`;
   }).join("");
+  const elastic = isElasticPlan(plan);
+  if (elastic) elasticSetupPlan = plan.id;
+  const feel = elastic ? elasticLastFeel(plan.id) : "";
+  const feelTip = feel === "leve"
+    ? "Da última vez tu disse que tava leve: já subi uma cor em cada exercício 🔥"
+    : feel === "pesado"
+      ? "Da última vez tava pesadão: desci uma cor. Forma bonita primeiro 👌"
+      : "";
+  const elasticBox = elastic ? `
+      <div class="card elastic-box">
+        <div class="elastic-box-row">
+          <span><strong>🎨 Meus elásticos</strong><small>${elasticOrderLine()} (leve → forte)</small></span>
+          <button type="button" class="btn btn-secondary btn-sm" data-click="openElasticSetup" data-plan="${plan.id}">✏️ Ajustar</button>
+        </div>
+        <p class="live-hint">Toca na cor de cada exercício pra trocar (leve → forte). O Toba lembra da próxima vez e soma repetições × kg no 💪 Kg levantado.</p>
+        ${feelTip ? `<p class="live-hint elastic-feel-tip">🤖 ${escapeHtml(feelTip)}</p>` : ""}
+      </div>` : "";
   const title = document.getElementById("liveStartTitle");
   if (title) title.textContent = `${plan.icon} ${plan.name}`;
   document.getElementById("liveStartList").innerHTML = `
@@ -387,6 +682,7 @@ function openHomeIntro(planId) {
         <button type="button" class="toba-icon-btn home-help-btn" data-click="openHomeHelp" data-plan="${plan.id}" aria-label="Papo do Cloba: como é esse treino">❔</button>
       </div>
       <div class="workout-record-chips">${homeIntroChips(plan)}</div>
+      ${elasticBox}
       <div class="hub-title">Os exercícios (cada volta)</div>
       <div class="card stretch-list">${rows}</div>
       <p class="live-hint">Toca no ❔ que o Cloba explica o treino e cada exercício. Quando tiver pronto no tapete, ▶ Iniciar: tem 10 s de "Prepara" antes do 1º tiro.</p>
@@ -396,7 +692,7 @@ function openHomeIntro(planId) {
     </div>`;
   closeTobaModal("workoutModal");
   openTobaModal("liveStartModal");
-  document.querySelector("#liveStartModal .toba-sheet")?.scrollTo?.(0, 0);
+  document.querySelector("#liveStartModal .toba-sheet")?.scrollTo?.(0, scroll);
 }
 
 // ❔ Papo do Cloba: o porquê do treino, como funciona o timer e cada exercício
@@ -418,6 +714,7 @@ function openHomeHelp(planId) {
   const rounds = plan.rounds > 1
     ? `Faz a lista inteira ${plan.rounds} vezes (${plan.rounds} voltas), com ${homeFormatSecs(plan.roundRest)} de descanso entre uma volta e outra.`
     : "É uma volta só.";
+  elasticSetupTaps = [];
   document.getElementById("homeHelpTitle").textContent = `❔ ${plan.name}`;
   document.getElementById("homeHelpBody").innerHTML = `
     <div class="home-help-cloba">
@@ -433,6 +730,16 @@ function openHomeHelp(planId) {
       <li>🔊 A voz avisa cada troca e conta o 3-2-1: dá pra deixar o celular no chão.</li>
       <li>⏸ Pausa, pula ou volta quando quiser. 🏁 Terminar agora salva o que já fez.</li>
     </ul>
+    ${isElasticPlan(plan) ? `
+    <div class="hub-title">🟣 Escolhendo o elástico</div>
+    <ul class="home-help-how">
+      <li>🎯 Cor certa = faz o tempo todo com a forma bonita e as últimas 3 ou 4 repetições ficam difíceis.</li>
+      <li>🐢 Ritmo: 2 s puxando, 1 s segurando lá no fim, 2 a 3 s voltando. Voltar devagar é metade do treino.</li>
+      <li>⬆️ Ficou fácil? Sobe uma cor. Ombro ou lombar ajudando? Desce uma.</li>
+      <li>😮‍💨 No descanso a voz já fala a cor do próximo: dá tempo de trocar o elástico.</li>
+      <li>💪 Conta no Kg levantado dos troféus: repetições (pelo tempo) × kg do elástico.</li>
+      <li>⚠️ Confere se o elástico não tem rasgo e nunca solta ele esticado (chicotada no Killua não 🐈).</li>
+    </ul>` : ""}
     <div class="hub-title">Os exercícios</div>
     ${list}
     <p class="live-hint">Dói articulação (joelho, ombro, lombar)? Para e pula o exercício. Mandíbula solta, sem trincar o dente 🦷</p>`;
@@ -617,6 +924,15 @@ function openSaitamaHelp() {
 /* ---------------------------------------------------------------------
  * Começar
  * ------------------------------------------------------------------- */
+// v2.06: cor de cada exercício com elástico (a última usada)
+function homeStartBands(plan) {
+  const bands = {};
+  plan.list.forEach((id) => {
+    if (getHomeExercise(id)?.band) bands[id] = elasticPick(id);
+  });
+  return bands;
+}
+
 function startHomeLive(planId) {
   const plan = getHomePlan(planId) || HOME_PLANS[0];
   const steps = buildHomeSteps(plan.id);
@@ -632,7 +948,7 @@ function startHomeLive(planId) {
     title: plan.name,
     current: 0,
     exercises: [],
-    home: normalizeHomeLive({ plan: plan.id, step: 0, endsAt: now + steps[0].secs * 1000 }),
+    home: normalizeHomeLive({ plan: plan.id, step: 0, endsAt: now + steps[0].secs * 1000, bands: homeStartBands(plan) }),
     rest: { duration: LIVE_REST_DEFAULT, startedAt: null, endsAt: null, alerted: false },
     restDefault: LIVE_REST_DEFAULT,
     updatedAt: now,
@@ -708,6 +1024,7 @@ function updateHomeClock(now = Date.now()) {
   const remaining = document.getElementById("homeRemaining");
   if (remaining) remaining.textContent = `faltam ${formatLiveClock(homeRemainingSeconds(session, now) * 1000)}`;
   homeCountdown(session, step, leftMs);
+  homeHalfway(session, step, leftMs);
 }
 
 /* ---------------------------------------------------------------------
@@ -748,8 +1065,9 @@ function renderHomeLive(session) {
   return `${top}
     <div class="stretch-stage home-stage ${phase}${paused ? " is-paused" : ""}">
       <div class="stretch-phase">${phaseText} ${roundText}</div>
-      ${homeFigureSvg(step.exerciseId, { size: "lg" })}
+      ${homeFigureSvg(step.exerciseId, { size: "lg", band: data.bands[step.exerciseId] })}
       <div class="stretch-name">${step.kind === "work" ? "" : "<small>Próximo</small> "}${escapeHtml(exercise?.name || "")}</div>
+      ${exercise?.band ? `<div class="elastic-live">${elasticChip(step.exerciseId, data.bands[step.exerciseId] || elasticPick(step.exerciseId), "homeCycleBand")}<small>toca pra trocar a cor</small></div>` : ""}
       <div class="stretch-timer">
         <div class="stretch-ring">
           <svg viewBox="0 0 120 120" aria-hidden="true">
@@ -771,8 +1089,8 @@ function renderHomeLive(session) {
 
     ${nextExercise ? `
       <div class="stretch-next">
-        ${homeFigureSvg(nextWork.exerciseId, { size: "sm" })}
-        <span><small>Depois</small><strong>${escapeHtml(nextExercise.name)}</strong></span>
+        ${homeFigureSvg(nextWork.exerciseId, { size: "sm", band: data.bands[nextWork.exerciseId] })}
+        <span><small>Depois</small><strong>${escapeHtml(nextExercise.name)}</strong>${nextExercise.band ? `<small>${escapeHtml(elasticBandLabel(data.bands[nextWork.exerciseId] || elasticPick(nextWork.exerciseId)))}</small>` : ""}</span>
       </div>` : ""}
 
     <p class="live-hint stretch-quip">${escapeHtml(quip)}</p>
@@ -796,12 +1114,26 @@ function renderHomeDone(session) {
   const minutes = Math.max(1, Math.round(homeMovingMs(session) / 60000));
   const kcal = estimateHomeKcal(data.plan, minutes, session.date);
   const done = Object.keys(data.done);
-  const figures = done.slice(0, 18).map((id) => `<span class="stretch-done-fig" title="${escapeHtml(getHomeExercise(id)?.name || id)}">${homeFigureSvg(id, { size: "sm" })}</span>`).join("");
+  const figures = done.slice(0, 18).map((id) => `<span class="stretch-done-fig" title="${escapeHtml(getHomeExercise(id)?.name || id)}">${homeFigureSvg(id, { size: "sm", band: data.bands[id] })}</span>`).join("");
+  const elastic = isElasticPlan(data.plan);
+  const lift = elastic ? calcElasticLift({ date: session.date, home: { plan: data.plan, done: data.done, kg: homeBandKg(data) } }, healthDb) : null;
+  const feelChip = (id, label) => `<button type="button" class="elastic-feel${data.feel === id ? " is-on" : ""}" data-click="homePickFeel" data-feel="${id}">${label}</button>`;
+  const elasticBlock = elastic ? `
+      <div class="card elastic-done">
+        <strong>💪 ~${formatWorkoutNumber(lift.kg, 0)} kg levantados</strong>
+        <small>${formatWorkoutNumber(lift.reps, 0)} repetições (pelo tempo) × kg de cada elástico (+ o peso do corpo no agachamento, terra, abdominal e coice). Vai pros troféus do Kg levantado 🌕</small>
+        <div class="hub-title">Como tava o peso?</div>
+        <div class="elastic-feels">
+          ${feelChip("leve", "😴 Leve demais")}${feelChip("certo", "👌 No ponto")}${feelChip("pesado", "💀 Pesadão")}
+        </div>
+        <p class="live-hint">Leve demais = próxima vez já começa uma cor acima. Pesadão = uma abaixo.</p>
+      </div>` : "";
   return `
     <div class="stretch-done home-done">
       <div class="stretch-done-title">🏆 Academia na sala: aprovada!</div>
       <p class="toba-sheet-text">${done.length} ${done.length === 1 ? "exercício" : "exercícios"} · ${formatLiveClock(workSecs * 1000)} no pau · ${minutes} min no total. Vale XP, sequência, troféu e pinta o mapa de calor 🔥</p>
       ${figures ? `<div class="stretch-done-figs">${figures}</div>` : ""}
+      ${elasticBlock}
       <form data-submit="saveHomeLive">
         <div class="grid-2">
           <div class="form-group">
@@ -925,6 +1257,34 @@ function homeFinishNow() {
   window.scrollTo(0, 0);
 }
 
+// v2.06: kg / nível de cada exercício com elástico (o que vale hoje)
+function homeBandKg(data) {
+  const kg = {};
+  Object.entries(data.bands || {}).forEach(([id, band]) => {
+    kg[id] = elasticKg(band);
+  });
+  return kg;
+}
+
+function homeCycleBand(el) {
+  const data = liveSession?.home;
+  const id = el.dataset.ex;
+  if (!data || !getHomeExercise(id)?.band) return;
+  data.bands[id] = elasticNext(data.bands[id] || elasticPick(id));
+  elasticStorePicks({ [id]: data.bands[id] });
+  storeLiveSession();
+  renderLiveSession();
+}
+
+// Troca a marcação no lugar (não redesenha: não apaga o que já digitou)
+function homePickFeel(el) {
+  const data = liveSession?.home;
+  if (!data) return;
+  data.feel = data.feel === el.dataset.feel ? "" : el.dataset.feel;
+  storeLiveSession();
+  el.parentElement?.querySelectorAll(".elastic-feel").forEach((chip) => chip.classList.toggle("is-on", chip.dataset.feel === data.feel));
+}
+
 function homeToggleVoice(el) {
   storeLivePrefs({ homeVoice: el.checked });
   tobaToast(el.checked ? "🔊 O Toba avisa cada troca" : "🔇 Só vibração");
@@ -968,6 +1328,19 @@ function saveHomeLive() {
     notes: document.getElementById("home-notes").value.trim(),
     home: { plan: data.plan, done: { ...data.done } },
   };
+  // v2.06: 🟣 elástico: cor, nível e kg de cada exercício + como tava
+  const bandIds = Object.keys(data.bands || {}).filter((id) => data.done[id] > 0);
+  if (isElasticPlan(data.plan) && bandIds.length) {
+    workout.home.bands = {};
+    workout.home.levels = {};
+    workout.home.kg = {};
+    bandIds.forEach((id) => {
+      workout.home.bands[id] = data.bands[id];
+      workout.home.levels[id] = elasticLevel(data.bands[id]);
+      workout.home.kg[id] = elasticKg(data.bands[id]);
+    });
+    if (data.feel) workout.home.feel = data.feel;
+  }
   // v2.04: horário + ⌚ mesclar com o relógio
   const startTime = liveStartClock(liveSession.startedAt);
   if (startTime) workout.startTime = startTime;
@@ -983,6 +1356,15 @@ function saveHomeLive() {
   if (!saved) {
     healthDb.workouts = healthDb.workouts.filter((item) => item.id !== workout.id);
     return;
+  }
+  // Leve demais / pesadão: a próxima já começa uma cor acima / abaixo
+  if (workout.home.feel === "leve" || workout.home.feel === "pesado") {
+    const step = workout.home.feel === "leve" ? 1 : -1;
+    const picks = {};
+    bandIds.forEach((id) => {
+      picks[id] = elasticAtLevel(elasticLevel(data.bands[id]) + step);
+    });
+    elasticStorePicks(picks);
   }
   dropLiveSession();
   stopLiveTicker();
@@ -1000,14 +1382,24 @@ function renderHomeWorkoutDetail(workout) {
   const done = getHomeDone(workout);
   const items = Object.entries(done)
     .filter(([id, secs]) => Number(secs) > 0 && getHomeExercise(id))
-    .map(([id, secs]) => `
+    .map(([id, secs]) => {
+      const band = getElasticBand(workout.home?.bands?.[id]);
+      const kg = Number(workout.home?.kg?.[id]) || 0;
+      const bandText = band ? ` · ${band.dot} ${escapeHtml(band.name)}${kg ? ` ${formatWorkoutNumber(kg, 1)} kg` : ""}` : "";
+      return `
       <div class="stretch-row">
-        ${homeFigureSvg(id, { size: "sm" })}
-        <span class="stretch-row-text"><strong>${escapeHtml(getHomeExercise(id).name)}</strong><small>${formatLiveSeconds(secs)} no pau</small></span>
-      </div>`).join("");
+        ${homeFigureSvg(id, { size: "sm", band: band?.id || "" })}
+        <span class="stretch-row-text"><strong>${escapeHtml(getHomeExercise(id).name)}</strong><small>${formatLiveSeconds(secs)} no pau${bandText}</small></span>
+      </div>`;
+    }).join("");
   if (!items) return "";
   const live = workout.home && workout.home.done ? "" : '<p class="live-hint">Anotado na mão: mostra o plano inteiro.</p>';
-  return `<div class="section-title">🏠 Exercícios</div><div class="card stretch-list">${items}${live}</div>`;
+  const lift = isElasticPlan(workout.home?.plan || "") ? calcElasticLift(workout, healthDb) : null;
+  const feels = { leve: "😴 Leve demais", certo: "👌 No ponto", pesado: "💀 Pesadão" };
+  const liftLine = lift && lift.kg > 0
+    ? `<p class="live-hint">💪 ~${formatWorkoutNumber(lift.kg, 0)} kg levantados (${formatWorkoutNumber(lift.reps, 0)} repetições pelo tempo)${feels[workout.home.feel] ? ` · ${feels[workout.home.feel]}` : ""}</p>`
+    : "";
+  return `<div class="section-title">🏠 Exercícios</div><div class="card stretch-list">${items}${live}${liftLine}</div>`;
 }
 
 /* ---------------------------------------------------------------------
@@ -1078,4 +1470,12 @@ tobaActions({
   homeToggleVoice,
   homeTestVoice,
   saveHomeLive,
+  // v2.06: 🟣 elástico
+  openElasticSetup: (el) => openElasticSetup(el.dataset.plan),
+  elasticSetupTap,
+  elasticSetupReset,
+  elasticSetupKg,
+  elasticCycleIntro,
+  homeCycleBand,
+  homePickFeel,
 });

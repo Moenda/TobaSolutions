@@ -43,10 +43,10 @@ const AM_PITCH_3D = 60;
 const AM_W_CASING = ["interpolate", ["linear"], ["zoom"], 11, 7, 15, 14, 16.5, 19, 18, 28, 19, 34];
 const AM_W_LINE = ["interpolate", ["linear"], ["zoom"], 11, 4.5, 15, 9.5, 16.5, 13, 18, 20, 19, 25];
 const AM_SEE_THROUGH = 0.55;
-// v2.05: trânsito da rota vai POR CIMA do azul, pintando a própria rota de amarelo/vermelho/vinho
-// (estilo Waze). Na v2.03 era uma faixa por baixo e o azul cobria quase tudo: o Rafa só via azul.
-// Um tico mais larga que o risco azul pra não sobrar fiapo azul na borda; o contorno escuro emoldura.
-const AM_W_JAM = ["interpolate", ["linear"], ["zoom"], 11, 5, 15, 10.5, 16.5, 14, 18, 21.5, 19, 26.5];
+// v2.06 (ideia do Rafa): nada de faixa de trânsito separada. A PRÓPRIA linha azul da rota vira
+// amarelo / vermelho / vinho nos trechos lentos (line-gradient por line-progress, estilo Google Maps).
+// Na v2.03 a faixa ia por baixo (o azul tampava) e na v2.05 era uma 2ª linha por cima: o Rafa
+// seguia vendo só azul. Uma linha só, sem camada pra sumir.
 const AM_W_CITY_TRAFFIC = ["interpolate", ["linear"], ["zoom"], 10, 2, 13, 3.4, 15, 5, 16, 6.5, 18, 10, 19, 12];
 const AM_FRAME_MS = 33; // ~30 quadros por segundo (o celular também está dirigindo o carro)
 const AM_READY_WAIT_MS = 20000;
@@ -69,7 +69,6 @@ const am = {
   free: false, // v1.80: câmera solta (arrastou o mapa) até o 🎯 centralizar
   lastFrame: 0,
   lastPuck: "",
-  lastJamAlong: -1,
   floor: 0, // v2.02: px do painel de baixo debaixo da seta (a câmera sobe o carro pra cima dele)
 };
 
@@ -301,7 +300,6 @@ function amAddLayers() {
   const map = am.map;
   const skin = amSkin();
   map.addSource("am-route", { type: "geojson", lineMetrics: true, data: amEmpty() });
-  map.addSource("am-jams", { type: "geojson", data: amEmpty() });
   map.addSource("am-dest", { type: "geojson", data: amEmpty() });
   map.addSource("am-car", { type: "geojson", data: amEmpty() });
   map.addSource("am-alts", { type: "geojson", data: amEmpty() });
@@ -338,22 +336,10 @@ function amAddLayers() {
     layout: { "line-cap": "round", "line-join": "round" },
     paint: {
       "line-color": skin.route,
+      // v2.06: a PRÓPRIA linha muda de cor no trânsito (ideia do Rafa): degradê por trecho (amRouteGradient)
+      "line-gradient": amRouteGradient(null),
       "line-width": AM_W_LINE,
       "line-trim-offset": [0, 0],
-      "line-emissive-strength": 1,
-      "line-occlusion-opacity": AM_SEE_THROUGH,
-    },
-  });
-  // v2.05: trânsito da rota POR CIMA do risco azul (só amarelo / vermelho / vinho, nunca verde)
-  map.addLayer({
-    id: "am-jam-line",
-    type: "line",
-    source: "am-jams",
-    layout: { "line-cap": "round", "line-join": "round" },
-    paint: {
-      "line-color": ["match", ["get", "lvl"], 3, AM_JAM_COLORS[3], 2, AM_JAM_COLORS[2], AM_JAM_COLORS[1]],
-      "line-width": AM_W_JAM,
-      "line-opacity": 1,
       "line-emissive-strength": 1,
       "line-occlusion-opacity": AM_SEE_THROUGH,
     },
@@ -424,7 +410,7 @@ function amAddLayers() {
 }
 
 // v1.80: 🚦 trânsito das ruas em volta (Mapbox Traffic), SÓ amarelo / vermelho / vinho,
-// por baixo da rota (v2.05: mais grosso ainda; o da PRÓPRIA rota vai por cima, em am-jam-line).
+// por baixo da rota (v2.05: mais grosso ainda; o da PRÓPRIA rota é a cor da linha azul, v2.06).
 // Rua livre (verde) não aparece.
 function amAddTraffic() {
   const map = am.map;
@@ -493,6 +479,7 @@ function amApplySkin() {
   const skin = amSkin();
   map.setPaintProperty("am-route-line", "line-color", skin.route);
   map.setPaintProperty("am-route-casing", "line-color", skin.casing);
+  amPaintRouteTraffic(am.overview ? am.overview.route : am.route); // v2.06: degradê usa o azul da skin
   if (map.hasImage("am-arrow")) map.removeImage("am-arrow");
   map.addImage("am-arrow", amArrowImage(skin.route), { pixelRatio: 2 });
   document.documentElement.style.setProperty("--am-accent", skin.route);
@@ -536,8 +523,43 @@ function amSetRouteData(r) {
   am.map.getSource("am-dest").setData(r && r.dest
     ? { type: "Feature", properties: {}, geometry: { type: "Point", coordinates: [r.dest[1], r.dest[0]] } }
     : amEmpty());
-  am.lastJamAlong = -1;
+  amPaintRouteTraffic(r);
   amUpdateTrim();
+}
+
+// v2.06: cor da linha ao longo da rota. Azul onde tá livre, amarelo/vermelho/vinho nos trechos
+// de trânsito da TomTom (jams = índices dos pontos -> fração do caminho, 0 a 1).
+function amRouteGradient(r) {
+  const blue = amSkin().route;
+  const jams = r && Array.isArray(r.jams) && r.len > 0 ? r.jams.slice().sort((x, y) => x.a - y.a) : [];
+  const stops = []; // [entrada, cor, entrada, cor...] sempre subindo (exigência do step)
+  const lastIn = () => (stops.length ? stops[stops.length - 2] : 0);
+  jams.forEach((j) => {
+    const color = AM_JAM_COLORS[j.lvl] || AM_JAM_COLORS[1];
+    let f0 = Math.max(1e-7, Math.min(1, r.cum[j.a] / r.len));
+    const f1 = Math.min(1, r.cum[j.b] / r.len);
+    // trecho grudado no anterior: troca o "volta pro azul" pela cor deste
+    if (stops.length && stops[stops.length - 1] === blue && f0 <= lastIn() + 1e-6) {
+      f0 = lastIn();
+      stops.length -= 2;
+    }
+    if (stops.length && f0 <= lastIn()) f0 = lastIn() + 1e-7;
+    if (f1 - f0 < 1e-6) return;
+    stops.push(f0, color);
+    if (f1 < 1) stops.push(f1, blue);
+  });
+  if (!stops.length) return ["interpolate", ["linear"], ["line-progress"], 0, blue, 1, blue];
+  return ["step", ["line-progress"], blue, ...stops];
+}
+
+function amPaintRouteTraffic(r) {
+  const map = am.map;
+  if (!map || !am.styleOk) return;
+  try {
+    map.setPaintProperty("am-route-line", "line-gradient", amRouteGradient(r));
+  } catch (err) {
+    console.warn("Cor do trânsito na rota não entrou:", err?.message || err);
+  }
 }
 
 function amPrepRoute(r) {
@@ -553,7 +575,7 @@ function amPrepRoute(r) {
   return { id: r.id, pts: r.pts, cum, len, jams, dest: Array.isArray(r.dest) ? r.dest : null };
 }
 
-// Rota já rodada some (trim) e trânsito que ficou pra trás também
+// Rota já rodada some (trim); o trânsito vai junto porque é a cor da própria linha (v2.06)
 function amUpdateTrim() {
   const map = am.map;
   if (!map || !am.styleOk) return;
@@ -561,17 +583,7 @@ function amUpdateTrim() {
   const frac = r ? Math.max(0, Math.min(0.999, am.along / r.len)) : 0;
   map.setPaintProperty("am-route-line", "line-trim-offset", [0, frac]);
   map.setPaintProperty("am-route-casing", "line-trim-offset", [0, frac]);
-  const src = am.overview ? am.overview.route : am.route;
-  const alongNow = am.overview ? 0 : am.along;
-  if (Math.abs(alongNow - am.lastJamAlong) < 25 && am.lastJamAlong >= 0) return;
-  am.lastJamAlong = alongNow;
-  const feats = !src ? [] : src.jams.filter((j) => j.endM > alongNow).map((j) => {
-    // começa no ponto da rota mais perto de onde o carro está (não desenha atrás)
-    let a = j.a;
-    while (a < j.b - 1 && src.cum[a + 1] < alongNow) a++;
-    return { type: "Feature", properties: { lvl: j.lvl }, geometry: { type: "LineString", coordinates: src.pts.slice(a, j.b + 1).map((p) => [p[1], p[0]]) } };
-  });
-  map.getSource("am-jams").setData({ type: "FeatureCollection", features: feats });
+  // v2.06: o trânsito agora é a cor da própria linha (amRouteGradient): o trim já esconde o que passou
 }
 
 /* ---------- câmera e carro (a cada quadro) ---------- */

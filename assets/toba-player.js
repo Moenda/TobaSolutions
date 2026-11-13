@@ -320,6 +320,13 @@ function buildPlayerAchievements() {
     { id: "tc-10", cat: "treinos", tier: "prata", icon: "🛋️", name: "O vizinho de baixo reclamou", desc: "10 treinos em casa. O síndico já sabe seu nome.", hint: "Faça 10 treinos em casa.", metric: (s) => s.homeWorkouts, goal: 10 },
     { id: "tc-30", cat: "treinos", tier: "ouro", icon: "🏡", name: "Personal de si mesmo", desc: "30 treinos em casa. Mensalidade de academia: R$ 0,00.", hint: "Faça 30 treinos em casa.", metric: (s) => s.homeWorkouts, goal: 30, title: "🏠 Rato de Sala" },
     { id: "tc-todos", cat: "treinos", tier: "prata", icon: "🎛️", name: "Cardápio completo", desc: "Fez todos os 5 treinos em casa (HIIT, Tabata, sem pulo, força e abdômen).", hint: "Faça cada um dos 5 treinos em casa pelo menos 1 vez.", metric: (s) => s.homePlans, goal: 5 },
+    // v2.06: 🟣 treino com elástico (o dia do puxa, alternando com o Saitama)
+    { id: "el-1", cat: "treinos", tier: "bronze", icon: "🪢", name: "Estilingue humano", desc: "Primeiro treino com elástico. As costas acordaram do coma.", hint: "Faça 1 treino com elástico (▶ Iniciar treino › 🏠 › 💪 Força).", metric: (s) => s.elasticWorkouts, goal: 1 },
+    { id: "el-10", cat: "treinos", tier: "prata", icon: "🏹", name: "Arqueiro de apê", desc: "10 treinos com elástico. O Killua já foge quando vê a borracha.", hint: "Faça 10 treinos com elástico.", metric: (s) => s.elasticWorkouts, goal: 10 },
+    { id: "el-30", cat: "treinos", tier: "ouro", icon: "🦍", name: "Costas de gorila", desc: "30 treinos com elástico. A camiseta M não passa mais no ombro.", hint: "Faça 30 treinos com elástico.", metric: (s) => s.elasticWorkouts, goal: 30, title: "🦍 Costas de Gorila" },
+    { id: "el-cores", cat: "treinos", tier: "prata", icon: "🌈", name: "Arco-íris de borracha", desc: "Usou os 4 elásticos do kit (azul, roxo, preto e verde).", hint: "Use cada uma das 4 cores de elástico em algum treino.", metric: (s) => s.elasticBands, goal: 4 },
+    { id: "el-todos", cat: "treinos", tier: "bronze", icon: "🎒", name: "Kit completo", desc: "Fez os 4 treinos com elástico (corpo todo, um elástico só, costas e bíceps).", hint: "Faça cada um dos 4 treinos com elástico pelo menos 1 vez.", metric: (s) => s.elasticPlans, goal: 4 },
+    { id: "el-alterna", cat: "treinos", tier: "prata", icon: "☯️", name: "Empurra e puxa", desc: "10 vezes um dia de 👊 Saitama colado num dia de 🟣 elástico. Equilíbrio de monge.", hint: "Faça Saitama num dia e elástico no dia seguinte (ou o contrário), 10 vezes.", metric: (s) => s.elasticAlternate, goal: 10 },
     { id: "cm-gps", cat: "distancia", tier: "bronze", icon: "🛰️", name: "Rastreado pelo satélite", desc: "Primeira caminhada gravada com GPS no Toba.", hint: "Grave 1 caminhada/corrida ao vivo com GPS.", metric: (s) => s.gpsWalks, goal: 1 },
     { id: "cm-gps10", cat: "distancia", tier: "prata", icon: "🗺️", name: "Cartógrafo de bairro", desc: "10 rolês com GPS. Já dá pra desenhar o mapa da vila.", hint: "Grave 10 caminhadas/corridas com GPS.", metric: (s) => s.gpsWalks, goal: 10 },
   ];
@@ -1027,6 +1034,7 @@ function computePlayer(options = {}) {
     socialOn: 0, socialFriends: 0, socialDuels: 0, socialBeat: 0, socialGhost: 0,
     stretch: 0, gpsWalks: 0, // v1.84
     homeWorkouts: 0, homePlans: 0, // v1.87
+    elasticWorkouts: 0, elasticPlans: 0, elasticBands: 0, elasticAlternate: 0, // v2.06
     notaGood: 0, notaBest: 0, notaSeq: 0, breaths: 0, // v2.04 (🩻 Raio-X)
   };
   const activeDays = new Set(); // dias com alguma coisa feita (pras temporadas)
@@ -1087,6 +1095,21 @@ function computePlayer(options = {}) {
   };
   const types = new Set();
   const homePlans = new Set(); // v1.87: planos diferentes do 🏠 Treinos em casa
+  // v2.06: 🟣 elástico (planos "el-*"): planos e cores usados + dias de
+  // Saitama colados em dia de elástico (cada par de dias conta 1 vez)
+  const elasticPlans = new Set();
+  const elasticBands = new Set();
+  const pushDays = new Set();
+  const pullDays = new Set();
+  const alternatePairs = new Set();
+  const markAlternate = (date, mine, other) => {
+    if (mine.has(date)) return;
+    mine.add(date);
+    [playerAddDays(date, -1), playerAddDays(date, 1)].forEach((near) => {
+      if (other.has(near)) alternatePairs.add([date, near].sort().join("|"));
+    });
+    stats.elasticAlternate = alternatePairs.size;
+  };
   const groups = new Set();
   const monthGroups = {};
   const weekendDays = {};
@@ -1150,9 +1173,20 @@ function computePlayer(options = {}) {
     if (workout.type === "stretch") stats.stretch += 1;
     if (workout.type === "home") {
       stats.homeWorkouts += 1;
-      if (workout.home && workout.home.plan) homePlans.add(String(workout.home.plan));
+      const plan = workout.home && workout.home.plan ? String(workout.home.plan) : "";
+      if (plan.startsWith("el-")) { // v2.06: elástico não entra no "Cardápio completo" (os 5 sem equipamento)
+        stats.elasticWorkouts += 1;
+        elasticPlans.add(plan);
+        stats.elasticPlans = elasticPlans.size;
+        Object.values(workout.home.bands && typeof workout.home.bands === "object" ? workout.home.bands : {}).forEach((band) => elasticBands.add(String(band)));
+        stats.elasticBands = elasticBands.size;
+        markAlternate(date, pullDays, pushDays);
+      } else if (plan) {
+        homePlans.add(plan);
+      }
       stats.homePlans = homePlans.size;
     }
+    if (workout.type === "saitama") markAlternate(date, pushDays, pullDays);
     if (workout.type === "walking" && workout.mode === "gps") stats.gpsWalks += 1;
     if (workout.type) types.add(workout.type);
     stats.types = types.size;
