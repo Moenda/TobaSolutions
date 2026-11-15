@@ -44,7 +44,7 @@ final class TobaBridge {
 
     @JavascriptInterface
     public int version() {
-        return 16; // 16 = APK 2.9 (voz do celular liga sozinha: speak funciona fora do 🧭 Drive, no 🧘 Alongamento e 🏠 Treinos em casa; + speakReady); 15 = APK 2.7 (autoTrips: viagens feitas só no Android Auto entram no histórico do 🧭 Toba Drive); 14 = APK 2.6 (healthRead: sono com a linha do tempo das fases + FC/oxigênio/respiração/HRV/temperatura de dentro da noite, + samsung com temperatura da pele/Energy Score/nota de sono pelo SDK do Samsung; samsungStatus/samsungAsk; 😴 Sono turbinado); 13 = APK 2.5 (healthRead: + HRV, oxigenação, respiração da noite e andares; 🩻 RAIO ULTRA X); 12 = APK 2.4 (healthRead: passos/km/kcal de UMA fonte por dia, sem somar celular + Samsung Health; manda "sources"); 11 = APK 2.3 (exercícios do healthRead com kcal/km/passos/FC da sessão, pro mesclar); 10 = APK 2.2 (healthStatus/healthAsk/healthRead: ⌚ Relógio do Toba Health); 9 = APK 2.1 (clipboardText: 📋 Colar do Maps no Places); 8 = APK 1.8 (autoFavorites: ⭐ no Android Auto); 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
+        return 17; // 17 = APK 3.1 (screenStatus/screenAsk/screenRead/screenIcons: 📱 Toba Screen, tempo de tela pelo Acesso ao uso); 16 = APK 2.9 (voz do celular liga sozinha: speak funciona fora do 🧭 Drive, no 🧘 Alongamento e 🏠 Treinos em casa; + speakReady); 15 = APK 2.7 (autoTrips: viagens feitas só no Android Auto entram no histórico do 🧭 Toba Drive); 14 = APK 2.6 (healthRead: sono com a linha do tempo das fases + FC/oxigênio/respiração/HRV/temperatura de dentro da noite, + samsung com temperatura da pele/Energy Score/nota de sono pelo SDK do Samsung; samsungStatus/samsungAsk; 😴 Sono turbinado); 13 = APK 2.5 (healthRead: + HRV, oxigenação, respiração da noite e andares; 🩻 RAIO ULTRA X); 12 = APK 2.4 (healthRead: passos/km/kcal de UMA fonte por dia, sem somar celular + Samsung Health; manda "sources"); 11 = APK 2.3 (exercícios do healthRead com kcal/km/passos/FC da sessão, pro mesclar); 10 = APK 2.2 (healthStatus/healthAsk/healthRead: ⌚ Relógio do Toba Health); 9 = APK 2.1 (clipboardText: 📋 Colar do Maps no Places); 8 = APK 1.8 (autoFavorites: ⭐ no Android Auto); 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
     }
 
     /* ---------------- v1.87 (APK 2.2): ⌚ Relógio (Health Connect) ---------------- */
@@ -115,6 +115,52 @@ final class TobaBridge {
     public void samsungAsk() {
         SamsungReader.ask(activity, json -> activity.healthJs(
                 "window.onTobaSamsungStatus&&window.onTobaSamsungStatus(" + json + ")"));
+    }
+
+    /* ---------------- v2.08 (APK 3.1): 📱 Toba Screen (Acesso ao uso) ---------------- */
+
+    // {ok: true, granted: true|false, sdk}
+    @JavascriptInterface
+    public String screenStatus() {
+        return ScreenReader.status(app).toString();
+    }
+
+    // Abre Configurações › Acesso ao uso (direto no Toba quando o Android deixa). Ao voltar,
+    // o site confere de novo no window.onTobaAppResume.
+    @JavascriptInterface
+    public void screenAsk() {
+        activity.runOnUiThread(() -> {
+            try {
+                Intent i = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS, Uri.parse("package:" + app.getPackageName()));
+                activity.startActivity(i);
+            } catch (Exception e) {
+                try {
+                    activity.startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
+                } catch (Exception e2) {
+                    activity.startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.parse("package:" + app.getPackageName())));
+                }
+            }
+        });
+    }
+
+    // Lê do dia from ao dia to ("AAAA-MM-DD", máx. 14 dias) em segundo plano. Resposta:
+    // window.onTobaScreenData(reqId, { ok, granted, from, to, oldest, events, days: { "AAAA-MM-DD": {...} }, apps: {...} })
+    @JavascriptInterface
+    public boolean screenRead(String from, String to, String reqId) {
+        if (from == null || to == null) return false;
+        final String id = JSONObject.quote(reqId == null ? "" : reqId);
+        ScreenReader.read(app, from, to, json -> activity.healthJs(
+                "window.onTobaScreenData&&window.onTobaScreenData(" + id + "," + json + ")"));
+        return true;
+    }
+
+    // Ícones dos apps (JSON ["pacote", ...]). Resposta: window.onTobaScreenIcons(reqId, { pacote: "data:image/png;base64,..." })
+    @JavascriptInterface
+    public void screenIcons(String json, String reqId) {
+        final String id = JSONObject.quote(reqId == null ? "" : reqId);
+        ScreenReader.icons(app, json, out -> activity.healthJs(
+                "window.onTobaScreenIcons&&window.onTobaScreenIcons(" + id + "," + out + ")"));
     }
 
     /* ---------------- v1.85 (APK 2.1): área de transferência ---------------- */

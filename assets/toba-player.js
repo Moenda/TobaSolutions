@@ -123,6 +123,7 @@ const PLAYER_ACHIEVEMENT_CATS = [
   { id: "distancia", name: "🌍 Distância" },
   { id: "energia", name: "🔥 Energia" },
   { id: "raiox", name: "🩻 Raio-X" }, // v2.04: 🏅 Nota do Dia e 🌬️ respirar (só troféu, sem XP por dia)
+  { id: "screen", name: "📱 Toba Screen" }, // v2.08: detox do celular (calcScreenTimeline, só troféu)
   { id: "saitama", name: "👊 Saitama" },
   { id: "musculos", name: "🗺️ Mapa de calor" },
   { id: "recordes", name: "📈 Recordes" },
@@ -363,6 +364,18 @@ function buildPlayerAchievements() {
     { id: "nd-50", cat: "raiox", tier: "ouro", icon: "📚", name: "Aluno nota 7", desc: "50 dias com nota 70+. O boletim tá lindo.", hint: "Feche 50 dias com 🏅 Nota do Dia 70+.", metric: (s) => s.notaGood, goal: 50 },
     { id: "nd-30", cat: "raiox", tier: "ouro", icon: "💎", name: "Mês de vitrine", desc: "30 dias seguidos com nota 70+. Isso não é dieta, é vida nova.", hint: "Feche 30 dias seguidos com 🏅 Nota do Dia 70+.", metric: (s) => s.notaSeq, goal: 30, title: "🏅 Nota Dez do Cloba" },
     { id: "nd-100", cat: "raiox", tier: "lenda", icon: "💯", name: "Gabaritou o Cloba", desc: "Nota 100 num dia: dormiu, andou, queimou, ficou zen e treinou. Nunca foi sorte.", hint: "???", metric: (s) => s.notaBest, goal: 100, mystery: true },
+    // v2.08: 📱 Toba Screen (calcScreenTimeline, health-metrics.js: só dias fechados, sem XP por dia)
+    { id: "sc-1", cat: "screen", tier: "bronze", icon: "📱", name: "Raio-X do dedão", desc: "Primeiro dia inteiro com o tempo de tela medido. O Cloba tá de olho. 👀", hint: "Libere o Acesso ao uso no 📱 Toba Screen e feche um dia.", metric: (s) => s.scrDays, goal: 1 },
+    { id: "sc-meta1", cat: "screen", tier: "bronze", icon: "🎯", name: "Dentro da meta", desc: "Fechou um dia dentro da 🎯 meta de tela.", hint: "Feche um dia dentro da 🎯 do 📱 Toba Screen.", metric: (s) => s.scrGood, goal: 1 },
+    { id: "sc-mao", cat: "screen", tier: "bronze", icon: "🤚", name: "Mão leve", desc: "Um dia com menos de 30 desbloqueios. O dedão tirou folga.", hint: "Feche um dia com menos de 30 desbloqueios.", metric: (s) => s.scrLowU, goal: 1 },
+    { id: "sc-meta7", cat: "screen", tier: "prata", icon: "🔗", name: "Semana no controle", desc: "7 dias SEGUIDOS dentro da meta de tela.", hint: "Feche 7 dias seguidos dentro da 🎯 de tela.", metric: (s) => s.scrSeq, goal: 7 },
+    { id: "sc-2h", cat: "screen", tier: "prata", icon: "🌳", name: "Tocou grama", desc: "Um dia inteiro com menos de 2 h de tela. Lá fora tem até passarinho.", hint: "Feche um dia com menos de 2 h de tela.", metric: (s) => s.scrU2h, goal: 1 },
+    { id: "sc-cama7", cat: "screen", tier: "prata", icon: "🛏️", name: "Cama é pra dormir", desc: "7 noites largando o celular 30 min+ antes de pegar no sono.", hint: "Largue o celular 30 min antes de dormir (com o sono do relógio no 🩻 Raio-X) em 7 noites.", metric: (s) => s.scrBed, goal: 7 },
+    { id: "sc-manha10", cat: "screen", tier: "prata", icon: "☕", name: "Café antes da tela", desc: "10 manhãs com 30 min+ sem celular depois de acordar. A V60 agradece.", hint: "Fique 30 min sem celular depois de acordar em 10 manhãs.", metric: (s) => s.scrMorning, goal: 10 },
+    { id: "sc-meta30", cat: "screen", tier: "ouro", icon: "📵", name: "Monge digital", desc: "30 dias SEGUIDOS dentro da meta de tela. Iluminado.", hint: "Feche 30 dias seguidos dentro da 🎯 de tela.", metric: (s) => s.scrSeq, goal: 30, title: "📵 Monge digital" },
+    { id: "sc-cama30", cat: "screen", tier: "ouro", icon: "🌙", name: "Noite analógica", desc: "30 noites largando o celular 30 min+ antes de dormir.", hint: "Largue o celular 30 min antes de dormir em 30 noites.", metric: (s) => s.scrBed, goal: 30 },
+    { id: "sc-semana", cat: "screen", tier: "ouro", icon: "📉", name: "Semana desintoxicada", desc: "Uma semana (seg a dom) com 20% menos tela que a anterior.", hint: "Feche uma semana com 20% menos tela que a de antes.", metric: (s) => s.scrWeek, goal: 1 },
+    { id: "sc-1h", cat: "screen", tier: "lenda", icon: "🧘", name: "Modo Amish", desc: "Um dia inteiro com menos de 1 h de celular. Tu existe mesmo?", hint: "???", metric: (s) => s.scrU1h, goal: 1, mystery: true },
     { id: "rs-1", cat: "raiox", tier: "bronze", icon: "🌬️", name: "Primeiro suspiro", desc: "Fez a respiração guiada de 1 minuto inteira. O stress piscou.", hint: "Faça o 🌬️ Respirar 1 min no 😤 Stress do Raio-X.", metric: (s) => s.breaths, goal: 1 },
     { id: "rs-10", cat: "raiox", tier: "prata", icon: "🫁", name: "Pulmão de monge", desc: "10 respirações guiadas. O trânsito da Marginal nem te pega mais.", hint: "Faça 10 respirações guiadas.", metric: (s) => s.breaths, goal: 10 },
     { id: "rs-50", cat: "raiox", tier: "ouro", icon: "🧘", name: "Dalai Cloba", desc: "50 respirações guiadas. Paz interior nível templo.", hint: "Faça 50 respirações guiadas.", metric: (s) => s.breaths, goal: 50, title: "🧘 Dalai Cloba" },
@@ -1036,6 +1049,7 @@ function computePlayer(options = {}) {
     homeWorkouts: 0, homePlans: 0, // v1.87
     elasticWorkouts: 0, elasticPlans: 0, elasticBands: 0, elasticAlternate: 0, // v2.06
     notaGood: 0, notaBest: 0, notaSeq: 0, breaths: 0, // v2.04 (🩻 Raio-X)
+    scrDays: 0, scrGood: 0, scrSeq: 0, scrU2h: 0, scrU1h: 0, scrLowU: 0, scrBed: 0, scrMorning: 0, scrWeek: 0, // v2.08 (📱 Toba Screen)
   };
   const activeDays = new Set(); // dias com alguma coisa feita (pras temporadas)
   const checkAchievements = (date, active = true) => {
@@ -1068,7 +1082,23 @@ function computePlayer(options = {}) {
   let watchNotaIndex = 0;
   const watchBreathDays = typeof calcWatchBreaths === "function" ? calcWatchBreaths(health, today) : [];
   let watchBreathIndex = 0;
+  // v2.08: 📱 Toba Screen (dias fechados, só conquistas)
+  const screenDaysTl = typeof calcScreenTimeline === "function" ? calcScreenTimeline(health, today) : [];
+  let screenIndex = 0;
   const flushWatchKm = (untilDate) => {
+    while (screenIndex < screenDaysTl.length && (!untilDate || screenDaysTl[screenIndex].date <= untilDate)) {
+      const x = screenDaysTl[screenIndex++];
+      stats.scrDays = x.days;
+      stats.scrGood = x.good;
+      stats.scrSeq = x.seq;
+      stats.scrU2h = x.u2h;
+      stats.scrU1h = x.u1h;
+      stats.scrLowU = x.lowU;
+      stats.scrBed = x.bed;
+      stats.scrMorning = x.morning;
+      stats.scrWeek = x.week;
+      checkAchievements(x.date, false);
+    }
     while (watchNotaIndex < watchNotaDays.length && (!untilDate || watchNotaDays[watchNotaIndex].date <= untilDate)) {
       const n = watchNotaDays[watchNotaIndex++];
       stats.notaBest = n.best;

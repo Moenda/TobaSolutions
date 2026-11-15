@@ -2748,3 +2748,31 @@ Ideia do Rafa: "se na barrinha dos gastos tivesse um risquinho mostrando onde eu
 **Como testar:** Gastos › aba Mês: aparece o risquinho branco na barra e a legenda embaixo. Com o mês estourado (ex.: bike ergométrica 😂) o pedaço depois do risco fica listrado de vermelho e a legenda diz "🔥 R$ ... acima", o mesmo valor do Cofre do mês (negativo). Toca na barra ou no ❔: no fim da folha tem a explicação do risquinho. ⚙️ mostra "Patch v2.07". Testado no Playwright em 360 px (acima e abaixo do ritmo).
 
 **Commit sugerido (da v2.07 inteira):** `v2.07 - Toba Auto: rota repinta sozinha com o transito ao vivo do Mapbox no mesmo sentido + Gastos com risquinho do ritmo do orcamento na barra (onde devia estar hoje, excesso listrado de vermelho, acima/abaixo em R$) e explicacao no ? do card`
+
+---
+
+## v2.08 — 📱 Toba Screen: o Raio-X do teu dedão (APK 3.1)
+
+**Arquivos novos/alterados:** `TobaHealth/TobaHealth-Screen.html` (NOVO), `TobaHealth/js/screen-core.js` (NOVO), `TobaHealth/js/screen.js` (NOVO), `TobaHealth/css/screen.css` (NOVO), `TobaHealth/TobaHealth-Index.html`, `TobaHealth/TobaHealth-Relogio.html`, `TobaHealth/js/health-core.js`, `TobaHealth/js/health-metrics.js`, `assets/toba-player.js`, `assets/toba-common.js`, `sw.js`, `CLAUDE.md`, `TobaAndroid/app/auto/br/com/toba/app/ScreenReader.java` (NOVO), `TobaAndroid/app/auto/br/com/toba/app/TobaBridge.java`, `TobaAndroid/app/src/main/AndroidManifest.xml`, `TobaAndroid/app/build.gradle`
+
+1. **📱 Toba Screen no Toba Health:** card novo no hub. Lê o teu tempo de tela direto do Android (o mesmo dado do Bem-estar digital): tempo por app, desbloqueios, notificações e cada vez que a tela acendeu. Libera uma vez em **Acesso ao uso › Toba** e pronto: vem tudo sozinho, sem importar nada.
+2. **Tela do dia (‹ Hoje ›):** tempo de tela com o anel da 🎯 meta, 🔮 quanto fecha no teu ritmo, ontem/7 dias "até essa hora" (comparação justa) e média de 30 dias, 🌅 1ª pegada, 🌙 última, ⏱️ maior sessão e 🔁 de quanto em quanto tempo tu pega o celular.
+3. **🤡 Papo reto do Cloba:** quem comeu teu dia, se vai estourar a meta, quanto foi diversão, o maior mergulho, celular na cama e de madrugada.
+4. **🏆 Ranking dos apps** com ícone, barra, % do dia e 🔔 notificações. Tocar no app abre a ficha dele: 14 dias, a hora que tu mais usa, porta de entrada, cutucadas, maior sessão, **🎯 limite por dia** (o risquinho na barra; passou, fica vermelho) e **🏷️ categoria** (se o Toba chutou errado).
+5. **🧩 Pra onde foi o tempo:** categorias (vídeo, social, jogos, mapas, grana, Toba...) e 🍿 Diversão x 🛠️ Útil x 😐 Neutro, comparando com os 7 dias antes.
+6. **🕐 Hora a hora** (tempo ou desbloqueios) com o teu normal tracejado e a hora fora da curva em vermelho.
+7. **🗺️ Mapa de calor das horas:** dia da semana x hora, média de 8 semanas, com a 🚨 zona vermelha (as 3 horas mais pesadas), o dia mais pesado e mais leve e a missão do Cloba pra cortar.
+8. **🗓️ Mapa do mês:** um quadradinho por dia (mais forte = mais tela, com as horas escritas), ✓ verde no dia dentro da meta, ‹ › pros meses, média x mês passado até o mesmo dia, dias na meta, dia mais leve e pior dia. Tocar mostra, tocar de novo abre o dia.
+9. **😴 Celular x sono** (cruza com o sono do 🩻 Raio-X): quanto antes de dormir tu largou o celular, quanto depois de acordar pegou, quantas vezes acendeu a tela de madrugada, as 14 noites e quanto sono a mais tu tem nas noites com 30 min+ sem celular.
+10. **🧠 Raio-X do vício:** ⚡ checadas (menos de 1 min), 🕳️ mergulhos (20 min+) e o buraco negro da semana, 🚪 porta de entrada (o app que tu abre no automático depois de desbloquear) e 🔔 quem mais te cutuca.
+11. **📈 Tá melhorando?** (7 dias x 7 antes, semana x semana passada, 8 semanas e dia da semana) e **🧮 Tua vida em tela** (dias por ano no celular, em livros, filmes, km e cafés na V60, e quanto ganha cortando 30 min).
+12. **⚙️:** 🎯 Meta de tela (🧠 automática = teu normal −10%, ou fixa), 🔐 Acesso ao uso e 🩺 Diagnóstico.
+13. **🏆 Troféus 📱 Toba Screen** no Perfil: Raio-X do dedão, Dentro da meta, Mão leve, Semana no controle, Tocou grama, Cama é pra dormir, Café antes da tela, Monge digital, Noite analógica, Semana desintoxicada e um lendário secreto.
+14. **Leitura calada:** abrir o hub do Health ou o 🩻 Raio-X também lê o tempo de tela (o Android só guarda uns 7 a 10 dias de detalhe, assim não perde dia).
+15. **APK 3.1** (versionCode 22): `ScreenReader` lê o Acesso ao uso e manda pro site.
+
+**Dados:** campo novo opcional `TOBA_HEALTH_DB.screen` (`goal`, `limits`, `apps`, `days` por dia; formato no CLAUDE.md 3.5). Vai junto no backup do Health e na ☁️. Banco/backup antigo sem ele abre normal. Dias com mais de 90 dias ficam só com o resumo (pra não pesar). Ícones dos apps ficam à parte em `toba_screen_icons` (só no aparelho). `saveHealthDb` aceita `{ silent: true }` (leitura calada sem o "Salvo ✓").
+
+**Como testar:** gerar o APK 3.1 (Sync Gradle, Generate Signed APK) e instalar pelo KingInstaller. Health › 📱 Toba Screen › 🔓 Abrir as Configurações › Toba › Permitir › voltar: puxa sozinho os últimos dias. Conferir o ranking com o Bem-estar digital, tocar num app, trocar a categoria, pôr um limite, ver o mapa do mês e o de calor (precisa de 7 dias). No navegador aparece o que veio pela ☁️.
+
+**Commit sugerido:** `v2.08 - Toba Screen no Toba Health: tempo de tela pelo Acesso ao uso (APK 3.1) com ranking dos apps, limite e categoria por app, hora a hora, mapa de calor das horas, mapa do mes, celular x sono, raio-x do vicio, tendencia, vida em tela e trofeus de detox`

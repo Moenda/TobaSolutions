@@ -1053,3 +1053,134 @@ function calcHomeMuscleItems(workout) {
   }
   return items;
 }
+
+/* =====================================================================
+ * 📱 Toba Screen (v2.08) · regras puras (tela em TobaHealth/js/screen*.js, troféus sc-* no
+ * toba-player.js). Só leem healthData.screen (APK 3.1, "Acesso ao uso"):
+ *   screen.days["AAAA-MM-DD"] = { t (s nos apps), on, u (desbloqueios), pk, h: [24 s],
+ *     s: "seg.dur.app.u.k ..." (cada vez que a tela acendeu: segundo do dia em que começou,
+ *     duração em s, s dentro de app, desbloqueou 0/1, índice do app em sk), sk: [pacotes], ... }
+ *   screen.goal = minutos por dia (ausente/0 = 🧠 automática).
+ * ===================================================================== */
+const SCREEN_GOAL_DEFAULT = 240;
+const SCREEN_BED_GOOD_MIN = 30;   // largou o celular 30 min+ antes de dormir
+const SCREEN_MORNING_GOOD_MIN = 30;
+
+function screenMetricDays(healthData) {
+  const d = healthData && healthData.screen && healthData.screen.days;
+  return d && typeof d === "object" && !Array.isArray(d) ? d : {};
+}
+
+// minutos de tela do dia (null = sem dado)
+function screenDayMinutes(day) {
+  return day && Number.isFinite(Number(day.t)) ? Number(day.t) / 60 : null;
+}
+
+// 🎯 Meta: a escolhida, ou 🧠 automática = mediana dos 28 dias antes −10% (de 15 em 15 min, 1h a 12h)
+function calcScreenGoal(healthData, date) {
+  const s = healthData && healthData.screen;
+  const fixed = s && Number(s.goal) > 0 ? Number(s.goal) : 0;
+  if (fixed) return { goal: fixed, auto: false, base: null };
+  const days = screenMetricDays(healthData);
+  const vals = [];
+  for (let i = 1; i <= 28; i++) {
+    const v = screenDayMinutes(days[watchMetricAddDays(date, -i)]);
+    if (v !== null && v > 0) vals.push(v);
+  }
+  if (vals.length < 7) return { goal: SCREEN_GOAL_DEFAULT, auto: true, base: null };
+  vals.sort((a, b) => a - b);
+  const mid = vals.length % 2 ? vals[(vals.length - 1) / 2] : (vals[vals.length / 2 - 1] + vals[vals.length / 2]) / 2;
+  const goal = Math.min(720, Math.max(60, Math.round((mid * 0.9) / 15) * 15));
+  return { goal, auto: true, base: mid };
+}
+
+// Sessões do dia: [{ start, end (ms), app (s), pkg, u (bool) }] em ordem
+function screenDaySessions(day, date) {
+  if (!day || typeof day.s !== "string" || !day.s) return [];
+  const base = new Date(`${date}T00:00:00`).getTime();
+  const keys = Array.isArray(day.sk) ? day.sk : [];
+  return day.s.split(" ").map((x) => {
+    const p = x.split(".");
+    if (p.length < 4) return null;
+    const sec = Number(p[0]), dur = Number(p[1]);
+    if (!Number.isFinite(sec) || !Number.isFinite(dur)) return null;
+    const start = base + sec * 1000;
+    return { start, end: start + dur * 1000, app: Number(p[2]) || 0, u: p[3] === "1", pkg: keys[Number(p[4])] || "" };
+  }).filter(Boolean).sort((a, b) => a.start - b.start);
+}
+
+// 😴 x 📱 da noite que ACABOU no dia (watch.days[date].sleep): quanto tempo antes de dormir largou
+// o celular (bed, min; 0 = usou até pegar no sono), quanto depois de acordar pegou (morning, min),
+// e quantas vezes acendeu a tela no meio da noite (wake / wakeMin). null = sem sono ou sem tela.
+function calcScreenNight(healthData, date) {
+  const w = healthData && healthData.watch && healthData.watch.days && healthData.watch.days[date];
+  const sl = w && w.sleep;
+  if (!sl || !Number(sl.start) || !Number(sl.end) || Number(sl.end) <= Number(sl.start)) return null;
+  const days = screenMetricDays(healthData);
+  const prev = watchMetricAddDays(date, -1);
+  if (!days[date] && !days[prev]) return null;
+  const all = [...screenDaySessions(days[prev], prev), ...screenDaySessions(days[date], date)];
+  if (!all.length) return null;
+  const S = Number(sl.start), E = Number(sl.end);
+  const before = all.filter((x) => x.start < S && x.app > 0);
+  const lastEnd = before.length ? Math.max(...before.map((x) => x.end)) : null;
+  const inside = all.filter((x) => x.start >= S && x.start < E && x.u);
+  const after = all.filter((x) => x.start >= E && x.u && x.app > 0);
+  const firstAfter = after.length ? after[0].start : null;
+  const hasEvening = Boolean(days[prev]) || before.length > 0;
+  return {
+    sleepStart: S, sleepEnd: E,
+    lastEnd,
+    bed: hasEvening && lastEnd !== null ? Math.max(0, Math.round((S - lastEnd) / 60000)) : null,
+    morning: firstAfter !== null ? Math.round((firstAfter - E) / 60000) : null,
+    firstAfter,
+    wake: inside.length,
+    wakeMin: Math.round(inside.reduce((a, x) => a + (Math.min(x.end, E) - x.start), 0) / 60000),
+  };
+}
+
+/* Troféus 📱 (só dias FECHADOS, antes de `today`), números acumulados em ordem de data:
+ * days (dias medidos), good (na meta), seq (maior sequência de dias seguidos na meta),
+ * u2h/u1h (dias abaixo de 2 h / 1 h), lowU (dias com menos de 30 desbloqueios),
+ * bed (noites largando o celular 30 min+ antes), morning (manhãs 30 min+ sem celular), week (semanas 20% mais leves). */
+function calcScreenTimeline(healthData, today) {
+  const days = screenMetricDays(healthData);
+  const list = Object.keys(days).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && (!today || d < today) && screenDayMinutes(days[d]) !== null && !days[d].cut).sort();
+  const out = [];
+  let n = 0, good = 0, seq = 0, seqBest = 0, prev = null, u2h = 0, u1h = 0, lowU = 0, bed = 0, morning = 0, week = 0;
+  const weekSum = {};
+  list.forEach((date) => {
+    const day = days[date];
+    const min = screenDayMinutes(day);
+    if (min < 5 && !(Number(day.u) > 0)) return; // dia com o celular desligado não conta
+    n++;
+    const g = calcScreenGoal(healthData, date).goal;
+    if (min <= g) {
+      good++;
+      seq = prev && watchMetricDayNum(date) - watchMetricDayNum(prev) === 1 ? seq + 1 : 1;
+      prev = date;
+    } else {
+      seq = 0;
+      prev = null;
+    }
+    seqBest = Math.max(seqBest, seq);
+    if (min < 120) u2h++;
+    if (min < 60) u1h++;
+    if (Number(day.u) > 0 && Number(day.u) < 30) lowU++;
+    const night = calcScreenNight(healthData, date);
+    if (night && night.bed !== null && night.bed >= SCREEN_BED_GOOD_MIN) bed++;
+    if (night && night.morning !== null && night.morning >= SCREEN_MORNING_GOOD_MIN) morning++;
+    // semana seg-dom fechada (o domingo fecha): 20% abaixo da anterior, as duas com 5+ dias
+    const wd = new Date(`${date}T12:00:00`).getDay();
+    const mon = watchMetricAddDays(date, -((wd + 6) % 7));
+    const ws = weekSum[mon] || (weekSum[mon] = { s: 0, n: 0 });
+    ws.s += min;
+    ws.n++;
+    if (wd === 0) {
+      const pw = weekSum[watchMetricAddDays(mon, -7)];
+      if (pw && pw.n >= 5 && ws.n >= 5 && ws.s / ws.n <= (pw.s / pw.n) * 0.8) week++;
+    }
+    out.push({ date, days: n, good, seq: seqBest, u2h, u1h, lowU, bed, morning, week });
+  });
+  return out;
+}

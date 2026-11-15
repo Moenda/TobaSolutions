@@ -148,6 +148,11 @@ function normalizeHealthDb(db) {
   if (db.watch && typeof db.watch === "object" && !Array.isArray(db.watch)) {
     if (!db.watch.days || typeof db.watch.days !== "object" || Array.isArray(db.watch.days)) db.watch.days = {};
   }
+  // 📱 Toba Screen (v2.08): campo opcional, só existe depois da 1ª leitura do tempo de tela (APK 3.1)
+  if (db.screen && typeof db.screen === "object" && !Array.isArray(db.screen)) {
+    if (!db.screen.days || typeof db.screen.days !== "object" || Array.isArray(db.screen.days)) db.screen.days = {};
+    if (!db.screen.apps || typeof db.screen.apps !== "object" || Array.isArray(db.screen.apps)) db.screen.apps = {};
+  }
   const wf = db.weightFormat && typeof db.weightFormat === "object" && !Array.isArray(db.weightFormat) ? db.weightFormat : {};
   db.weightFormat = {
     type: wf.type === "dec1" ? "dec1" : DEFAULT_WEIGHT_FORMAT.type,
@@ -207,7 +212,8 @@ function saveCorruptHealthCopy(raw) {
 
 let healthDb = loadHealthDb();
 
-function saveHealthDb() {
+// options.silent (v2.08): grava sem o "Salvo ✓" (leitura calada do 📱 Toba Screen)
+function saveHealthDb(options = {}) {
   if (!isHealthDbLoaded) {
     console.warn("Gravação bloqueada: o banco do Toba Health não foi lido com segurança.");
     showHealthDbLockedMessage();
@@ -230,7 +236,7 @@ function saveHealthDb() {
     showPageMessage("Não consegui salvar os dados neste aparelho. Exporte um backup e libere espaço no navegador.", { title: "Não salvou", icon: "💥" });
     return;
   }
-  tobaSaved();
+  if (!options || !options.silent) tobaSaved();
 }
 
 function showHealthDbLockedMessage() {
