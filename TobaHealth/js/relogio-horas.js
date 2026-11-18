@@ -11,7 +11,8 @@
  * 😤 Tensão do Cloba: o Samsung NÃO manda o stress pro Health Connect (nem pelo SDK do Samsung),
  * e o Rafa não quer ficar importando. Então o Cloba estima pelo batimento: hora PARADO (menos de
  * WX_STILL_STEPS passos), acordado e longe de treino, com o coração acima do teu repouso = tensão.
- *   tensão da hora = (FC da hora − FC de repouso do dia) × 4, de 0 a 100, × o ajuste com o Samsung
+ *   tensão da hora = (FC da hora − FC de base do dia) × 4, de 0 a 100, × o ajuste com o Samsung
+ *   (v2.11: base = a hora mais calma da madrugada, sempre pelo relógio, ver wxRest)
  *   (dias que têm os dois: a média da tensão vira a média do stress do Samsung).
  * Vira o stress do dia (stress/stressMax/stressPeak/stressHigh + stressSrc: "hr") só em dia SEM o
  * stress do Samsung; o 📥 import do Samsung passa por cima (relogio-samsung.js).
@@ -99,13 +100,44 @@ function wxBlocked(date) {
   return out;
 }
 
-// FC de repouso do dia: a do relógio; sem ela, a menor do dia + 6; sem nada, a média dos 30 dias antes.
-function wxRest(date) {
+// FC de base do dia (v2.11): SEMPRE pela mesma régua, a do próprio relógio: a hora mais calma da
+// madrugada (0h-9h, FC média da hora ≈ batimento dormindo); sem madrugada, a menor do dia + 6.
+// Antes usava o "repouso" do 📥 import do Samsung quando tinha. Só que o Samsung não manda o
+// repouso pro Health Connect: depois do último import a base mudava de régua, ficava uns 6-10 bpm
+// mais baixa e a tensão inflava (stress ~40 virou ~75 de um dia pro outro, "12 h no 70+").
+function wxRestOwn(date) {
   const d = watchDay(date) || {};
-  if (Number(d.restHr) > 30) return Number(d.restHr);
+  if (Array.isArray(d.hh)) {
+    const night = d.hh.slice(0, 9).filter((v) => v > 30);
+    if (night.length >= 2) return Math.min(...night);
+  }
   if (Number(d.hrMin) > 30) return Number(d.hrMin) + 6;
-  const base = watchAvgBefore("restHr", date, 30);
-  return base && base > 30 ? base : null;
+  return null;
+}
+
+function wxRest(date) {
+  const own = wxRestOwn(date);
+  if (own) return own;
+  const vals = [];
+  for (let i = 1; i <= 30; i++) {
+    const v = wxRestOwn(watchAddDays(date, -i));
+    if (v) vals.push(v);
+  }
+  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+}
+
+// v2.11: por que o dia ficou sem 😤 Tensão (null = tem, ou o Samsung mandou)
+function wxTensionWhy(date) {
+  const d = watchDay(date);
+  if (!d) return "o relógio não mandou nada desse dia";
+  if (d.stress !== undefined && d.stress !== null) return null;
+  if (!Array.isArray(d.hh)) return date < watchAddDays(toIsoDate(), -34) ? "o batimento hora a hora só vem dos últimos 35 dias" : "o relógio não mandou o batimento hora a hora desse dia (toca no 🔄)";
+  if (!wxRest(date)) return "faltou o batimento de base (madrugada) pra comparar";
+  const raw = wxRawHours(date) || [];
+  const ok = raw.filter((x) => x !== null).length;
+  const worn = d.hh.filter((v) => v > 30).length;
+  if (worn < 4) return `o relógio só mediu o coração em ${worn} h desse dia (tava fora do pulso ou carregando?)`;
+  return `só ${ok} h deu pra medir (parado, acordado e longe de treino); o Cloba precisa de 4. O resto foi sono, treino ou andando`;
 }
 
 // Tensão "crua" de cada hora (antes do ajuste com o Samsung): null = não deu pra medir

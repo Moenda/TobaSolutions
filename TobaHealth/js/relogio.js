@@ -149,6 +149,11 @@ function watchGranted() {
   return s && s.ok && Array.isArray(s.granted) ? s.granted : [];
 }
 
+// v2.10: texto dos ❔ com faixas uma por linha ("\n") e rótulo em negrito ("**85+**"), no estilo do ❔ Zonas do coração
+function watchHelpRich(text) {
+  return escapeHtml(String(text || "")).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>");
+}
+
 function watchNativeVersion() {
   try {
     return typeof TOBA_NATIVE !== "undefined" && TOBA_NATIVE && typeof TOBA_NATIVE.version === "function" ? Number(TOBA_NATIVE.version()) || 0 : 0;
@@ -695,6 +700,10 @@ function watchLooksStarved() {
   return Boolean(d && !d.counts.steps && !d.counts.sleep && !d.counts.activeKcal);
 }
 
+// v2.11: o que o Samsung Health NUNCA grava no Health Connect (conferido no aparelho do Rafa e no
+// SDK 1.1.0 do Samsung). "nada no Health Connect" aqui não é bug nem permissão.
+const WATCH_SAMSUNG_NEVER = { restHr: 1, hrv: 1, resp: 1, floors: 1 };
+
 function openWatchDiag() {
   closeTobaModal("settingsModal");
   const d = watchDiag();
@@ -712,6 +721,7 @@ function openWatchDiag() {
     let state;
     if (!granted.has(g)) state = `<span class="text-red">🔒 sem permissão</span>`;
     else if (err) state = `<span class="text-red">💥 ${escapeHtml(err)}</span>`;
+    else if (!n && WATCH_SAMSUNG_NEVER[g]) state = `<span class="text-gold">🚫 o Samsung não manda</span>`;
     else if (!n) state = `<span class="text-gold">🤷 nada no Health Connect</span>`;
     else state = `<span class="text-green">✅ ${n} ${unit[g] || "dia(s)"}</span>`;
     return `<div class="kv-row watch-diag-row"><span>${WATCH_GROUP_LABELS[g]}</span>${state}</div>`;
@@ -724,6 +734,7 @@ function openWatchDiag() {
       .filter(([k]) => d.sources[k] && d.sources[k].length)
       .map(([k, label]) => `${label}: ${d.sources[k].map((x) => escapeHtml(watchAppName(x))).join(" + ")}`).join("<br>")}</p>
       ${Object.values(d.sources).some((l) => l.length > 1) ? `<p class="watch-muted">Mais de um app gravando o mesmo? O Toba usa um só por dia (o que mediu mais, normalmente o Samsung Health, que já junta relógio + celular), pra não contar duas vezes.</p>` : ""}` : ""}
+    ${Object.keys(WATCH_SAMSUNG_NEVER).some((g) => granted.has(g) && !(Number(d.counts[g]) > 0)) ? `<div class="hint-box watch-diag-hint">🚫 <b>Não é bug nem permissão:</b> o Samsung Health não grava FC em repouso, HRV, respiração nem andares no Health Connect, e o SDK do Samsung também não entrega HRV nem respiração. O que aparece desses até o último 📥 import veio do arquivo do Samsung. O 😰 stress depois disso é a 😤 Tensão do Cloba, estimada pelo batimento.</div>` : ""}
     ${watchDiagSamsungHtml(d.samsung)}
     ${watchLooksStarved() ? `<div class="hint-box watch-diag-hint">🕵️ O Toba tá lendo certinho, mas o Health Connect não tem passos nem sono. As 🔥 calorias iguais todo dia são só o basal que o próprio Health Connect calcula. Quem precisa mandar é o <b>Samsung Health</b>: ${WATCH_SAMSUNG_STEPS}</div>` : ""}`;
   openTobaModal("watchDiagModal");
@@ -1506,12 +1517,10 @@ function openWatchDay(el) {
   // v1.94 (🩻 RAIO ULTRA X)
   if (d.stress !== undefined) rows.push(row("😰 Stress", `${watchInt(d.stress)} média · pico ${watchInt(d.stressMax)} às ${d.stressPeak}h`));
   if (d.energy !== undefined) rows.push(row("🔋 Energy Score", `${watchInt(d.energy)}`));
-  if (d.hrv !== undefined) rows.push(row("💓 HRV dormindo", `${watchInt(d.hrv)} ms`));
   if (d.spo2 !== undefined) rows.push(row("🫁 Oxigenação", `${d.spo2}%${d.spo2Min !== undefined ? ` · mín. ${d.spo2Min}%` : ""}`));
   if (d.resp !== undefined) rows.push(row("😮‍💨 Respiração", `${watchDec(d.resp)} por min`));
   if (d.temp !== undefined) rows.push(row("🌡️ Temp. da pele", `${watchDec(d.temp)} °C`));
   if (d.snoreMin !== undefined) rows.push(row("😪 Ronco", d.snoreMin ? watchHours(d.snoreMin) : "nada"));
-  if (d.floors !== undefined) rows.push(row("🪜 Andares", watchInt(d.floors)));
   let sleep = "";
   if (d.sleep) {
     sleep = `<div class="section-title">😴 Sono</div>

@@ -477,7 +477,6 @@ function wslBodyRows(date, s, an) {
   const dip = wslHrDip(d, s);
   if (dip) rows.push(row("heart", "📉", "Queda do batimento", `${dip.pct > 0 ? "−" : "+"}${Math.abs(Math.round(dip.pct))}%`, `${watchInt(dip.night)} dormindo x ${watchInt(dip.day)} no dia · ${dip.pct >= 10 ? "saudável (10%+)" : "pouca: corpo ligado"}`));
   if (d.restHr || hrLow) rows.push(row("heart", "❤️", "FC dormindo", `${watchInt(hrLow || d.restHr)} bpm`, hrLow ? `menor da noite${d.restHr ? ` · repouso ${watchInt(d.restHr)}` : ""}` : "repouso do dia"));
-  if (d.hrv) rows.push(row("hrv", "💓", "HRV", `${watchInt(d.hrv)} ms`, vsNormal("hrv", d.hrv, (v) => `${watchInt(v)} ms`)));
   if (d.spo2) rows.push(row("spo2", "🫁", "Oxigênio", `${watchInt(d.spo2)}%`, [d.spo2Min ? `menor ${watchInt(d.spo2Min)}%` : "", s.oxLowSec !== undefined ? (s.oxLowSec >= 30 ? `< 90% por ${wslSecs(s.oxLowSec)}` : "nunca < 90%") : ""].filter(Boolean).join(" · ")));
   if (d.resp) rows.push(row("resp", "😮‍💨", "Respiração", `${watchDec(d.resp)}/min`, vsNormal("resp", d.resp, (v) => watchDec(v), true)));
   if (d.temp) rows.push(row("temp", "🌡️", "Temp. da pele", `${watchDec(d.temp)} °C`, vsNormal("temp", d.temp, (v) => `${watchDec(v)} °C`, true)));
@@ -588,7 +587,6 @@ function wslDetails(date, s, an) {
   const dip = wslHrDip(watchDay(date) || {}, s);
   if (dip) r("📉 Queda do batimento", `${Math.round(dip.pct)}% <small>dormindo x média do dia (bom: 10%+)</small>`);
   r("🕰️ Meio do sono", `${watchClock(Number(s.start) + (Number(s.end) - Number(s.start)) / 2)} <small>bom: entre 0h e 4h</small>`);
-  if (s.hrvAvg) r("💓 HRV da noite", `${watchInt(s.hrvAvg)} ms`);
   if (s.oxLowSec !== undefined) r("🫁 Abaixo de 90%", s.oxLowSec >= 1 ? wslSecs(s.oxLowSec) : "nunca");
   if (s.eff !== undefined) r("📱 Eficiência (Samsung)", `${watchInt(s.eff)}%`);
   if (s.ment !== undefined) r("🧠 Recuperação mental", `${watchInt(s.ment)}`);
@@ -619,11 +617,7 @@ function wslReadyParts(date) {
   const parts = [];
   const sleepScore = wslFactors(s, date, wslAnalyze(s)).total;
   parts.push({ key: "sleep", label: "😴 Noite", value: `nota ${sleepScore}`, score: sleepScore, w: 40 });
-  const hrvBase = d.hrv ? watchAvgBefore("hrv", date, 60) : null;
-  if (hrvBase) {
-    const r = d.hrv / hrvBase;
-    parts.push({ key: "hrv", label: "💓 HRV", value: `${watchInt(d.hrv)} ms`, sub: `normal ${watchInt(hrvBase)}`, score: r >= 1.05 ? 100 : lin(r, 0.7, 1.05), w: 25 });
-  }
+  // v2.11: 💓 HRV saiu da prontidão (o Samsung não manda; só vinha do import)
   // FC em repouso do dia x a média dela (não mistura com o menor batimento da noite)
   const rest = Number(d.restHr) || 0;
   const restBase = rest ? watchAvgBefore("restHr", date, 30) : null;
@@ -802,7 +796,7 @@ const WSL_HELP = {
     title: "❔ 🤡 Papo reto do Cloba",
     body: [
       ["🔋 Prontidão", "Nota de 0 a 100 de como o corpo acordou, no estilo da Readiness do Oura e da Recovery do Whoop. Junta a noite (40%), o HRV (25%), a FC em repouso (15%), a temperatura da pele (12%) e o esforço de ontem (8%), sempre comparando com o TEU normal dos últimos 30-60 dias, não com tabela de internet. O que não foi medido fica fora da conta."],
-      ["🚦 O que fazer com o dia", "85+ 🚀 pronto pra guerra · 70+ 💪 dia bom · 55+ 😐 vai no teu ritmo · abaixo disso 🪫 dia de recuperar."],
+      ["🚦 O que fazer com o dia", "🚀 **85+**: pronto pra guerra\n💪 **70+**: dia bom\n😐 **55+**: vai no teu ritmo\n🪫 **abaixo disso**: dia de recuperar"],
       ["🤡 As falas", "O resumo do dia inteiro: sono, passos, coração, stress. O detalhe de cada assunto fica dentro dele (toca no card do 😴, do 👟...)."],
       ["🌙 Hoje", "A hora de deitar sugerida pra hoje. A conta completa (despertador, semana abaixo da meta, pista do Cloba) tá no 😴 Sono › 🤡 O Cloba sobre a noite."],
     ],
@@ -811,7 +805,7 @@ const WSL_HELP = {
     title: "❔ 🧾 Fatores da nota",
     body: [
       ["🤡 Nota do Cloba", "Tempo dormindo vale 30%. Profundo, REM, acordado, eficiência, tempo pra pegar no sono e horário valem 10% cada. É o jeito do Oura de dar nota. O que não foi medido fica de fora da conta."],
-      ["🏷️ Boa / Razoável / Atenção", "Cada fator vira uma nota de 0 a 100: 80+ é Boa, 55+ é Razoável, abaixo disso é Atenção."],
+      ["🏷️ Boa / Razoável / Atenção", "Cada fator vira uma nota de 0 a 100:\n💚 **80+**: Boa\n😐 **55+**: Razoável\n⚠️ **abaixo disso**: Atenção"],
       ["⏳ Pegar no sono rápido demais", "Menos de 5 min não é sono bom: costuma ser cansaço acumulado. O ideal é entre 5 e 20 min."],
     ],
   },
@@ -848,7 +842,7 @@ function wslHelp(el) {
   const h = WSL_HELP[el && el.dataset.help];
   if (!h) return;
   document.getElementById("watchHelpTitle").textContent = h.title;
-  document.getElementById("watchHelpBody").innerHTML = h.body.map(([t, p]) => `<div class="watch-help-sec"><div class="watch-help-h">${escapeHtml(t)}</div><p>${escapeHtml(p)}</p></div>`).join("");
+  document.getElementById("watchHelpBody").innerHTML = h.body.map(([t, p]) => `<div class="watch-help-sec"><div class="watch-help-h">${escapeHtml(t)}</div><p>${watchHelpRich(p)}</p></div>`).join("");
   const go = document.getElementById("watchHelpGo");
   if (go) go.style.display = "none";
   openTobaModal("watchHelpModal");

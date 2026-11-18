@@ -852,11 +852,17 @@ function trxMapHtml(w, det, cache) {
   if (det && det.routeAsk && det.hcId && typeof TOBA_NATIVE !== "undefined" && TOBA_NATIVE && typeof TOBA_NATIVE.healthRoute === "function") {
     return `<div class="section-title">🗺️ Por onde andou</div>
       <div class="card trx-ask">
-        <p>O relógio gravou o mapa desse treino. O Android pede um "sim" pra cada treino.</p>
+        <p>O relógio gravou o mapa desse treino. O Android pede um "sim" pra cada treino.${trxRouteForeverHint()}</p>
         <button type="button" class="btn btn-primary btn-sm" data-click="trxAskRoute" data-id="${escapeHtml(w.id)}"${trx.routeFor ? " disabled" : ""}>🗺️ Mostrar o mapa</button>
       </div>`;
   }
   return "";
+}
+
+// Android 15+: dá pra liberar o mapa de TODOS os treinos de uma vez (fica no "Acesso adicional")
+function trxRouteForeverHint() {
+  const st = typeof watchUi !== "undefined" ? watchUi.status : null;
+  return st && Number(st.sdk) >= 35 ? " Pra não perguntar mais: Health Connect › Toba › Acesso adicional › Rotas de exercício › Permitir sempre." : "";
 }
 
 function decodeWalkTrackSafe(w) {
@@ -1146,9 +1152,10 @@ function trxNoteHtml(w, win, det) {
     return `<p class="trx-foot">📲 O batimento minuto a minuto, o mapa e o km a km vêm pelo app do Toba (APK 3.3 ou mais novo).</p>`;
   }
   const s = typeof watchUi !== "undefined" ? watchUi.status : null;
-  const missing = s && Array.isArray(s.missing) ? s.missing.filter((p) => ["speed", "elevation", "vo2", "route"].includes(p)) : [];
+  const missing = s && Array.isArray(s.missing) ? s.missing.filter((p) => ["speed", "elevation", "vo2"].includes(p)) : [];
   if (missing.length) {
-    const names = { speed: "velocidade", elevation: "subida", vo2: "VO₂ máx.", route: "mapa" };
+    // v2.10: o mapa NÃO entra aqui: é "sim" por treino (botão 🗺️ Mostrar o mapa) e treino sem GPS (bike, esteira) nem tem
+    const names = { speed: "velocidade", elevation: "subida", vo2: "VO₂ máx." };
     return `<div class="card trx-ask"><p>🔓 Falta liberar ${missing.map((p) => names[p]).join(", ")} no Health Connect pra análise ficar completa.</p>
       <button type="button" class="btn btn-secondary btn-sm" data-click="trxAskPerms">🔓 Liberar</button></div>`;
   }
@@ -1221,14 +1228,14 @@ function trxPapoLines(w, det, cache, peers) {
  * ❔ Explicações (folha #trxHelpModal, posta pelo JS)
  * ------------------------------------------------------------------- */
 const TRX_HELP = {
-  load: ["⚡ Carga do treino", "É o tamanho do treino pro teu corpo: cada minuto vale o número da zona do coração em que tu tava (zona 1 = 1 ponto por minuto, zona 5 = 5). 30 min na zona 2 = 60 pts; 30 min na zona 4 = 120 pts. Sem relógio, o Cloba estima pelo tempo e o tipo do treino.<br><br>🍃 até 40 leve · 💪 até 90 moderada · 🔥 até 160 puxada · 🌋 até 260 pesada · 👹 acima disso, MONSTRO."],
+  load: ["⚡ Carga do treino", "É o tamanho do treino pro teu corpo: cada minuto vale o número da zona do coração em que tu tava (zona 1 = 1 ponto por minuto, zona 5 = 5). 30 min na zona 2 = 60 pts; 30 min na zona 4 = 120 pts. Sem relógio, o Cloba estima pelo tempo e o tipo do treino.<br><br>🍃 <b>Leve</b>: até 40 pts<br>💪 <b>Moderada</b>: até 90 pts<br>🔥 <b>Puxada</b>: até 160 pts<br>🌋 <b>Pesada</b>: até 260 pts<br>👹 <b>MONSTRO</b>: acima disso"],
   zones: ["❤️ Zonas do coração", "Calculadas pela tua FC máxima (220 − idade).<br><br><b>1 Leve</b> (50-60%): aquece e recupera.<br><b>2 Queima gordura</b> (60-70%): base aeróbica, dá pra conversar.<br><b>3 Aeróbico</b> (70-80%): fôlego crescendo, conversa fica curta.<br><b>4 Anaeróbico</b> (80-90%): puxado, tiro.<br><b>5 Máximo</b> (90%+): no talo, poucos minutos.<br><br>Pra emagrecer e ter saúde: muito tempo na 2. Pra fôlego: um pouco de 3-4 na semana. Põe tua idade na ⚙️ da Pesagem (ou no botão 🎂) que as faixas ficam certas."],
-  rec: ["🫀 Recuperação", "Quanto o batimento cai no 1º minuto depois que tu para. Quanto mais cai, mais em forma tá o coração.<br><br>🚀 30+ bpm: coração de atleta · 💚 20-29: boa · 👍 12-19: normal · 🐢 menos de 12: lenta (ou o treino foi leve e não tinha muito o que cair).<br><br>Dica: termina o treino e fica parado 2 min com o relógio no pulso."],
-  drift: ["📈 Deriva cardíaca", "Compara a 2ª metade do treino com a 1ª (sem o aquecimento). Se o coração sobe pra manter o mesmo ritmo, é cansaço, calor ou falta de água.<br><br>💚 até 3,5%: base aeróbica firme · 👍 até 7%: normal · 🥵 mais que 7%: o motor cansou no fim. Com treino, esse número cai."],
+  rec: ["🫀 Recuperação", "Quanto o batimento cai no 1º minuto depois que tu para. Quanto mais cai, mais em forma tá o coração.<br><br>🚀 <b>30+ bpm</b>: coração de atleta<br>💚 <b>20-29</b>: boa<br>👍 <b>12-19</b>: normal<br>🐢 <b>menos de 12</b>: lenta (ou o treino foi leve e não tinha muito o que cair)<br><br>Dica: termina o treino e fica parado 2 min com o relógio no pulso."],
+  drift: ["📈 Deriva cardíaca", "Compara a 2ª metade do treino com a 1ª (sem o aquecimento). Se o coração sobe pra manter o mesmo ritmo, é cansaço, calor ou falta de água.<br><br>💚 <b>até 3,5%</b>: base aeróbica firme<br>👍 <b>até 7%</b>: normal<br>🥵 <b>mais que 7%</b>: o motor cansou no fim<br><br>Com treino, esse número cai."],
   vo2: ["🫁 VO₂ máx.", "O máximo de oxigênio que teu corpo usa por minuto, por kg. É o melhor número de fôlego que existe e um dos que mais tem a ver com viver mais. O relógio estima pelo batimento nas caminhadas e corridas ao ar livre.<br><br>Faixas do Cloba em cima da tabela do ACSM (a de homens de 30-39 é igual à do Samsung). O 🎂 \"fôlego de X anos\" é a idade em que teu número seria o normal do meio.<br><br>Pra subir: tiros (zona 4) 1-2x por semana e caminhada longa na zona 2."],
   sweat: ["💧 Suor estimado", "Chute do Cloba pelas calorias e o tipo do treino (o relógio não manda o suor pro Health Connect). Calor, umidade e roupa mudam muito.<br><br>Regra de ouro: repor 150% do que perdeu em 1-2 h, de preferência junto com comida. Xixi claro = hidratado."],
-  week: ["🗓️ Carga da semana", "Soma a ⚡ carga dos treinos dos 7 dias até esse treino e compara com a média semanal das 4 semanas antes.<br><br>✅ 0,8 a 1,25x: evoluindo no ponto · 🔥 1,25 a 1,5x: puxado · 🚨 mais de 1,5x: subiu rápido demais, é aí que mora a lesão · 🛋️ abaixo de 0,8x: semana leve."],
-  map: ["🗺️ Mapa", "O trajeto que o relógio gravou, pintado pela velocidade de cada trecho comparada com a tua média: 🔴 mais lento, 🟡 no ritmo, 🟢 mais rápido. Os números são os km. O mapa usa o mesmo do Toba Places (não gasta o Mapbox do Drive)."],
+  week: ["🗓️ Carga da semana", "Soma a ⚡ carga dos treinos dos 7 dias até esse treino e compara com a média semanal das 4 semanas antes.<br><br>✅ <b>0,8 a 1,25x</b>: evoluindo no ponto<br>🔥 <b>1,25 a 1,5x</b>: puxado<br>🚨 <b>mais de 1,5x</b>: subiu rápido demais, é aí que mora a lesão<br>🛋️ <b>abaixo de 0,8x</b>: semana leve"],
+  map: ["🗺️ Mapa", "O trajeto que o relógio gravou, pintado pela velocidade de cada trecho comparada com a tua média:<br>🔴 <b>mais lento</b><br>🟡 <b>no ritmo</b><br>🟢 <b>mais rápido</b><br><br>Os números são os km. O mapa usa o mesmo do Toba Places (não gasta o Mapbox do Drive)."],
 };
 
 function trxEnsureHelp() {

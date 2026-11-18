@@ -42,12 +42,15 @@ function wstHero(date) {
   if (d.stressHigh !== undefined) bits.push(`🔥 ${watchInt(d.stressHigh)} h no 70+`);
   const breaths = wxBreaths().filter((b) => toIsoDate(new Date(Number(b.at))) === date).length;
   const ring = v === null ? 0 : Math.max(0, Math.min(100, Math.round(v)));
+  // v2.11: dia sem stress explica o motivo (o Samsung não manda o stress; a 😤 Tensão precisa de 4 h medidas)
+  const why = v === null && !isToday && typeof wxTensionWhy === "function" ? wxTensionWhy(date) : "";
   return `<div class="card wsl-hero wst-hero">
       <div class="wsl-hero-top">
         <div class="wsl-hero-main">
           <div class="wsl-hero-val" style="color:var(--coral)">${v !== null ? escapeHtml(watchInt(v)) : "--"}</div>
           <div class="wsl-hero-sub">${z ? `${z.icon} ${escapeHtml(z.label)}` : isToday ? "ainda sem medida hoje" : "sem medida nesse dia"}${src ? ` · ${escapeHtml(src)}` : ""}</div>
           ${bits.length ? `<div class="wsl-hero-clock">${escapeHtml(bits.join(" · "))}</div>` : ""}
+          ${why ? `<div class="watch-muted">🕵️ Por quê: ${escapeHtml(why)}.</div>` : ""}
         </div>
         <div class="wsl-hero-score">${wslRing(ring, v === null ? "is-ok" : v < 30 ? "is-good" : v < 50 ? "is-ok" : "is-bad")}<small>0 a 100 · menor é melhor</small></div>
       </div>

@@ -2654,3 +2654,41 @@
 .wnd-part-head { display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 4px; }
 .wnd-part-head small { color: var(--muted); font-weight: 500; }
 .wnd-part .watch-muted { display: block; margin-top: 4px; font-size: 0.76rem; }
+
+/* v2.11: 🏅 Nota do Dia como análise: 🗓️ mapa do mês e 🔍 por que sobe ou desce */
+.wnd-part-head em { font-style: normal; font-size: 0.72rem; font-weight: 600; margin-left: 4px; }
+.wnd-cals { display: flex; flex-direction: column; gap: 16px; }
+.wnd-cals.is-many { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+.wnd-cal-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; font-size: 0.9rem; }
+.wnd-cal-head .watch-muted { font-size: 0.74rem; }
+.wnd-cal.is-compact .wnd-cal-head { flex-direction: column; gap: 0; }
+.wnd-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.wnd-cal-wd { font-size: 0.66rem; text-align: center; color: var(--muted); }
+.wnd-cal-cell { aspect-ratio: 1; border-radius: 6px; border: 0; padding: 2px; background: var(--surface-3); color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; font: inherit; line-height: 1.05; min-width: 0; }
+.wnd-cal-cell small { font-size: 0.58rem; opacity: 0.75; }
+.wnd-cal-cell b { font-size: 0.82rem; }
+.wnd-cal-cell.is-empty { background: transparent; }
+.wnd-cal-cell.is-future { opacity: 0.35; }
+.wnd-cal-cell.is-z0 { background: var(--gold-2); color: #1a1406; }
+.wnd-cal-cell.is-z1 { background: var(--green); color: #06170b; }
+.wnd-cal-cell.is-z2 { background: var(--blue); color: #061322; }
+.wnd-cal-cell.is-z3 { background: var(--coral); color: #220806; }
+.wnd-cal-cell.is-today { box-shadow: inset 0 0 0 2px var(--text); }
+.wnd-cal-cell.is-sel { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--gold-2); }
+button.wnd-cal-cell { cursor: pointer; }
+.wnd-cal.is-compact .wnd-cal-grid { gap: 2px; }
+.wnd-cal.is-compact .wnd-cal-cell small { display: none; }
+.wnd-cal.is-compact .wnd-cal-cell b { font-size: 0.6rem; }
+.wnd-cal.is-compact .wnd-cal-wd { font-size: 0.55rem; }
+.wnd-cal-legend { margin-top: 10px; }
+.wnd-moves { display: flex; flex-direction: column; gap: 18px; }
+.wnd-move-title { font-weight: 700; margin-bottom: 4px; }
+.wnd-move-lead { margin: 0 0 6px; }
+.wnd-move p { margin: 0 0 8px; }
+.wnd-why { margin-top: 8px; }
+.wnd-why-head { display: flex; justify-content: space-between; font-size: 0.86rem; margin-bottom: 3px; }
+.wnd-why-bar { height: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
+.wnd-why-bar i { display: block; height: 100%; border-radius: 3px; }
+.wnd-why-bar i.is-up { background: var(--green); }
+.wnd-why-bar i.is-down { background: var(--coral); }
+.wnd-why .watch-muted { display: block; margin-top: 3px; font-size: 0.74rem; }

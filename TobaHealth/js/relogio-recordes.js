@@ -14,14 +14,13 @@ const WATCH_RECORDS = [
   { key: "steps", icon: "👟", name: "Passos", better: "up", get: (d) => d.steps, fmt: (v) => watchInt(v), metric: "steps", color: "var(--green)" },
   { key: "distance", icon: "📏", name: "Distância", better: "up", get: (d) => d.distanceM, fmt: (v) => watchKm(v), metric: "distance", color: "var(--blue)" },
   { key: "active", icon: "🔥", name: "Calorias ativas", better: "up", get: (d) => d.activeKcal, fmt: (v) => `${watchInt(v)} kcal`, metric: "kcal", color: "var(--coral)" },
-  { key: "floors", icon: "🪜", name: "Andares", better: "up", get: (d) => d.floors, fmt: (v) => watchInt(v), metric: "floors", color: "var(--green)" },
   { key: "sleep", icon: "😴", name: "Maior noite", better: "up", get: (d) => (d.sleep ? d.sleep.min : undefined), fmt: (v) => watchHours(v), metric: "sleep", color: "var(--blue)" },
   { key: "deep", icon: "🌊", name: "Sono profundo", better: "up", get: (d) => (d.sleep && d.sleep.deep > 0 ? d.sleep.deep : undefined), fmt: (v) => watchHours(v), metric: "sleep", color: "#3b5bdb" },
-  { key: "hrv", icon: "💓", name: "HRV", better: "up", get: (d) => d.hrv, fmt: (v) => `${watchInt(v)} ms`, metric: "hrv", color: "var(--purple, #a371f7)" },
   { key: "energy", icon: "🔋", name: "Energy Score", better: "up", get: (d) => d.energy, fmt: (v) => watchInt(v), metric: "energy", color: "var(--gold-2)" },
   { key: "rest", icon: "❤️", name: "Coração mais calmo", better: "down", get: (d) => d.restHr, fmt: (v) => `${watchInt(v)} bpm`, metric: "heart", color: "var(--red, #f85149)", note: "repouso mais baixo" },
   { key: "zen", icon: "😌", name: "Dia mais zen", better: "down", get: (d) => d.stress, fmt: (v) => watchInt(v), metric: "stress", color: "var(--teal, #39c5cf)", note: "menor stress médio" },
 ];
+// v2.11: 🪜 Andares e 💓 HRV saíram (o Samsung não manda; só vinham do import)
 const WATCH_REC_SCOPES = [
   { id: "all", label: "🏛️ Sempre" },
   { id: "year", label: "📅 Este ano" },

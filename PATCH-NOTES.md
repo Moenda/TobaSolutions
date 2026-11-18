@@ -2851,3 +2851,40 @@ A página "Como foi o treino" virou análise completa, no estilo do Raio-X e do 
 **Como testar:** abrir um treino que veio do relógio › 🔬 Raio-X: carga, papo, gráfico (arrastar o dedo), zonas, recuperação, km a km, VO₂, comparativo (trocar as abas Km/Ritmo/Tempo...). Caminhada com mapa no Android 14: 🗺️ Mostrar o mapa › Permitir. Abrir um treino do Saitama: carga estimada + comparativo. Treinos do mês: "🤖 N automáticos escondidos · Mostrar". Conferir na ⚙️ "APK 3.3 · Patch v2.10".
 
 **Commit sugerido:** `v2.10 - Raio-X do treino (carga, zonas, grafico do batimento, recuperacao, deriva, mapa, km a km, VO2, suor, comparativo, carga da semana, papo do Cloba) + filtro de treinos automaticos do relogio (APK 3.3)`
+
+## v2.11 — ❔ com as faixas uma por linha + aviso do mapa que não sumia + 🩻 buracos do relógio explicados e 😤 Tensão sem inflar
+
+**Arquivos alterados:** `TobaHealth/js/treino-raiox.js`, `TobaHealth/js/relogio.js`, `TobaHealth/js/relogio-dia.js`, `TobaHealth/js/relogio-sono.js`, `TobaHealth/js/relogio-horas.js`, `TobaHealth/js/relogio-stress.js`, `TobaHealth/js/relogio-analise.js`, `TobaHealth/js/relogio-recordes.js`, `TobaHealth/js/relogio-nota.js`, `TobaHealth/css/relogio.css`, `assets/toba-common.js`, `sw.js`
+
+1. **❔ mais fácil de ler (pedido do Rafa):** as explicações com faixas ("85+ excelente · 70-84 bom...") estavam tudo numa linha só. Agora ficam uma faixa por linha, com o número em negrito, igual ao ❔ das Zonas do coração. Vale no Raio-X do treino (⚡ Carga do treino, 🗓️ Carga da semana, 🫀 Recuperação, 📈 Deriva, 🗺️ Mapa) e no 🩻 Raio-X (Stress, Energy Score, Oxigênio, Passos, 🚦 O que fazer com o dia, 🏷️ Boa / Razoável / Atenção).
+2. **🔓 "Falta liberar mapa" que não sumia:** no Android 15 o mapa dos treinos fica escondido em Health Connect › Toba › **Acesso adicional**, e o aviso aparecia até em treino sem GPS (bike, esteira). O mapa saiu desse aviso: ele só aparece como 🗺️ Mostrar o mapa nos treinos que têm mapa, com a dica de como liberar de vez.
+
+**Dados:** nada muda no banco. Sem APK novo (segue 3.3).
+
+**Como testar:** abrir um treino de bike: sem o card "Falta liberar mapa". Tocar no ❔ da ⚡ Carga do treino e da 🗓️ Carga da semana: uma faixa por linha. No 🩻 Raio-X, ❔ do Stress e do Energy Score idem. ⚙️ mostra "Patch v2.11".
+
+### 🩻 Buracos do relógio (outra thread, mesmo commit)
+
+O Rafa viu HRV e respiração parados em 08/11, "nada no Health Connect" no 🩺 Diagnóstico pra FC em repouso/HRV/respiração/andares, e o stress pulando o fim de semana (14 e 15/11).
+
+**O que é do Samsung (não tem conserto do nosso lado):** o Samsung Health não grava FC em repouso, HRV, respiração nem andares no Health Connect, e o SDK do Samsung (1.1.0) não tem HRV, respiração nem stress. O que aparecia até 08/11 veio do 📥 import do Samsung (tabela do Energy Score: `shrv_value`/`shr_value`). Passos, sono, batimento, oxigênio e treino continuam chegando sozinhos.
+
+**O que era nosso (consertado):**
+1. **😤 Tensão do Cloba inflada:** a base da tensão era o "repouso" do import do Samsung quando tinha, e a menor FC do dia + 6 quando não tinha. Depois do último import a régua mudava (base uns 6-10 bpm mais baixa) e o stress pulava de ~40 pra ~75-80 ("12 h no 70+"). Agora a base é sempre a do relógio: a hora mais calma da madrugada (0h-9h), sem madrugada a menor do dia + 6. O ajuste com o stress do Samsung usa a mesma régua. Os dias de Tensão são recalculados no próximo 🔄.
+2. **Dia sem stress diz o porquê:** "🕵️ Por quê: só 3 h deu pra medir (parado, acordado e longe de treino)...", relógio fora do pulso, ou sem o batimento hora a hora.
+3. **🩺 Diagnóstico:** FC em repouso/HRV/respiração/andares sem nada agora dizem "🚫 o Samsung não manda" + explicação (não é bug nem permissão).
+4. **💓 HRV e 😮‍💨 Respiração:** sem medida nos últimos 3 dias, aviso de que o Samsung não manda e de onde veio o último número.
+5. **❤️ Batimento:** "💤 Repouso" sem o do Samsung mostra "≈ X bpm (madrugada)".
+6. **💓 HRV e 🪜 Andares fora das análises (pedido do Rafa: "fica importando é mt chato"):** saíram do 🧬 Corpo por dentro (ficam 6 quadrados: Stress, Energy, Oxigênio, Respiração, Temp. pele, Ronco), da comparação 📊 hoje x ontem (andares), do 📈 Tá melhorando?, do 🏆 Hall dos Recordes, da 🔋 Prontidão do Cloba (a conta se ajusta sozinha sem o HRV), das falas do 🤡 Papo reto, do sono e do 📋 Tudo desse dia. Os números antigos continuam guardados no banco, só não aparecem.
+
+7. **🏅 Nota do Dia virou análise de verdade (pedido do Rafa: "TEM COMO FAZER DETALHADINHO PAI? ANÁLISE CLOBÍSTICA"):** tocar na faixa da 🏅 no 🤡 Papo reto abre a tela de análise igual aos outros quadrados (Dia / Semana / Mês / Semestre / Ano), no lugar do popup.
+   - **Dia:** o detalhe de QUALQUER dia (antes só o dia escolhido): nota, as 5 partes com pontos e "+X / −X vs teu normal" (30 dias antes), 🤡 ponto mais fácil, vs ontem / 7 / 30 dias, 🔥 em fila e recorde, 14 dias (tocar na barra › Ver esse dia).
+   - **🗓️ Mapa do mês:** um quadradinho por dia (seg a dom), cor pela faixa (🌟 85+ dourado, 💪 70-84 verde, 🙂 50-69 azul, 🛋️ < 50 coral) com a nota dentro, média e dias 70+ do mês; tocar abre o dia. Semestre/Ano mostram um mapinha por mês.
+   - **🔍 Por que a nota sobe ou desce (90 dias):** 🎉 Fim de semana x dia útil (quanto cada parte puxa em pontos, com os números de verdade: "8h13 no sáb/dom x 6h11 na semana", "treinou 100% dos dias x 17%") e a fala do Cloba; ⚖️ Dia redondo (70+) x dia fraco (< 55): o que separa um do outro; 🕳️ Onde a nota vaza: pontos perdidos por dia em média, parte por parte, com a dica da pior.
+   - Mais o de sempre da análise: faixas, 📅 dia da semana, recordes e a lista de dias.
+
+**Dados:** nada novo no banco. Só os `stress*` com `stressSrc: "hr"` (Tensão) são recalculados; stress do Samsung (import) fica igual.
+
+**Como testar:** 🩻 Raio-X › 🔄 › 😰 Stress: os dias depois de 08/11 voltam pra perto do teu normal; abrir 14 ou 15/11 e ver o "🕵️ Por quê". ⚙️ › 🩺 Diagnóstico: "🚫 o Samsung não manda" nas 4 linhas. 😮‍💨 Respiração: aviso do Samsung. 🧬 Corpo por dentro com 6 quadrados, sem HRV e andares. Tocar na 🏅 Nota do Dia: abre a análise; tocar num quadradinho do 🗓️ Mapa do mês abre o dia; aba Mês/Semestre e o 🔍 Por que a nota sobe ou desce.
+
+**Commit sugerido:** `v2.11 - Explicacoes (?) com as faixas uma por linha + aviso de liberar mapa so nos treinos com mapa + Raio-X: Tensao do Cloba sem inflar (base pela madrugada), dia sem stress explica o motivo, diagnostico avisa o que o Samsung nao manda, HRV e andares fora do Raio-X + Nota do Dia com analise completa (mapa do mes, por que sobe ou desce)`

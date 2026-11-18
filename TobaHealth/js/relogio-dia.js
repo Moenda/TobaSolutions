@@ -66,7 +66,7 @@ function watchMetricVal(key, date) {
   const m = WATCH_METRICS[key];
   const d = watchDay(date);
   if (!m || !d) return null;
-  const v = m.get(d);
+  const v = m.get(d, date); // v2.11: a 🏅 Nota precisa da data
   if (v === undefined || v === null || !Number.isFinite(Number(v))) return null;
   if (Number(v) > 0 || (m.zeroOk && Number(v) === 0)) return Number(v);
   return null;
@@ -143,8 +143,7 @@ const WATCH_CMP_ROWS = [
   { key: "kcal", label: "🔥 Calorias" },
   { key: "distance", label: "📏 Distância" },
   { key: "heart", label: "❤️ Coração" },
-  { key: "floors", label: "🪜 Andares" },
-];
+];  // v2.11: 🪜 Andares saiu (o Samsung não manda pro Health Connect, só vinha do import)
 
 function watchCmpRow(row, date) {
   const r = watchRefs(row.key, date);
@@ -318,13 +317,13 @@ function renderWatchSleep() {
 const WATCH_BODY_TILES = [
   { metric: "stress", label: "😰 Stress", field: "stress" },
   { metric: "energy", label: "🔋 Energy", field: "energy" },
-  { metric: "hrv", label: "💓 HRV", field: "hrv" },
   { metric: "spo2", label: "🫁 Oxigênio", field: "spo2", back: 14 },
   { metric: "resp", label: "😮‍💨 Respiração", field: "resp", back: 14 },
   { metric: "temp", label: "🌡️ Temp. pele", field: "temp", back: 14 },
   { metric: "snore", label: "😪 Ronco", field: "snoreMin", back: 60 },
-  { metric: "floors", label: "🪜 Andares", field: "floors" },
 ];
+// v2.11 (Rafa): 💓 HRV e 🪜 Andares saíram: o Samsung não manda nenhum dos dois pro Health
+// Connect (nem pelo SDK dele, no caso do HRV) e o Rafa não quer ficar importando. 6 quadrados.
 
 function watchLatest(field, maxBack = 3, from = toIsoDate()) {
   for (let i = 0; i <= maxBack; i++) {
@@ -414,10 +413,7 @@ function renderWatchCloba() {
   // de cada assunto + a hora de deitar de hoje. Energy do Samsung saiu (quem manda é o Cloba); o HRV
   // só vira fala quando não tem prontidão (ela já mostra o HRV x o teu normal).
   const ready = typeof wslReadyHtml === "function" ? wslReadyHtml(sel) : "";
-  const hrv = watchLatest("hrv", isToday ? 1 : 0, sel);
-  const hrvBase = hrv ? watchAvgBefore("hrv", hrv.date, 60) : null;
-  if (!ready && hrv && hrvBase && hrv.v < hrvBase * 0.8) lines.push(`💓 HRV ${watchInt(hrv.v)} ms, bem abaixo do teu normal (${watchInt(hrvBase)}). Recuperação tá devendo.`);
-  if (!ready && hrv && hrvBase && hrv.v > hrvBase * 1.15) lines.push(`💓 HRV ${watchInt(hrv.v)} ms, acima do teu normal (${watchInt(hrvBase)}). Corpo recuperado, pode apertar.`);
+  // v2.11: falas do 💓 HRV saíram (só vinha do import do Samsung)
   const stress = watchLatest("stress", isToday ? 1 : 0, sel);
   if (stress && stress.v >= 50) lines.push(`😰 Stress médio ${watchInt(stress.v)}${stress.date === sel ? "" : " ontem"}. Respira, Cloba: 4 segundos puxa, 4 segura, 6 solta.`);
   // v2.04: 🛋️ dia sofá das calorias (relogio-calorias.js) entra no papo geral
@@ -518,7 +514,7 @@ function renderWatchWeek() {
 /* ---------------- 📈 Tá melhorando ou piorando? (v1.95) ----------------
  * Cada assunto: média dos últimos 7 dias (até o dia escolhido) x os 7 antes, e a
  * linhazinha das últimas 8 semanas. Veredito pelo sentido bom de cada um. */
-const WATCH_TREND_KEYS = ["steps", "sleep", "kcal", "heart", "hrv", "stress", "energy", "resp"];
+const WATCH_TREND_KEYS = ["steps", "sleep", "kcal", "heart", "stress", "energy", "resp"]; // v2.11: sem HRV
 
 function watchTrendWeeks(key, end, weeks) {
   const out = [];
@@ -603,7 +599,7 @@ function renderWatchTrend() {
 const WATCH_HELP = {
   stress: {
     what: "Placar de 0 a 100 que o relógio calcula pelo teu batimento (a variação entre uma batida e outra). Ele mede várias vezes por dia; aqui é a média do dia.",
-    dir: "Quanto MAIS BAIXO, melhor. Até 30 é tranquilo, 30-50 normal, 50-70 puxado e 70+ alto. Detalhe: treino sobe o stress na hora (o relógio não sabe que é academia), então dia de treino pesado pode subir sem drama.",
+    dir: "Quanto MAIS BAIXO, melhor.\n😌 **Até 30**: tranquilo\n👍 **30-50**: normal\n😬 **50-70**: puxado\n🚨 **70+**: alto\n\nDetalhe: treino sobe o stress na hora (o relógio não sabe que é academia), então dia de treino pesado pode subir sem drama.",
     tips: [
       "Respiração 4-4-6 (puxa 4 s, segura 4 s, solta 6 s) por 2 minutos derruba na hora.",
       "Caminhada leve de 10-20 min, de preferência no sol.",
@@ -614,7 +610,7 @@ const WATCH_HELP = {
   },
   energy: {
     what: "Nota de 0 a 100 que o Samsung dá todo dia de manhã juntando sono, batimento dormindo, HRV e quanto você se mexeu nos dias antes. É a bateria do teu dia.",
-    dir: "Quanto MAIS ALTO, melhor. 85+ excelente, 70-84 bom, 60-69 regular, abaixo de 60 é o corpo pedindo arrego.",
+    dir: "Quanto MAIS ALTO, melhor.\n🚀 **85+**: excelente\n💪 **70-84**: bom\n😐 **60-69**: regular\n🪫 **abaixo de 60**: o corpo pedindo arrego",
     tips: [
       "Dormir 7h+ e no mesmo horário (inclusive fim de semana) é o que mais sobe.",
       "Treino pesado vários dias seguidos derruba: intercala com dia leve.",
@@ -635,7 +631,7 @@ const WATCH_HELP = {
   },
   spo2: {
     what: "Quanto do teu sangue tá carregando oxigênio, medido no pulso enquanto você dorme.",
-    dir: "MAIS ALTO é melhor. Normal é 95% pra cima. Entre 90 e 94% fica de olho; abaixo de 90% em várias noites, ainda mais com ronco forte e acordando cansado, é coisa pra médico do sono ver. Uma queda isolada pode ser só o relógio frouxo no pulso.",
+    dir: "MAIS ALTO é melhor.\n💚 **95% pra cima**: normal\n👀 **90 a 94%**: fica de olho\n🩺 **abaixo de 90%** em várias noites (ainda mais com ronco forte e acordando cansado): coisa pra médico do sono ver\n\nUma queda isolada pode ser só o relógio frouxo no pulso.",
     tips: [
       "Relógio firme, dois dedos acima do ossinho do pulso, pra medir certo.",
       "Se você ronca, dormir de lado ajuda.",
@@ -681,7 +677,7 @@ const WATCH_HELP = {
   },
   steps: {
     what: "Passos do dia contados pelo relógio (e pelo celular quando tá sem relógio, uma fonte só por dia).",
-    dir: "MAIS é melhor. Abaixo de 5 mil é zona de sofá; 7-8 mil já cortam bem o risco de doença; a partir de 10 mil é bônus.",
+    dir: "MAIS é melhor.\n🛋️ **abaixo de 5 mil**: zona de sofá\n💚 **7-8 mil**: já corta bem o risco de doença\n🏆 **10 mil+**: bônus",
     tips: [
       "Caminhada de 20 min dá uns 2.500 passos.",
       "Andar no telefone, descer um ponto antes, estacionar longe.",
@@ -734,7 +730,7 @@ function openWatchHelp(el) {
   document.getElementById("watchHelpTitle").textContent = `❔ ${m.icon} ${m.name}`;
   document.getElementById("watchHelpBody").innerHTML = `
     <div class="watch-help-sec"><div class="watch-help-h">🤔 O que é</div><p>${escapeHtml(h.what)}</p></div>
-    <div class="watch-help-sec"><div class="watch-help-h">↕️ Subir ou descer? ${dirBadge}</div><p>${escapeHtml(h.dir)}</p></div>
+    <div class="watch-help-sec"><div class="watch-help-h">↕️ Subir ou descer? ${dirBadge}</div><p>${watchHelpRich(h.dir)}</p></div>
     ${m.zones ? `<div class="watch-help-zones">${m.zones.map((z) => `<span><i style="background:${z[1]}"></i>${escapeHtml(z[0])}</span>`).join("")}</div>` : ""}
     <div class="watch-help-sec"><div class="watch-help-h">🛠️ Como melhorar</div><ul>${h.tips.map((t) => `<li>${escapeHtml(t)}</li>`).join("")}</ul></div>
     ${mine.length ? `<div class="watch-help-sec"><div class="watch-help-h">📍 O teu</div><div class="kv-list">${mine.join("")}</div></div>` : ""}

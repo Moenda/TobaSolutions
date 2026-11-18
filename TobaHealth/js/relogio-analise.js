@@ -169,7 +169,7 @@ function watchAnRows(key, from, to) {
   const rows = [];
   for (let date = from; date <= to; date = watchAddDays(date, 1)) {
     const d = watchDay(date);
-    const v = d ? m.get(d) : undefined;
+    const v = d ? m.get(d, date) : undefined; // v2.11: a 🏅 Nota precisa da data
     rows.push({ date, v: v === undefined || v === null || !Number.isFinite(Number(v)) ? null : Number(v) });
   }
   return rows;
@@ -453,7 +453,7 @@ function watchAnSplit(key, test, minEach = 5) {
   for (let date = from; date <= to; date = watchAddDays(date, 1)) {
     const d = watchDay(date);
     if (!d) continue;
-    const v = m.get(d);
+    const v = m.get(d, date);
     if (v === undefined || v === null || !(Number(v) > 0 || (m.zeroOk && Number(v) === 0))) continue;
     const t = test(date, d);
     if (t === true) yes.push(Number(v));
@@ -630,7 +630,8 @@ function renderWatchMetric() {
     const sleepDay = key === "sleep" && typeof renderWatchSleepDay === "function" ? renderWatchSleepDay(day)
       : key === "steps" && typeof renderWatchStepsDay === "function" ? renderWatchStepsDay(day) // v2.01: 👟 também (relogio-passos.js)
       : key === "kcal" && typeof renderWatchKcalDay === "function" ? renderWatchKcalDay(day) // v2.04: 🔥 (relogio-calorias.js)
-      : key === "stress" && typeof renderWatchStressDay === "function" ? renderWatchStressDay(day) : ""; // v2.04: 😰 (relogio-stress.js)
+      : key === "stress" && typeof renderWatchStressDay === "function" ? renderWatchStressDay(day) // v2.04: 😰 (relogio-stress.js)
+      : key === "nota" && typeof renderWatchNotaDay === "function" ? renderWatchNotaDay(day) : ""; // v2.11: 🏅 (relogio-nota.js)
     el.innerHTML = watchAnNav(minOffset) + (sleepDay || renderWatchMetricDay(key, m, day));
     if (sleepDay && typeof watchSleepAfterRender === "function") watchSleepAfterRender();
     return;
@@ -675,6 +676,7 @@ function renderWatchMetric() {
     ${key === "sleep" ? watchAnSleepExtras(from, to) : ""}
     ${key === "sleep" && typeof watchSleepPeriodExtras === "function" ? watchSleepPeriodExtras(from, to) : ""}
     ${key === "heart" ? watchAnHeartExtras(from, to) : ""}
+    ${key === "nota" && typeof wndMapsHtml === "function" ? wndMapsHtml(from, to, "") : ""}
     ${m.zones ? watchAnZones(rows, m) : ""}
     ${key === "stress" ? watchAnStressExtras(from, to) : ""}
     ${key === "hrv" || key === "temp" || key === "resp" ? watchAnBaseline(key, m, rows) : ""}
@@ -683,7 +685,8 @@ function renderWatchMetric() {
     ${key === "sleep" && typeof wslMovesHtml === "function" ? wslMovesHtml(to < toIsoDate() ? to : toIsoDate())
       : key === "steps" && typeof wpsMovesHtml === "function" ? wpsMovesHtml(to < toIsoDate() ? to : toIsoDate())
       : key === "kcal" && typeof wcaMovesHtml === "function" && !watchKcalBasal() ? wcaMovesHtml(to < toIsoDate() ? to : toIsoDate())
-      : key === "stress" && typeof wstMovesHtml === "function" ? wstMovesHtml(to < toIsoDate() ? to : toIsoDate()) : watchAnInsights(key)}
+      : key === "stress" && typeof wstMovesHtml === "function" ? wstMovesHtml(to < toIsoDate() ? to : toIsoDate())
+      : key === "nota" && typeof wndMovesHtml === "function" ? wndMovesHtml(to < toIsoDate() ? to : toIsoDate()) : watchAnInsights(key)}
     ${watchAnWeekdays(rows, m)}
     ${watchAnRecords(key, m)}
     <div class="section-title">🗓️ Dias do período</div>
@@ -753,8 +756,9 @@ function watchAnBaseline(key, m, rows) {
   if (!first) return "";
   const vals = [];
   for (let i = 1; i <= 60; i++) {
-    const d = watchDay(watchAddDays(rows[0].date, -i));
-    const v = d ? m.get(d) : undefined;
+    const dd = watchAddDays(rows[0].date, -i);
+    const d = watchDay(dd);
+    const v = d ? m.get(d, dd) : undefined;
     if (v !== undefined && v !== null) vals.push(Number(v));
   }
   if (vals.length < 10) return "";
@@ -975,7 +979,10 @@ function watchAnDayExtras(key, date) {
   if (key === "heart" && (d.restHr || d.hrMin || d.hrMax)) {
     return `<div class="card">
         <div class="toba-stats is-3">
-          ${watchAnTile("💤 Repouso", d.restHr ? watchInt(d.restHr) : "--", "bpm")}
+          ${(() => { // v2.11: o Samsung não manda o repouso; sem ele, a hora mais calma da madrugada
+            const own = !d.restHr && typeof wxRestOwn === "function" ? wxRestOwn(date) : null;
+            return watchAnTile("💤 Repouso", d.restHr ? watchInt(d.restHr) : own ? `≈${watchInt(own)}` : "--", own ? "bpm (madrugada)" : "bpm");
+          })()}
           ${watchAnTile("📉 Menor", d.hrMin ? watchInt(d.hrMin) : "--", "bpm")}
           ${watchAnTile("📈 Maior", d.hrMax ? watchInt(d.hrMax) : "--", "bpm")}
         </div>
@@ -1001,6 +1008,22 @@ function watchAnDayExtras(key, date) {
   return "";
 }
 
+// v2.11: HRV e respiração só chegam pelo 📥 import do Samsung (o Samsung não grava no Health Connect
+// nem entrega pelo SDK dele). Sem medida nos últimos 3 dias = avisa de onde veio o último, em vez de
+// parecer que o relógio parou.
+function watchAnSamsungOnly(key, date) {
+  if (key !== "resp") return ""; // v2.11: HRV saiu do Raio-X
+  const last = watchLatest(key, 3, date);
+  if (last) return "";
+  let lastIso = "";
+  Object.keys(watchDays()).forEach((iso) => {
+    const d = watchDay(iso);
+    if (iso <= date && d && d[key] !== undefined && d[key] !== null && iso > lastIso) lastIso = iso;
+  });
+  const name = key === "hrv" ? "HRV" : "a respiração";
+  return `<div class="hint-box">🚫 O Samsung Health não manda ${name} pro Health Connect (nem pelo SDK dele), então o Toba não tem como puxar sozinho.${lastIso ? ` O último número (${escapeHtml(lastIso.slice(8, 10))}/${escapeHtml(lastIso.slice(5, 7))}) veio do 📥 import do Samsung.` : ""} Não é o relógio nem permissão.</div>`;
+}
+
 function renderWatchMetricDay(key, m, date) {
   const isToday = date === toIsoDate();
   const r = watchRefs(key, date);
@@ -1023,6 +1046,7 @@ function renderWatchMetricDay(key, m, date) {
   return `
     ${key === "kcal" ? watchAnBasalToggle() : ""}
     ${hero}
+    ${watchAnSamsungOnly(key, date)}
     <div class="toba-stats is-3 watch-an-stats">${tiles.join("")}</div>
     <div class="card">
       <div class="card-title">📈 Os 14 dias até ${escapeHtml(watchDayLabel(date).toLowerCase())}</div>
