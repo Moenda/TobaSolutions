@@ -806,12 +806,72 @@ const WATCH_TO_TOBA = {
   34: { type: "walking", title: "Caminhada / Corrida", mode: "treadmill" },
   21: { type: "walking", title: "Caminhada / Corrida", mode: "manual" },
   4: { type: "bike", title: "Bike" },
-  5: { type: "bike", title: "Bike" },
+  5: { type: "bike", title: "Bike ergométrica" },
   60: { type: "elliptical", title: "Elíptico" },
 };
 // Família pra achar o par certo (caminhada com caminhada, academia com força...)
 const WATCH_FAMILY = { walking: "walk", bike: "bike", elliptical: "cardio", strength: "gym", custom: "gym", saitama: "home", home: "home", stretch: "stretch" };
 const WATCH_EX_FAMILY = { 53: "walk", 33: "walk", 34: "walk", 21: "walk", 4: "bike", 5: "bike", 60: "cardio", 45: "gym", 55: "gym", 8: "home", 20: "home", 46: "stretch", 57: "stretch", 27: "stretch" };
+
+/* v2.09 (pedido do Rafa, chegou a bike ergométrica): o relógio grava a pedalada SEM distância,
+ * mas a bike mostra. Na caixinha ⌚ Treinos do relógio aparece "📏 A bike marcou [__] km" pros
+ * tipos que andam (caminhada/corrida/esteira/bike/elíptico) quando o relógio não mandou km.
+ * Fica em TOBA_HEALTH_DB.watch.manualKm["início-fim-tipo"] = km (separado do ex do dia, que o
+ * Health Connect reescreve a cada 🔄). Mesclar/Virar treino usam esse km se o relógio não tiver. */
+function watchManualKmMap() {
+  const w = healthDb.watch;
+  const m = w && typeof w === "object" && !Array.isArray(w) ? w.manualKm : null;
+  return m && typeof m === "object" && !Array.isArray(m) ? m : {};
+}
+
+function watchWantsKm(x) {
+  return !!WATCH_TO_TOBA[x.type] && !(Number(x.distanceM) >= 50);
+}
+
+function watchParseKm(value) {
+  const n = Number(String(value === undefined || value === null ? "" : value).trim().replace(",", "."));
+  return Number.isFinite(n) && n > 0 && n < 1000 ? Math.round(n * 100) / 100 : null;
+}
+
+// km digitado: o que tá no campo agora (tocou no botão sem sair do campo) ou o já salvo
+function watchManualKm(x) {
+  const key = watchExKey(x);
+  const input = typeof document !== "undefined" ? document.querySelector(`[data-km-for="${CSS.escape(key)}"]`) : null;
+  if (input && String(input.value).trim() !== "") {
+    const typed = watchParseKm(input.value);
+    if (typed) watchSaveManualKm(key, typed);
+    return typed;
+  }
+  const saved = watchParseKm(watchManualKmMap()[key]);
+  return saved;
+}
+
+function watchSaveManualKm(key, km) {
+  const db = watchEnsureDb();
+  if (!db.manualKm || typeof db.manualKm !== "object" || Array.isArray(db.manualKm)) db.manualKm = {};
+  if (km) db.manualKm[key] = km;
+  else delete db.manualKm[key];
+}
+
+// km do exercício: o do relógio manda; sem ele, o que a pessoa digitou
+function watchExKmOf(x) {
+  if (Number(x.distanceM) >= 50) return Math.round(Number(x.distanceM) / 10) / 100;
+  return watchWantsKm(x) ? watchManualKm(x) : null;
+}
+
+function watchSetExKm(el) {
+  const key = el.dataset.kmFor;
+  const raw = String(el.value).trim();
+  const km = watchParseKm(raw);
+  if (raw && !km) {
+    el.value = "";
+    tobaToast("📏 Esse km não rolou. Ex.: 12,5");
+  }
+  watchSaveManualKm(key, km);
+  saveHealthDb();
+  // sem re-render: o toque no 🔗/➕ logo depois não pode sumir debaixo do dedo
+  if (km) tobaToast(`📏 ${km.toLocaleString("pt-BR")} km anotados`);
+}
 
 function watchHandled() {
   const w = healthDb.watch;
@@ -917,8 +977,11 @@ function watchMergeInto(x, workout) {
   };
   put("durationMinutes", watchExMinutes(x));
   put("calories", watchExKcal(x));
-  if (Number(x.distanceM) >= 50) put("distanceKm", Math.round(Number(x.distanceM) / 10) / 100);
-  workout.watch = watchExSnapshot(x, { filled, prev, mergedAt: Date.now() });
+  const km = watchExKmOf(x); // v2.09: sem km do relógio, vale o que a bike marcou
+  if (km) put("distanceKm", km);
+  const extra = { filled, prev, mergedAt: Date.now() };
+  if (km && !(Number(x.distanceM) >= 50)) extra.manualKm = km;
+  workout.watch = watchExSnapshot(x, extra);
   watchEnsureDb().handled[watchExKey(x)] = { action: "merged", workoutId: String(workout.id), at: Date.now() };
 }
 
@@ -933,7 +996,7 @@ function watchCreateWorkout(x) {
     date: toIsoDate(start),
     durationMinutes: watchExMinutes(x),
     calories: watchExKcal(x),
-    distanceKm: Number(x.distanceM) >= 50 ? Math.round(Number(x.distanceM) / 10) / 100 : null,
+    distanceKm: watchExKmOf(x), // v2.09: do relógio ou o que a bike marcou
     pushups: null, situps: null, squats: null, sets: null, reps: null, weightKg: null,
     notes: "",
     source: "health-connect",
@@ -941,7 +1004,9 @@ function watchCreateWorkout(x) {
     startTime: `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`,
   };
   if (map && map.mode) workout.mode = map.mode;
-  workout.watch = watchExSnapshot(x, { filled: [], created: true, mergedAt: Date.now() });
+  const extra = { filled: [], created: true, mergedAt: Date.now() };
+  if (workout.distanceKm && !(Number(x.distanceM) >= 50)) extra.manualKm = workout.distanceKm;
+  workout.watch = watchExSnapshot(x, extra);
   if (!Array.isArray(healthDb.workouts)) healthDb.workouts = [];
   healthDb.workouts.push(workout);
   watchEnsureDb().handled[watchExKey(x)] = { action: "created", workoutId: workout.id, at: Date.now() };
@@ -955,6 +1020,20 @@ function watchExStats(x) {
   if (Number(x.distanceM) >= 50) bits.push(`📏 ${watchKm(x.distanceM)}`);
   if (Number(x.hrAvg) > 0) bits.push(`❤️ ${watchInt(x.hrAvg)}${Number(x.hrMax) > 0 ? `/${watchInt(x.hrMax)}` : ""} bpm`);
   return bits.join(" · ");
+}
+
+// v2.09: campinho "📏 A bike marcou [__] km" (o relógio não mandou distância)
+function watchKmField(x) {
+  const key = escapeHtml(watchExKey(x));
+  const saved = watchParseKm(watchManualKmMap()[watchExKey(x)]);
+  const map = WATCH_TO_TOBA[x.type];
+  const label = map && map.type === "bike" ? "🚴 A bike marcou" : map && map.type === "elliptical" ? "🔁 O elíptico marcou" : map && map.mode === "treadmill" ? "🏃 A esteira marcou" : "📏 Andou quanto?";
+  return `<label class="watch-ex-km">
+      <span class="watch-ex-km-label">${label}</span>
+      <input type="text" inputmode="decimal" autocomplete="off" class="form-control watch-ex-km-input" placeholder="0,0" maxlength="6"
+        value="${saved ? escapeHtml(saved.toLocaleString("pt-BR")) : ""}" data-km-for="${key}" data-change="watchSetExKm" aria-label="Distância em km" />
+      <span class="watch-ex-km-unit">km</span>
+    </label>`;
 }
 
 function watchWorkoutLabel(w) {
@@ -995,6 +1074,7 @@ function renderWatchInbox() {
         </div>
         <div class="watch-ex-when">${when}</div>
         <div class="watch-ex-stats">${watchExStats(x)}</div>
+        ${watchWantsKm(x) ? watchKmField(x) : ""}
         <div class="watch-ex-actions">
           ${merge}
           <button type="button" class="btn ${cands.length ? "btn-secondary" : "btn-primary"} btn-sm" data-click="watchCreateEx" data-id="${key}">➕ Virar treino</button>
@@ -1523,6 +1603,7 @@ document.addEventListener("DOMContentLoaded", () => setTimeout(watchArrangeSetti
 
 tobaActions({
   watchAsk,
+  watchSetExKm, // v2.09
   watchPull() {
     watchPull({ full: false });
   },

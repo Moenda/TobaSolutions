@@ -1152,6 +1152,7 @@ function amRenderRadar() {
  * Uma vez por viagem cada marco. Aparece numa pílula e fala (respeita o 🔇 do carro).
  * Nunca fala em cima de manobra: espera a próxima ficar a mais de 400 m.
  * {min}, {km}, {limit} trocados na hora.
+ * v2.09: marcos de tempo escalonados (amTimePlan) + m120/m60/m30 + mais piadas.
  */
 const AM_JOKES = {
   start: [
@@ -1164,6 +1165,10 @@ const AM_JOKES = {
     "Bora, piloto. Missão do dia: chegar inteiro e sem multa. XP garantido.",
     "Saindo! Se esqueceu alguma coisa, finge que foi de propósito.",
     "Viagem iniciada. Loot no final: chegar em casa e tirar o tênis.",
+    "Partiu! Hoje a missão é simples: chegar. O resto é DLC.",
+    "Cinto, café e coragem. Bora, piloto!",
+    "{min} minutos de rota. Dá tempo de três músicas boas e uma ruim que você não pula.",
+    "Viagem começando. O Cloba já tá de olho na estrada. Num olho só, o outro tá no pagode.",
   ],
   half: [
     "Metade do caminho! Daqui pra frente é ladeira abaixo. Modo de dizer, não solta o freio.",
@@ -1174,6 +1179,10 @@ const AM_JOKES = {
     "Cinquenta por cento. Já pode ir esquentando a água da V60.",
     "Metade do caminho. Os gatos já tão te esperando na porta. Ou dormindo, mais provável.",
     "Chegou na metade. Checkpoint salvo, pode morrer tranquilo. Brincadeira, não morre não.",
+    "Metade! Se essa viagem fosse café, agora era a hora de mexer a V60.",
+    "Meio caminho! Barra de vida cheia, poção sobrando. Segue o baile.",
+    "Metade do caminho e nenhuma multa. Tô ficando emocionado.",
+    "Cinquenta por cento. Igual bateria de celular: daqui pra frente vai rapidinho.",
   ],
   ten: [
     "Faltam 10 minutos. Segura o xixi que tá chegando!",
@@ -1183,6 +1192,9 @@ const AM_JOKES = {
     "Dez minutos. Tempo exato de uma música e meia de pagode.",
     "Faltam 10. Se tiver atrasado, já começa a inventar a desculpa.",
     "Dez minutinhos. Barra de XP da viagem quase cheia.",
+    "Dez minutos! Se tiver alguém esperando, essa é a hora de mandar o famoso já tô chegando. No sinal vermelho, hein.",
+    "Faltam dez. A barrinha de loading tá quase no fim, só não trava agora.",
+    "Dez minutinhos. Dá tempo de mais um refrão bem cantado.",
   ],
   five: [
     "Cinco minutos! Avisa o povo que tá chegando. Por áudio não, tá dirigindo!",
@@ -1191,6 +1203,9 @@ const AM_JOKES = {
     "Cinco minutos! Reta final, não vacila agora.",
     "Faltam 5. Desliga o modo Velozes e Furiosos e liga o modo baliza.",
     "Cinco minutos. Já dá pra sentir o cheiro de casa. Ou do vizinho fritando alguma coisa.",
+    "Cinco minutos! Começa a procurar a vaga com os olhos de águia.",
+    "Faltam 5. Momento perfeito pra fingir que sabe fazer baliza de primeira.",
+    "Cinco minutos. Já pode tirar a mão do volante. Mentira! Mentira! Segura aí.",
   ],
   last: [
     "Último quilômetro! Nunca foi sorte, Cloba.",
@@ -1199,6 +1214,8 @@ const AM_JOKES = {
     "Último quilômetro. Se tiver vaga na porta, foi o Cloba que guardou.",
     "Tá chegando! Agora só falta a baliza, a parte que separa os homens dos meninos.",
     "Reta final! Missão quase cumprida, piloto.",
+    "Último quilômetro! Os gatos já ouviram o barulho do motor.",
+    "Logo ali! Prepara a cara de quem dirigiu que nem piloto de Fórmula 1.",
   ],
   jam: [
     "Trânsito parado na frente. Respira e coloca um pagodinho.",
@@ -1208,6 +1225,8 @@ const AM_JOKES = {
     "Lentidão à vista. Bom momento pra cantar alto, ninguém tá ouvindo. Só eu.",
     "Vem fila aí. Paciência é atributo, e tu tá upando agora.",
     "Trânsito pesado. Mais travado que servidor em dia de lançamento.",
+    "Trânsito na frente. Hora de fazer cara de paisagem pro motorista do lado.",
+    "Fila à vista. Mais devagar que download de patch do Diablo em wifi de rodoviária.",
   ],
   speeding: [
     "Ô Max Tobasten, aqui é {limit}! Multa não dá XP.",
@@ -1217,6 +1236,23 @@ const AM_JOKES = {
     "Devagar, Toretto! O limite é {limit} e o boleto da multa é real.",
     "Tá voando, hein! {limit} aqui. O Cloba quer chegar vivo.",
   ],
+  m120: [
+    "Faltam duas horas. Estrada longa, então combina comigo: água, pausa e nada de cochilo.",
+    "Duas horas pro destino. Dá tempo de ouvir um álbum inteiro. Dois, se for de pagode.",
+    "Faltam duas horinhas. O Cloba tá firme, e você? Se cansar, para num posto.",
+  ],
+  m60: [
+    "Falta uma hora. Já passou do aquecimento, agora é jogo valendo.",
+    "Uma hora pra chegar. Se der fome, o Cloba aprova parada pra pão de queijo.",
+    "Uma horinha. Bom momento pra conferir a água e esticar as costas no banco.",
+    "Falta uma hora. Estrada boa é estrada com paciência. E com playlist.",
+  ],
+  m30: [
+    "Meia hora pra chegar! Episódio de série que você nem viu passar.",
+    "Faltam 30 minutos. Daqui pra frente é só administrar a vitória.",
+    "Meia hora. Já dá pra ir pensando no que vai comer quando chegar.",
+    "Trinta minutinhos. O Cloba já tá ensaiando a comemoração.",
+  ],
   long: [
     "Mais de uma hora de estrada. Se bater o sono, para num posto. O Cloba espera.",
     "Viagem longa, hein. Água do lado e pausa a cada duas horas, combinado?",
@@ -1224,7 +1260,68 @@ const AM_JOKES = {
     "Viagem de mais de uma hora. Hidrata, piloto. O Cloba não sabe fazer massagem cardíaca.",
   ],
 };
-const amJoke = { id: null, done: new Set(), pending: null, shownAt: 0, lastSpeed: 0, timer: null, startMin: 0 };
+const amJoke = { id: null, done: new Set(), pending: null, shownAt: 0, lastSpeed: 0, timer: null, startMin: 0, plan: null, markAt: 0 };
+
+/* v2.09 (ideia da Milena): avisos de tempo escalonados.
+ * Antes: viagem de 22 min falava a metade (11 min) e logo depois "faltam 10".
+ * Agora o plano sai da duração no começo da viagem (startMin):
+ * - metade só em viagem de 12 min ou mais;
+ * - marcos fixos de "falta X" (2 h, 1 h, 30, 10, 5 min): 10 e 5 só se a viagem for
+ *   maior que eles + 4 min; 30 min, 1 h e 2 h só em viagem 1,5x maior que o marco;
+ * - marco fixo perto demais da metade sai (folga = 1/5 da viagem, entre 4 e 20 min).
+ * Ex.: 18–34 min = metade + 5; 35–60 min = metade + 10 + 5; 1h40 = metade + 30 + 10 + 5;
+ *      3 h = 2 h + metade + 1 h + 30 + 10 + 5.
+ * Na hora H: falou um marco, os outros que já estão a menos de 4 min dele são pulados
+ * (trânsito faz os minutos pularem; nunca dois avisos colados).
+ */
+const AM_TIME_MARKS = [
+  { kind: "m120", at: 120 },
+  { kind: "m60", at: 60 },
+  { kind: "m30", at: 30 },
+  { kind: "ten", at: 10 },
+  { kind: "five", at: 5 },
+];
+const AM_TIME_GAP_MIN = 4;
+
+function amTimePlan(totalMin) {
+  const total = Number(totalMin) || 0;
+  const half = total >= 12 ? total / 2 : null;
+  const gap = Math.min(20, Math.max(AM_TIME_GAP_MIN, total / 5));
+  // marco de 30 min pra cima só em viagem 1,5x maior que ele (senão cola no começo)
+  const fits = (m) => total >= (m.at > 10 ? m.at * 1.5 : m.at + AM_TIME_GAP_MIN);
+  const left = AM_TIME_MARKS.filter((m) => fits(m) && (half === null || Math.abs(m.at - half) >= gap)).map((m) => m.kind);
+  return { half: half !== null, left };
+}
+
+function amTimeMarks(frac, min, want) {
+  const plan = amJoke.plan;
+  if (!plan || amJoke.pending) return;
+  const skipNear = (now) => {
+    // pula os marcos que ficaram a menos de 4 min do que acabou de falar
+    AM_TIME_MARKS.forEach((m) => {
+      if (m.at > now - AM_TIME_GAP_MIN && m.at <= now + AM_TIME_GAP_MIN) amJoke.done.add(m.kind);
+    });
+  };
+  if (plan.half && !amJoke.done.has("half") && frac >= 0.5 && frac < 0.7) {
+    want("half");
+    amJoke.markAt = Date.now();
+    skipNear(min);
+    return;
+  }
+  for (const m of AM_TIME_MARKS) {
+    if (!plan.left.includes(m.kind) || amJoke.done.has(m.kind)) continue;
+    // janela: chegou no marco e ainda não passou muito dele (5 min: até 2; 10: até 5...)
+    const floor = m.at <= 5 ? 2 : m.at <= 10 ? 5 : m.at * 0.75;
+    if (min <= m.at && min > floor) {
+      want(m.kind, { min });
+      amJoke.markAt = Date.now();
+      skipNear(min);
+      if (frac >= 0.4) amJoke.done.add("half"); // metade ficou colada: não fala mais
+      return;
+    }
+    if (min <= floor) amJoke.done.add(m.kind); // passou do marco sem falar (ex.: manobra): esquece
+  }
+}
 
 function amJokeLine(kind, vars) {
   const list = AM_JOKES[kind] || [];
@@ -1248,6 +1345,8 @@ function amJokeCheck(h) {
     amJoke.done = new Set();
     amJoke.pending = null;
     amJoke.startMin = Number(h.min) || 0;
+    amJoke.plan = null;
+    amJoke.markAt = 0;
   }
   const min = Number(h.min) || 0;
   amJoke.id = am.route.id;
@@ -1263,10 +1362,11 @@ function amJokeCheck(h) {
   if (frac < 0.05 && amJoke.startMin >= 8) want("start");
   if (amJoke.startMin >= 60 && frac > 0.08) want("long");
   if (Number(h.traffic) === 3 && frac < 0.9) want("jam");
-  if (frac >= 0.5 && frac < 0.7 && amJoke.startMin >= 12) want("half");
-  if (min <= 10 && min > 5 && amJoke.startMin >= 16) want("ten");
-  if (min <= 5 && min > 2 && amJoke.startMin >= 9) want("five");
-  if (left <= 1000 && left > 250 && am.route.len > 4000) want("last");
+  // v2.09 (ideia da Milena): marcos de tempo planejados pela duração da viagem, sem aviso colado
+  if (!amJoke.plan) amJoke.plan = amTimePlan(amJoke.startMin);
+  amTimeMarks(frac, min, want);
+  // v2.09: "último quilômetro" não cola no "faltam 5" (2 min de folga)
+  if (left <= 1000 && left > 250 && am.route.len > 4000 && Date.now() - (amJoke.markAt || 0) > 120000) want("last");
   const kmh = Number(h.speed) || 0;
   const lim = Number(h.limit) || 0;
   if (lim > 0 && kmh > lim + 12 && !amJoke.pending && Date.now() - amJoke.lastSpeed > 300000) {

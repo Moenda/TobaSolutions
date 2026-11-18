@@ -352,6 +352,13 @@ function buildPlayerAchievements() {
     metric: (s) => s.km + s.watchKm, goal: item.size,
     title: item.id === "km-mundo" ? "🌍 Magalhães de Tênis" : item.id === "km-lua" ? "🌕 Astronauta de Chinelo" : undefined,
   }));
+  // v2.09: 🚴 bike (pedido do Rafa, chegou a bike ergométrica). Os km da bike também somam nos destinos acima.
+  list.push(
+    { id: "bk-1", cat: "distancia", tier: "bronze", icon: "🚴", name: "Saiu do cabide", desc: "Primeira pedalada com km. A bike deixou de ser varal de roupa!", hint: "Faça 1 treino de bike com os km anotados.", metric: (s) => s.bikeRides, goal: 1 },
+    { id: "bk-100", cat: "distancia", tier: "prata", icon: "🚲", name: "Ciclovia da Paulista", desc: "100 km pedalados sem sair do lugar. O Killua e o Gon já nem ligam mais pro barulho.", hint: "Pedale 100 km de bike.", metric: (s) => s.bikeKm, goal: 100 },
+    { id: "bk-500", cat: "distancia", tier: "ouro", icon: "⛰️", name: "Serra do Rio do Rastro", desc: "500 km de pedal. As coxas pediram aumento.", hint: "Pedale 500 km de bike.", metric: (s) => s.bikeKm, goal: 500 },
+    { id: "bk-3500", cat: "distancia", tier: "lenda", icon: "🇫🇷", name: "Tour de France de pijama", desc: "3.500 km, o tamanho do Tour de France. Sem doping, só café coado.", hint: "Pedale 3.500 km de bike.", metric: (s) => s.bikeKm, goal: 3500, title: "🚴 Pogačar da Sala" },
+  );
   list.push(
     { id: "kcal-1k", cat: "energia", tier: "bronze", icon: "🕯️", name: "Fogareiro", desc: "1.000 kcal queimadas. Já dá pra uma pizza (fatia, hein).", hint: "Queime 1.000 kcal.", metric: (s) => s.kcal, goal: 1000 },
     { id: "kcal-10k", cat: "energia", tier: "prata", icon: "🍖", name: "Churrasqueira", desc: "10.000 kcal. A picanha pede licença.", hint: "Queime 10.000 kcal.", metric: (s) => s.kcal, goal: 10000 },
@@ -1034,7 +1041,7 @@ function computePlayer(options = {}) {
   const unlockedAt = {}; // { achievementId: "AAAA-MM-DD" }
 
   const stats = {
-    workouts: 0, kcal: 0, km: 0, watchKm: 0, liftKg: 0, saitamaReps: 0, saitamaWorkouts: 0,
+    workouts: 0, kcal: 0, km: 0, watchKm: 0, bikeKm: 0, bikeRides: 0, liftKg: 0, saitamaReps: 0, saitamaWorkouts: 0,
     carecaDay: 0, carecaFull: 0, groups: 0, monthGroups: 0, records: 0,
     weekend: 0, types: 0, weighIns: 0, streakBest: 0,
     routineTasks: 0, routineHard: 0, routineBestSeq: 0, routineSleepSeq: 0, routinePerfect: 0,
@@ -1181,6 +1188,10 @@ function computePlayer(options = {}) {
     stats.workouts += 1;
     stats.kcal += playerNum(workout.calories);
     stats.km += km;
+    if (workout.type === "bike" && km > 0) { // v2.09: 🚴 troféus da bike (os km já somam no stats.km)
+      stats.bikeKm += km;
+      stats.bikeRides += 1;
+    }
     stats.liftKg += calcWorkoutLift(workout, health).kg;
     stats.records += records.length;
     if (workout.type === "saitama") {

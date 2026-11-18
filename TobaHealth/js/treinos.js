@@ -244,6 +244,7 @@ function renderWorkoutView() {
       ${hero}
     </div>
     ${tiles.length ? `<div class="toba-stats wv-stats">${tiles.join("")}</div>` : ""}
+    ${renderWorkoutQuickKm(workout)}
     ${exercisesHtml}
     ${renderWalkWorkoutDetail(workout)}
     ${renderStretchWorkoutDetail(workout)}
@@ -280,6 +281,7 @@ function renderWorkoutWatchDetail(workout) {
   if (kcal) tiles.push(tile("🔥 No relógio", `${formatWorkoutNumber(kcal, 0)} kcal`));
   if (Number(w.steps) > 0) tiles.push(tile("👟 Passos", formatWorkoutNumber(w.steps, 0)));
   if (Number(w.distanceM) >= 50) tiles.push(tile("📏 No relógio", `${formatWorkoutNumber(w.distanceM / 1000, 2)} km`));
+  else if (Number(w.manualKm) > 0) tiles.push(tile("📏 Você anotou", `${formatWorkoutNumber(w.manualKm, 2)} km`)); // v2.09
   const clock = (ms) => new Date(Number(ms)).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   const when = Number(w.start) > 0 && Number(w.end) > 0 ? `${clock(w.start)}–${clock(w.end)}` : "";
   const filled = Array.isArray(w.filled) ? w.filled : [];
@@ -312,6 +314,42 @@ function workoutWatchNumbers(w) {
     calories: kcal ? Math.round(kcal) : null,
     distanceKm: Number(w.distanceM) >= 50 ? Math.round(Number(w.distanceM) / 10) / 100 : null,
   };
+}
+
+/* v2.09 (pedido do Rafa, bike ergométrica): treino de bike/elíptico/caminhada sem km ganha o
+ * campinho "📏 Quantos km deu?" direto na página do treino (fast UI, sem abrir o ✏️ Editar).
+ * Grava em workout.distanceKm: conta na distância, nos troféus 🌍 e no 🚴 da bike. */
+const WORKOUT_QUICK_KM_TYPES = { bike: "🚴 Quantos km a bike marcou?", elliptical: "🔁 Quantos km o elíptico marcou?", walking: "📏 Quantos km deu?" };
+
+function renderWorkoutQuickKm(workout) {
+  const label = WORKOUT_QUICK_KM_TYPES[workout.type];
+  if (!label || Number(workout.distanceKm) > 0) return "";
+  return `
+    <div class="card wv-quick-km">
+      <label class="wv-quick-km-label" for="wvQuickKm">${label}</label>
+      <div class="wv-quick-km-row">
+        <input id="wvQuickKm" type="text" inputmode="decimal" autocomplete="off" maxlength="6" class="form-control" placeholder="0,0" />
+        <span class="wv-quick-km-unit">km</span>
+        <button type="button" class="btn btn-primary btn-sm" data-click="saveWorkoutQuickKm" data-id="${escapeHtml(workout.id)}">✅ Salvar</button>
+      </div>
+      <p class="wv-quick-km-hint">Conta na distância e nos troféus. Errou? ✏️ Editar.</p>
+    </div>`;
+}
+
+function saveWorkoutQuickKm(workoutId) {
+  const workout = healthDb.workouts.find((item) => String(item.id) === String(workoutId));
+  const input = document.getElementById("wvQuickKm");
+  if (!workout || !input) return;
+  const n = Number(String(input.value).trim().replace(",", "."));
+  if (!Number.isFinite(n) || n <= 0 || n >= 1000) {
+    tobaToast("📏 Digita os km, tipo 12,5");
+    input.focus();
+    return;
+  }
+  workout.distanceKm = Math.round(n * 100) / 100;
+  saveHealthDb();
+  renderWorkoutView();
+  tobaToast(`📏 ${workout.distanceKm.toLocaleString("pt-BR")} km no treino`);
 }
 
 function workoutWatchDiffers(workout) {
@@ -361,6 +399,7 @@ async function unmergeWorkoutWatch(workoutId) {
 tobaActions({
   unmergeWorkoutWatch: (el) => unmergeWorkoutWatch(el.dataset.id),
   useWorkoutWatchNumbers: (el) => useWorkoutWatchNumbers(el.dataset.id), // v2.04
+  saveWorkoutQuickKm: (el) => saveWorkoutQuickKm(el.dataset.id), // v2.09
 });
 
 // Conta em hall-shared.js (o Perfil usa a mesma)

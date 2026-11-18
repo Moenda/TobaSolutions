@@ -2776,3 +2776,42 @@ Ideia do Rafa: "se na barrinha dos gastos tivesse um risquinho mostrando onde eu
 **Como testar:** gerar o APK 3.1 (Sync Gradle, Generate Signed APK) e instalar pelo KingInstaller. Health › 📱 Toba Screen › 🔓 Abrir as Configurações › Toba › Permitir › voltar: puxa sozinho os últimos dias. Conferir o ranking com o Bem-estar digital, tocar num app, trocar a categoria, pôr um limite, ver o mapa do mês e o de calor (precisa de 7 dias). No navegador aparece o que veio pela ☁️.
 
 **Commit sugerido:** `v2.08 - Toba Screen no Toba Health: tempo de tela pelo Acesso ao uso (APK 3.1) com ranking dos apps, limite e categoria por app, hora a hora, mapa de calor das horas, mapa do mes, celular x sono, raio-x do vicio, tendencia, vida em tela e trofeus de detox`
+
+---
+
+## v2.09 — Commit com vários patches (cada um na sua seção abaixo) · APK 3.2
+
+### 🚴 Toba Health: km da bike ergométrica (o relógio não mede, você digita)
+
+**Arquivos alterados:** `TobaHealth/js/relogio.js`, `TobaHealth/js/treinos.js`, `TobaHealth/css/treinos.css`, `assets/toba-player.js`, `assets/toba-common.js`, `sw.js`, `CLAUDE.md`
+
+1. **📏 "A bike marcou __ km" no ⌚ Treinos do relógio:** chegou a bike ergométrica! O Galaxy Watch grava a pedalada sem distância, mas a bike mostra. Agora o cartão do treino do relógio (aquele com 🔗 Mesclar / ➕ Virar treino / 🙈 Ignorar) ganha um campinho de km quando o relógio não mandou distância (bike, elíptico, esteira, caminhada/corrida). Digita (vírgula ou ponto, tanto faz) e toca em Mesclar ou Virar treino: o km vai junto pro treino. Pode digitar e tocar direto no botão, sem sair do campo.
+2. **📏 Pôr os km depois:** treino de bike, elíptico ou caminhada que ficou sem km (já sincronizado, mesclado sozinho ou anotado à mão) mostra "🚴 Quantos km a bike marcou?" na página do treino, com ✅ Salvar. Pra trocar um km que já tá lá, ✏️ Editar como sempre.
+3. **Os km da bike contam na distância:** somam no total de km, no XP de km do treino (mesma regra da caminhada, com o mesmo teto por treino), no recorde de maior distância e nos troféus de destino 🌍 (SP→Rio, Buenos Aires... até a Lua). No Hall já aparecem separados em "🚴 De bike". O treino que vira treino pelo relógio com tipo bike ergométrica agora se chama **Bike ergométrica**.
+4. **4 troféus novos 🚴 (Distância):** Saiu do cabide (1º pedal com km), Ciclovia da Paulista (100 km), Serra do Rio do Rastro (500 km) e Tour de France de pijama (3.500 km, título "🚴 Pogačar da Sala").
+
+**Dados:** campo novo opcional `TOBA_HEALTH_DB.watch.manualKm = { "início-fim-tipo": km }` (o km digitado na caixinha, fica fora do `ex` do dia porque o Health Connect reescreve o dia a cada 🔄). `workout.watch.manualKm` = km que a pessoa anotou no exercício do relógio (só mostra "📏 Você anotou" nos ⌚ Dados do relógio). O km em si vai no `distanceKm` de sempre. Bancos e backups antigos continuam iguais.
+
+**Como testar:** pedalar com o relógio (ou ter um treino de bike na caixinha ⌚ Treinos do relógio) › digitar os km no campinho › ➕ Virar treino (ou 🔗 Mesclar) › abrir o treino: 📍 Distância com o km. Abrir um treino de bike sem km › "Quantos km a bike marcou?" › ✅ Salvar. Conferir na ⚙️ "Patch v2.09" e os troféus 🚴 na aba de conquistas.
+
+### 🤡 Toba Drive / Auto: avisos de tempo sem repeteco + piadas novas do Cloba (APK 3.2)
+
+**Arquivos alterados:** `TobaRacing/TobaDrive/js/auto-map.js`, `TobaRacing/TobaDrive/js/drive.js`, `TobaAndroid/app/auto/br/com/toba/auto/NavEngine.java`, `TobaAndroid/app/build.gradle` (versionCode 23 / versionName 3.2), `CLAUDE.md`
+
+1. **⏱️ Avisos de tempo escalonados (ideia da Milena):** numa viagem de 22 min o Cloba falava a metade (11 min) e logo em seguida "faltam 10". Agora o carro monta o plano de avisos pela duração da viagem, no começo dela, e nunca fala dois colados:
+   - até ~17 min: só a metade (de 12 min pra cima);
+   - 18 a 34 min: **metade + faltando 5**;
+   - 35 min a 1h15: **metade + 10 + 5**;
+   - 1h40 a 2h30: **metade + 30 + 10 + 5**;
+   - 3 h: **faltam 2 h + metade + 1 h + 30 + 10 + 5** (viagem grande ganha mais marcos).
+   O marco fixo que cai perto da metade sai (folga de 1/5 da viagem, entre 4 e 20 min). Se o trânsito fizer os minutos pularem, falou um aviso = os outros a menos de 4 min dele são pulados, e o "Último quilômetro" espera 2 min depois do "faltam 5". Continua uma fala por marco, nunca em cima de manobra, então a música é interrompida menos ainda.
+2. **🤡 Piadas novas nos marcos:** marcos novos "faltam 2 horas", "falta 1 hora" e "meia hora", e mais piadas na partida, metade, 10, 5, último quilômetro e trânsito.
+3. **🏁 Chegada com piada (pedido do Rafa):** em vez de sempre "Nunca foi sorte", a chegada sorteia uma de 20 piadas ("Tô aqui chocado com a habilidade do motora.", "Voou na rota, pai!", "Missão cumprida. Pode pegar o loot..."), sem repetir a última. O lema continua no sorteio. Vale no **Android Auto** (precisa do APK 3.2) e no **Toba Drive do celular** (só site; com o 🤡 Cloba copiloto desligado o celular fala só "Nunca foi sorte!").
+
+**Dados:** nada muda no banco.
+
+**APK 3.2 (versionCode 23):** só a piada da chegada do Auto mora no Java. Sync Gradle › Generate Signed APK (chave de sempre) › conferir `output-metadata.json` (versionCode 23) › instalar **pelo KingInstaller** (adb push + KingInstaller, nunca desinstalar). Sem o APK novo, os avisos de tempo e as piadas dos marcos já valem no carro (são do site); só a chegada segue falando o lema.
+
+**Como testar:** DHU + Simular uma rota de uns 20 min: fala a metade e depois só o "faltam 5" (sem "faltam 10"). Rota de 40 min: metade, 10 e 5. Chegar no destino: piada nova no lugar do "Nunca foi sorte". No celular, Toba Drive até o destino: "Você chegou em ... " + piada.
+
+**Commit sugerido:** `v2.09 - Km da bike ergometrica (campo de km no treino do relogio e na pagina do treino, km contam na distancia e trofeus, 4 trofeus de bike) + Toba Drive/Auto com avisos de tempo escalonados sem repeticao (metade + 10 + 5 pela duracao), piadas novas e chegada com piada variada (APK 3.2)`

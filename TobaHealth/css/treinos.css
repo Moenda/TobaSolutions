@@ -1528,6 +1528,64 @@
   margin: 0.4rem 0 0.6rem;
 }
 
+/* v2.09: 📏 km da bike na caixinha do relógio */
+.watch-ex-km {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -0.2rem 0 0.6rem;
+  font-size: 0.85rem;
+}
+
+.watch-ex-km-label {
+  font-weight: 700;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.watch-ex-km-input.form-control {
+  width: 5.5rem;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.35rem 0.5rem;
+  text-align: right;
+}
+
+.watch-ex-km-unit,
+.wv-quick-km-unit {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.wv-quick-km-label {
+  display: block;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.wv-quick-km-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wv-quick-km-row .form-control {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
+.wv-quick-km-row .btn {
+  margin-top: 0;
+  flex: 0 0 auto;
+}
+
+.wv-quick-km-hint {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin: 0.45rem 0 0;
+}
+
 .watch-ex-actions {
   display: flex;
   flex-wrap: wrap;

@@ -1131,11 +1131,47 @@ function finishTrip(arrived) {
   };
 }
 
+/* v2.09 (pedido do Rafa): chegada com piada variada do Cloba (antes sempre "Nunca foi sorte",
+ * que continua no sorteio). Mesma lista do ARRIVE_JOKES do NavEngine.java (Android Auto).
+ * Nunca repete a última; com o 🤡 Cloba copiloto desligado fala só o lema. */
+const DRIVE_ARRIVE_JOKES = [
+  "Tô aqui chocado com a habilidade do motora.",
+  "Voou na rota, pai!",
+  "Nunca foi sorte, Cloba. Nunca foi sorte.",
+  "Missão cumprida. Pode pegar o loot: sofá, café e gato no colo.",
+  "Chegou inteiro, sem multa e com estilo. Isso aí é MAX TOBASTEN.",
+  "O GPS fez a parte dele, mas quem pilotou foi você. Respeita!",
+  "Que pilotagem, hein! O Toretto mandou mensagem pedindo aula.",
+  "Destino alcançado. XP da viagem depositado com sucesso.",
+  "Chegamos! Se alguém perguntar, foi tudo planejado desde o começo.",
+  "Aterrissagem perfeita. Os passageiros aplaudem de pé. Ou aplaudiriam, se tivessem passageiros.",
+  "Cheguei, chegamos, chegaram. Conjuga do jeito que quiser, o importante é que chegou.",
+  "Boss da viagem derrotado. Sem perder nenhuma vida.",
+  "Pode desligar o motor. Hoje o Cloba dorme orgulhoso.",
+  "Chegou! Agora a parte difícil: a baliza. Boa sorte. Ah não, pera, nunca foi sorte.",
+  "Motora de respeito. Chegou que nem entrega de app: rapidinho e sem amassar nada.",
+  "Viagem zerada. Achievement desbloqueado: chegar vivo.",
+  "Ufa! O copiloto aqui suou frio, mas você mandou bem demais.",
+  "Chegou chegando! Avisa a vizinhança que o piloto voltou.",
+  "Fim da linha, piloto. Foi uma honra ser teu copiloto hoje.",
+  "Nem o Waze faria melhor. Tá, faria igual. Mas com menos estilo.",
+];
+let driveArriveLast = -1;
+
+function driveArriveJoke() {
+  if (!readDrivePrefs().copilot) return "Nunca foi sorte!";
+  let i = Math.floor(Math.random() * DRIVE_ARRIVE_JOKES.length);
+  if (i === driveArriveLast) i = (i + 1) % DRIVE_ARRIVE_JOKES.length;
+  driveArriveLast = i;
+  return DRIVE_ARRIVE_JOKES[i];
+}
+
 function arrive() {
   if (nav.mode !== "nav") return;
   nav.result = finishTrip(true);
   const name = nav.dest?.name && nav.dest.name !== "Ponto no mapa" ? ` em ${nav.dest.name}` : "";
-  driveSpeak(`Você chegou${name}. Nunca foi sorte!`);
+  const joke = driveArriveJoke();
+  driveSpeak(`Você chegou${name}. ${joke}`);
   if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
   setMode("done").then(() => fitRoute());
 }

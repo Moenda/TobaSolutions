@@ -320,9 +320,45 @@ final class NavEngine implements LocationListener {
         state = State.ARRIVED;
         DriveSync.carEnded(true);
         pushHud();
-        voice.alert("Chegou! " + (dest == null ? "" : dest.name + ". ") + "Nunca foi sorte, Cloba. Nunca foi sorte.");
+        voice.alert("Chegou! " + (dest == null ? "" : dest.name + ". ") + arriveJoke());
         main.postDelayed(backToIdle, 20000);
         changed();
+    }
+
+    /**
+     * v2.09 (APK 3.2, pedido do Rafa): a chegada ganhou piadas variadas do Cloba
+     * (antes era sempre "Nunca foi sorte"; o lema continua no sorteio). Mesma lista do
+     * DRIVE_ARRIVE_JOKES do drive.js (celular). Nunca repete a última.
+     */
+    private static final String[] ARRIVE_JOKES = {
+            "Tô aqui chocado com a habilidade do motora.",
+            "Voou na rota, pai!",
+            "Nunca foi sorte, Cloba. Nunca foi sorte.",
+            "Missão cumprida. Pode pegar o loot: sofá, café e gato no colo.",
+            "Chegou inteiro, sem multa e com estilo. Isso aí é MAX TOBASTEN.",
+            "O GPS fez a parte dele, mas quem pilotou foi você. Respeita!",
+            "Que pilotagem, hein! O Toretto mandou mensagem pedindo aula.",
+            "Destino alcançado. XP da viagem depositado com sucesso.",
+            "Chegamos! Se alguém perguntar, foi tudo planejado desde o começo.",
+            "Aterrissagem perfeita. Os passageiros aplaudem de pé. Ou aplaudiriam, se tivessem passageiros.",
+            "Cheguei, chegamos, chegaram. Conjuga do jeito que quiser, o importante é que chegou.",
+            "Boss da viagem derrotado. Sem perder nenhuma vida.",
+            "Pode desligar o motor. Hoje o Cloba dorme orgulhoso.",
+            "Chegou! Agora a parte difícil: a baliza. Boa sorte. Ah não, pera, nunca foi sorte.",
+            "Motora de respeito. Chegou que nem entrega de app: rapidinho e sem amassar nada.",
+            "Viagem zerada. Achievement desbloqueado: chegar vivo.",
+            "Ufa! O copiloto aqui suou frio, mas você mandou bem demais.",
+            "Chegou chegando! Avisa a vizinhança que o piloto voltou.",
+            "Fim da linha, piloto. Foi uma honra ser teu copiloto hoje.",
+            "Nem o Waze faria melhor. Tá, faria igual. Mas com menos estilo."
+    };
+    private static int lastArriveJoke = -1;
+
+    private static String arriveJoke() {
+        int i = (int) (Math.random() * ARRIVE_JOKES.length);
+        if (i == lastArriveJoke) i = (i + 1) % ARRIVE_JOKES.length;
+        lastArriveJoke = i;
+        return ARRIVE_JOKES[i];
     }
 
     private void finishTrip(boolean arrived) {
@@ -468,7 +504,7 @@ final class NavEngine implements LocationListener {
      *  - 60 a 120 km/h: a 400 m;  - mais de 120 km/h: a 500 m.
      * Só saída de rodovia/via expressa e rotatória ganham um "Agora" curtinho na hora.
      * Manobra colada na seguinte (menos de 150 m) vai junto: "..., e logo depois, ...".
-     * A chegada não tem pré-aviso: quem fala é o "Chegou! Nunca foi sorte" (alerta).
+     * A chegada não tem pré-aviso: quem fala é o "Chegou!" + piada do Cloba (alerta, v2.09).
      */
     static double announceAt(double speedMs) {
         double kmh = speedMs * 3.6;
