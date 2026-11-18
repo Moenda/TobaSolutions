@@ -1,6 +1,7 @@
 /* =====================================================================
  * Toba Health · Hall do mês: telas de detalhe (energia, distância,
- * peso levantado, Saitama). São PÁGINAS (view "viewDetail"), não pop-ups.
+ * peso levantado, Saitama; v2.12: ⚡ Carga e 🔁 Repetições em treino-mes.js).
+ * São PÁGINAS (view "viewDetail"), não pop-ups.
  * O Hall dos Heróis da vida toda mora no Perfil (assets/perfil-hall.js).
  *
  * Padrão das telas de equivalência:
@@ -271,28 +272,49 @@ function renderSaitamaPage(stats, scopeWorkouts, cmp) {
 
 /* --------------------------- navegação --------------------------- */
 // Desde v1.47 só o Hall de cada mês abre daqui (o da vida toda mora no Perfil).
-function openWorkoutHallDetail(detail, monthKey = "") {
+// v2.12: ⚡ Carga e 🔁 Repetições (treino-mes.js) também abrem do resumo do mês
+// na tela principal (from = "viewTraining") e da 🗓️ Semana do treino (from =
+// "viewWorkout"): o ‹ volta pra quem abriu (e pro mesmo treino).
+let workoutDetailFrom = { view: "viewMonth" };
+
+function openWorkoutHallDetail(detail, monthKey = "", from = "") {
   const pages = {
     energy: { title: "🔥 Energia queimada", render: renderEnergyPage },
     distance: { title: "🌍 Quilometragem x mês passado", render: renderDistancePage },
     lifted: { title: "🏋️ Peso levantado", render: renderLiftPage },
     saitama: { title: "👊 Saitama x mês passado", render: renderSaitamaPage },
+    reps: { title: "🔁 Repetições x mês passado", render: (...args) => renderRepsMonthPage(...args) },
+    load: { title: "⚡ Carga do mês", render: (...args) => renderLoadMonthPage(...args) },
   };
   const page = pages[detail];
   if (!page || !monthKey) return;
 
   const scopeWorkouts = getWorkoutMonthStats(healthDb.workouts, monthKey).workouts;
   const stats = getWorkoutLifetimeStats(scopeWorkouts);
+  workoutDetailFrom = from === "viewWorkout" && typeof selectedWorkoutId !== "undefined" && selectedWorkoutId
+    ? { view: "viewWorkout", id: selectedWorkoutId, ret: workoutViewReturn }
+    : { view: from === "viewTraining" ? "viewTraining" : "viewMonth" };
 
   document.getElementById("workoutDetailTitle").innerText = page.title;
   document.getElementById("workoutDetailContent").innerHTML =
-    `<div class="eq-scope">📅 ${formatWorkoutMonth(monthKey)}</div>` + page.render(stats, scopeWorkouts, getMonthCompare(monthKey));
+    `<div class="eq-scope">📅 ${formatWorkoutMonth(monthKey)}</div>` + page.render(stats, scopeWorkouts, getMonthCompare(monthKey), monthKey);
   openModule("viewDetail");
   window.scrollTo({ top: 0 });
 }
 
 function closeWorkoutDetail() {
-  openModule("viewMonth");
+  const back = workoutDetailFrom;
+  if (back.view === "viewWorkout") {
+    // abriu outro treino lá dentro: volta pro treino de onde veio
+    selectedWorkoutId = back.id;
+    workoutViewReturn = back.ret || "viewTraining";
+    if (renderWorkoutView()) {
+      openModule("viewWorkout");
+      return;
+    }
+    back.view = "viewTraining";
+  }
+  openModule(back.view);
   window.scrollTo({ top: 0 });
 }
 

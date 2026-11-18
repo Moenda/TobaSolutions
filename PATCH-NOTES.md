@@ -2888,3 +2888,31 @@ O Rafa viu HRV e respiração parados em 08/11, "nada no Health Connect" no 🩺
 **Como testar:** 🩻 Raio-X › 🔄 › 😰 Stress: os dias depois de 08/11 voltam pra perto do teu normal; abrir 14 ou 15/11 e ver o "🕵️ Por quê". ⚙️ › 🩺 Diagnóstico: "🚫 o Samsung não manda" nas 4 linhas. 😮‍💨 Respiração: aviso do Samsung. 🧬 Corpo por dentro com 6 quadrados, sem HRV e andares. Tocar na 🏅 Nota do Dia: abre a análise; tocar num quadradinho do 🗓️ Mapa do mês abre o dia; aba Mês/Semestre e o 🔍 Por que a nota sobe ou desce.
 
 **Commit sugerido:** `v2.11 - Explicacoes (?) com as faixas uma por linha + aviso de liberar mapa so nos treinos com mapa + Raio-X: Tensao do Cloba sem inflar (base pela madrugada), dia sem stress explica o motivo, diagnostico avisa o que o Samsung nao manda, HRV e andares fora do Raio-X + Nota do Dia com analise completa (mapa do mes, por que sobe ou desce)`
+
+---
+
+## v2.12 — ⚡ Carga do mês semana a semana + 🔁 Repetições no lugar do Saitama + 📊 comparativo do treino repaginado + 🗺️ cadê o mapa
+
+**Arquivos novos/alterados:** `TobaHealth/js/treino-mes.js` (NOVO), `TobaHealth/css/treino-mes.css` (NOVO), `TobaHealth/js/treino-raiox.js`, `TobaHealth/css/treino-raiox.css`, `TobaHealth/js/treinos.js`, `TobaHealth/js/hall.js`, `TobaHealth/css/treinos.css`, `TobaHealth/TobaHealth-Treinos.html`, `assets/perfil-hall.js`, `assets/toba-common.js`, `sw.js`, `CLAUDE.md`
+
+1. **⚡ Carga no resumo do mês e no Hall do mês (pedido do Rafa: "gostei da carga da semana, mas ela muda toda hora que muda o treino"):** quadradinho novo **⚡ Carga da semana** no resumo do mês (pontos da semana de segunda a domingo, ✅/🔥/🚨 e "teu ponto" em pontos, com as barrinhas das semanas do mês) e **⚡ Carga** no Hall de cada mês. Tocar abre a página **⚡ Carga do mês**:
+   - número do mês x mês passado (e x o mesmo dia do mês passado);
+   - 🤡 **Papo reto**: quanto falta pra semana entrar no ponto, traduzido em minutos de caminhada ou treinos de elástico/Saitama do teu próprio ritmo, e o que fazer na **semana que vem** (pega leve / aperta 10% / mira X–Y pts);
+   - 📊 **gráfico semana a semana** com a **faixa verde = teu ponto** (0,8 a 1,25x a média das 4 semanas antes) e as 4 semanas antes do mês apagadinhas pra contexto;
+   - lista das semanas (toca e vê os treinos de cada uma, com a carga de cada treino);
+   - 🔥 semanas seguidas no ponto, semanas sem zerar e 🏆 semana recorde;
+   - 📅 **melhor dia da semana** (média das últimas 8 semanas) e dia do sofá;
+   - 🧩 de onde vem a carga (caminhada, Saitama, elástico, bike...) com dica;
+   - 🫀 **leve x forte (80/20)** pelo tempo nas zonas do coração;
+   - 🛌 treino x folga (dias treinando, maior sequência sem folga) e 🏋️ os 3 treinos mais pesados do mês.
+2. **🔁 Repetições no lugar do card do Saitama (pedido do Rafa):** no resumo do mês e no Hall do mês, o 👊 Saitama virou **🔁 Repetições** (Saitama + elástico + força). Tocar mostra quanto foi de cada (barra colorida), contra o mês passado, Saitama por exercício e elástico por exercício, e se tá alternando dia Saitama / dia elástico. O card separado do Saitama saiu do Hall do mês.
+3. **Elíptico some quando é zero:** no card 🌍 Distância do Hall do mês (ficam A pé e De bike) e no Hall dos Heróis do Perfil.
+4. **📊 "Tu x tuas treinos do Saitama" virou "📊 Esse treino x teu normal" (Rafa: "tô confuso, não consigo entender"):** frase do Cloba resumindo no topo ("Comparado com tuas 4 caminhadas anteriores: 26% mais longe e 76% mais pesado. Ponto fraco: 20% mais lento"), "teu normal" = média dos treinos ANTERIORES do mesmo tipo, cada linha diz em palavras e cor (verde melhor, vermelho pior, cinza igual) com 🥇🥈🥉, **tocar na linha troca o gráfico** (sem a fileira de chips), números em cima das barras e legenda do amarelo/cinza/tracejado. ❔ novo explicando tudo.
+5. **🗓️ Semana desse treino:** o card do treino mudou de nome e mostra as datas ("de 10/11 a 16/11"), deixando claro que cada treino olha a semana dele. Botão **⚡ Ver a carga de cada semana do mês ›** abre a página nova (o ‹ volta pro treino).
+6. **🗺️ Cadê o mapa? (Rafa: "o relógio tá sincronizado mas não puxa o mapa da caminhada por nada"):** o treino de 02/11 é de antes do Samsung começar a mandar os treinos pro Health Connect (~06/11; por isso a carga dele é "estimada": o Health Connect não tem nem o batimento minuto a minuto dele). Agora caminhada na rua sem mapa diz o porquê em vez de sumir calada: 📭 treino antigo/do import, 🛰️ chegou sem trajeto (GPS do relógio desligado, automático ou o Samsung não repassou) ou 🫙 veio vazio, com o erro do Android quando tiver. ❔ "Cadê o mapa?".
+
+**Dados:** nada novo no banco. Só `workouts[].watch.det.rErr` (texto do erro do mapa, quando o Android manda um) nos treinos lidos de novo do relógio. A ⚡ carga é a mesma do Raio-X do treino (sem relógio continua estimada).
+
+**Como testar:** Treinos › resumo do mês: 🔁 Repetições e ⚡ Carga da semana; tocar em cada um (o ‹ volta pro Treinos). Histórico mensal › Novembro: sem Elíptico e sem o card do Saitama, com 🔁 e ⚡ lado a lado. Abrir uma caminhada: "📊 Esse treino x teu normal", tocar nas linhas troca o gráfico; "🗓️ Semana desse treino" › ⚡ Ver a carga... e ‹ volta pro treino. Abrir a caminhada de 02/11: card 🗺️ explicando o 📭. ⚙️ mostra "Patch v2.12".
+
+**Commit sugerido:** `v2.12 - Carga do mes semana a semana (faixa ideal, melhor dia, sequencias, 80/20, folga, papo com recomendacao) + Repeticoes (Saitama x elastico) no lugar do card do Saitama + Eliptico some quando zero + comparativo do treino repaginado + aviso de por que o mapa nao veio`

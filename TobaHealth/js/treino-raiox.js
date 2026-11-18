@@ -425,6 +425,8 @@ function trxSummary(w, raw, cache) {
   if (Number(raw.elevGain) > 0) det.elev = Math.round(Number(raw.elevGain));
   if (raw.hasRoute) det.route = cache.route.length ? 1 : 0;
   if (raw.routeAsk && !cache.route.length) det.routeAsk = 1;
+  // v2.12: por que não tem mapa (a tela explica em vez de sumir calada)
+  if (raw.errors && raw.errors.route) det.rErr = String(raw.errors.route).slice(0, 120);
   if (Array.isArray(cache.vo2) && cache.vo2.length) {
     const before = cache.vo2.filter((p) => Number(p[0]) <= cache.end + 6 * 3600000);
     const last = before.length ? before[before.length - 1] : null;
@@ -856,7 +858,24 @@ function trxMapHtml(w, det, cache) {
         <button type="button" class="btn btn-primary btn-sm" data-click="trxAskRoute" data-id="${escapeHtml(w.id)}"${trx.routeFor ? " disabled" : ""}>🗺️ Mostrar o mapa</button>
       </div>`;
   }
-  return "";
+  const why = trxNoMapWhy(w, det);
+  return why ? `<div class="section-title">🗺️ Por onde andou ${trxQ("nomap")}</div><div class="card trx-nomap"><p>${why}</p></div>` : "";
+}
+
+// v2.12 (Rafa: "o relógio tá sincronizado mas não puxa o mapa da caminhada por nada"):
+// caminhada na rua sem mapa diz o PORQUÊ. Lê só o que o treino já guardou (det), sem
+// puxar de novo: sem hcId = o Health Connect nem achou o exercício; com hcId e sem
+// route/routeAsk = o exercício chegou sem trajeto.
+function trxNoMapWhy(w, det) {
+  if (trxFamilyOf(w) !== "walk" || w.mode === "treadmill" || !det || !trxWindowOf(w) || !trxCanFetch()) return "";
+  if (det.route === 1 || det.routeAsk) return "";
+  if (!det.hcId) {
+    return "📭 O Health Connect não tem esse treino por dentro: é de antes do Samsung começar a mandar os treinos pro celular (lá por 06/11) ou veio do 📥 import, que não traz trajeto. Por isso a carga é estimada e não tem batimento minuto a minuto nem mapa. Os treinos novos chegam completos.";
+  }
+  if (det.route === 0) {
+    return `🫙 O relógio marcou que tinha mapa, mas o trajeto veio vazio.${det.rErr ? ` Android disse: ${escapeHtml(det.rErr)}.` : ""} Abre o treino de novo daqui a pouco que o Toba tenta outra vez.`;
+  }
+  return `🛰️ O Samsung Health mandou esse treino pro Health Connect <b>sem o trajeto</b>.${det.rErr ? ` Android disse: ${escapeHtml(det.rErr)}.` : ""} Ou o GPS do relógio tava desligado (treino automático ou começado sem localização), ou o Samsung não repassa o mapa. Teste: começa uma caminhada no relógio com o GPS ligado e espera o 📍 fixar. Mapa garantido: ▶ Caminhada com GPS do Toba.`;
 }
 
 // Android 15+: dá pra liberar o mapa de TODOS os treinos de uma vez (fica no "Acesso adicional")
@@ -1063,52 +1082,133 @@ function trxSweatHtml(w) {
     </div>`;
 }
 
-/* 📊 Tu x teus treinos do mesmo tipo */
+/* 📊 Esse treino x teu normal (v2.12: repaginado, pedido do Rafa: "tu x tuas treinos wtf Cloba")
+ * Teu normal = média dos (até 10) treinos do mesmo tipo ANTES desse; o 1º do tipo usa os outros.
+ * Cada linha diz em palavras se foi melhor ou pior ("26% mais longe"), com cor e medalha;
+ * tocar na linha troca o gráfico (barra amarela = esse, cinzas = os anteriores, tracejado = normal). */
+// [valor maior, valor menor]: no ritmo, número maior = mais lento
+const TRX_CMP_WORDS = {
+  km: ["mais longe", "mais curto"],
+  pace: ["mais lento", "mais rápido"],
+  min: ["mais longo", "mais curto"],
+  kcal: ["mais calorias", "menos calorias"],
+  hr: ["coração mais acelerado", "coração mais calmo"],
+  load: ["mais pesado", "mais leve"],
+  kmBest: ["mais lento no melhor km", "mais rápido no melhor km"],
+  eff: ["de fôlego a mais", "de fôlego a menos"],
+  elev: ["mais subida", "menos subida"],
+  steps: ["mais passos", "menos passos"],
+};
+
+function trxCmpBase(w, peers) {
+  const idx = peers.indexOf(w);
+  const before = peers.slice(0, Math.max(0, idx)).slice(-10);
+  if (before.length) return { list: before, first: false };
+  return { list: peers.filter((p) => p !== w).slice(-10), first: true };
+}
+
+function trxCmpData(w, peers) {
+  const base = trxCmpBase(w, peers);
+  return trxMetricsFor(w)
+    .map((k) => {
+      const m = TRX_METRICS[k];
+      const v = m.get(w);
+      if (v === null) return null;
+      const a = trxAvg(base.list.map(m.get).filter((x) => x !== null));
+      if (a === null) return null;
+      const p = trxPct(v, a);
+      const good = m.better === "none" || Math.abs(p) < 3 ? 0 : (m.better === "up" ? p : -p);
+      const words = TRX_CMP_WORDS[k] || ["mais", "menos"];
+      const word = Math.abs(p) < 3 ? "igual ao normal" : p > 0 ? words[0] : words[1];
+      return { k, m, v, a, p, good, word, rank: trxRank(peers, w, k) };
+    })
+    .filter(Boolean);
+}
+
+// caminhadas/pedaladas = "as tuas"; o resto = "os teus"
+function trxFamFem(w) {
+  return ["walk", "bike"].includes(trxFamilyOf(w));
+}
+
+function trxCmpLead(rows, base, fam, fem) {
+  const pos = rows.filter((r) => r.good >= 5).sort((a, b) => b.good - a.good).slice(0, 2);
+  const neg = rows.filter((r) => r.good <= -5).sort((a, b) => a.good - b.good).slice(0, 1);
+  const say = (r) => `${Math.abs(r.p)}% ${r.word}`;
+  const n = base.list.length;
+  const who = base.first
+    ? (n === 1 ? "o outro treino desse tipo" : `${fem ? "as outras" : "os outros"} ${n} ${fam}`)
+    : (n === 1 ? "o treino anterior desse tipo" : `${fem ? "tuas" : "teus"} ${n} ${fam} anteriores`);
+  if (!pos.length && !neg.length) return `Comparado com ${who}: tudo no teu padrão. Constância é isso. 👊`;
+  let out = `Comparado com ${who}: `;
+  out += pos.length ? `<b>${pos.map(say).join("</b> e <b>")}</b>.` : "nada acima do normal.";
+  if (neg.length) out += ` Ponto fraco: <b>${say(neg[0])}</b>.`;
+  return out;
+}
+
+function trxMedal(r) {
+  if (!r) return "";
+  const icon = ["🥇", "🥈", "🥉"][r.pos - 1];
+  return `${icon ? `${icon} ` : ""}${r.pos}º de ${r.of}`;
+}
+
 function trxCompareHtml(w, peers) {
   const others = peers.filter((p) => p !== w);
   if (!others.length) return "";
-  const keys = trxMetricsFor(w).filter((k) => TRX_METRICS[k].get(w) !== null && peers.filter((p) => TRX_METRICS[k].get(p) !== null).length >= 2);
-  if (!keys.length) return "";
-  if (!keys.includes(trx.cmp)) trx.cmp = keys[0];
-  const m = TRX_METRICS[trx.cmp];
-  const idx = peers.indexOf(w);
-  const list = peers.slice(Math.max(0, idx - 9), idx + 1).filter((p) => m.get(p) !== null);
-  const mine = m.get(w);
-  const avg = trxAvg(others.slice(-10).map(m.get).filter((v) => v !== null));
-  const rank = trxRank(peers, w, trx.cmp);
-  const rows = trxMetricsFor(w)
-    .filter((k) => TRX_METRICS[k].get(w) !== null)
-    .map((k) => {
-      const mm = TRX_METRICS[k];
-      const a = trxAvg(others.slice(-10).map(mm.get).filter((v) => v !== null));
-      if (a === null) return "";
-      const v = mm.get(w);
-      const p = trxPct(v, a);
-      const good = mm.better === "none" ? 0 : (mm.better === "up" ? p : -p);
-      const cls = Math.abs(p) < 3 ? "" : good > 0 ? " is-up" : good < 0 ? " is-down" : "";
-      const r = trxRank(peers, w, k);
-      return `<div class="trx-cmp-row${cls}"><span>${mm.label}</span><b>${mm.fmt(v)}</b><span class="trx-cmp-avg">normal ${mm.fmt(a)}</span><span class="trx-cmp-pct">${Math.abs(p) < 3 ? "=" : `${p > 0 ? "▲" : "▼"} ${Math.abs(p)}%`}</span>${r ? `<small>${r.pos}º de ${r.of}</small>` : "<small></small>"}</div>`;
-    }).join("");
-  const W = 320;
-  const H = 110;
-  const vals = list.map(m.get);
-  const hi = Math.max(...vals, avg || 0) * 1.1 || 1;
-  const bw = (W - 10) / Math.max(list.length, 1);
-  const bars = list.map((p, i) => {
-    const v = m.get(p);
-    const h = (v / hi) * (H - 22);
-    return `<rect x="${(5 + i * bw + 2).toFixed(1)}" y="${(H - 16 - h).toFixed(1)}" width="${(bw - 4).toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="${p === w ? "#e3b341" : "#30363d"}"/><text x="${(5 + i * bw + bw / 2).toFixed(1)}" y="${H - 4}" text-anchor="middle" class="trx-axis">${p.date.slice(8, 10)}/${p.date.slice(5, 7)}</text>`;
-  }).join("");
-  const avgY = avg ? H - 16 - (avg / hi) * (H - 22) : null;
+  const base = trxCmpBase(w, peers);
+  const rows = trxCmpData(w, peers);
+  if (!rows.length) return "";
+  const keys = rows.filter((r) => peers.filter((p) => r.m.get(p) !== null).length >= 2).map((r) => r.k);
+  if (keys.length && !keys.includes(trx.cmp)) trx.cmp = keys[0];
   const fam = TRX_FAMILY_NAME[trxFamilyOf(w)] || "treinos";
+  const rowsHtml = rows.map((r) => {
+    const cls = r.good > 0 ? " is-good" : r.good < 0 ? " is-bad" : " is-same";
+    const tag = Math.abs(r.p) < 3 ? "= igual ao normal" : `${r.p > 0 ? "▲" : "▼"} ${Math.abs(r.p)}% ${r.word}`;
+    const clickable = keys.includes(r.k);
+    return `<${clickable ? `button type="button" data-click="trxCmp" data-metric="${r.k}"` : "div"} class="trx-cmp-row${cls}${r.k === trx.cmp ? " is-on" : ""}">
+        <span class="trx-cmp-name">${r.m.label}</span>
+        <span class="trx-cmp-val"><b>${r.m.fmt(r.v)}</b><small>normal ${r.m.fmt(r.a)}</small></span>
+        <span class="trx-cmp-tag">${tag}${r.rank ? `<small>${trxMedal(r.rank)}</small>` : ""}</span>
+      </${clickable ? "button" : "div"}>`;
+  }).join("");
+  let chart = "";
+  if (keys.length) {
+    const m = TRX_METRICS[trx.cmp];
+    const row = rows.find((r) => r.k === trx.cmp);
+    const idx = peers.indexOf(w);
+    const list = peers.slice(Math.max(0, idx - 9), idx + 1).filter((p) => m.get(p) !== null);
+    const W = 320;
+    const H = 130;
+    const vals = list.map(m.get);
+    const hi = Math.max(...vals, row.a || 0) * 1.12 || 1;
+    const bw = (W - 10) / Math.max(list.length, 1);
+    const y = (v) => H - 16 - (v / hi) * (H - 30);
+    const short = (v) => (trx.cmp === "pace" || trx.cmp === "kmBest" ? m.fmt(v).replace("/km", "") : formatWorkoutNumber(v, v >= 100 || trx.cmp === "min" || trx.cmp === "kcal" || trx.cmp === "steps" ? 0 : 1));
+    const bars = list.map((p, i) => {
+      const v = m.get(p);
+      const top = y(v);
+      const x = 5 + i * bw;
+      const me = p === w;
+      return `<rect x="${(x + 2).toFixed(1)}" y="${top.toFixed(1)}" width="${(bw - 4).toFixed(1)}" height="${(H - 16 - top).toFixed(1)}" rx="3" fill="${me ? "#e3b341" : "#30363d"}"/>`
+        + `<text x="${(x + bw / 2).toFixed(1)}" y="${(top - 3).toFixed(1)}" text-anchor="middle" class="trx-cmp-num${me ? " is-me" : ""}">${short(v)}</text>`
+        + `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 4}" text-anchor="middle" class="trx-axis">${p.date.slice(8, 10)}/${p.date.slice(5, 7)}</text>`;
+    }).join("");
+    const avgY = row.a ? y(row.a) : null;
+    const dir = m.better === "down" ? "Aqui, quanto <b>menor</b>, melhor." : m.better === "up" ? "Quanto maior, melhor." : "Esse não tem lado bom: é só pra acompanhar.";
+    chart = `
+      <div class="trx-cmp-chart">
+        <div class="trx-cmp-chart-title">📈 ${m.label} ${trxFamFem(w) ? "nas últimas" : "nos últimos"} ${list.length} ${fam}</div>
+        <svg viewBox="0 0 ${W} ${H}" class="trx-svg" role="img" aria-label="${m.label} nos últimos treinos">${bars}${avgY !== null ? `<line x1="5" x2="${W - 5}" y1="${avgY.toFixed(1)}" y2="${avgY.toFixed(1)}" class="trx-avg-line"/>` : ""}</svg>
+        <div class="trx-cmp-legend"><span><i class="is-me"></i>esse treino</span><span><i></i>os anteriores</span><span><i class="is-avg"></i>teu normal (${m.fmt(row.a)})</span></div>
+        <p class="trx-hint">${dir}</p>
+      </div>`;
+  }
   return `
-    <div class="section-title">📊 Tu x tuas ${fam}</div>
+    <div class="section-title">📊 Esse treino x teu normal ${trxQ("cmp")}</div>
     <div class="card trx-cmp">
-      <p class="trx-hint">Contra a média das últimas ${Math.min(10, others.length)} (${peers.length} no total).</p>
-      <div class="trx-cmp-list">${rows}</div>
-      <div class="trx-tabs">${keys.map((k) => `<button type="button" class="chip-btn${k === trx.cmp ? " active" : ""}" data-click="trxCmp" data-metric="${k}">${TRX_METRICS[k].label}</button>`).join("")}</div>
-      <svg viewBox="0 0 ${W} ${H}" class="trx-svg" role="img" aria-label="Últimos treinos">${bars}${avgY !== null ? `<line x1="5" x2="${W - 5}" y1="${avgY.toFixed(1)}" y2="${avgY.toFixed(1)}" class="trx-avg-line"/>` : ""}</svg>
-      <p class="trx-hint">${m.fmt(mine)} nesse${rank ? ` · ${rank.pos}º melhor de ${rank.of}` : ""}${avg ? ` · tracejado = teu normal (${m.fmt(avg)})` : ""}</p>
+      <p class="trx-cmp-lead">🤡 ${trxCmpLead(rows, base, fam, trxFamFem(w))}</p>
+      <p class="trx-hint">Teu normal = média ${base.list.length === 1 ? "de 1 treino" : `${trxFamFem(w) ? "das" : "dos"} ${base.list.length} ${fam}`} ${base.first ? "(esse é o mais antigo, então vale os de depois)" : base.list.length === 1 ? "anterior" : "anteriores"}.${keys.length > 1 ? " Toca numa linha pra ver o gráfico dela." : ""}</p>
+      <div class="trx-cmp-list">${rowsHtml}</div>
+      ${chart}
     </div>`;
 }
 
@@ -1133,12 +1233,21 @@ function trxWeekHtml(w) {
     tag = ratio > 1.5 ? "🚨 Subiu rápido demais: risco de lesão, segura a onda" : ratio > 1.25 ? "🔥 Semana puxada, acima do normal" : ratio >= 0.8 ? "✅ No ponto: evoluindo sem se quebrar" : "🛋️ Semana leve, dá pra apertar";
   }
   const pct = ratio !== null ? Math.min(100, (ratio / 2) * 100) : 0;
+  // v2.12: o nome diz que é a semana DESSE treino (muda de treino pra treino); a do mês
+  // inteiro, semana por semana, mora no ⚡ Carga do resumo do mês (treino-mes.js)
+  const from = (() => {
+    const d = new Date(`${w.date}T12:00:00`);
+    d.setDate(d.getDate() - 6);
+    return toIsoDate(d);
+  })();
+  const short = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
   return `
-    <div class="section-title">🗓️ Carga da semana ${trxQ("week")}</div>
+    <div class="section-title">🗓️ Semana desse treino ${trxQ("week")}</div>
     <div class="card trx-week">
-      <div class="trx-week-top"><strong>${formatWorkoutNumber(week, 0)} pts</strong><span>em 7 dias${chronic ? ` · normal ${formatWorkoutNumber(chronic, 0)} pts/semana` : ""}</span></div>
+      <div class="trx-week-top"><strong>${formatWorkoutNumber(week, 0)} pts</strong><span>de ${short(from)} a ${short(w.date)}${chronic ? ` · normal ${formatWorkoutNumber(chronic, 0)} pts/semana` : ""}</span></div>
       ${ratio !== null ? `<div class="trx-week-bar"><span class="z1"></span><span class="z2"></span><span class="z3"></span><span class="z4"></span><i style="left:${pct}%"></i></div>` : ""}
       <p class="trx-hint">${tag}</p>
+      ${typeof renderLoadMonthPage === "function" ? `<button type="button" class="btn btn-secondary btn-sm trx-week-more" data-click="openHallDetail" data-hero-detail="load" data-hero-month="${w.date.slice(0, 7)}" data-hero-from="viewWorkout">⚡ Ver a carga de cada semana do mês ›</button>` : ""}
     </div>`;
 }
 
@@ -1234,7 +1343,8 @@ const TRX_HELP = {
   drift: ["📈 Deriva cardíaca", "Compara a 2ª metade do treino com a 1ª (sem o aquecimento). Se o coração sobe pra manter o mesmo ritmo, é cansaço, calor ou falta de água.<br><br>💚 <b>até 3,5%</b>: base aeróbica firme<br>👍 <b>até 7%</b>: normal<br>🥵 <b>mais que 7%</b>: o motor cansou no fim<br><br>Com treino, esse número cai."],
   vo2: ["🫁 VO₂ máx.", "O máximo de oxigênio que teu corpo usa por minuto, por kg. É o melhor número de fôlego que existe e um dos que mais tem a ver com viver mais. O relógio estima pelo batimento nas caminhadas e corridas ao ar livre.<br><br>Faixas do Cloba em cima da tabela do ACSM (a de homens de 30-39 é igual à do Samsung). O 🎂 \"fôlego de X anos\" é a idade em que teu número seria o normal do meio.<br><br>Pra subir: tiros (zona 4) 1-2x por semana e caminhada longa na zona 2."],
   sweat: ["💧 Suor estimado", "Chute do Cloba pelas calorias e o tipo do treino (o relógio não manda o suor pro Health Connect). Calor, umidade e roupa mudam muito.<br><br>Regra de ouro: repor 150% do que perdeu em 1-2 h, de preferência junto com comida. Xixi claro = hidratado."],
-  week: ["🗓️ Carga da semana", "Soma a ⚡ carga dos treinos dos 7 dias até esse treino e compara com a média semanal das 4 semanas antes.<br><br>✅ <b>0,8 a 1,25x</b>: evoluindo no ponto<br>🔥 <b>1,25 a 1,5x</b>: puxado<br>🚨 <b>mais de 1,5x</b>: subiu rápido demais, é aí que mora a lesão<br>🛋️ <b>abaixo de 0,8x</b>: semana leve"],
+  week: ["🗓️ Semana desse treino", "Soma a ⚡ carga dos treinos dos 7 dias até esse treino (o dia dele e os 6 antes) e compara com a média semanal das 4 semanas antes. Por isso muda de treino pra treino: cada um olha a semana dele.<br><br>As semanas do mês inteiro, uma por uma, ficam no ⚡ Carga do resumo do mês (ou no botão aqui embaixo).<br><br>✅ <b>0,8 a 1,25x</b>: evoluindo no ponto<br>🔥 <b>1,25 a 1,5x</b>: puxado<br>🚨 <b>mais de 1,5x</b>: subiu rápido demais, é aí que mora a lesão<br>🛋️ <b>abaixo de 0,8x</b>: semana leve"],
+  nomap: ["🗺️ Cadê o mapa?", "O mapa vem do Health Connect, que recebe os treinos do Samsung Health.<br><br>📭 <b>Treino antigo ou do import</b>: o Samsung só manda pro Health Connect o que é novo (desde uns 06/11). O que veio antes, ou pelo 📥 import, não tem trajeto, nem batimento minuto a minuto.<br>🛰️ <b>Treino sem trajeto</b>: o exercício chegou, mas sem o mapa (GPS do relógio desligado, treino automático, ou o Samsung não repassou).<br>🔓 <b>Falta o sim</b>: aí aparece o botão 🗺️ Mostrar o mapa.<br><br>Mapa garantido: ▶ Iniciar treino › 🚶 Caminhada com GPS do Toba."],
   map: ["🗺️ Mapa", "O trajeto que o relógio gravou, pintado pela velocidade de cada trecho comparada com a tua média:<br>🔴 <b>mais lento</b><br>🟡 <b>no ritmo</b><br>🟢 <b>mais rápido</b><br><br>Os números são os km. O mapa usa o mesmo do Toba Places (não gasta o Mapbox do Drive)."],
 };
 

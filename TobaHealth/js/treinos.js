@@ -471,7 +471,6 @@ function renderWorkoutHeroCards(stats, workoutCount, { monthKey = "", intro = ""
         aria: `${formatWorkoutNumber(earthPercentage, 2)}% de uma volta ao redor da Terra`,
         hint: "Toque para ver as cidades que essa distância alcança",
       };
-  const prevSaitamaReps = cmp ? cmp.prev.situps + cmp.prev.pushups + cmp.prev.squats : 0;
   return `
     ${intro ? `<p class="workout-legacy-intro">${intro}</p>` : ""}
     <div class="workout-legacy-grid">
@@ -490,7 +489,7 @@ function renderWorkoutHeroCards(stats, workoutCount, { monthKey = "", intro = ""
         <div class="workout-distance-breakdown">
           <div class="workout-distance-mode"><span class="workout-distance-mode-label">A pé</span><strong class="workout-distance-mode-value">${formatWorkoutNumber(stats.walkDistance, 2)} km</strong></div>
           <div class="workout-distance-mode"><span class="workout-distance-mode-label">De bike</span><strong class="workout-distance-mode-value">${formatWorkoutNumber(stats.bikeDistance, 2)} km</strong></div>
-          <div class="workout-distance-mode"><span class="workout-distance-mode-label">Elíptico</span><strong class="workout-distance-mode-value">${formatWorkoutNumber(stats.ellipticalDistance, 2)} km</strong></div>
+          ${stats.ellipticalDistance > 0 ? `<div class="workout-distance-mode"><span class="workout-distance-mode-label">Elíptico</span><strong class="workout-distance-mode-value">${formatWorkoutNumber(stats.ellipticalDistance, 2)} km</strong></div>` : ""}
         </div>
         <div class="workout-earth-progress-label"><span>${distBar.label}</span><span>${distBar.value}</span></div>
         <div class="workout-earth-progress-track" role="progressbar" aria-label="${distBar.aria}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${distBar.width}">
@@ -498,15 +497,11 @@ function renderWorkoutHeroCards(stats, workoutCount, { monthKey = "", intro = ""
         </div>
         <span class="workout-legacy-detail">${distBar.hint}</span>
       </div>
+      ${monthKey && typeof tmesHallTiles === "function" ? tmesHallTiles(monthKey, monthAttr) : ""}
       <div class="workout-legacy-stat workout-legacy-stat-wide workout-legacy-action" role="button" tabindex="0" data-click="openHallDetail" data-hero-detail="lifted"${monthAttr} aria-label="Ver equivalências do peso levantado">
         <span class="workout-legacy-label">🏋️ Peso levantado</span>
         <strong class="workout-legacy-value">${formatWorkoutNumber(stats.liftKg, 0)} kg em ${formatWorkoutNumber(stats.liftReps, 0)} repetições</strong>
         <span class="workout-legacy-detail">Toque para comparar com elefantes, Boeings e Titanics</span>
-      </div>
-      <div class="workout-legacy-stat workout-legacy-stat-wide workout-legacy-action" role="button" tabindex="0" data-click="openHallDetail" data-hero-detail="saitama"${monthAttr} aria-label="${cmp ? `Comparar o Saitama com ${cmp.prevName}` : "Comparar repetições e distância com Saitama"}">
-        <span class="workout-legacy-label">👊 Treino Saitama</span>
-        <strong class="workout-legacy-value">${formatWorkoutNumber(stats.situps, 0)} abd · ${formatWorkoutNumber(stats.pushups, 0)} flex · ${formatWorkoutNumber(stats.squats, 0)} agach</strong>
-        <span class="workout-legacy-detail">${cmp ? `${formatWorkoutNumber(prevSaitamaReps, 0)} reps em ${cmp.prevName}. Toque para comparar` : "Toque para descobrir quanto falta para o careca fictício"}</span>
       </div>
     </div>
   `;
@@ -571,6 +566,7 @@ function renderWorkoutScreen() {
   const saitama = currentMonth.saitama;
   const saitamaTotal = saitama.pushups + saitama.situps + saitama.squats;
   const summary = document.getElementById("workoutSummary");
+  const monthTiles = typeof tmesSummaryTiles === "function" ? tmesSummaryTiles(currentMonthKey) : null;
   const tile = (metric, label, value, sub, extraClass = "") => `
     <button type="button" class="toba-stat${extraClass}" data-click="openWorkoutChart" data-metric="${metric}" aria-haspopup="dialog">
       <span class="toba-stat-label">${label}</span>
@@ -588,8 +584,13 @@ function renderWorkoutScreen() {
     ),
     tile("calories", "🔥 Calorias", `<span class="text-gold">${formatWorkoutNumber(currentMonth.calories, 0)} kcal</span>`, `${formatWorkoutNumber(dailyAverage(currentMonth.calories), 0)} kcal/dia`),
     tile("distance", "📍 Distância", `<span class="text-blue">${formatWorkoutNumber(currentMonth.distance, 2)} km</span>`, `${formatWorkoutNumber(dailyAverage(currentMonth.distance), 2)} km/dia`),
-    tile("saitamaReps", "👊 Saitama", `<span class="text-coral">${formatWorkoutNumber(saitamaTotal, 0)} reps</span>`, `${formatWorkoutNumber(saitama.situps, 0)} abd · ${formatWorkoutNumber(saitama.pushups, 0)} flex · ${formatWorkoutNumber(saitama.squats, 0)} agach`),
+    // v2.12 (pedido do Rafa): 👊 Saitama virou 🔁 Repetições (Saitama + elástico + força)
+    // e entrou o ⚡ Carga da semana, que abre as semanas do mês (treino-mes.js)
+    monthTiles
+      ? monthTiles.reps
+      : tile("saitamaReps", "👊 Saitama", `<span class="text-coral">${formatWorkoutNumber(saitamaTotal, 0)} reps</span>`, `${formatWorkoutNumber(saitama.situps, 0)} abd · ${formatWorkoutNumber(saitama.pushups, 0)} flex · ${formatWorkoutNumber(saitama.squats, 0)} agach`),
     tile("lifted", "🏋️ Levantado", `<span class="text-green">${formatWorkoutNumber(currentMonth.lift.kg, 0)} kg</span>`, `em ${formatWorkoutNumber(currentMonth.lift.reps, 0)} repetições`),
+    monthTiles ? monthTiles.load : "",
   ].join("");
 
   const historyMonths = [...new Set([
@@ -601,6 +602,7 @@ function renderWorkoutScreen() {
   document.getElementById("workoutHistoryCount").innerText =
     `${historyMonths.length} ${historyMonths.length === 1 ? "mês" : "meses"}`;
   const history = document.getElementById("workoutHistory");
+  const loadCtx = typeof tmesCtx === "function" ? tmesCtx() : null; // v2.12: ⚡ carga de cada mês
   history.innerHTML = historyMonths
     .map((monthKey) => {
       const month = getWorkoutMonthStats(workouts, monthKey, today);
@@ -611,6 +613,10 @@ function renderWorkoutScreen() {
         `📍 ${formatWorkoutNumber(month.distance, 2)} km`,
       ];
       if (month.lift.kg > 0) chips.push(`💪 ${formatWorkoutNumber(month.lift.kg, 0)} kg`);
+      if (typeof tmesCtx === "function") {
+        const load = tmesMonthLoad(loadCtx, monthKey).load;
+        if (load > 0) chips.push(`⚡ ${formatWorkoutNumber(load, 0)} pts`);
+      }
       return `
         <button type="button" class="workout-month-card" data-click="openWorkoutMonth" data-month="${monthKey}" aria-label="Abrir ${formatWorkoutMonth(monthKey)}">
           <span class="workout-month-card-head">
@@ -1139,7 +1145,7 @@ tobaActions({
   openMuscleHelp: () => openTobaModal("muscleHelpModal"),
   openStrengthSummary: (el) => openStrengthSummary(el.dataset.id),
   openWorkoutMonth: (el) => openWorkoutMonth(el.dataset.month),
-  openHallDetail: (el) => openWorkoutHallDetail(el.dataset.heroDetail, el.dataset.heroMonth || ""),
+  openHallDetail: (el) => openWorkoutHallDetail(el.dataset.heroDetail, el.dataset.heroMonth || "", el.dataset.heroFrom || ""),
   openWorkoutChart: (el) => openWorkoutChart(el.dataset.metric),
   editWorkout: (el) => editWorkout(el.dataset.id),
   deleteWorkout: (el) => deleteWorkout(el.dataset.id),

@@ -288,7 +288,8 @@ function renderHallDistancePage(data, state) {
   const { stats } = data;
   const ladder = calcHallLadder(stats.distance, WORKOUT_DISTANCE_DESTINATIONS);
   const earth = (stats.distance / 40075) * 100;
-  const modes = [["🚶", "A pé", stats.walkDistance], ["🚴", "De bike", stats.bikeDistance], ["🏃", "Elíptico", stats.ellipticalDistance]];
+  // v2.12: Elíptico só aparece se tiver km (o Rafa não tem elíptico)
+  const modes = [["🚶", "A pé", stats.walkDistance], ["🚴", "De bike", stats.bikeDistance], ["🏃", "Elíptico", stats.ellipticalDistance]].filter((m, i) => i < 2 || m[2] > 0);
   return `
     ${hallHero("🌍", stats.distance, "km", `${formatWorkoutNumber(earth, earth < 1 ? 2 : 1)}% de uma volta na Terra`, pickTagline(stats.distance, HALL_TAGLINES.distance))}
     <div class="pfh-modes" style="--i:1">${modes.map(([icon, label, value]) => `
