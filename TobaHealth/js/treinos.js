@@ -98,6 +98,7 @@ function renderWorkoutRecord(workout) {
   chips.push(...getWalkChips(workout)); // v1.84: ritmo, GPS, esteira, relógio
   if (workout.watch && !chips.includes("⌚ Relógio")) chips.push("⌚ Relógio"); // v1.89: mesclado com o relógio
   if (workout.watchPending && !workout.watch) chips.push("⌚ esperando o relógio"); // v1.90
+  if (workout.auto) chips.push("🤖 automático"); // v2.10: o relógio gravou sozinho
   if (workout.sets) chips.push(`${formatWorkoutNumber(workout.sets, 0)} séries`);
   if (workout.reps) chips.push(`${formatWorkoutNumber(workout.reps, 0)} repetições`);
   if (workout.weightKg) chips.push(`🏋️ ${formatWorkoutNumber(workout.weightKg, 1)} kg`);
@@ -242,6 +243,7 @@ function renderWorkoutView() {
         ${groups.map((group) => `<span class="workout-chip">${escapeHtml(group)}</span>`).join("")}
       </div>
       ${hero}
+      ${typeof trxAutoChipHtml === "function" ? trxAutoChipHtml(workout) : ""}
     </div>
     ${tiles.length ? `<div class="toba-stats wv-stats">${tiles.join("")}</div>` : ""}
     ${renderWorkoutQuickKm(workout)}
@@ -249,6 +251,7 @@ function renderWorkoutView() {
     ${renderWalkWorkoutDetail(workout)}
     ${renderStretchWorkoutDetail(workout)}
     ${renderHomeWorkoutDetail(workout)}
+    ${typeof renderWorkoutRaioX === "function" ? renderWorkoutRaioX(workout) : ""}
     ${renderWorkoutWatchDetail(workout)}
     ${renderMuscleSection([workout], "workout", "🔥 Músculos do treino", { teaseLazy: false })}
     ${workout.notes ? `<div class="workout-record-note wv-note">📝 ${escapeHtml(workout.notes)}</div>` : ""}
@@ -279,7 +282,7 @@ function renderWorkoutWatchDetail(workout) {
   if (Number(w.minutes) > 0) tiles.push(tile("⏱️ No relógio", `${formatWorkoutNumber(w.minutes, 0)} min`));
   const kcal = Number(w.kcal) > 0 ? w.kcal : Number(w.activeKcal) > 0 ? w.activeKcal : 0;
   if (kcal) tiles.push(tile("🔥 No relógio", `${formatWorkoutNumber(kcal, 0)} kcal`));
-  if (Number(w.steps) > 0) tiles.push(tile("👟 Passos", formatWorkoutNumber(w.steps, 0)));
+  if (Number(w.steps) > 0 && !w.det) tiles.push(tile("👟 Passos", formatWorkoutNumber(w.steps, 0))); // v2.10: com Raio-X o passo mora lá
   if (Number(w.distanceM) >= 50) tiles.push(tile("📏 No relógio", `${formatWorkoutNumber(w.distanceM / 1000, 2)} km`));
   else if (Number(w.manualKm) > 0) tiles.push(tile("📏 Você anotou", `${formatWorkoutNumber(w.manualKm, 2)} km`)); // v2.09
   const clock = (ms) => new Date(Number(ms)).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
@@ -536,8 +539,13 @@ function renderWorkoutMonth(workouts, today) {
   document.getElementById("workoutMonthHeat").innerHTML =
     renderMuscleSection(month.workouts, "month");
   const records = document.getElementById("workoutMonthRecords");
+  // v2.10: 🤖 automáticos (caminhada que o relógio gravou sozinho) escondidos por padrão;
+  // continuam contando nos totais do mês, só saem da lista
+  const hideAuto = typeof trxHideAuto === "function" && trxHideAuto();
+  const listed = hideAuto ? month.workouts.filter((w) => !w.auto) : month.workouts;
+  const autoToggle = typeof trxAutoToggleHtml === "function" ? trxAutoToggleHtml(month.workouts) : "";
   records.innerHTML = month.workouts.length
-    ? month.workouts.map(renderWorkoutRecord).join("")
+    ? autoToggle + (listed.length ? listed.map(renderWorkoutRecord).join("") : tobaEmpty("🤖", "Só treino automático nesse mês", "Toca em Mostrar pra ver.", { compact: true }))
     : tobaEmpty("🛋️", "Nenhum treino neste mês", "O sofá agradece, o shape nem tanto.", { compact: true });
 }
 
@@ -965,7 +973,7 @@ function readWorkoutNumber(id) {
 
 // Campos que o formulário não mostra (trajeto do GPS, origem, alongamento...):
 // editar um treino mantém o que estava gravado (v1.84).
-const WORKOUT_KEEP_ON_EDIT = ["mode", "source", "track", "splits", "startTime", "incline", "stretch", "home", "externalId", "watch", "watchPending"];
+const WORKOUT_KEEP_ON_EDIT = ["mode", "source", "track", "splits", "startTime", "incline", "stretch", "home", "externalId", "watch", "watchPending", "auto", "autoSet"];
 
 function saveWorkout() {
   if (!selectedWorkoutType) return;

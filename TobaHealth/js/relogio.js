@@ -417,6 +417,9 @@ function watchGroupExercises(list) {
     if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
     const item = { start, end, type: Number(x.type) || 0 };
     if (x.title) item.title = String(x.title).slice(0, 80);
+    // v2.10 (APK 3.3): como foi gravado (2 = o relógio gravou sozinho 🤖) e o id do Health Connect
+    if (Number(x.rec) > 0) item.rec = Number(x.rec);
+    if (x.hcId) item.hcId = String(x.hcId).slice(0, 64);
     // v1.89 (APK 2.3): números da sessão (o APK 2.2 não manda, aí fica só o tempo)
     WATCH_EX_FIELDS.forEach((f) => {
       if (Number(x[f]) > 0) item[f] = Math.round(Number(x[f]));
@@ -943,6 +946,7 @@ function watchCandidates(x) {
 function watchExSnapshot(x, extra) {
   const snap = { key: watchExKey(x), start: Math.round(x.start), end: Math.round(x.end), type: Number(x.type) || 0, minutes: watchExMinutes(x) };
   if (x.title) snap.title = String(x.title).slice(0, 80);
+  if (Number(x.rec) > 0) snap.rec = Number(x.rec); // v2.10
   WATCH_EX_FIELDS.forEach((f) => {
     if (Number(x[f]) > 0) snap[f] = Math.round(Number(x[f]));
   });
@@ -1007,6 +1011,7 @@ function watchCreateWorkout(x) {
   const extra = { filled: [], created: true, mergedAt: Date.now() };
   if (workout.distanceKm && !(Number(x.distanceM) >= 50)) extra.manualKm = workout.distanceKm;
   workout.watch = watchExSnapshot(x, extra);
+  if (typeof trxExIsAuto === "function" && trxExIsAuto(x)) workout.auto = 1; // v2.10: 🤖 o relógio gravou sozinho
   if (!Array.isArray(healthDb.workouts)) healthDb.workouts = [];
   healthDb.workouts.push(workout);
   watchEnsureDb().handled[watchExKey(x)] = { action: "created", workoutId: workout.id, at: Date.now() };
@@ -1070,7 +1075,7 @@ function renderWatchInbox() {
         : "";
       return `<div class="watch-ex">
         <div class="watch-ex-top">
-          <span class="watch-ex-name">${escapeHtml(watchExName(x))}${x.title ? ` · ${escapeHtml(x.title)}` : ""}</span>
+          <span class="watch-ex-name">${escapeHtml(watchExName(x))}${x.title ? ` · ${escapeHtml(x.title)}` : ""}${typeof trxExIsAuto === "function" && trxExIsAuto(x) ? ' <span class="trx-auto-tag">🤖 automático</span>' : ""}</span>
         </div>
         <div class="watch-ex-when">${when}</div>
         <div class="watch-ex-stats">${watchExStats(x)}</div>

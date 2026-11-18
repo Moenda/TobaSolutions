@@ -101,7 +101,21 @@ final class HealthReader {
             {"spo2", "android.permission.health.READ_OXYGEN_SATURATION"},
             {"resp", "android.permission.health.READ_RESPIRATORY_RATE"},
             {"floors", "android.permission.health.READ_FLOORS_CLIMBED"},
+            // v2.10 (APK 3.3, 🔬 Raio-X do treino): velocidade, subida e VO₂ máx do treino
+            {"speed", "android.permission.health.READ_SPEED"},
+            {"elevation", "android.permission.health.READ_ELEVATION_GAINED"},
+            {"vo2", "android.permission.health.READ_VO2_MAX"},
     };
+    // v2.10: o mapa de TODOS os treinos de uma vez só existe no Android 15+ (antes é um pedido por treino,
+    // WorkoutReader / MainActivity.askExerciseRoute). Fora do PERMS pra não ficar "faltando" no Android 14.
+    static final String ROUTE_PERM = "android.permission.health.READ_EXERCISE_ROUTES";
+
+    static String[][] perms() {
+        if (android.os.Build.VERSION.SDK_INT < 35) return PERMS;
+        String[][] all = java.util.Arrays.copyOf(PERMS, PERMS.length + 1);
+        all[PERMS.length] = new String[] {"route", ROUTE_PERM};
+        return all;
+    }
     private static final int MAX_DAYS = 120;
     private static final int NIGHT_FROM_HOUR = 18; // v1.94: medida das 18h em diante = noite do dia seguinte
     private static final int SERIES_BUCKET_MIN = 5; // v1.98: série da noite em blocos de 5 min
@@ -137,7 +151,7 @@ final class HealthReader {
             o.put("sdk", android.os.Build.VERSION.SDK_INT);
             JSONArray granted = new JSONArray();
             JSONArray missing = new JSONArray();
-            for (String[] p : PERMS) {
+            for (String[] p : perms()) {
                 if (has(c, p[1])) granted.put(p[0]);
                 else missing.put(p[0]);
             }
@@ -151,13 +165,13 @@ final class HealthReader {
 
     static String[] missingPerms(Context c) {
         List<String> out = new ArrayList<>();
-        for (String[] p : PERMS) {
+        for (String[] p : perms()) {
             if (!has(c, p[1])) out.add(p[1]);
         }
         return out.toArray(new String[0]);
     }
 
-    private static boolean has(Context c, String[][] perms, String name) {
+    static boolean has(Context c, String[][] perms, String name) {
         for (String[] p : perms) {
             if (p[0].equals(name)) return has(c, p[1]);
         }
@@ -298,6 +312,15 @@ final class HealthReader {
                     CharSequence title = r.getTitle();
                     if (title != null && title.length() > 0) x.put("title", title.toString());
                     x.put("origin", origin(r));
+                    // v2.10 (APK 3.3): id do registro (pro mapa), tem mapa? e se foi gravado sozinho
+                    // (recordingMethod 2 = "Caminhada (autom.)" do Samsung: vira 🤖 no Toba)
+                    try {
+                        x.put("hcId", r.getMetadata().getId());
+                        x.put("rec", r.getMetadata().getRecordingMethod());
+                        if (r.hasRoute()) x.put("hasRoute", 1);
+                    } catch (Exception ignored) {
+                        // sem esses extras
+                    }
                     // v1.89 (APK 2.3): números da sessão pro mesclar com o treino do Toba
                     sessionStats(c, hc, r, x, stepOrigins, kcalOrigins, activeOrigins, distOrigins);
                     exercises.put(x);
@@ -572,7 +595,7 @@ final class HealthReader {
         }
     }
 
-    private static <T extends Record> List<T> readAll(HealthConnectManager hc, Class<T> cls, TimeInstantRangeFilter filter)
+    static <T extends Record> List<T> readAll(HealthConnectManager hc, Class<T> cls, TimeInstantRangeFilter filter)
             throws InterruptedException, ExecutionException, java.util.concurrent.TimeoutException {
         List<T> all = new ArrayList<>();
         long token = -1;
@@ -867,7 +890,7 @@ final class HealthReader {
         return found ? a : null;
     }
 
-    private static String origin(Record r) {
+    static String origin(Record r) {
         try {
             return r.getMetadata().getDataOrigin().getPackageName();
         } catch (Exception e) {
@@ -886,7 +909,7 @@ final class HealthReader {
         return v > 0 ? Math.round(v) : null;
     }
 
-    private static String msg(Exception e) {
+    static String msg(Exception e) {
         Throwable t = e instanceof ExecutionException && e.getCause() != null ? e.getCause() : e;
         String m = t.getClass().getSimpleName();
         if (t instanceof HealthConnectException) m += " " + ((HealthConnectException) t).getErrorCode();

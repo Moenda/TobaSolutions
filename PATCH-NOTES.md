@@ -2815,3 +2815,39 @@ Ideia do Rafa: "se na barrinha dos gastos tivesse um risquinho mostrando onde eu
 **Como testar:** DHU + Simular uma rota de uns 20 min: fala a metade e depois só o "faltam 5" (sem "faltam 10"). Rota de 40 min: metade, 10 e 5. Chegar no destino: piada nova no lugar do "Nunca foi sorte". No celular, Toba Drive até o destino: "Você chegou em ... " + piada.
 
 **Commit sugerido:** `v2.09 - Km da bike ergometrica (campo de km no treino do relogio e na pagina do treino, km contam na distancia e trofeus, 4 trofeus de bike) + Toba Drive/Auto com avisos de tempo escalonados sem repeticao (metade + 10 + 5 pela duracao), piadas novas e chegada com piada variada (APK 3.2)`
+
+## v2.10 — 🔬 Raio-X do treino + filtro 🤖 automáticos · APK 3.3
+
+### 🔬 Toba Health: Raio-X do treino ("se eu fosse humano, o que eu queria saber depois da malhação?")
+
+**Arquivos novos:** `TobaHealth/js/treino-raiox.js`, `TobaHealth/css/treino-raiox.css`, `TobaAndroid/app/auto/br/com/toba/app/WorkoutReader.java`
+**Arquivos alterados:** `TobaHealth/TobaHealth-Treinos.html`, `TobaHealth/js/treinos.js`, `TobaHealth/js/relogio.js`, `TobaAndroid/app/auto/br/com/toba/app/HealthReader.java`, `TobaAndroid/app/auto/br/com/toba/app/TobaBridge.java`, `TobaAndroid/app/auto/br/com/toba/app/MainActivity.java`, `TobaAndroid/app/src/main/AndroidManifest.xml`, `TobaAndroid/app/build.gradle` (versionCode 24 / versionName 3.3), `assets/toba-common.js`, `sw.js`, `CLAUDE.md`
+
+A página "Como foi o treino" virou análise completa, no estilo do Raio-X e do Toba Screen:
+
+1. **⚡ Carga do treino:** quanto o treino pesou pro corpo (minutos em cada zona do coração × número da zona), de 🍃 Leve a 👹 MONSTRO, comparada com o teu normal daquele tipo. Treino sem relógio ganha carga estimada pelo tempo e o tipo. **🏅 Recordes** do treino (maior distância, ritmo mais rápido, km mais rápido, mais subida, coração mais eficiente...).
+2. **🤡 Papo reto do Cloba:** resumo do treino, zonas, recuperação, deriva, recorde, eficiência, carga da semana e água.
+3. **Números novos:** velocidade média e máxima, ritmo máximo, passos por minuto, cadência média e máxima, subida e altitude mínima/máxima, kcal por minuto e "queimou tipo 🍲 1 prato de feijoada".
+4. **❤️ Coração no treino:** gráfico do batimento pintado pela cor da zona (igual ao do Samsung), com abas Velocidade, Cadência e Altitude; arrastar o dedo mostra tempo, batimento, velocidade, cadência e altitude daquele minuto. **5 zonas** com tempo e % (FC máx. = 220 − idade, usa a idade da ⚙️ da Pesagem; sem idade, botão 🎂). **🫀 Recuperação** (quanto o batimento caiu 1 e 2 min depois do fim), **📈 Deriva cardíaca** e FC mínima.
+5. **🗺️ Por onde andou:** mapa do relógio (Leaflet, o mesmo do Places, sem gastar o Mapbox) pintado pela velocidade, com plaquinha de cada km. No Android 14 o Android pede um "sim" por treino: botão 🗺️ Mostrar o mapa. Sem internet vira um desenho do trajeto.
+6. **⏱️ Km a km:** tempo e batimento de cada km, melhor km 🏁, o pedaço final, e se terminou mais rápido que começou (negative split).
+7. **🫁 VO₂ máx.:** número, faixa da idade/sexo (Muito ruim → Superior, a de homens 30-39 é a mesma do Samsung), "🎂 teu fôlego tem cara de X anos" e a evolução.
+8. **💧 Suor estimado** (chute do Cloba pelas kcal, o relógio não manda o suor) e quanto beber (150%).
+9. **📊 Tu x tuas caminhadas** (ou pedaladas, treinos do Saitama...): cada número contra a média das últimas 10, posição ("1º de 13") e gráfico de barras dos últimos 10 com o teu normal tracejado. Automático só se compara com automático.
+10. **🗓️ Carga da semana:** 7 dias contra a média das 4 semanas antes (✅ no ponto / 🔥 puxada / 🚨 subiu rápido demais, risco de lesão / 🛋️ leve).
+11. ❔ em cada parte explica o número, no jeito do Cloba.
+12. **Treinos antigos:** ao abrir o 🏋️ Treinos (e ao voltar pro app), o Toba completa calado até 12 treinos com relógio por vez, do mais novo pro mais velho, até onde o Health Connect guardou. Caminhada importada só do 📥 Samsung antes de existir no Health Connect fica só com o que já tinha.
+
+### 🤖 Treinos automáticos (o relógio gravou sozinho)
+
+1. A caminhada que o Samsung Health grava sozinho ("Caminhada (autom.)") vira **🤖 automático**: pelo jeito que foi gravada no Health Connect (APK 3.3) ou pelo nome. Os que já viraram treino são marcados ao abrir o Treinos.
+2. Na lista **Treinos do mês** eles ficam **escondidos por padrão** com o botão "🤖 N automáticos escondidos · Mostrar" (toca de novo pra esconder; lembra a escolha neste aparelho). Continuam contando nos totais do mês, no Hall e nos troféus.
+3. Chip 🤖 automático no card do treino e na caixinha ⌚ Treinos do relógio. Na página do treino: "🤖 Foi automático?" / "Não é" pra marcar ou desmarcar na mão.
+
+**Dados:** campos novos opcionais em `TOBA_HEALTH_DB.workouts[]`: `auto`, `autoSet`, `watch.rec`, `watch.det` (resumo pequeno da análise, ver CLAUDE.md 3.5); `watch.days[].ex[]` ganha `rec` e `hcId`. As séries (batimento, velocidade, mapa) ficam fora do banco, em `localStorage.toba_health_ex_detail` (só deste aparelho, até 15 treinos; apagou = relê do Health Connect). Bancos e backups antigos continuam iguais.
+
+**APK 3.3 (versionCode 24, ponte 18):** leitor novo do treino (`WorkoutReader.java`), permissões novas de velocidade, subida, VO₂ e mapa. Sync Gradle › Generate Signed APK (chave de sempre) › conferir `output-metadata.json` (versionCode 24) › instalar **pelo KingInstaller** (adb push + KingInstaller, nunca desinstalar) › abrir o 🩻 Raio-X ou o ⌚ do Treinos e liberar as permissões novas do Health Connect (velocidade, ganho de elevação, VO₂ máx.). Sem o APK novo, o Raio-X mostra carga estimada, comparativo, recordes, semana e papo; o "por dentro" (batimento minuto a minuto, zonas, mapa, km a km, VO₂) só com o 3.3.
+
+**Como testar:** abrir um treino que veio do relógio › 🔬 Raio-X: carga, papo, gráfico (arrastar o dedo), zonas, recuperação, km a km, VO₂, comparativo (trocar as abas Km/Ritmo/Tempo...). Caminhada com mapa no Android 14: 🗺️ Mostrar o mapa › Permitir. Abrir um treino do Saitama: carga estimada + comparativo. Treinos do mês: "🤖 N automáticos escondidos · Mostrar". Conferir na ⚙️ "APK 3.3 · Patch v2.10".
+
+**Commit sugerido:** `v2.10 - Raio-X do treino (carga, zonas, grafico do batimento, recuperacao, deriva, mapa, km a km, VO2, suor, comparativo, carga da semana, papo do Cloba) + filtro de treinos automaticos do relogio (APK 3.3)`

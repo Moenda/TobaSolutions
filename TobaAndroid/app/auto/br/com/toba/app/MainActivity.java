@@ -57,6 +57,9 @@ public class MainActivity extends Activity {
     private static final int REQ_NOTIFY = 11;
     private static final int REQ_LOCATION = 12;
     private static final int REQ_HEALTH = 13;
+    private static final int REQ_ROUTE = 14; // v2.10: "sim" pro mapa de um treino (Health Connect)
+    private String routeAskId = "";
+    private long routeAskStart = 0;
     static final String RELOGIO_PAGE = "TobaHealth/TobaHealth-Relogio.html";
 
     private WebView web;
@@ -253,6 +256,10 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_ROUTE) {
+            routeResult(resultCode, data);
+            return;
+        }
         if (requestCode == REQ_FILE && fileCallback != null) {
             Uri[] picked = null;
             // v1.89: vários arquivos voltam no ClipData (o parseResult só pega um)
@@ -311,6 +318,47 @@ public class MainActivity extends Activity {
                 healthJs("window.onTobaHealthPerms&&window.onTobaHealthPerms(" + new TobaBridge(this).healthStatus() + ")");
             }
         });
+    }
+
+    /* v2.10 (APK 3.3): 🔬 Raio-X do treino. No Android 14 o mapa de um exercício de outro app
+     * (Samsung Health) só vem com um "sim" da pessoa pra AQUELE treino. */
+    void askExerciseRoute(String hcId, long startMs) {
+        runOnUiThread(() -> {
+            routeAskId = hcId;
+            routeAskStart = startMs;
+            try {
+                Intent i = new Intent(android.health.connect.HealthConnectManager.ACTION_REQUEST_EXERCISE_ROUTE);
+                i.putExtra(android.health.connect.HealthConnectManager.EXTRA_SESSION_ID, hcId);
+                startActivityForResult(i, REQ_ROUTE);
+            } catch (Exception e) {
+                routeJs("{\"ok\":false,\"error\":\"sem tela do Android\"}");
+            }
+        });
+    }
+
+    private void routeResult(int resultCode, Intent data) {
+        String json = "{\"ok\":false,\"error\":\"não liberou\"}";
+        if (Build.VERSION.SDK_INT >= 34 && resultCode == RESULT_OK && data != null) {
+            try {
+                android.health.connect.datatypes.ExerciseRoute r = data.getParcelableExtra(
+                        android.health.connect.HealthConnectManager.EXTRA_EXERCISE_ROUTE,
+                        android.health.connect.datatypes.ExerciseRoute.class);
+                if (r != null) {
+                    org.json.JSONObject o = new org.json.JSONObject();
+                    o.put("ok", true);
+                    org.json.JSONArray a = WorkoutReader.routeJson(r, routeAskStart);
+                    if (a != null) o.put("route", a);
+                    json = o.toString();
+                }
+            } catch (Exception e) {
+                json = "{\"ok\":false,\"error\":\"mapa ilegível\"}";
+            }
+        }
+        routeJs(json);
+    }
+
+    private void routeJs(String json) {
+        healthJs("window.onTobaHealthRoute&&window.onTobaHealthRoute(" + org.json.JSONObject.quote(routeAskId) + "," + json + ")");
     }
 
     void healthJs(String js) {

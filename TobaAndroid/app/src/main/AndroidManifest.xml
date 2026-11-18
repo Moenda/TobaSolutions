@@ -39,6 +39,12 @@
     <uses-permission android:name="android.permission.health.READ_OXYGEN_SATURATION" />
     <uses-permission android:name="android.permission.health.READ_RESPIRATORY_RATE" />
     <uses-permission android:name="android.permission.health.READ_FLOORS_CLIMBED" />
+    <!-- v2.10 (APK 3.3): 🔬 Raio-X do treino (velocidade, subida, VO₂ máx e o mapa de todos os
+         treinos no Android 15+; no 14 o mapa é pedido treino por treino, sem permissão aqui) -->
+    <uses-permission android:name="android.permission.health.READ_SPEED" />
+    <uses-permission android:name="android.permission.health.READ_ELEVATION_GAINED" />
+    <uses-permission android:name="android.permission.health.READ_VO2_MAX" />
+    <uses-permission android:name="android.permission.health.READ_EXERCISE_ROUTES" />
 
     <!-- v2.08 (APK 3.1): 📱 Toba Screen. "Acesso ao uso" (a pessoa liga uma vez em Configurações)
          pra ler o tempo de tela, e ver o nome/ícone dos outros apps (app pessoal, fora da Play). -->

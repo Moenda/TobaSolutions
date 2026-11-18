@@ -7,7 +7,7 @@
  *   cota grátis do TomTom e o mapa já visto abre offline. Trânsito NÃO entra.
  * - NUNCA mexe no localStorage: seus dados não passam por aqui.
  * Mudou a lista de arquivos? Aumente a versão abaixo. */
-const VERSION = "toba-v64";
+const VERSION = "toba-v65";
 const TILE_CACHE = "toba-tiles-v1";
 const TILE_MAX = 3000;
 const NETWORK_TIMEOUT_MS = 4000;
@@ -79,6 +79,7 @@ const PRECACHE = [
   "./TobaHealth/css/alongamento.css",
   "./TobaHealth/css/casa.css",
   "./TobaHealth/css/caminhada.css",
+  "./TobaHealth/css/treino-raiox.css",
   "./TobaHealth/js/health-core.js",
   "./TobaHealth/js/health-metrics.js",
   "./TobaHealth/js/pesagem.js",
@@ -91,6 +92,7 @@ const PRECACHE = [
   "./TobaHealth/js/sessao-casa.js",
   "./TobaHealth/js/sessao-caminhada.js",
   "./TobaHealth/js/treinos.js",
+  "./TobaHealth/js/treino-raiox.js",
   "./TobaHealth/js/treinos-relogio.js",
   "./TobaRoutine/TobaRoutine-Index.html",
   "./TobaRoutine/TobaRoutine-Rotina.html",

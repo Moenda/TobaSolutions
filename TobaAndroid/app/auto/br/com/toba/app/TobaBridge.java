@@ -44,7 +44,7 @@ final class TobaBridge {
 
     @JavascriptInterface
     public int version() {
-        return 17; // 17 = APK 3.1 (screenStatus/screenAsk/screenRead/screenIcons: 📱 Toba Screen, tempo de tela pelo Acesso ao uso); 16 = APK 2.9 (voz do celular liga sozinha: speak funciona fora do 🧭 Drive, no 🧘 Alongamento e 🏠 Treinos em casa; + speakReady); 15 = APK 2.7 (autoTrips: viagens feitas só no Android Auto entram no histórico do 🧭 Toba Drive); 14 = APK 2.6 (healthRead: sono com a linha do tempo das fases + FC/oxigênio/respiração/HRV/temperatura de dentro da noite, + samsung com temperatura da pele/Energy Score/nota de sono pelo SDK do Samsung; samsungStatus/samsungAsk; 😴 Sono turbinado); 13 = APK 2.5 (healthRead: + HRV, oxigenação, respiração da noite e andares; 🩻 RAIO ULTRA X); 12 = APK 2.4 (healthRead: passos/km/kcal de UMA fonte por dia, sem somar celular + Samsung Health; manda "sources"); 11 = APK 2.3 (exercícios do healthRead com kcal/km/passos/FC da sessão, pro mesclar); 10 = APK 2.2 (healthStatus/healthAsk/healthRead: ⌚ Relógio do Toba Health); 9 = APK 2.1 (clipboardText: 📋 Colar do Maps no Places); 8 = APK 1.8 (autoFavorites: ⭐ no Android Auto); 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
+        return 18; // 18 = APK 3.3 (healthWorkout/healthRoute: 🔬 Raio-X do treino, batimento/velocidade/cadência/voltas/VO₂/mapa de um exercício; exercises do healthRead com hcId/rec/hasRoute); 17 = APK 3.1 (screenStatus/screenAsk/screenRead/screenIcons: 📱 Toba Screen, tempo de tela pelo Acesso ao uso); 16 = APK 2.9 (voz do celular liga sozinha: speak funciona fora do 🧭 Drive, no 🧘 Alongamento e 🏠 Treinos em casa; + speakReady); 15 = APK 2.7 (autoTrips: viagens feitas só no Android Auto entram no histórico do 🧭 Toba Drive); 14 = APK 2.6 (healthRead: sono com a linha do tempo das fases + FC/oxigênio/respiração/HRV/temperatura de dentro da noite, + samsung com temperatura da pele/Energy Score/nota de sono pelo SDK do Samsung; samsungStatus/samsungAsk; 😴 Sono turbinado); 13 = APK 2.5 (healthRead: + HRV, oxigenação, respiração da noite e andares; 🩻 RAIO ULTRA X); 12 = APK 2.4 (healthRead: passos/km/kcal de UMA fonte por dia, sem somar celular + Samsung Health; manda "sources"); 11 = APK 2.3 (exercícios do healthRead com kcal/km/passos/FC da sessão, pro mesclar); 10 = APK 2.2 (healthStatus/healthAsk/healthRead: ⌚ Relógio do Toba Health); 9 = APK 2.1 (clipboardText: 📋 Colar do Maps no Places); 8 = APK 1.8 (autoFavorites: ⭐ no Android Auto); 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
     }
 
     /* ---------------- v1.87 (APK 2.2): ⌚ Relógio (Health Connect) ---------------- */
@@ -75,6 +75,37 @@ final class TobaBridge {
         final String id = JSONObject.quote(reqId == null ? "" : reqId);
         HealthReader.read(app, from, to, json -> activity.healthJs(
                 "window.onTobaHealthData&&window.onTobaHealthData(" + id + "," + json + ")"));
+        return true;
+    }
+
+    // v2.10 (APK 3.3): 🔬 Raio-X do treino. start/end em ms do exercício. Resposta:
+    // window.onTobaHealthWorkout(reqId, { ok, start, end, hcId?, type?, rec?, hr?, hrAfter?, spd?, cad?, dist?,
+    //   elevGain?, laps?, segs?, vo2?, hasRoute?, route?, routeAsk?, errors }) (formato no WorkoutReader.java)
+    @JavascriptInterface
+    public boolean healthWorkout(String start, String end, String reqId) {
+        if (Build.VERSION.SDK_INT < 34 || start == null || end == null) return false;
+        final String id = JSONObject.quote(reqId == null ? "" : reqId);
+        try {
+            WorkoutReader.read(app, Long.parseLong(start.trim()), Long.parseLong(end.trim()), json -> activity.healthJs(
+                    "window.onTobaHealthWorkout&&window.onTobaHealthWorkout(" + id + "," + json + ")"));
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    // v2.10 (APK 3.3): pede o "sim" pro mapa de UM treino (Android 14, ou sem o READ_EXERCISE_ROUTES).
+    // Resposta: window.onTobaHealthRoute(hcId, { ok, route?: [[s, lat, lng, alt]], error? })
+    @JavascriptInterface
+    public boolean healthRoute(String hcId, String start) {
+        if (Build.VERSION.SDK_INT < 34 || hcId == null || hcId.isEmpty()) return false;
+        long s;
+        try {
+            s = Long.parseLong(start == null ? "0" : start.trim());
+        } catch (NumberFormatException e) {
+            s = 0;
+        }
+        activity.askExerciseRoute(hcId, s);
         return true;
     }
 
