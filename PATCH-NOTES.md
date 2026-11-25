@@ -2982,3 +2982,62 @@ O Rafa viu HRV e respiração parados em 08/11, "nada no Health Connect" no 🩺
 **Como testar:** Toba Drive navegando: tocar no velocímetro → aparecem TomTom / OpenStreetMap / Tua correção → tocar 40 → placa vira 40 com borda laranja; ↩️ volta. Prévia de uma rota depois de 3+ viagens que chegaram: linha 🧠 Fator Rafa. No carro (DHU ou no Peugeot): passar no trevo Imigrantes → Bandeirantes e ver a seta e o limite sem pular pra pista de cima. Radar: na folha do velocímetro, 🚫 no próximo radar → some do mapa no celular e, na próxima vez que o carro carregar aquela região, no Auto também; 📸 põe um radar com a plaquinha. ⚙️ mostra "APK 3.4 · Patch v2.13".
 
 **✅ Commit sugerido da v2.13 INTEIRA (enxuto, use este no lugar dos de cima):** `v2.13 - Elastico com lado E/D, pagina inicial com visoes, Toba Drive/Auto sem pulo no viaduto, limite e radar certos com correcao, chegada mais precisa (APK 3.4)`
+
+## v2.14 — Commit com vários patches (cada um na sua seção abaixo) · APK 3.5
+
+### v2.14 (mesmo commit) — 🗺️ Mapa da caminhada do relógio direto do Samsung Health (APK 3.5)
+
+**Arquivos alterados (parte do mapa):** `TobaAndroid/app/auto/br/com/toba/app/SamsungReader.java`, `TobaAndroid/app/auto/br/com/toba/app/WorkoutReader.java`, `TobaHealth/js/treino-raiox.js`, `TobaHealth/js/relogio.js`, `PATCH-NOTES.md`. (versionCode/versionName/`version()` 20 e sw/`TOBA_PATCH_VERSION` subidos pela thread do Auto, mesmo APK 3.5.)
+
+1. **O BO (Rafa, volta com o dog 25/11: "no Toba fala que não tem mapa, mas olha no Health"):** o Samsung Health mostra o trajeto no app dele, mas manda a caminhada pro Health Connect **sem a rota** (`hasRoute` falso, nem o "sim" por treino aparece). Não era GPS desligado nem permissão do Android.
+2. **🗺️ Conserto (APK 3.5):** quando o Health Connect não dá o mapa, o 🔬 Raio-X do treino pede o trajeto **direto do Samsung Health** pelo SDK dele (o mesmo da 🌡️ temperatura da pele, só leitura, sem import). Acha a sessão do Samsung com o horário mais perto (até 20 min) e manda os pontos no mesmo formato do Health Connect, então o mapa colorido, a subida pelo mapa e tudo que já existia funciona igual.
+3. **Liberar uma vez:** o SDK pede duas leituras novas, **Exercício** e **Localização do exercício**. Na página da caminhada sem mapa aparece **🗺️ Liberar o mapa no Samsung Health** (usa a mesma tela do 📱 Ligar o Samsung Health). Liberou = as caminhadas que ficaram sem mapa puxam de novo sozinhas. O 🩺 Diagnóstico ganhou a linha 🗺️ mapa dos treinos.
+4. **Treinos já guardados:** caminhada na rua sem mapa pergunta de novo pro Samsung quando abre (ou no completar calado), uma vez. Se nem o Samsung tem trajeto, o aviso diz isso (GPS do relógio desligado). APK velho: o aviso manda instalar o 3.5.
+
+**Dados:** `workouts[].watch.det` ganha `rS` ("ok" | "perm" | "none" | "err"), `rSrc` ("samsung") e `rSErr`, todos opcionais. Mapa no mesmo cache `toba_health_ex_detail` (`route`). Ponte: `healthWorkout` pode devolver `routeSrc: "samsung"` / `routeSamsung: "perm" | "none"` e `errors.routeSamsung`; `samsungStatus` lista também `"exercise"` e `"map"`. Nada de método novo na ponte.
+
+**APK:** **APK 3.5** (versionCode 26, ponte 20, junto com a thread do Auto): Sync Gradle → Generate Signed APK → **KingInstaller**. Compilado aqui só com javac (SamsungReader/WorkoutReader/HealthReader contra o SDK 1.1.0 do Samsung).
+
+**Como testar:** instalar o APK 3.5 → 🏋 Treinos → abrir a caminhada de 25/11 (18:42) → card 🗺️ Liberar o mapa no Samsung Health → ligar Exercício e Localização do exercício → voltar → o mapa aparece pintado por ritmo (ou abre o treino de novo). ⚙️ mostra "APK 3.5 · Patch v2.14".
+
+### v2.14 (mesmo commit) — ⭐ Meu painel virou mostrador de relógio: quadradinhos ＋ que tu monta
+
+**Arquivos alterados (parte do painel):** `assets/portal-views.js`, `assets/portal.css`, `index.html`, `CLAUDE.md`, `assets/toba-common.js` (`TOBA_PATCH_VERSION` v2.14) e `sw.js` (toba-v69; se a thread do Auto já subiu, é o mesmo número).
+
+1. **Rafa: "igual aqueles app do watch que monta a interface, quadradinhos com um +, clica e escolhe o que é".** O ⭐ Meu painel agora é um **molde** com quadradinhos. Quadradinho vazio mostra **＋** tracejado: toca e escolhe o que vai ali.
+2. **O que dá pra pôr num quadradinho:** qualquer **número** de qualquer app (os mesmos de antes: 💵 Livre hoje, ⚖️ Peso, ✅ Tarefas hoje, 📊 Média km/l...), um **📱 atalho de app** (ícone grande, abre o app) ou um **✨ extra**: 🕐 Relógio (hora e dia, anda sozinho) e 🤖 Pra aprovar (compras do cartão esperando, abre o Gastos).
+3. **✏️ Montar o painel** (botão embaixo, ou **segura um quadradinho** meio segundo, igual no relógio): os quadradinhos tremem com um ✏️, aparecem os **moldes** com miniatura e o ✔ Pronto.
+   - **Moldes:** ▦ Clássico (8 médios), 🌟 Destaque (1 grandão + 2 médios + 6 pequenos), ⌚ Mostrador (comprido + pequenos + médios), 🔳 Mini (9 pequenos), ☰ Faixas (5 compridos).
+   - Toca num quadradinho pra **trocar** ou **🗑️ deixar vazio**. Escolher algo que já tá em outro quadradinho (marcado com #N na folha) **troca os dois de lugar**: é assim que reordena.
+   - Molde menor só **guarda** os que sobram; voltando pra um maior eles reaparecem.
+4. **⚙️ › Painel › ⭐ Montar o Meu painel** leva direto pro painel já no modo de montar (e mostra o molde e quantos quadradinhos tão montados).
+5. A barrinha de atalhos dos apps continua embaixo.
+
+**Dados:** nada muda nos bancos dos apps. `toba_portal_view` ganha `layout` e `slots` (ver CLAUDE.md). Quem já tinha números escolhidos na v2.13 vê eles nos primeiros quadradinhos do molde Clássico, sem perder nada.
+
+**Como testar:** ⚙️ › Painel › ⭐ Meu painel. Tocar num ＋ → 🕐 Relógio. Segurar um quadradinho → trocar o molde pra 🌟 Destaque → tocar no grandão → escolher um número que já tava em outro (troca de lugar) → ✔ Pronto. Trocar pra ☰ Faixas e voltar: nada some. ⚙️ mostra "Patch v2.14".
+
+**Commit sugerido (parte do painel):** `... + Meu painel montavel estilo relogio (moldes, quadradinhos +, atalhos e relogio)`
+
+### v2.14 (mesmo commit) — 📍 Marcar radar e limite pelo Android Auto, corrigir no celular (APK 3.5)
+
+**Arquivos alterados (parte do Auto):** `TobaAndroid/app/auto/br/com/toba/auto/HomeScreen.java`, `ReportScreen.java` (NOVO), `NavEngine.java`, `AutoStore.java`, `DriveSync.java`, `TobaAndroid/app/auto/br/com/toba/app/TobaBridge.java`, `TobaAndroid/app/src/main/res/drawable/ic_car_report.xml` (NOVO), `TobaAndroid/app/build.gradle` (versionCode 26 / versionName 3.5), `TobaRacing/TobaDrive/TobaDrive.html`, `TobaRacing/TobaDrive/js/drive.js`, `TobaRacing/TobaDrive/js/drive-core.js`, `TobaRacing/TobaDrive/css/drive.css`, `assets/toba-common.js`, `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **Rafa: "achei que aparecia um botão do Waze... clica, marca atualizar radar ou atualizar velocidade da via, mas aparece no celular pra atualizar porque é mais seguro".** Agora tem: **📍 botão de pino com "!"** no Toba do carro.
+   - **Navegando:** fica na faixa de cima, do lado do 🔊 som.
+   - **Sem rota:** fica no lado do mapa (embaixo do 3D/2D, 🎯 e 🎨).
+2. **Um toque = marcou.** O lugar é gravado NA HORA do toque (o carro segue andando): posição (grudada na rota quando tem rota), sentido, tua velocidade, o limite que a placa do Toba mostrava e a rua. Aí abre uma listinha: **📸 Radar**, **🚦 Limite da via** ou **📍 Só marcar**. Não escolheu em 8 s? fecha sozinha e fica "📍 conferir". **Sem voz nenhuma** (só o aviso escrito "📍 Marcado! Confere no celular depois 👊"): a música não para.
+3. **No celular:** abre o 🧭 Toba Drive e aparece **📍 Marcados no carro** (com o número em vermelho) em cima da busca. Toca num:
+   - **👀 Street View** e **🗺️ Ver no Maps** do lugar exato, pra conferir a placa/radar com calma.
+   - **🚦 Qual é a placa daqui?** chips 20…120 e 🤷: vira a ✏ correção de limite (a mesma do velocímetro: ganha da TomTom e do OSM, vale no celular e no carro).
+   - **📸 Radar daqui:** lista os radares a até 400 m no teu sentido (Pardal + tuas marcações), cada um com **🚫 Não existe**; e **📸 Tem radar aqui** (onde tu marcou).
+   - **✅ Tava certo, tirar da lista.**
+   Resolveu, sai da lista (e não volta do carro).
+
+**Dados:** `TOBA_DRIVE_DB.reports` (NOVO, opcional): `[{ at, kind: "radar"|"limit"|"check", lat, lng, head, kmh, limit, street, nav }]`, até 60; `TOBA_DRIVE_DB.reportSkip` (NOVO, opcional): `at` dos resolvidos, até 100. Banco antigo vira `[]` no `normalizeDriveDb`. No carro: prefs `toba_auto › reports` (até 60), apagadas depois que o site guarda. Ponte nova `TOBA_NATIVE.autoReports()` / `autoReportsDone(json)` (`version()` 20); o site checa se existe (APK velho = lista nunca aparece, nada quebra).
+
+**APK:** **APK 3.5** (versionCode 26, ponte 20, junto com o mapa do relógio): Sync Gradle → Generate Signed APK → **KingInstaller** (adb push + KingInstaller, como sempre). Java checado aqui só com javac contra stubs (ReportScreen/AutoStore/DriveSync); HomeScreen/NavEngine revisados à mão. Build real no Android Studio.
+
+**Como testar:** DHU ou no Peugeot. Sem rota: botão 📍 no lado do mapa → toca → aparece a lista → 🚦 Limite da via → aviso "🚦 Limite marcado!". Com rota: 📍 na faixa de cima → toca e não escolhe nada → fecha em 8 s. No celular: abrir o 🧭 Toba Drive → "📍 Marcados no carro 2" → abrir o do limite → tocar 40 → some da lista e a placa daquele trecho vira 40 (celular e carro). Abrir o do radar → 🚫 Não existe num radar da lista. ⚙️ mostra "APK 3.5 · Patch v2.14".
+
+**Commit sugerido (parte do Auto):** `... + botao 📍 no Android Auto pra marcar radar/limite e corrigir no celular (APK 3.5)`

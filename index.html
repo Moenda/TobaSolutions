@@ -162,8 +162,8 @@
         <button type="button" class="toba-menu-btn" data-click="openPinsConfig">
           <span class="toba-menu-icon">⭐</span>
           <span class="toba-menu-text">
-            <span class="toba-menu-title">Números do Meu painel</span>
-            <span class="toba-menu-desc" id="portalPinsMenuDesc">Escolhe o que aparece no ⭐ Meu painel</span>
+            <span class="toba-menu-title">Montar o Meu painel</span>
+            <span class="toba-menu-desc" id="portalPinsMenuDesc">Molde com quadradinhos ＋ que tu escolhe</span>
           </span>
           <span class="toba-hub-chevron">›</span>
         </button>
@@ -317,14 +317,14 @@
     </div>
   </div>
 
-  <!-- v2.13: números do ⭐ Meu painel (toca pra ligar/desligar, portal-views.js) -->
+  <!-- v2.14: o que vai num quadradinho do ⭐ Meu painel (o ＋ ou o ✏️ abre, portal-views.js) -->
   <div class="toba-modal" id="pinsModal">
     <div class="toba-sheet">
       <div class="toba-sheet-header">
-        <h3>⭐ Números do Meu painel</h3>
+        <h3 id="painelPickTitle">＋ O que vai aqui?</h3>
         <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
       </div>
-      <p class="toba-sheet-text">Toca pra ligar ou desligar. Eles aparecem na ordem em que tu escolheu. <b id="portalPinsCount"></b></p>
+      <p class="toba-sheet-text" id="painelPickText"></p>
       <div class="pv-pin-list" id="portalPinsList"></div>
     </div>
   </div>

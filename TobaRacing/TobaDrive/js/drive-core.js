@@ -12,6 +12,7 @@ const DRIVE_RECENT_MAX = 12;
 const DRIVE_TRIPS_MAX = 500;
 
 // Trava: fica false se o banco salvo estiver ilegível, para não sobrescrever.
+const DRIVE_REPORTS_MAX = 60; // v2.14: 📍 marcados no carro
 let isDriveDbLoaded = false;
 
 function createEmptyDriveDb() {
@@ -23,6 +24,8 @@ function createEmptyDriveDb() {
     autoSkip: [], // v2.02: "at" das viagens do Android Auto que foram apagadas (não voltam no import)
     limitFixes: [], // v2.13: ✏ correções de limite [{ id: "lf-..", lat, lng, head (rumo), kmh (-1 = sem limite), way? (via do OSM), street?, at }]
     radarFixes: [], // v2.13: 📸/🚫 marcações de radar [{ id: "rf-..", kind: "add"|"del", lat, lng, head (sentido), limit?, street?, at }] (drive-radar.js)
+    reportSkip: [], // v2.14: "at" dos 📍 já resolvidos (não voltam do carro)
+    reports: [], // v2.14: 📍 marcados no Android Auto pra conferir [{ at (id), kind: "radar"|"limit"|"check", lat, lng, head, kmh, limit, street, nav }]
   };
 }
 
@@ -86,6 +89,22 @@ function normalizeDriveDb(db) {
       at: Number(x.at) || 0,
     }))
     .slice(-300);
+  // v2.14: 📍 marcados no carro (banco antigo não tem: vira [])
+  out.reportSkip = (Array.isArray(out.reportSkip) ? out.reportSkip : []).map(Number).filter((n) => n > 0).slice(-100);
+  out.reports = (Array.isArray(out.reports) ? out.reports : [])
+    .filter((x) => x && driveValidPoint(x) && Number(x.at) > 0)
+    .map((x) => ({
+      at: Number(x.at),
+      kind: x.kind === "radar" || x.kind === "limit" ? x.kind : "check",
+      lat: Number(x.lat),
+      lng: Number(x.lng),
+      head: Number.isFinite(Number(x.head)) ? Math.round(Number(x.head)) : 0,
+      kmh: Math.max(0, Math.round(Number(x.kmh) || 0)),
+      limit: Math.max(0, Math.round(Number(x.limit) || 0)),
+      street: String(x.street || ""),
+      nav: Boolean(x.nav),
+    }))
+    .slice(-DRIVE_REPORTS_MAX);
   out.trips.forEach((t) => {
     t.km = Number(t.km) || 0;
     t.arrived = Boolean(t.arrived);
@@ -119,6 +138,43 @@ function driveImportAutoTrips() {
   if (!isDriveDbLoaded || typeof tobaMergeAutoTrips !== "function") return 0;
   const n = tobaMergeAutoTrips(driveDb);
   if (n) saveDriveDb({ silent: true });
+  return n;
+}
+
+// v2.14 (APK 3.5): 📍 marcados no Android Auto entram na lista pra conferir (mesmo "at" não
+// duplica). Guardou? avisa o carro pra apagar a cópia dele. Devolve quantos entraram.
+function driveImportAutoReports() {
+  if (!isDriveDbLoaded || typeof tobaReadAutoReports !== "function") return 0;
+  const car = tobaReadAutoReports();
+  if (!car.length) return 0;
+  const have = new Map(driveDb.reports.map((r) => [r.at, r]));
+  const skip = new Set(driveDb.reportSkip || []);
+  let n = 0;
+  car.forEach((c) => {
+    const at = Number(c && c.at);
+    if (!at || skip.has(at) || !driveValidPoint(c)) return;
+    const kind = c.kind === "radar" || c.kind === "limit" ? c.kind : "check";
+    const mine = have.get(at);
+    if (mine) {
+      if (mine.kind === "check" && kind !== "check") mine.kind = kind; // escolheu depois no carro
+      return;
+    }
+    driveDb.reports.push({
+      at,
+      kind,
+      lat: Number(c.lat),
+      lng: Number(c.lng),
+      head: Math.round(Number(c.head) || 0),
+      kmh: Math.max(0, Math.round(Number(c.kmh) || 0)),
+      limit: Math.max(0, Math.round(Number(c.limit) || 0)),
+      street: String(c.street || ""),
+      nav: Boolean(c.nav),
+    });
+    n++;
+  });
+  driveDb.reports = driveDb.reports.sort((a, b) => a.at - b.at).slice(-DRIVE_REPORTS_MAX);
+  if (n && !saveDriveDb({ silent: true })) return 0;
+  tobaAutoReportsDone(car.map((c) => Number(c && c.at)).filter(Boolean));
   return n;
 }
 
@@ -216,6 +272,7 @@ function driveOpenExternal(url) {
 }
 
 driveImportAutoTrips();
+driveImportAutoReports(); // v2.14
 
 tobaSetupApp({
   name: "Toba Drive",

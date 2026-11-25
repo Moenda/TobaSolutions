@@ -130,6 +130,19 @@ public final class DriveSync {
         }
     }
 
+    /**
+     * v2.14 (APK 3.5): 📍 marcações feitas no carro (botão "Marcar pra conferir") pro site
+     * mostrar no 🧭 Toba Drive. [{at, kind, lat, lng, head, kmh, limit, street, nav}].
+     */
+    public static String reports(android.content.Context c) {
+        return AutoStore.reports(c);
+    }
+
+    /** v2.14: o site já guardou essas marcações (json = [at, ...]): saem do carro. */
+    public static boolean reportsDone(android.content.Context c, String atsJson) {
+        return AutoStore.reportsDone(c, atsJson);
+    }
+
     /** Do site: json {name,lat,lng} = rota nova; "" = parou. Roda no carro pela main thread. */
     public static void fromPhone(String json) {
         Car c = car;

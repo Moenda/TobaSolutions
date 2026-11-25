@@ -44,7 +44,7 @@ final class TobaBridge {
 
     @JavascriptInterface
     public int version() {
-        return 19; // 19 = APK 3.4 (autoTuning: ✏ correções de limite e 🧠 Fator Rafa do 🧭 Toba Drive pro Android Auto; viagens do carro com limitS/overS/eta); 18 = APK 3.3 (healthWorkout/healthRoute: 🔬 Raio-X do treino, batimento/velocidade/cadência/voltas/VO₂/mapa de um exercício; exercises do healthRead com hcId/rec/hasRoute); 17 = APK 3.1 (screenStatus/screenAsk/screenRead/screenIcons: 📱 Toba Screen, tempo de tela pelo Acesso ao uso); 16 = APK 2.9 (voz do celular liga sozinha: speak funciona fora do 🧭 Drive, no 🧘 Alongamento e 🏠 Treinos em casa; + speakReady); 15 = APK 2.7 (autoTrips: viagens feitas só no Android Auto entram no histórico do 🧭 Toba Drive); 14 = APK 2.6 (healthRead: sono com a linha do tempo das fases + FC/oxigênio/respiração/HRV/temperatura de dentro da noite, + samsung com temperatura da pele/Energy Score/nota de sono pelo SDK do Samsung; samsungStatus/samsungAsk; 😴 Sono turbinado); 13 = APK 2.5 (healthRead: + HRV, oxigenação, respiração da noite e andares; 🩻 RAIO ULTRA X); 12 = APK 2.4 (healthRead: passos/km/kcal de UMA fonte por dia, sem somar celular + Samsung Health; manda "sources"); 11 = APK 2.3 (exercícios do healthRead com kcal/km/passos/FC da sessão, pro mesclar); 10 = APK 2.2 (healthStatus/healthAsk/healthRead: ⌚ Relógio do Toba Health); 9 = APK 2.1 (clipboardText: 📋 Colar do Maps no Places); 8 = APK 1.8 (autoFavorites: ⭐ no Android Auto); 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
+        return 20; // 20 = APK 3.5 (autoReports/autoReportsDone: 📍 Marcar pra conferir radar/limite no Android Auto, corrige no 🧭 Toba Drive do celular; + mapa dos treinos pelo SDK do Samsung (samsungRoute)); 19 = APK 3.4 (autoTuning: ✏ correções de limite e 🧠 Fator Rafa do 🧭 Toba Drive pro Android Auto; viagens do carro com limitS/overS/eta); 18 = APK 3.3 (healthWorkout/healthRoute: 🔬 Raio-X do treino, batimento/velocidade/cadência/voltas/VO₂/mapa de um exercício; exercises do healthRead com hcId/rec/hasRoute); 17 = APK 3.1 (screenStatus/screenAsk/screenRead/screenIcons: 📱 Toba Screen, tempo de tela pelo Acesso ao uso); 16 = APK 2.9 (voz do celular liga sozinha: speak funciona fora do 🧭 Drive, no 🧘 Alongamento e 🏠 Treinos em casa; + speakReady); 15 = APK 2.7 (autoTrips: viagens feitas só no Android Auto entram no histórico do 🧭 Toba Drive); 14 = APK 2.6 (healthRead: sono com a linha do tempo das fases + FC/oxigênio/respiração/HRV/temperatura de dentro da noite, + samsung com temperatura da pele/Energy Score/nota de sono pelo SDK do Samsung; samsungStatus/samsungAsk; 😴 Sono turbinado); 13 = APK 2.5 (healthRead: + HRV, oxigenação, respiração da noite e andares; 🩻 RAIO ULTRA X); 12 = APK 2.4 (healthRead: passos/km/kcal de UMA fonte por dia, sem somar celular + Samsung Health; manda "sources"); 11 = APK 2.3 (exercícios do healthRead com kcal/km/passos/FC da sessão, pro mesclar); 10 = APK 2.2 (healthStatus/healthAsk/healthRead: ⌚ Relógio do Toba Health); 9 = APK 2.1 (clipboardText: 📋 Colar do Maps no Places); 8 = APK 1.8 (autoFavorites: ⭐ no Android Auto); 7 = APK 1.7 (autoOn/autoRoute: rota junta com o Android Auto); 6 = APK 1.6 (navKeepAlive/speak); 3 = APK 1.3 (clearTaskNotice); 2 = APK 1.2 (avisos do Toba Routine)
     }
 
     /* ---------------- v1.87 (APK 2.2): ⌚ Relógio (Health Connect) ---------------- */
@@ -426,6 +426,19 @@ final class TobaBridge {
     @JavascriptInterface
     public String autoTrips() {
         return DriveSync.trips(activity);
+    }
+
+    // v2.14 (APK 3.5): 📍 marcações feitas no carro ([{at, kind, lat, lng, head, kmh, limit, street, nav}])
+    // pro 🧭 Toba Drive mostrar em "📍 Marcados no carro" (tobaImportAutoReports no toba-common.js)
+    @JavascriptInterface
+    public String autoReports() {
+        return DriveSync.reports(activity);
+    }
+
+    // v2.14: o site já guardou essas (json = [at, ...]): saem do carro
+    @JavascriptInterface
+    public boolean autoReportsDone(String json) {
+        return DriveSync.reportsDone(activity, json);
     }
 
     /* ---------------- Toba Routine ---------------- */

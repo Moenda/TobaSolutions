@@ -40,6 +40,7 @@
     </div>
     <div class="dv-gps" id="gpsStatus"></div>
     <div class="dv-fuel" id="fuelBanner" hidden></div>
+    <div id="reportsBox" hidden></div>
 
     <form class="dv-search" data-submit="searchSubmit" autocomplete="off">
       <input type="search" id="driveQuery" class="form-control" placeholder="Pra onde, piloto? Endereço ou lugar" enterkeyhint="search" />
@@ -163,6 +164,20 @@
         <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
       </div>
       <div id="limitSheetBody"></div>
+    </div>
+  </div>
+
+  <!-- 📍 Marcado no carro pra conferir (v2.14) -->
+  <div class="toba-modal" id="reportSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <div class="dv-pl-head">
+          <h3 id="reportSheetTitle">📍 Marcado no carro</h3>
+          <small id="reportSheetSub"></small>
+        </div>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="reportSheetBody"></div>
     </div>
   </div>
 

@@ -1469,3 +1469,51 @@ body.is-over .dv-route::after {
 #placesSheetBody .dv-hint {
   margin-top: 0.8rem;
 }
+
+/* 📍 Marcados no carro (v2.14): botão estilo Waze do Android Auto, corrige aqui */
+#reportsBox[hidden] {
+  display: none;
+}
+
+.dv-rep-count {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.85);
+  color: #fff;
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.dv-rep-card {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.14), rgba(255, 255, 255, 0.02));
+}
+
+.dv-rep-facts {
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.dv-rep-radar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 0.82rem;
+}
+
+.dv-rep-radar span {
+  min-width: 0;
+}
+
+.dv-rep-radar .dv-chip {
+  flex: 0 0 auto;
+}
+
+.dv-rep-del {
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #fca5a5;
+}

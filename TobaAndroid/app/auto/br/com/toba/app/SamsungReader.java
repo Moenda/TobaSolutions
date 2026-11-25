@@ -6,6 +6,8 @@ import android.content.Context;
 import com.samsung.android.sdk.health.data.HealthDataService;
 import com.samsung.android.sdk.health.data.HealthDataStore;
 import com.samsung.android.sdk.health.data.data.HealthDataPoint;
+import com.samsung.android.sdk.health.data.data.entries.ExerciseLocation;
+import com.samsung.android.sdk.health.data.data.entries.ExerciseSession;
 import com.samsung.android.sdk.health.data.data.entries.SkinTemperature;
 import com.samsung.android.sdk.health.data.error.HealthDataException;
 import com.samsung.android.sdk.health.data.error.ResolvablePlatformException;
@@ -44,6 +46,8 @@ import java.util.concurrent.TimeUnit;
  *   🌡️ temperatura da pele da noite -> days[dia].temp (°C, 1 casa) + sleep[].tp (série de 5 min)
  *   🔋 Energy Score do dia           -> days[dia].energy
  *   🤡 nota de sono do Samsung        -> sleep[].score (na sessão do Health Connect da mesma noite)
+ *   🗺️ mapa do treino (v2.14, APK 3.5) -> route do 🔬 Raio-X do treino (WorkoutReader). O Samsung
+ *      manda a caminhada pro Health Connect SEM o trajeto; pelo SDK dele o trajeto vem.
  *
  * Tudo protegido: sem Samsung Health, sem o modo dev ou sem permissão = volta {ok:false, error}
  * e o Health Connect segue igual. NUNCA quebra a leitura principal.
@@ -62,6 +66,9 @@ final class SamsungReader {
         s.add(Permission.of(DataTypes.SKIN_TEMPERATURE, AccessType.READ));
         s.add(Permission.of(DataTypes.ENERGY_SCORE, AccessType.READ));
         s.add(Permission.of(DataTypes.SLEEP, AccessType.READ));
+        // v2.14 (APK 3.5): 🗺️ mapa dos treinos (exercício + localização do exercício)
+        s.add(Permission.of(DataTypes.EXERCISE, AccessType.READ));
+        s.add(Permission.of(DataTypes.EXERCISE_LOCATION, AccessType.READ));
         return s;
     }
 
@@ -69,6 +76,8 @@ final class SamsungReader {
         if (t == DataTypes.SKIN_TEMPERATURE) return "temp";
         if (t == DataTypes.ENERGY_SCORE) return "energy";
         if (t == DataTypes.SLEEP) return "score";
+        if (t == DataTypes.EXERCISE) return "exercise";
+        if (t == DataTypes.EXERCISE_LOCATION) return "map";
         return t.getName();
     }
 
@@ -350,6 +359,95 @@ final class SamsungReader {
             if (token == null || token.isEmpty()) break;
         }
         return n;
+    }
+
+    /* v2.14 (APK 3.5): 🗺️ mapa de UM treino direto do Samsung Health. O WorkoutReader chama quando
+     * o Health Connect não deu o trajeto. startMs = início usado nas séries (o tempo de cada ponto
+     * conta a partir dele). Escreve no out:
+     *   route: [[s, lat, lng, alt|null]], hasRoute: 1, routeSrc: "samsung"   (achou)
+     *   routeSamsung: "perm"  (falta liberar exercício/localização no Samsung Health)
+     *   routeSamsung: "none"  (o Samsung também não tem trajeto desse treino)
+     * Erro vai pro errors.routeSamsung. Roda fora da tela (bloqueia). */
+    static void route(Context c, long startMs, long endMs, int max, JSONObject out, JSONObject errors) throws JSONException {
+        try {
+            HealthDataStore store = HealthDataService.getStore(c);
+            Permission ex = Permission.of(DataTypes.EXERCISE, AccessType.READ);
+            Permission loc = Permission.of(DataTypes.EXERCISE_LOCATION, AccessType.READ);
+            Set<Permission> want = new HashSet<>();
+            want.add(ex);
+            want.add(loc);
+            Set<Permission> got = store.getGrantedPermissionsAsync(want).get(WAIT_S, TimeUnit.SECONDS);
+            if (got == null || !got.contains(ex) || !got.contains(loc)) {
+                out.put("routeSamsung", "perm");
+                return;
+            }
+            Instant t0 = Instant.ofEpochMilli(startMs - 15 * 60000L);
+            Instant t1 = Instant.ofEpochMilli(endMs + 15 * 60000L);
+            ExerciseSession best = null;
+            long bestD = 20 * 60000L; // mais longe que isso = outro treino
+            String token = null;
+            for (int page = 0; page < 3; page++) {
+                com.samsung.android.sdk.health.data.request.ReadDataRequest.DualTimeBuilder<HealthDataPoint> b =
+                        DataTypes.EXERCISE.getReadDataRequestBuilder().setInstantTimeFilter(InstantTimeFilter.of(t0, t1)).setPageSize(50);
+                if (token != null) b.setPageToken(token);
+                DataResponse<HealthDataPoint> r = store.readDataAsync(b.build()).get(WAIT_S, TimeUnit.SECONDS);
+                for (HealthDataPoint p : r.getDataList()) {
+                    List<ExerciseSession> ss = null;
+                    try {
+                        ss = p.getValue(DataType.ExerciseType.SESSIONS);
+                    } catch (Throwable ignored) {
+                        // ponto sem sessões
+                    }
+                    if (ss == null) continue;
+                    for (ExerciseSession s : ss) {
+                        if (s == null || s.getStartTime() == null || s.getEndTime() == null) continue;
+                        List<ExerciseLocation> pts = s.getRoute();
+                        if (pts == null || pts.size() < 2) continue;
+                        long d = Math.abs(s.getStartTime().toEpochMilli() - startMs) + Math.abs(s.getEndTime().toEpochMilli() - endMs);
+                        if (d < bestD) {
+                            bestD = d;
+                            best = s;
+                        }
+                    }
+                }
+                token = r.getPageToken();
+                if (token == null || token.isEmpty()) break;
+            }
+            if (best == null) {
+                out.put("routeSamsung", "none");
+                return;
+            }
+            List<ExerciseLocation> pts = new ArrayList<>();
+            for (ExerciseLocation l : best.getRoute()) {
+                if (l == null || l.getTimestamp() == null) continue;
+                float la = l.getLatitude(), lo = l.getLongitude();
+                if (!(la >= -90 && la <= 90 && lo >= -180 && lo <= 180) || (la == 0 && lo == 0)) continue;
+                pts.add(l);
+            }
+            if (pts.size() < 2) {
+                out.put("routeSamsung", "none");
+                return;
+            }
+            int step = Math.max(1, (pts.size() + max - 1) / max);
+            JSONArray a = new JSONArray();
+            for (int i = 0; i < pts.size(); i += step) a.put(point(pts.get(i), startMs));
+            if ((pts.size() - 1) % step != 0) a.put(point(pts.get(pts.size() - 1), startMs));
+            out.put("route", a);
+            out.put("hasRoute", 1);
+            out.put("routeSrc", "samsung");
+            out.remove("routeAsk");
+        } catch (Throwable e) {
+            errors.put("routeSamsung", msg(e));
+        }
+    }
+
+    private static JSONArray point(ExerciseLocation p, long startMs) throws JSONException {
+        Float alt = p.getAltitude();
+        return new JSONArray()
+                .put((p.getTimestamp().toEpochMilli() - startMs) / 1000)
+                .put(Math.round(p.getLatitude() * 1e6) / 1e6)
+                .put(Math.round(p.getLongitude() * 1e6) / 1e6)
+                .put(alt == null || alt.isNaN() ? JSONObject.NULL : Math.round(alt * 10) / 10.0);
     }
 
     private static String msg(Throwable e) {

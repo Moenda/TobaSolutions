@@ -48,6 +48,8 @@ import java.util.concurrent.TimeUnit;
  * Mapa: no Android 15+ com READ_EXERCISE_ROUTES o getRoute() já vem. No 14 (ou sem essa
  * permissão) o Android só entrega com um "sim" da pessoa por treino: o site mostra o botão e
  * chama TobaNative.healthRoute(hcId) -> MainActivity.askExerciseRoute -> onTobaHealthRoute.
+ * v2.14 (APK 3.5): o Samsung Health NÃO manda o trajeto pro Health Connect (hasRoute vem falso
+ * mesmo com GPS ligado). Sem mapa do Health Connect, o SamsungReader.route lê pelo SDK do Samsung.
  */
 @TargetApi(34)
 final class WorkoutReader {
@@ -127,6 +129,9 @@ final class WorkoutReader {
             segments(session, startMs, out, errors);
             route(c, session, out, errors);
         }
+        // v2.14 (APK 3.5): o Samsung Health manda a caminhada pro Health Connect SEM o trajeto.
+        // Sem mapa (ou só com o "sim" por treino) = pede direto pro Samsung Health pelo SDK dele.
+        if (!out.has("route")) SamsungReader.route(c, startMs, endMs, ROUTE_MAX, out, errors);
         out.put("start", startMs);
         out.put("end", endMs);
         int n = (int) Math.max(1, (endMs - startMs) / 1000 / BUCKET_S + 1);

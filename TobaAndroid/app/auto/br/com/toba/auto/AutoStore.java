@@ -256,4 +256,75 @@ final class AutoStore {
             }
         }
     }
+
+    /* ---------------------------------------------------------------------
+     * v2.14 (APK 3.5): 📍 Marcar pra conferir (botão estilo Waze no carro).
+     * No carro só anota o lugar: {at, kind: "radar"|"limit"|"check", lat, lng, head, kmh
+     * (velocidade do carro), limit (o que a placa do Toba mostrava, 0 = não sabia), street,
+     * nav (tava com rota)}. A correção mesmo é no celular (🧭 Toba Drive › 📍 Marcados no
+     * carro): o site lê pela ponte autoReports e tira os que já entraram (autoReportsDone).
+     * ------------------------------------------------------------------- */
+    private static final String KEY_REPORTS = "reports";
+    private static final int REPORTS_MAX = 60;
+
+    static void addReport(Context c, JSONObject report) {
+        if (report == null) return;
+        synchronized (LOCK) {
+            try {
+                JSONArray arr = new JSONArray(prefs(c).getString(KEY_REPORTS, "[]"));
+                arr.put(report);
+                while (arr.length() > REPORTS_MAX) arr.remove(0);
+                prefs(c).edit().putString(KEY_REPORTS, arr.toString()).apply();
+            } catch (Exception ignored) {
+                // marcação é extra: se der ruim, a navegação segue
+            }
+        }
+    }
+
+    /** Troca o tipo de uma marcação que já foi gravada (mesmo "at"). */
+    static void setReportKind(Context c, long at, String kind) {
+        synchronized (LOCK) {
+            try {
+                JSONArray arr = new JSONArray(prefs(c).getString(KEY_REPORTS, "[]"));
+                for (int i = 0; i < arr.length(); i++) {
+                    JSONObject o = arr.optJSONObject(i);
+                    if (o != null && o.optLong("at", -1) == at) o.put("kind", kind);
+                }
+                prefs(c).edit().putString(KEY_REPORTS, arr.toString()).apply();
+            } catch (Exception ignored) {
+                // fica o tipo de antes ("check"): o celular mostra as duas opções
+            }
+        }
+    }
+
+    static String reports(Context c) {
+        synchronized (LOCK) {
+            try {
+                return new JSONArray(prefs(c).getString(KEY_REPORTS, "[]")).toString();
+            } catch (org.json.JSONException e) {
+                return "[]";
+            }
+        }
+    }
+
+    /** O site já guardou essas (lista de "at"): saem daqui. */
+    static boolean reportsDone(Context c, String atsJson) {
+        synchronized (LOCK) {
+            try {
+                JSONArray ats = new JSONArray(atsJson == null || atsJson.isEmpty() ? "[]" : atsJson);
+                java.util.HashSet<Long> gone = new java.util.HashSet<>();
+                for (int i = 0; i < ats.length(); i++) gone.add(ats.optLong(i, -1));
+                JSONArray arr = new JSONArray(prefs(c).getString(KEY_REPORTS, "[]"));
+                JSONArray keep = new JSONArray();
+                for (int i = 0; i < arr.length(); i++) {
+                    JSONObject o = arr.optJSONObject(i);
+                    if (o != null && !gone.contains(o.optLong("at", -1))) keep.put(o);
+                }
+                prefs(c).edit().putString(KEY_REPORTS, keep.toString()).apply();
+                return true;
+            } catch (org.json.JSONException e) {
+                return false;
+            }
+        }
+    }
 }

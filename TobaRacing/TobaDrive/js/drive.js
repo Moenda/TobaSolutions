@@ -223,6 +223,7 @@ function kmFromHere(p) {
 
 function renderPick() {
   if (typeof renderFuelBanner === "function") renderFuelBanner();
+  renderReports(); // v2.14: 📍 marcados no Android Auto
   // ⭐ Favoritos
   const favs = driveDb.favorites;
   document.getElementById("favChips").innerHTML = favs.length
@@ -790,6 +791,188 @@ function clearRadarFix() {
   const ids = new Set(ri.mine.map((x) => x.id));
   driveDb.radarFixes = (driveDb.radarFixes || []).filter((x) => !ids.has(x.id));
   radarFixChanged("↩️ Voltaram os radares do mapa");
+}
+
+/* ---------------------------------------------------------------------
+ * v2.14: 📍 Marcados no carro (botão estilo Waze do Android Auto, APK 3.5)
+ * No carro um toque só anota o lugar (rumo, velocidade, o limite que a placa mostrava e
+ * a rua) e o tipo: 📸 radar, 🚦 limite ou 📍 conferir. Aqui, parado e com calma, vira
+ * ✏ correção de limite (limitFixes) ou 📸/🚫 marcação de radar (radarFixes), igual a
+ * folha do velocímetro; ✅ Tava certo só tira da lista. driveImportAutoReports no drive-core.
+ * ------------------------------------------------------------------- */
+const DRIVE_REPORT_RADAR_M = 400; // radares em volta do ponto marcado
+
+function reportFind(at) {
+  return (driveDb.reports || []).find((r) => r.at === Number(at)) || null;
+}
+
+function reportKindLabel(r) {
+  return r.kind === "radar" ? "📸 Radar" : r.kind === "limit" ? "🚦 Limite da via" : "📍 Conferir";
+}
+
+function reportWhen(at) {
+  const d = new Date(at);
+  const day = d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }).replace(".", "");
+  return `${day} ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
+}
+
+function renderReports() {
+  const box = document.getElementById("reportsBox");
+  if (!box) return;
+  const list = [...(driveDb.reports || [])].sort((a, b) => b.at - a.at);
+  box.hidden = !list.length;
+  if (!list.length) {
+    box.innerHTML = "";
+    return;
+  }
+  box.innerHTML = `
+    <div class="section-title">📍 Marcados no carro <span class="dv-rep-count">${list.length}</span></div>
+    <div class="dv-pl-grid">${list.map((r) => `
+      <button type="button" class="dv-pl-card dv-rep-card" data-click="openReport" data-at="${r.at}">
+        <span class="dv-pl-emoji">${r.kind === "radar" ? "📸" : r.kind === "limit" ? "🚦" : "📍"}</span>
+        <span class="dv-pl-text"><b>${escapeHtml(r.street || "Rua sem nome")}</b><small>${escapeHtml(reportWhen(r.at))} · ${escapeHtml(reportKindLabel(r))}${r.limit ? ` · Toba: ${r.limit}` : ""}</small></span>
+        <span class="dv-pl-count">✏</span>
+      </button>`).join("")}
+    </div>`;
+}
+
+// radares em volta do ponto (Pardal + tuas marcações), no sentido em que tu ia
+function reportRadarsNear(r) {
+  if (typeof tobaRadarMerge !== "function") return [];
+  const pad = 0.005; // ~500 m
+  const box = [r.lat - pad, r.lng - pad, r.lat + pad, r.lng + pad];
+  const stored = typeof tobaRadarPardalStored === "function" ? tobaRadarPardalStored() : null;
+  const all = tobaRadarMerge([], box, stored ? stored.r : null, typeof tobaRadarFixes === "function" ? tobaRadarFixes() : []);
+  return all
+    .map((x) => {
+      const d = driveDist([r.lat, r.lng], [x.lat, x.lng]);
+      const ahead = d < 15 || driveAngleDiff(driveBearing([r.lat, r.lng], [x.lat, x.lng]), r.head) <= 90;
+      return { ...x, d: Math.round(d), ahead };
+    })
+    .filter((x) => x.d <= DRIVE_REPORT_RADAR_M && tobaRadarDirOk(x.dirs, r.head))
+    .sort((a, b) => a.d - b.d)
+    .slice(0, 4);
+}
+
+function renderReportSheet() {
+  const r = reportFind(nav.reportAt);
+  if (!r) return false;
+  const where = `${r.lat},${r.lng}`;
+  const sv = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${where}&heading=${r.head}`;
+  const gm = `https://www.google.com/maps/search/?api=1&query=${where}`;
+  document.getElementById("reportSheetTitle").textContent = reportKindLabel(r);
+  document.getElementById("reportSheetSub").textContent = r.street || "Lugar marcado no carro";
+  const facts = [
+    `🕖 ${reportWhen(r.at)}`,
+    `🚗 tu tava a ${r.kmh} km/h`,
+    r.limit ? `🪧 o Toba mostrava ${r.limit}` : "🪧 o Toba não sabia o limite",
+  ];
+  const showLimit = r.kind !== "radar";
+  const showRadar = r.kind !== "limit";
+  let radarHtml = "";
+  if (showRadar) {
+    const near = reportRadarsNear(r);
+    const rows = near.map((x, i) => `
+      <div class="dv-rep-radar">
+        <span>📸 ${x.d < 15 ? "Bem onde tu marcou" : `${Math.round(x.d / 10) * 10} m ${x.ahead ? "na frente" : "pra trás"}`}${x.lim ? ` · ${x.lim} km/h` : ""}${x.mine ? " · marcado por ti" : ""}</span>
+        <button type="button" class="chip-btn dv-chip dv-rep-del" data-click="reportRadarDel" data-i="${i}">🚫 Não existe</button>
+      </div>`).join("");
+    nav.reportRadars = near;
+    radarHtml = `
+      <h4 class="dv-lim-h">📸 Radar daqui</h4>
+      ${rows || `<p class="dv-hint">Nenhum radar no mapa até ${DRIVE_REPORT_RADAR_M} m daqui, nesse sentido.</p>`}
+      <button type="button" class="btn btn-outline btn-block" data-click="reportRadarAdd">📸 Tem radar aqui (onde marquei)</button>
+      <p class="dv-hint">Vale aqui e no 🚘 Android Auto, só nesse sentido. Radares: Pardal · © colaboradores do OpenStreetMap (ODbL).</p>`;
+  }
+  document.getElementById("reportSheetBody").innerHTML = `
+    <p class="dv-rep-facts">${facts.map(escapeHtml).join("<br>")}</p>
+    <div class="btn-row">
+      <a class="btn btn-outline btn-grow-1" href="${sv}" target="_blank" rel="noopener">👀 Street View</a>
+      <a class="btn btn-outline btn-grow-1" href="${gm}" target="_blank" rel="noopener">🗺️ Ver no Maps</a>
+    </div>
+    ${showLimit ? `
+      <h4 class="dv-lim-h">🚦 Qual é a placa daqui?</h4>
+      <div class="dv-lim-grid">
+        ${DRIVE_LIMIT_CHOICES.map((k) => chip(String(k), "reportLimit", { kmh: k }, r.limit === k ? " is-on" : "")).join("")}
+        ${chip("🤷", "reportLimit", { kmh: -1 })}
+      </div>
+      <p class="dv-hint">Vale pra essa rua nesse sentido, aqui e no 🚘 Android Auto (tua correção ganha da TomTom e do OpenStreetMap). 🤷 = não tem placa ou não sei.</p>` : ""}
+    ${radarHtml}
+    <button type="button" class="btn btn-outline btn-block" data-click="reportDismiss">✅ Tava certo, tirar da lista</button>`;
+  return true;
+}
+
+function openReport(el) {
+  nav.reportAt = Number(el.dataset.at);
+  if (!renderReportSheet()) return;
+  openTobaModal("reportSheet");
+  // Pardal ainda não baixado (ou velho)? baixa e redesenha com os radares
+  if (typeof tobaRadarPardal === "function") {
+    const had = typeof tobaRadarPardalStored === "function" && tobaRadarPardalStored();
+    tobaRadarPardal().then((rows) => {
+      if (!had && rows && reportFind(nav.reportAt)) renderReportSheet();
+    });
+  }
+}
+
+function reportDone(msg) {
+  driveDb.reports = (driveDb.reports || []).filter((x) => x.at !== nav.reportAt);
+  driveDb.reportSkip = [...(driveDb.reportSkip || []), nav.reportAt].slice(-100); // não volta do carro
+  saveDriveDb({ silent: true }); // também manda pro carro (tobaShareDriveTuning)
+  if (typeof gameRefreshRadars === "function") gameRefreshRadars();
+  if (nav.route && typeof gameApplyLimits === "function") {
+    gameApplyLimits(nav.route);
+    if (typeof game === "object" && game) game.limRoute = null;
+  }
+  closeTobaModal("reportSheet");
+  renderReports();
+  tobaToast(msg);
+}
+
+function reportLimit(el) {
+  const r = reportFind(nav.reportAt);
+  const kmh = Number(el.dataset.kmh);
+  if (!r || !kmh) return;
+  const list = Array.isArray(driveDb.limitFixes) ? driveDb.limitFixes : [];
+  const same = (x) => driveAngleDiff(x.head, r.head) <= 45 && driveDist([x.lat, x.lng], [r.lat, r.lng]) < 40;
+  driveDb.limitFixes = [
+    ...list.filter((x) => !same(x)),
+    { id: driveNewId("lf"), lat: r.lat, lng: r.lng, head: r.head, kmh, street: r.street, at: Date.now() },
+  ].slice(-DRIVE_LIMIT_FIX_MAX);
+  reportDone(kmh < 0 ? "✏ Anotado: aqui não tem placa" : `✏ Anotado: ${kmh} km/h aqui`);
+}
+
+function reportRadarAdd() {
+  const r = reportFind(nav.reportAt);
+  if (!r) return;
+  const list = Array.isArray(driveDb.radarFixes) ? driveDb.radarFixes : [];
+  const same = (x) => driveDist([x.lat, x.lng], [r.lat, r.lng]) < 40 && driveAngleDiff(x.head, r.head) <= 60;
+  driveDb.radarFixes = [
+    ...list.filter((x) => !same(x)),
+    { id: driveNewId("rf"), kind: "add", lat: r.lat, lng: r.lng, head: r.head, ...(r.limit > 0 ? { limit: r.limit } : {}), street: r.street, at: Date.now() },
+  ].slice(-DRIVE_LIMIT_FIX_MAX);
+  reportDone("📸 Anotado: tem radar aqui");
+}
+
+function reportRadarDel(el) {
+  const r = reportFind(nav.reportAt);
+  const t = (nav.reportRadars || [])[Number(el.dataset.i)];
+  if (!r || !t) return;
+  const list = Array.isArray(driveDb.radarFixes) ? driveDb.radarFixes : [];
+  if (t.mine && list.some((x) => x.id === t.mine)) {
+    driveDb.radarFixes = list.filter((x) => x.id !== t.mine); // radar que eu mesmo marquei: só tira
+  } else {
+    const same = (x) => driveDist([x.lat, x.lng], [t.lat, t.lng]) < 40 && driveAngleDiff(x.head, r.head) <= 60;
+    driveDb.radarFixes = [
+      ...list.filter((x) => !same(x)),
+      { id: driveNewId("rf"), kind: "del", lat: t.lat, lng: t.lng, head: r.head, street: r.street, at: Date.now() },
+    ].slice(-DRIVE_LIMIT_FIX_MAX);
+  }
+  reportDone("🚫 Anotado: esse radar não existe");
+}
+
+function reportDismiss() {
+  reportDone("✅ Tirado da lista");
 }
 
 function openStyleSheet() {
@@ -1619,6 +1802,11 @@ tobaActions({
   pickRadarAdd,
   pickRadarDel,
   clearRadarFix,
+  openReport,
+  reportLimit,
+  reportRadarAdd,
+  reportRadarDel,
+  reportDismiss,
   pickVehicle,
   pickRouteColor,
   pickSpeedo,
@@ -1647,6 +1835,8 @@ document.addEventListener("visibilitychange", () => {
     if (nav.mode === "nav") saveActiveTrip(true);
     return;
   }
+  // v2.14: voltou do carro? 📍 marcados entram na lista
+  if (driveImportAutoReports() && nav.mode === "pick") renderReports();
   if (nav.mode !== "nav") return;
   wakeGps();
   driveKeepAwake(true);
@@ -1819,7 +2009,8 @@ window.onTobaAutoRoute = function onTobaAutoRoute(d) {
   if (d.end) {
     // v2.02: o carro já anotou a viagem no diário dele: puxa pro histórico (sem duplicar a do celular)
     setTimeout(() => {
-      if (driveImportAutoTrips() && nav.mode === "pick") renderPick();
+      const reps = driveImportAutoReports(); // v2.14: 📍 marcados no carro
+      if ((driveImportAutoTrips() || reps) && nav.mode === "pick") renderPick();
     }, 1500);
     // só encerra se for a MESMA rota (o carro pode estar trocando de destino)
     if (nav.mode !== "nav" || !driveSameDest(nav.dest, d)) return;

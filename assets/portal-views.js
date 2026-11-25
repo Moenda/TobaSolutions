@@ -1,11 +1,11 @@
 /* =====================================================================
- * Portal · Visões da página inicial (v2.13)
+ * Portal · Visões da página inicial (v2.13, ⭐ Meu painel montável na v2.14)
  * ---------------------------------------------------------------------
  * Escolha na ⚙️ › Painel › 🖼️ Visão do painel:
  *   cards  = os cards completos de sempre (#modulesGrid, Configurador)
  *   linha  = uma linha enxuta por app, números em chips
  *   quad   = quadradinhos, 3 por linha, 1 número cada
- *   painel = ⭐ Meu painel: números escolhidos de qualquer app + atalhos
+ *   painel = ⭐ Meu painel: molde com quadradinhos ＋ que tu monta (v2.14)
  *
  * Os apps vêm dos próprios <a class="app-card"> do index.html (portalCards
  * do portal.js: mesma ordem e mesmo 👁️/🙈 da "Ordem dos apps"). App novo:
@@ -15,7 +15,14 @@
  *      com a mesma data-id do card (items = o que dá pra escolher,
  *      read = os valores, só leitura do banco do app).
  *
- * Preferência: "toba_portal_view" = { view, pins: ["<data-id>:<key>"] }.
+ * Preferência: "toba_portal_view" = { view, pins, layout, slots }.
+ *   v2.14: o ⭐ Meu painel virou mostrador de relógio: um molde (layout)
+ *   com quadradinhos e cada um guarda o que vai nele (slots[i]):
+ *     "<data-id>:<key>" = número de um app (PORTAL_APP_STATS)
+ *     "app:<data-id>"   = atalho de um app
+ *     "x:<key>"         = extra (PORTAL_EXTRAS: relógio, compras pra aprovar)
+ *     ""                = vazio (mostra o ＋)
+ *   pins (v2.13) continua gravado só com os números, pra não quebrar nada.
  * Só UI: nenhum banco de app é gravado aqui.
  * ===================================================================== */
 
@@ -23,29 +30,58 @@ const PORTAL_VIEW_KEY = "toba_portal_view";
 const PORTAL_VIEWS = [
   { id: "quad", icon: "▦", label: "Quadradinho", desc: "3 por linha" },
   { id: "linha", icon: "☰", label: "Linha", desc: "enxuta" },
-  { id: "painel", icon: "⭐", label: "Meu painel", desc: "tu escolhe" },
+  { id: "painel", icon: "⭐", label: "Meu painel", desc: "tu monta" },
   { id: "cards", icon: "🃏", label: "Completo", desc: "cards de antes" },
 ];
 const PORTAL_PINS_MAX = 8;
 const PORTAL_VIEW_DEFAULTS = {
   view: "quad",
   pins: ["toba-bank:livre", "toba-health:peso", "toba-routine:hoje", "toba-racing:kml"],
+  layout: "classico",
 };
+
+/* Moldes do ⭐ Meu painel (grade de 6 colunas no celular).
+ * Tamanhos: s = pequeno (3 por linha), m = médio (2 por linha),
+ *           w = comprido (linha inteira), b = grandão (linha inteira, alto) */
+const PORTAL_SLOTS_MAX = 9;
+const PORTAL_SIZE_NAMES = { s: "pequeno", m: "médio", w: "comprido", b: "grandão" };
+const PORTAL_LAYOUTS = [
+  { id: "classico", icon: "▦", label: "Clássico", sizes: "mmmmmmmm" },
+  { id: "destaque", icon: "🌟", label: "Destaque", sizes: "bmmssssss" },
+  { id: "mostrador", icon: "⌚", label: "Mostrador", sizes: "wsssmmsss" },
+  { id: "mini", icon: "🔳", label: "Mini", sizes: "sssssssss" },
+  { id: "faixas", icon: "☰", label: "Faixas", sizes: "wwwww" },
+];
+
+const portalSlotOk = (v) => typeof v === "string" && /^[a-z]+(-[a-z]+)*:[A-Za-z]+$|^app:[a-z-]+$|^x:[a-z]+$/.test(v);
 
 function getPortalViewConfig() {
   const cfg = readPortalJson(PORTAL_VIEW_KEY, PORTAL_VIEW_DEFAULTS);
   if (!PORTAL_VIEWS.some((v) => v.id === cfg.view)) cfg.view = PORTAL_VIEW_DEFAULTS.view;
   cfg.pins = Array.isArray(cfg.pins) ? cfg.pins.filter((p) => typeof p === "string").slice(0, PORTAL_PINS_MAX) : [...PORTAL_VIEW_DEFAULTS.pins];
+  if (!PORTAL_LAYOUTS.some((l) => l.id === cfg.layout)) cfg.layout = PORTAL_VIEW_DEFAULTS.layout;
+  // v2.14: quem vem da v2.13 só tem pins -> viram os primeiros quadradinhos
+  const src = Array.isArray(cfg.slots) ? cfg.slots : cfg.pins;
+  const seen = new Set();
+  cfg.slots = Array.from({ length: PORTAL_SLOTS_MAX }, (_, i) => {
+    const v = src[i];
+    if (!portalSlotOk(v) || seen.has(v)) return "";
+    seen.add(v);
+    return v;
+  });
   return cfg;
 }
 
 function savePortalViewConfig(cfg) {
-  if (!writePortalJson(PORTAL_VIEW_KEY, { view: cfg.view, pins: cfg.pins })) {
+  const pins = cfg.slots.filter((v) => v && !/^(app|x):/.test(v)).slice(0, PORTAL_PINS_MAX);
+  if (!writePortalJson(PORTAL_VIEW_KEY, { view: cfg.view, pins, layout: cfg.layout, slots: cfg.slots })) {
     showPageMessage("A memória do navegador encheu e a visão não foi salva.", { title: "Não salvou", icon: "💾" });
     return false;
   }
   return true;
 }
+
+const portalLayout = (cfg) => PORTAL_LAYOUTS.find((l) => l.id === cfg.layout) || PORTAL_LAYOUTS[0];
 
 /* ---------------------------------------------------------------------
  * Números de cada app (só leitura, mesmas contas dos cards completos)
@@ -322,27 +358,283 @@ function renderPortalQuad(apps, stats, pending) {
   }).join("")}</div>`;
 }
 
-function renderPortalPainel(apps, stats, cfg) {
-  const byId = Object.fromEntries(portalCards.map((c) => [c.id, portalAppInfo(c)]));
-  const tiles = cfg.pins.map((pin) => {
-    const [appId, key] = pin.split(":");
-    const def = PORTAL_APP_STATS[appId];
-    const item = def && def.items.find((i) => i.key === key);
-    const app = byId[appId];
-    if (!item || !app) return "";
-    const v = (stats[appId] && stats[appId][key]) || { value: "--" };
-    return `<a ${portalLinkAttrs(app, `pv-tile${item.wide ? " is-wide" : ""}`)}>
-      <span class="pv-tile-label"><span>${escapeHtml(item.label)}</span><span aria-hidden="true">${app.icon}</span></span>
-      <span class="pv-tile-value${portalTone(v.tone)}">${escapeHtml(v.value)}</span>
-      ${v.sub ? `<span class="pv-tile-sub">${escapeHtml(v.sub)}</span>` : ""}
-    </a>`;
-  }).join("");
-  const empty = '<div class="pv-empty">Nenhum número escolhido ainda. Toca no ✏️ aí embaixo e escolhe os teus 😎</div>';
-  const dock = apps.map((app) => `<a ${portalLinkAttrs(app, "pv-dock-btn")} aria-label="${escapeHtml(app.title)}">${app.icon}</a>`).join("");
-  return `<div class="pv-tiles">${tiles || empty}</div>
-    <nav class="pv-dock" aria-label="Atalhos dos apps">${dock}</nav>
-    <button type="button" class="pv-edit" data-click="openPinsConfig">✏️ Escolher os números</button>`;
+/* ---------------------------------------------------------------------
+ * ⭐ Meu painel (v2.14): mostrador de relógio
+ * Molde com quadradinhos; o vazio mostra ＋ e um toque abre a escolha.
+ * ✏️ Montar (ou segurar um quadradinho) entra no modo de montar: troca o
+ * molde, troca/esvazia cada quadradinho. Escolher algo que já tá em outro
+ * quadradinho troca os dois de lugar. Molde menor só esconde os que
+ * sobraram (voltando pro maior eles reaparecem).
+ * ------------------------------------------------------------------- */
+const PORTAL_EXTRAS = [
+  {
+    key: "hora",
+    label: "🕐 Relógio",
+    short: "agora",
+    read: () => {
+      const d = new Date();
+      const week = d.toLocaleDateString("pt-BR", { weekday: "long" });
+      return {
+        value: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
+        sub: `${week} · ${d.toLocaleDateString("pt-BR", { day: "numeric", month: "short" }).replace(".", "")}`,
+        clock: true,
+      };
+    },
+  },
+  {
+    key: "aprovar",
+    label: "🤖 Pra aprovar",
+    short: "pra aprovar",
+    href: "./TobaBank/TobaBank-Gastos.html?pending=1",
+    read: (ctx) => {
+      if (!(TOBA_NATIVE && typeof TOBA_NATIVE.getPendingPurchases === "function")) return { value: "--", sub: "só no app Android" };
+      const { count, total } = ctx.pending;
+      return count
+        ? { value: `${count}`, tone: "red", sub: `${formatCurrency(total)} esperando` }
+        : { value: "0", tone: "green", sub: "nada esperando 😎" };
+    },
+  },
+];
+
+let painelEditing = false;
+let painelPickIndex = -1;
+
+// O que um quadradinho mostra (ou null = vazio / item que não existe mais)
+function portalSlotParts(slot, ctx) {
+  if (!slot) return null;
+  const cut = slot.indexOf(":");
+  const kind = slot.slice(0, cut);
+  const key = slot.slice(cut + 1);
+  if (kind === "app") {
+    const app = ctx.byId[key];
+    if (!app) return null;
+    return { app, isApp: true, emoji: app.icon, label: app.title, short: app.short, value: app.short, sub: app.soon ? "em breve" : app.desc };
+  }
+  if (kind === "x") {
+    const ex = PORTAL_EXTRAS.find((e) => e.key === key);
+    if (!ex) return null;
+    return { ...ex.read(ctx), emoji: ex.label.split(" ")[0], label: ex.label, short: ex.short, href: ex.href, extra: key };
+  }
+  const def = PORTAL_APP_STATS[kind];
+  const item = def && def.items.find((i) => i.key === key);
+  const app = ctx.byId[kind];
+  if (!item || !app) return null;
+  const v = (ctx.stats[kind] && ctx.stats[kind][key]) || { value: "--" };
+  return { app, emoji: item.label.split(" ")[0], label: item.label, short: item.short, value: v.value, tone: v.tone, sub: v.sub };
 }
+
+// Nome curto de um item pra toast e folha ("💵 Livre hoje", "📱 Bank")
+function portalSlotName(slot, ctx) {
+  const p = portalSlotParts(slot, ctx);
+  if (!p) return "";
+  return p.isApp ? `${p.emoji} Atalho do ${p.short}` : p.label;
+}
+
+function portalPainelCtx() {
+  return {
+    byId: Object.fromEntries(portalCards.map((c) => [c.id, portalAppInfo(c)])),
+    stats: portalReadAllStats(),
+    pending: portalPendingInfo(),
+  };
+}
+
+function renderPainelTileInner(p, size, ctx) {
+  const tone = portalTone(p.tone);
+  const clock = p.clock ? " pv-clock" : "";
+  const alert = p.isApp && p.app.id === "toba-bank" && ctx.pending.count ? `<span class="pv-alert is-corner">🤖${ctx.pending.count}</span>` : "";
+  if (p.isApp) {
+    return size === "s"
+      ? `${alert}<span class="pv-slot-big">${p.emoji}</span><span class="pv-slot-tag is-name">${escapeHtml(p.short)}</span>`
+      : `${alert}<span class="pv-slot-app"><span class="pv-slot-big">${p.emoji}</span><span class="pv-slot-app-text"><span class="pv-slot-value">${escapeHtml(p.label)}</span><span class="pv-slot-sub">${escapeHtml(p.sub)}</span></span></span>`;
+  }
+  if (size === "s") {
+    return `<span class="pv-slot-emoji">${p.emoji}</span>
+      <span class="pv-slot-value${tone}${clock}" data-clock="value">${escapeHtml(p.value)}</span>
+      <span class="pv-slot-tag">${escapeHtml(p.short)}</span>`;
+  }
+  const appIcon = p.app ? `<span aria-hidden="true">${p.app.icon}</span>` : "";
+  return `<span class="pv-slot-label"><span>${escapeHtml(p.label)}</span>${appIcon}</span>
+    <span class="pv-slot-value${tone}${clock}" data-clock="value">${escapeHtml(p.value)}</span>
+    ${p.sub ? `<span class="pv-slot-sub${clock}" data-clock="sub">${escapeHtml(p.sub)}</span>` : ""}`;
+}
+
+function renderPainelTile(i, size, slot, ctx) {
+  const p = portalSlotParts(slot, ctx);
+  const cls = `pv-slot is-${size}`;
+  if (!p) {
+    const tag = size === "s" ? "" : `<span class="pv-plus-tag">${painelEditing ? `quadradinho ${PORTAL_SIZE_NAMES[size]}` : "toca e escolhe"}</span>`;
+    return `<button type="button" class="${cls} is-empty" data-click="pickPainelSlot" data-slot="${i}" aria-label="Escolher o que vai no quadradinho ${i + 1}"><span class="pv-plus">＋</span>${tag}</button>`;
+  }
+  const inner = renderPainelTileInner(p, size, ctx);
+  if (painelEditing) {
+    return `<button type="button" class="${cls} is-editing" data-click="pickPainelSlot" data-slot="${i}" aria-label="Trocar o quadradinho ${i + 1}">${inner}<span class="pv-slot-pen" aria-hidden="true">✏️</span></button>`;
+  }
+  if (p.app) return `<a ${portalLinkAttrs(p.app, cls)} data-slot="${i}">${inner}</a>`;
+  if (p.href) return `<a href="${escapeHtml(p.href)}" class="${cls}" data-slot="${i}">${inner}</a>`;
+  return `<div class="${cls}" data-slot="${i}">${inner}</div>`;
+}
+
+// Miniatura do molde (as caixinhas no tamanho certo)
+function renderLayoutMini(layout) {
+  return `<span class="pv-mini">${[...layout.sizes].map((sz) => `<i class="is-${sz}"></i>`).join("")}</span>`;
+}
+
+function renderPortalPainel(apps, cfg) {
+  const ctx = portalPainelCtx();
+  const layout = portalLayout(cfg);
+  const sizes = [...layout.sizes];
+  const tiles = sizes.map((sz, i) => renderPainelTile(i, sz, cfg.slots[i], ctx)).join("");
+  const filled = sizes.filter((_, i) => portalSlotParts(cfg.slots[i], ctx)).length;
+  const hidden = cfg.slots.slice(sizes.length).filter(Boolean).length;
+  const dock = apps.map((app) => `<a ${portalLinkAttrs(app, "pv-dock-btn")} aria-label="${escapeHtml(app.title)}">${app.icon}</a>`).join("");
+
+  if (painelEditing) {
+    const layouts = PORTAL_LAYOUTS.map((l) => `
+      <button type="button" class="pv-layout" data-click="setPainelLayout" data-layout="${l.id}" aria-pressed="${l.id === layout.id}">
+        ${renderLayoutMini(l)}<span class="pv-layout-name">${l.icon} ${l.label}</span>
+      </button>`).join("");
+    return `<div class="pv-edit-bar">
+        <div class="pv-edit-head"><b>✏️ Montando o painel</b><button type="button" class="pv-done" data-click="painelEditDone">✔ Pronto</button></div>
+        <div class="pv-layouts" role="group" aria-label="Molde do painel">${layouts}</div>
+        <p class="pv-edit-hint">Toca num quadradinho pra escolher, trocar ou esvaziar. Escolher um que já tá em outro lugar troca os dois de lugar.${hidden ? ` <b>${hidden} guardado${hidden === 1 ? "" : "s"}</b> fora desse molde: volta pra um maior que eles reaparecem.` : ""}</p>
+      </div>
+      <div class="pv-slots is-editing">${tiles}</div>`;
+  }
+  const first = !filled ? '<p class="pv-edit-hint is-center">Painel vazio: toca num ＋ e escolhe o que vai em cada quadradinho 😎</p>' : "";
+  return `${first}<div class="pv-slots">${tiles}</div>
+    <nav class="pv-dock" aria-label="Atalhos dos apps">${dock}</nav>
+    <button type="button" class="pv-edit" data-click="painelEdit">✏️ Montar o painel <span>(ou segura um quadradinho)</span></button>`;
+}
+
+/* Folha "O que vai aqui?" (o ＋ ou o ✏️ de um quadradinho) */
+function renderPainelPickSheet() {
+  const box = document.getElementById("portalPinsList");
+  if (!box || painelPickIndex < 0) return;
+  const cfg = getPortalViewConfig();
+  const layout = portalLayout(cfg);
+  const i = painelPickIndex;
+  const size = layout.sizes[i] || "m";
+  const ctx = portalPainelCtx();
+  const current = cfg.slots[i];
+  const visibleSlots = layout.sizes.length;
+  document.getElementById("painelPickTitle").textContent = current ? `✏️ Quadradinho ${i + 1}` : `＋ O que vai no quadradinho ${i + 1}?`;
+  document.getElementById("painelPickText").innerHTML = current && portalSlotParts(current, ctx)
+    ? `Agora: <b>${escapeHtml(portalSlotName(current, ctx))}</b> · quadradinho ${PORTAL_SIZE_NAMES[size]}. Toca em outro pra trocar.`
+    : `Quadradinho ${PORTAL_SIZE_NAMES[size]}. Toca no que tu quer ver aqui.`;
+
+  const chip = (value, label) => {
+    const at = cfg.slots.indexOf(value);
+    const on = at === i;
+    const elsewhere = at >= 0 && !on;
+    const where = elsewhere ? `<span class="pv-pin-where">${at < visibleSlots ? `#${at + 1}` : "guardado"}</span>` : "";
+    return `<button type="button" class="chip-btn pv-pin${on ? " is-on" : ""}${elsewhere ? " is-used" : ""}" data-click="setPainelSlot" data-value="${escapeHtml(value)}" aria-pressed="${on}">${escapeHtml(label)}${where}</button>`;
+  };
+  const group = (title, chips) => `<div class="pv-pin-group"><div class="pv-pin-app">${title}</div><div class="pv-pin-chips">${chips}</div></div>`;
+
+  const extras = group("✨ Extras", PORTAL_EXTRAS.map((e) => chip(`x:${e.key}`, e.label)).join(""));
+  const shortcuts = group("📱 Atalho de app", portalCards.filter((c) => c.visible).map((c) => chip(`app:${c.id}`, `${c.icon} ${c.title.replace(/^Toba\s+/i, "")}`)).join(""));
+  const numbers = portalCards
+    .filter((c) => PORTAL_APP_STATS[c.id])
+    .map((c) => group(`${c.icon} ${escapeHtml(c.title)}`, PORTAL_APP_STATS[c.id].items.map((item) => chip(`${c.id}:${item.key}`, item.label)).join("")))
+    .join("");
+  const clear = current ? '<button type="button" class="btn btn-secondary pv-clear" data-click="setPainelSlot" data-value="">🗑️ Deixar vazio (volta o ＋)</button>' : "";
+  box.innerHTML = extras + shortcuts + numbers + clear;
+}
+
+function openPainelPick(index) {
+  const cfg = getPortalViewConfig();
+  if (!(index >= 0 && index < portalLayout(cfg).sizes.length)) return;
+  painelPickIndex = index;
+  renderPainelPickSheet();
+  openTobaModal("pinsModal");
+}
+
+function setPainelSlot(value) {
+  const i = painelPickIndex;
+  const cfg = getPortalViewConfig();
+  if (i < 0 || (value && !portalSlotOk(value))) return;
+  const ctx = portalPainelCtx();
+  const old = cfg.slots[i];
+  const at = value ? cfg.slots.indexOf(value) : -1;
+  if (at === i) {
+    closeTobaModal("pinsModal");
+    return;
+  }
+  if (at >= 0) cfg.slots[at] = old; // já tava em outro: troca os dois de lugar
+  cfg.slots[i] = value;
+  if (!savePortalViewConfig(cfg)) return;
+  painelPickIndex = -1;
+  closeTobaModal("pinsModal");
+  renderPortalViewPicker();
+  renderPortalViews();
+  if (!value) tobaToast(`🗑️ Quadradinho ${i + 1} vazio`);
+  else if (at >= 0) tobaToast(`🔄 ${portalSlotName(value, ctx)} trocou de lugar`);
+  else tobaToast(`✅ ${portalSlotName(value, ctx)} no quadradinho ${i + 1}`);
+}
+
+function setPainelLayout(id) {
+  const cfg = getPortalViewConfig();
+  const layout = PORTAL_LAYOUTS.find((l) => l.id === id);
+  if (!layout || cfg.layout === id) return;
+  cfg.layout = id;
+  if (!savePortalViewConfig(cfg)) return;
+  renderPortalViewPicker();
+  renderPortalViews();
+  tobaToast(`${layout.icon} Molde ${layout.label}`);
+}
+
+function setPainelEditing(on) {
+  painelEditing = !!on;
+  renderPortalViews();
+}
+
+// Relógio do quadradinho 🕐: acerta o número sem redesenhar a página
+setInterval(() => {
+  const ex = PORTAL_EXTRAS.find((e) => e.key === "hora").read();
+  document.querySelectorAll("#portalViews .pv-clock").forEach((el) => {
+    el.textContent = el.dataset.clock === "sub" ? ex.sub : ex.value;
+  });
+}, 15000);
+
+// Segurar um quadradinho (~0,5 s) entra no modo de montar, igual no relógio
+let painelPress = null;
+let painelSkipClick = false;
+document.addEventListener("pointerdown", (event) => {
+  painelSkipClick = false; // toque novo = gesto novo
+  const tile = event.target instanceof Element ? event.target.closest("#portalViews .pv-slot") : null;
+  if (!tile || painelEditing) return;
+  clearTimeout(painelPress?.timer);
+  painelPress = {
+    x: event.clientX,
+    y: event.clientY,
+    timer: setTimeout(() => {
+      painelPress = null;
+      painelSkipClick = true;
+      try { if (navigator.vibrate) navigator.vibrate(15); } catch (e) { /* sem vibrar, tudo bem */ }
+      setPainelEditing(true);
+    }, 550),
+  };
+});
+document.addEventListener("pointermove", (event) => {
+  if (painelPress && Math.hypot(event.clientX - painelPress.x, event.clientY - painelPress.y) > 10) {
+    clearTimeout(painelPress.timer);
+    painelPress = null;
+  }
+});
+["pointerup", "pointercancel"].forEach((type) => document.addEventListener(type, () => {
+  if (painelPress) clearTimeout(painelPress.timer);
+  painelPress = null;
+}));
+// O toque que segurou não pode abrir o app nem a folha logo em seguida
+document.addEventListener("click", (event) => {
+  if (!painelSkipClick) return;
+  painelSkipClick = false;
+  event.preventDefault();
+  event.stopPropagation();
+}, true);
+document.addEventListener("contextmenu", (event) => {
+  if (event.target instanceof Element && event.target.closest("#portalViews .pv-slot")) event.preventDefault();
+});
 
 function renderPortalViews() {
   const box = document.getElementById("portalViews");
@@ -353,15 +645,19 @@ function renderPortalViews() {
   grid.hidden = !isCards;
   box.hidden = isCards;
   box.dataset.view = cfg.view;
+  if (cfg.view !== "painel") painelEditing = false;
   if (isCards) {
     box.innerHTML = "";
     return;
   }
   const apps = portalCards.filter((c) => c.visible).map(portalAppInfo);
+  if (cfg.view === "painel") {
+    box.innerHTML = renderPortalPainel(apps, cfg);
+    return;
+  }
   const stats = portalReadAllStats();
   const pending = portalPendingInfo();
   if (cfg.view === "linha") box.innerHTML = renderPortalLine(apps, stats, pending);
-  else if (cfg.view === "painel") box.innerHTML = renderPortalPainel(apps, stats, cfg);
   else box.innerHTML = renderPortalQuad(apps, stats, pending);
 }
 
@@ -378,27 +674,11 @@ function renderPortalViewPicker() {
       <span class="pv-pick-text"><b>${v.label}</b><span>${v.desc}</span></span>
     </button>`).join("");
   const pinsBtn = document.getElementById("portalPinsMenuDesc");
-  if (pinsBtn) pinsBtn.textContent = `${cfg.pins.length} de ${PORTAL_PINS_MAX} escolhidos`;
-}
-
-function renderPortalPinsSheet() {
-  const box = document.getElementById("portalPinsList");
-  if (!box) return;
-  const cfg = getPortalViewConfig();
-  const full = cfg.pins.length >= PORTAL_PINS_MAX;
-  document.getElementById("portalPinsCount").textContent = `${cfg.pins.length} de ${PORTAL_PINS_MAX}${full ? " · tá cheio, tira um pra pôr outro" : ""}`;
-  box.innerHTML = portalCards
-    .filter((c) => PORTAL_APP_STATS[c.id])
-    .map((c) => `
-      <div class="pv-pin-group">
-        <div class="pv-pin-app">${c.icon} ${escapeHtml(c.title)}</div>
-        <div class="pv-pin-chips">${PORTAL_APP_STATS[c.id].items.map((item) => {
-          const pin = `${c.id}:${item.key}`;
-          const on = cfg.pins.includes(pin);
-          return `<button type="button" class="chip-btn pv-pin${on ? " is-on" : ""}" data-click="togglePortalPin" data-pin="${escapeHtml(pin)}" aria-pressed="${on}"${!on && full ? " disabled" : ""}>${escapeHtml(item.label)}</button>`;
-        }).join("")}</div>
-      </div>`)
-    .join("");
+  if (pinsBtn) {
+    const layout = portalLayout(cfg);
+    const filled = cfg.slots.slice(0, layout.sizes.length).filter(Boolean).length;
+    pinsBtn.textContent = `${layout.icon} Molde ${layout.label} · ${filled} de ${layout.sizes.length} quadradinhos montados`;
+  }
 }
 
 function setPortalView(view) {
@@ -411,24 +691,30 @@ function setPortalView(view) {
   tobaToast(`${PORTAL_VIEWS.find((v) => v.id === view).icon} Visão ${PORTAL_VIEWS.find((v) => v.id === view).label}`);
 }
 
-function togglePortalPin(pin) {
-  const cfg = getPortalViewConfig();
-  if (cfg.pins.includes(pin)) cfg.pins = cfg.pins.filter((p) => p !== pin);
-  else if (cfg.pins.length < PORTAL_PINS_MAX) cfg.pins = [...cfg.pins, pin];
-  else return;
-  if (!savePortalViewConfig(cfg)) return;
-  renderPortalPinsSheet();
-  renderPortalViewPicker();
-  renderPortalViews();
-}
-
 tobaActions({
   setPortalView: (el) => setPortalView(el.dataset.view),
-  openPinsConfig: () => {
-    renderPortalPinsSheet();
-    openTobaModal("pinsModal");
+  pickPainelSlot: (el) => openPainelPick(Number(el.dataset.slot)),
+  setPainelSlot: (el) => setPainelSlot(el.dataset.value || ""),
+  setPainelLayout: (el) => setPainelLayout(el.dataset.layout),
+  painelEdit: () => setPainelEditing(true),
+  painelEditDone: () => {
+    setPainelEditing(false);
+    tobaToast("✔ Painel montado 😎");
   },
-  togglePortalPin: (el) => togglePortalPin(el.dataset.pin),
+  // ⚙️ › Painel › ⭐ Montar o Meu painel: vai pra visão do painel já montando
+  openPinsConfig: () => {
+    const cfg = getPortalViewConfig();
+    if (cfg.view !== "painel") {
+      cfg.view = "painel";
+      if (!savePortalViewConfig(cfg)) return;
+    }
+    closeTobaModal("settingsModal");
+    painelEditing = true;
+    renderPortalViewPicker();
+    renderPortalViews();
+    const box = document.getElementById("portalViews");
+    if (box) box.scrollIntoView({ behavior: "smooth", block: "start" });
+  },
 });
 
 // Mexeu no Configurador de cards ou na Ordem dos apps: redesenha a visão

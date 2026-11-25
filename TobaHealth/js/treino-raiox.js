@@ -96,6 +96,12 @@ function trxCanFetch() {
   return typeof TOBA_NATIVE !== "undefined" && !!TOBA_NATIVE && typeof TOBA_NATIVE.healthWorkout === "function" && watchNativeVersion() >= 18;
 }
 
+// v2.14: caminhada na rua sem mapa que ainda não perguntou pro Samsung Health (APK 3.5, ponte 20)
+function trxNeedsSamsungRoute(w, det) {
+  if (!det || det.route === 1 || det.rS || watchNativeVersion() < 20) return false;
+  return trxFamilyOf(w) === "walk" && w.mode !== "treadmill" && !(Array.isArray(decodeWalkTrackSafe(w)) && decodeWalkTrackSafe(w).length);
+}
+
 function trxCacheAll() {
   try {
     const v = JSON.parse(localStorage.getItem(TRX_CACHE_KEY) || "{}");
@@ -427,6 +433,13 @@ function trxSummary(w, raw, cache) {
   if (raw.routeAsk && !cache.route.length) det.routeAsk = 1;
   // v2.12: por que não tem mapa (a tela explica em vez de sumir calada)
   if (raw.errors && raw.errors.route) det.rErr = String(raw.errors.route).slice(0, 120);
+  // v2.14 (APK 3.5): o mapa pode vir direto do Samsung Health (o Health Connect chega sem trajeto)
+  if (raw.routeSrc === "samsung" && cache.route.length) det.rSrc = "samsung";
+  if (raw.routeSamsung === "perm" || raw.routeSamsung === "none") det.rS = raw.routeSamsung;
+  else if (raw.errors && raw.errors.routeSamsung) {
+    det.rS = "err";
+    det.rSErr = String(raw.errors.routeSamsung).slice(0, 120);
+  } else if (det.rSrc) det.rS = "ok";
   if (Array.isArray(cache.vo2) && cache.vo2.length) {
     const before = cache.vo2.filter((p) => Number(p[0]) <= cache.end + 6 * 3600000);
     const last = before.length ? before[before.length - 1] : null;
@@ -591,7 +604,7 @@ function renderWorkoutRaioX(w) {
   const det = w.watch && w.watch.det;
   const cache = win ? trxCacheGet(win.key) : null;
   // Abriu o treino: tem relógio e (sem resumo, sem séries aqui ou permissão nova) = puxa agora
-  if (win && trxCanFetch() && !trx.busy[win.key] && (!det || !cache || (det.g || 0) < trxGrantedCount() || det.v < TRX_V)) {
+  if (win && trxCanFetch() && !trx.busy[win.key] && (!det || !cache || (det.g || 0) < trxGrantedCount() || det.v < TRX_V || trxNeedsSamsungRoute(w, det))) {
     trxFetch(w).then((ok) => {
       if (ok) {
         saveHealthDb({ silent: true });
@@ -858,6 +871,13 @@ function trxMapHtml(w, det, cache) {
         <button type="button" class="btn btn-primary btn-sm" data-click="trxAskRoute" data-id="${escapeHtml(w.id)}"${trx.routeFor ? " disabled" : ""}>🗺️ Mostrar o mapa</button>
       </div>`;
   }
+  if (det && det.rS === "perm" && trxFamilyOf(w) === "walk" && typeof watchSamsungCan === "function" && watchSamsungCan()) {
+    return `<div class="section-title">🗺️ Por onde andou ${trxQ("nomap")}</div>
+      <div class="card trx-ask">
+        <p>🗺️ O Samsung Health manda a caminhada pro Health Connect <b>sem o trajeto</b>, mas o Toba consegue puxar o mapa direto do Samsung Health. Falta liberar uma vez: toca no botão e liga <b>Exercício</b> e <b>Localização do exercício</b> (junto das outras leituras).</p>
+        <button type="button" class="btn btn-primary btn-sm" data-click="trxSamsungMap">🗺️ Liberar o mapa no Samsung Health</button>
+      </div>`;
+  }
   const why = trxNoMapWhy(w, det);
   return why ? `<div class="section-title">🗺️ Por onde andou ${trxQ("nomap")}</div><div class="card trx-nomap"><p>${why}</p></div>` : "";
 }
@@ -869,13 +889,24 @@ function trxMapHtml(w, det, cache) {
 function trxNoMapWhy(w, det) {
   if (trxFamilyOf(w) !== "walk" || w.mode === "treadmill" || !det || !trxWindowOf(w) || !trxCanFetch()) return "";
   if (det.route === 1 || det.routeAsk) return "";
+  if (det.rS === "err") {
+    return `💥 O Toba pediu o mapa pro Samsung Health e deu erro${det.rSErr ? `: ${escapeHtml(det.rSErr)}` : ""}. Confere se o <b>Developer Mode for Data Read</b> continua ligado no Samsung Health e abre o treino de novo.`;
+  }
+  if (det.rS === "none") {
+    return `🛰️ Nem o Samsung Health tem o trajeto desse treino: o GPS do relógio tava desligado (treino automático ou começado sem esperar o 📍 fixar). Mapa garantido: ▶ Caminhada com GPS do Toba.`;
+  }
   if (!det.hcId) {
     return "📭 O Health Connect não tem esse treino por dentro: é de antes do Samsung começar a mandar os treinos pro celular (lá por 06/11) ou veio do 📥 import, que não traz trajeto. Por isso a carga é estimada e não tem batimento minuto a minuto nem mapa. Os treinos novos chegam completos.";
   }
   if (det.route === 0) {
     return `🫙 O relógio marcou que tinha mapa, mas o trajeto veio vazio.${det.rErr ? ` Android disse: ${escapeHtml(det.rErr)}.` : ""} Abre o treino de novo daqui a pouco que o Toba tenta outra vez.`;
   }
-  return `🛰️ O Samsung Health mandou esse treino pro Health Connect <b>sem o trajeto</b>.${det.rErr ? ` Android disse: ${escapeHtml(det.rErr)}.` : ""} Ou o GPS do relógio tava desligado (treino automático ou começado sem localização), ou o Samsung não repassa o mapa. Teste: começa uma caminhada no relógio com o GPS ligado e espera o 📍 fixar. Mapa garantido: ▶ Caminhada com GPS do Toba.`;
+  // v2.14: confirmado com a caminhada do dog (25/11): o Samsung mostra o mapa no app dele, mas
+  // manda pro Health Connect sem trajeto. O APK 3.5 puxa direto do Samsung Health.
+  if (watchNativeVersion() < 20) {
+    return `🛰️ O Samsung Health manda a caminhada pro Health Connect <b>sem o trajeto</b> (no app dele o mapa aparece, mas não repassa).${det.rErr ? ` Android disse: ${escapeHtml(det.rErr)}.` : ""} O <b>APK 3.5</b> puxa o mapa direto do Samsung Health: instala pelo KingInstaller e abre o treino de novo.`;
+  }
+  return `🛰️ O Samsung Health mandou esse treino pro Health Connect <b>sem o trajeto</b>.${det.rErr ? ` Android disse: ${escapeHtml(det.rErr)}.` : ""} Abre o treino de novo que o Toba pergunta direto pro Samsung Health. Mapa garantido: ▶ Caminhada com GPS do Toba.`;
 }
 
 // Android 15+: dá pra liberar o mapa de TODOS os treinos de uma vez (fica no "Acesso adicional")
@@ -1344,7 +1375,7 @@ const TRX_HELP = {
   vo2: ["🫁 VO₂ máx.", "O máximo de oxigênio que teu corpo usa por minuto, por kg. É o melhor número de fôlego que existe e um dos que mais tem a ver com viver mais. O relógio estima pelo batimento nas caminhadas e corridas ao ar livre.<br><br>Faixas do Cloba em cima da tabela do ACSM (a de homens de 30-39 é igual à do Samsung). O 🎂 \"fôlego de X anos\" é a idade em que teu número seria o normal do meio.<br><br>Pra subir: tiros (zona 4) 1-2x por semana e caminhada longa na zona 2."],
   sweat: ["💧 Suor estimado", "Chute do Cloba pelas calorias e o tipo do treino (o relógio não manda o suor pro Health Connect). Calor, umidade e roupa mudam muito.<br><br>Regra de ouro: repor 150% do que perdeu em 1-2 h, de preferência junto com comida. Xixi claro = hidratado."],
   week: ["🗓️ Semana desse treino", "Soma a ⚡ carga dos treinos dos 7 dias até esse treino (o dia dele e os 6 antes) e compara com a média semanal das 4 semanas antes. Por isso muda de treino pra treino: cada um olha a semana dele.<br><br>As semanas do mês inteiro, uma por uma, ficam no ⚡ Carga do resumo do mês (ou no botão aqui embaixo).<br><br>✅ <b>0,8 a 1,25x</b>: evoluindo no ponto<br>🔥 <b>1,25 a 1,5x</b>: puxado<br>🚨 <b>mais de 1,5x</b>: subiu rápido demais, é aí que mora a lesão<br>🛋️ <b>abaixo de 0,8x</b>: semana leve"],
-  nomap: ["🗺️ Cadê o mapa?", "O mapa vem do Health Connect, que recebe os treinos do Samsung Health.<br><br>📭 <b>Treino antigo ou do import</b>: o Samsung só manda pro Health Connect o que é novo (desde uns 06/11). O que veio antes, ou pelo 📥 import, não tem trajeto, nem batimento minuto a minuto.<br>🛰️ <b>Treino sem trajeto</b>: o exercício chegou, mas sem o mapa (GPS do relógio desligado, treino automático, ou o Samsung não repassou).<br>🔓 <b>Falta o sim</b>: aí aparece o botão 🗺️ Mostrar o mapa.<br><br>Mapa garantido: ▶ Iniciar treino › 🚶 Caminhada com GPS do Toba."],
+  nomap: ["🗺️ Cadê o mapa?", "O mapa vem do Health Connect, que recebe os treinos do Samsung Health.<br><br>📭 <b>Treino antigo ou do import</b>: o Samsung só manda pro Health Connect o que é novo (desde uns 06/11). O que veio antes, ou pelo 📥 import, não tem trajeto, nem batimento minuto a minuto.<br>🛰️ <b>Treino sem trajeto</b>: o Samsung Health manda a caminhada pro Health Connect sem o mapa. Desde o APK 3.5 o Toba puxa o trajeto direto do Samsung Health (precisa liberar <b>Exercício</b> e <b>Localização do exercício</b> uma vez). Se nem o Samsung tem, o GPS do relógio tava desligado.<br>🔓 <b>Falta o sim</b>: aí aparece o botão 🗺️ Mostrar o mapa.<br><br>Mapa garantido: ▶ Iniciar treino › 🚶 Caminhada com GPS do Toba."],
   map: ["🗺️ Mapa", "O trajeto que o relógio gravou, pintado pela velocidade de cada trecho comparada com a tua média:<br>🔴 <b>mais lento</b><br>🟡 <b>no ritmo</b><br>🟢 <b>mais rápido</b><br><br>Os números são os km. O mapa usa o mesmo do Toba Places (não gasta o Mapbox do Drive)."],
 };
 
@@ -1383,7 +1414,7 @@ async function trxBackfill() {
   const g = trxGrantedCount();
   const tried = trxTried();
   const todo = (healthDb.workouts || [])
-    .filter((w) => w && w.date >= min && trxWindowOf(w) && w.watch && (!w.watch.det || w.watch.det.v < TRX_V || (w.watch.det.g || 0) < g))
+    .filter((w) => w && w.date >= min && trxWindowOf(w) && w.watch && (!w.watch.det || w.watch.det.v < TRX_V || (w.watch.det.g || 0) < g || trxNeedsSamsungRoute(w, w.watch.det)))
     .filter((w) => !tried[trxKeyOf(w)] || Date.now() - tried[trxKeyOf(w)] > 86400000)
     .sort((a, b) => String(b.date).localeCompare(String(a.date)))
     .slice(0, TRX_BACKFILL_MAX);
@@ -1400,6 +1431,39 @@ async function trxBackfill() {
     else if (active && (active.id === "viewTraining" || active.id === "viewMonth")) renderWorkoutScreen();
   }
 }
+
+// v2.14: liberou o 🗺️ mapa no Samsung Health = as caminhadas que ficaram sem mapa por falta disso puxam de novo
+(function () {
+  const prev = window.onTobaSamsungStatus;
+  window.onTobaSamsungStatus = function (x) {
+    if (typeof prev === "function") prev(x);
+    const asked = trx.samMap;
+    trx.samMap = false;
+    if (!x || !x.ok || !Array.isArray(x.granted) || !x.granted.map(String).includes("map")) {
+      if (asked && x && x.ok) tobaToast("🗺️ Faltou ligar Exercício e Localização do exercício no Samsung Health");
+      return;
+    }
+    let n = 0;
+    let tried = trxTried();
+    (healthDb.workouts || []).forEach((w) => {
+      const det = w && w.watch && w.watch.det;
+      if (!det || det.rS !== "perm") return;
+      delete det.rS;
+      delete tried[trxKeyOf(w)];
+      n++;
+    });
+    if (!n) return;
+    try {
+      sessionStorage.setItem("toba_trx_tried", JSON.stringify(tried));
+    } catch (e) {
+      /* nada */
+    }
+    saveHealthDb({ silent: true });
+    const cur = trxCurrent();
+    if (cur) trxRerender(cur);
+    setTimeout(trxBackfill, 1500);
+  };
+})();
 
 function trxTried() {
   try {
@@ -1501,6 +1565,10 @@ tobaActions({
       trx.routeFor = "";
       tobaToast("🗺️ Não deu pra pedir o mapa");
     }
+  },
+  trxSamsungMap: () => {
+    trx.samMap = true;
+    if (typeof watchSamsungAsk === "function") watchSamsungAsk();
   },
   trxAskPerms: () => {
     if (typeof watchAsk === "function") watchAsk();

@@ -671,35 +671,107 @@
   filter: grayscale(100%);
 }
 
-/* ⭐ Meu painel */
-.pv-tiles {
+/* ⭐ Meu painel (v2.14): molde com quadradinhos, grade de 6 colunas
+ * s = 3 por linha · m = 2 por linha · w/b = linha inteira (b mais alto) */
+.pv-slots {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
 }
 
-.pv-tile {
+.pv-slot {
+  position: relative;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 2px;
   min-width: 0;
+  min-height: 74px;
   padding: 0.6rem 0.7rem;
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   background: var(--surface);
   border: 1px solid var(--border-soft);
   color: inherit;
+  font: inherit;
+  text-align: left;
   text-decoration: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: border-color 0.2s ease, transform 0.15s ease;
 }
 
-.pv-tile:hover {
+.pv-slot:hover {
   border-color: var(--blue);
 }
 
-.pv-tile.is-wide {
-  grid-column: 1 / -1;
+.pv-slot:active {
+  transform: scale(0.97);
 }
 
-.pv-tile-label {
+.pv-slot.is-s { grid-column: span 2; align-items: center; text-align: center; padding: 0.55rem 0.35rem; }
+.pv-slot.is-m { grid-column: span 3; }
+.pv-slot.is-w { grid-column: span 6; }
+.pv-slot.is-b { grid-column: span 6; min-height: 112px; }
+
+.pv-slot.is-empty {
+  align-items: center;
+  text-align: center;
+  background: transparent;
+  border: 1.5px dashed var(--border);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.pv-slot.is-empty:hover {
+  color: var(--blue);
+  border-color: var(--blue);
+}
+
+.pv-plus {
+  font-size: 1.5rem;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.pv-plus-tag {
+  font-size: 0.66rem;
+}
+
+.pv-slot.is-editing {
+  cursor: pointer;
+  border-color: rgba(88, 166, 255, 0.55);
+  animation: pv-wiggle 0.9s ease-in-out infinite;
+}
+
+.pv-slot.is-editing:nth-child(2n) {
+  animation-delay: -0.45s;
+}
+
+@keyframes pv-wiggle {
+  0%, 100% { transform: rotate(-0.6deg); }
+  50% { transform: rotate(0.6deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-slot.is-editing { animation: none; }
+}
+
+.pv-slot-pen {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  font-size: 0.66rem;
+  border-radius: 50%;
+  background: var(--surface-3);
+  border: 1px solid var(--blue);
+}
+
+.pv-slot-label {
   display: flex;
   justify-content: space-between;
   gap: 6px;
@@ -708,12 +780,13 @@
   white-space: nowrap;
 }
 
-.pv-tile-label span:first-child {
+.pv-slot-label span:first-child {
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.pv-tile-value {
+.pv-slot-value {
+  max-width: 100%;
   font-size: 1.08rem;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
@@ -722,8 +795,164 @@
   text-overflow: ellipsis;
 }
 
-.pv-tile-sub {
+.pv-slot.is-s .pv-slot-value { font-size: 0.86rem; }
+.pv-slot.is-w .pv-slot-value { font-size: 1.2rem; }
+.pv-slot.is-b .pv-slot-value { font-size: 2.1rem; line-height: 1.15; }
+
+.pv-slot-sub {
   font-size: 0.68rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pv-slot.is-b .pv-slot-sub { font-size: 0.76rem; }
+
+.pv-slot-emoji {
+  font-size: 1.05rem;
+  line-height: 1.1;
+}
+
+.pv-slot-tag {
+  max-width: 100%;
+  font-size: 0.62rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pv-slot-tag.is-name {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.pv-slot-big {
+  font-size: 1.6rem;
+  line-height: 1.1;
+}
+
+.pv-slot.is-b .pv-slot-big { font-size: 2.4rem; }
+
+.pv-slot-app {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.pv-slot-app-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pv-slot-app .pv-slot-value { font-size: 0.95rem; }
+
+/* Modo de montar: moldes + aviso */
+.pv-edit-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0.7rem;
+  border-radius: var(--radius-lg);
+  background: rgba(88, 166, 255, 0.07);
+  border: 1px solid rgba(88, 166, 255, 0.35);
+}
+
+.pv-edit-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.pv-done {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--blue);
+  color: #0d1117;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pv-layouts {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.pv-layout {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 74px;
+  padding: 6px 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.pv-layout[aria-pressed="true"] {
+  border-color: var(--blue);
+  background: rgba(88, 166, 255, 0.14);
+}
+
+.pv-layout-name {
+  font-size: 0.64rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pv-mini {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2px;
+  width: 48px;
+}
+
+.pv-mini i {
+  height: 7px;
+  border-radius: 2px;
+  background: var(--muted);
+  opacity: 0.55;
+}
+
+.pv-layout[aria-pressed="true"] .pv-mini i {
+  background: var(--blue);
+  opacity: 0.9;
+}
+
+.pv-mini .is-s { grid-column: span 2; }
+.pv-mini .is-m { grid-column: span 3; }
+.pv-mini .is-w { grid-column: span 6; }
+.pv-mini .is-b { grid-column: span 6; height: 12px; }
+
+.pv-edit-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-2);
+}
+
+.pv-edit-hint.is-center {
+  text-align: center;
+}
+
+.pv-edit span {
+  font-weight: 400;
   color: var(--muted);
 }
 
@@ -865,4 +1094,21 @@
 .pv-pin:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+/* v2.14: já tá em outro quadradinho (tocar troca os dois de lugar) */
+.pv-pin.is-used {
+  border-style: dashed;
+}
+
+.pv-pin-where {
+  margin-left: 5px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  color: var(--blue);
+}
+
+.pv-clear {
+  width: 100%;
+  margin-bottom: 0.6rem;
 }

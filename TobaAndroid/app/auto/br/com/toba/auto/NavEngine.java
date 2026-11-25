@@ -1011,6 +1011,45 @@ final class NavEngine implements LocationListener {
         return map;
     }
 
+    /**
+     * v2.14 (APK 3.5): 📍 Marcar pra conferir. Foto do lugar AGORA (o carro segue andando
+     * enquanto tu escolhe radar ou limite): posição, rumo, velocidade, o limite que a placa
+     * do Toba mostrava e a rua. null = sem GPS ainda. Não fala nada (música segue).
+     */
+    org.json.JSONObject reportHere(String kind) {
+        Location loc = last;
+        if (loc == null) return null;
+        try {
+            double lat = loc.getLatitude(), lon = loc.getLongitude();
+            double head = heading;
+            boolean onRoute = state == State.NAVIGATING && route != null && !rerouting
+                    && seg >= 0 && seg + 1 < route.lat.length;
+            if (onRoute) {
+                // com rota: a posição grudada na rota e o rumo do trecho (não balança no GPS)
+                double len = route.cum[seg + 1] - route.cum[seg];
+                double t = len > 0.5 ? Math.max(0, Math.min(1, (along - route.cum[seg]) / len)) : 0;
+                lat = route.lat[seg] + t * (route.lat[seg + 1] - route.lat[seg]);
+                lon = route.lon[seg] + t * (route.lon[seg + 1] - route.lon[seg]);
+                head = Geo.bearing(route.lat[seg], route.lon[seg], route.lat[seg + 1], route.lon[seg + 1]);
+            } else if (loc.hasBearing() && loc.getSpeed() > 1.5f) {
+                head = loc.getBearing();
+            }
+            org.json.JSONObject o = new org.json.JSONObject();
+            o.put("at", System.currentTimeMillis());
+            o.put("kind", kind == null ? "check" : kind);
+            o.put("lat", Math.round(lat * 1e6) / 1e6);
+            o.put("lng", Math.round(lon * 1e6) / 1e6);
+            o.put("head", Math.round(((head % 360) + 360) % 360));
+            o.put("kmh", Math.round(speed() * 3.6f));
+            o.put("limit", speedLimit());
+            o.put("street", currentStreet());
+            o.put("nav", state == State.NAVIGATING);
+            return o;
+        } catch (org.json.JSONException e) {
+            return null;
+        }
+    }
+
     /** v2.02: modo de áudio (AutoStore.AUDIO_*). */
     int audioMode() {
         return AutoStore.audioMode(app);

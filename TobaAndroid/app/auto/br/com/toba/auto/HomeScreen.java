@@ -30,6 +30,8 @@ import java.util.Arrays;
  * botões 🧊 3D/2D e 🎨 skin ficam no canto do mapa.
  * v2.02: botão do som com 3 modos (🔊 Tudo / ⚠️ Só alertas / 🔇 Silêncio) e o "Y"
  * (outros caminhos) no meio da viagem.
+ * v2.14: 📍 Marcar pra conferir (estilo Waze): navegando fica na faixa de cima, do lado
+ * do som; sem rota fica no lado do mapa (a faixa de cima já tem 4). Ver ReportScreen.
  */
 final class HomeScreen extends Screen implements NavEngine.Listener {
     private final NavEngine engine;
@@ -84,6 +86,17 @@ final class HomeScreen extends Screen implements NavEngine.Listener {
         invalidate();
     }
 
+    /** v2.14: grava o lugar NO TOQUE e abre a escolha 📸 radar / 🚦 limite. */
+    private void openReport() {
+        org.json.JSONObject r = engine.reportHere("check");
+        if (r == null) {
+            CarToast.makeText(getCarContext(), "📡 Sem GPS ainda: não deu pra marcar", CarToast.LENGTH_SHORT).show();
+            return;
+        }
+        AutoStore.addReport(getCarContext(), r);
+        getScreenManager().push(new ReportScreen(getCarContext(), r));
+    }
+
     private void nextSkin() {
         CarToast.makeText(getCarContext(), "🎨 " + engine.map().nextSkin(), CarToast.LENGTH_SHORT).show();
     }
@@ -112,6 +125,11 @@ final class HomeScreen extends Screen implements NavEngine.Listener {
                         new PreviewScreen(getCarContext(), engine, engine.destination(), true))));
             }
             strip.addAction(mute);
+            boolean oldHost = getCarContext().getCarAppApiLevel() < CarAppApiLevels.LEVEL_2;
+            // v2.14: 📍 na faixa de cima (cabe 4; host antigo com o 3D/2D lá em cima e o Y já cheia)
+            if (!(hud && oldHost && engine.destination() != null && !engine.isRerouting())) {
+                strip.addAction(icon(R.drawable.ic_car_report, this::openReport));
+            }
             if (!hud) {
                 // plano B (sem mapa 3D): cartões do Android Auto
                 b.setNavigationInfo(routingInfo());
@@ -129,6 +147,8 @@ final class HomeScreen extends Screen implements NavEngine.Listener {
             MessageInfo msg = idleMessage();
             if (msg != null) b.setNavigationInfo(msg);
         }
+        Action report = icon(R.drawable.ic_car_report, this::openReport);
+        boolean mapStrip = getCarContext().getCarAppApiLevel() >= CarAppApiLevels.LEVEL_2;
         if (hud) {
             // v1.82: o botão mostra o modo de agora ("3D" ou "2D" escrito); tocar troca
             Action view = icon(engine.map().is3d() ? R.drawable.ic_map_3d : R.drawable.ic_map_2d, this::toggle3d);
@@ -136,10 +156,15 @@ final class HomeScreen extends Screen implements NavEngine.Listener {
             Action skin = icon(R.drawable.ic_map_skin, this::nextSkin);
             if (getCarContext().getCarAppApiLevel() >= CarAppApiLevels.LEVEL_2) {
                 // v1.80: lado direito = 2D/3D, centralizar e luz do mapa
-                b.setMapActionStrip(new ActionStrip.Builder().addAction(view).addAction(center).addAction(skin).build());
+                ActionStrip.Builder ms = new ActionStrip.Builder().addAction(view).addAction(center).addAction(skin);
+                if (!engine.isNavigating()) ms.addAction(report); // v2.14: sem rota o 📍 mora aqui
+                b.setMapActionStrip(ms.build());
             } else if (engine.isNavigating()) {
                 strip.addAction(view); // host antigo: só 4 na faixa de cima (v2.02: o Y tomou o lugar da 🎨)
             }
+        }
+        if (!hud && mapStrip && !engine.isNavigating()) {
+            b.setMapActionStrip(new ActionStrip.Builder().addAction(report).build());
         }
         b.setActionStrip(strip.build());
         return b.build();

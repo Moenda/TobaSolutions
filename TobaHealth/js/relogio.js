@@ -742,17 +742,19 @@ function openWatchDiag() {
 
 function watchDiagSamsungHtml(x) {
   if (!x) return watchSamsungCan() ? `<div class="card-title">📱 Direto do Samsung Health</div><p class="watch-muted">Puxa de novo (🔄) pra ver.</p>` : "";
-  const labels = { temp: ["🌡️ temperatura da pele", "dia(s)"], energy: ["🔋 Energy Score", "dia(s)"], score: ["🤡 nota de sono", "noite(s)"] };
+  const labels = { temp: ["🌡️ temperatura da pele", "dia(s)"], energy: ["🔋 Energy Score", "dia(s)"], score: ["🤡 nota de sono", "noite(s)"], map: ["🗺️ mapa dos treinos", ""] };
+  if (watchNativeVersion() < 20) delete labels.map; // v2.14: mapa pelo Samsung só no APK 3.5
   const rows = Object.keys(labels).map((k) => {
     let state;
     if (!x.ok) state = `<span class="text-red">🔌 ${escapeHtml(x.error || "não conectou")}</span>`;
     else if (!x.granted.includes(k)) state = `<span class="text-red">🔒 sem permissão</span>`;
+    else if (k === "map") state = x.granted.includes("exercise") ? `<span class="text-green">✅ liberado</span>` : `<span class="text-red">🔒 falta Exercício</span>`;
     else if (x.errors[k]) state = `<span class="text-red">💥 ${escapeHtml(x.errors[k])}</span>`;
     else if (!x.counts[k]) state = `<span class="text-gold">🤷 nada no período</span>`;
     else state = `<span class="text-green">✅ ${x.counts[k]} ${labels[k][1]}</span>`;
     return `<div class="kv-row watch-diag-row"><span>${labels[k][0]}</span>${state}</div>`;
   }).join("");
-  const fix = !x.ok || x.granted.length < 3
+  const fix = !x.ok || x.granted.length < 3 || (watchNativeVersion() >= 20 && !(x.granted.includes("map") && x.granted.includes("exercise")))
     ? `<div class="hint-box watch-diag-hint">${WATCH_SAMSUNG_DEV}</div><button type="button" class="btn btn-secondary" data-click="watchSamsungAsk">📱 Ligar o Samsung Health</button>` : "";
   return `<div class="card-title">📱 Direto do Samsung Health</div><div class="kv-list">${rows}</div>${fix}`;
 }
@@ -761,7 +763,7 @@ function watchDiagSamsungHtml(x) {
  * O que o Samsung não manda pro Health Connect (🌡️ temperatura da pele, 🔋 Energy Score e a
  * nota de sono dele) o APK lê direto pelo SDK do Samsung, junto de cada 🔄. Precisa do
  * "Developer Mode for Data Read" ligado no Samsung Health (só leitura, sem parceria). */
-const WATCH_SAMSUNG_DEV = "No celular: <b>Samsung Health › ⋮ › Configurações › Sobre o Samsung Health</b>, toca <b>10 vezes</b> na versão, entra em <b>Developer mode</b> e liga <b>Developer Mode for Data Read</b>. Os campos de package name e access code ficam em branco (são só pra parceria). Depois toca no botão aqui embaixo e libera as 3 leituras.";
+const WATCH_SAMSUNG_DEV = "No celular: <b>Samsung Health › ⋮ › Configurações › Sobre o Samsung Health</b>, toca <b>10 vezes</b> na versão, entra em <b>Developer mode</b> e liga <b>Developer Mode for Data Read</b>. Os campos de package name e access code ficam em branco (são só pra parceria). Depois toca no botão aqui embaixo e libera as leituras (desde o APK 3.5 também <b>Exercício</b> e <b>Localização do exercício</b>, pro 🗺️ mapa das caminhadas).";
 
 function watchSamsungCan() {
   return Boolean(TOBA_NATIVE && typeof TOBA_NATIVE.samsungAsk === "function");
