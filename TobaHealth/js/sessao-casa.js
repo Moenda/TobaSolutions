@@ -31,6 +31,16 @@
  * Prefs (TOBA_HEALTH_LIVE_PREFS): elasticOrder [cores do leve pro forte],
  * elasticKg { cor: kg }, elasticPick { exerciseId: cor } (o último usado).
  *
+ * ✋ Lado a lado (v2.13, pedido do Rafa: "os mesmos 45 s do supino pros 2
+ * braços no tríceps"): exercício de um lado só (sides) e as roscas que a
+ * pessoa marcou "um braço por vez" (sideOpt + pref homeSplit) viram dois
+ * blocos com o tempo CHEIO: ✋ esquerdo, 🔄 troca (6 s) e ✋ direito. Extras
+ * no liveSession.home: split [ids das roscas lado a lado] (sem split = treino
+ * começado antes da v2.13, segue a linha do tempo velha) e sides
+ * { exerciseId: { L: s, R: s } }. O done continua a soma dos dois lados (as
+ * reps e o Kg levantado somam os dois braços). Treino salvo ganha home.split
+ * e home.sides.
+ *
  * Carregado DEPOIS de sessao.js / sessao-saitama.js / sessao-alongamento.js
  * e ANTES de treinos.js.
  * ===================================================================== */
@@ -212,7 +222,8 @@ function homeFrameSvg(frame, cls) {
 
 // size "lg": todas as poses (o CSS alterna no trabalho); "sm": só a pose key
 // band (v2.06): id da cor do elástico (pinta o traço do elástico)
-function homeFigureSvg(exerciseId, { size = "lg", band = "" } = {}) {
+// flip (v2.13): ✋ lado direito = espelha o bonequinho, igual o alongamento
+function homeFigureSvg(exerciseId, { size = "lg", band = "", flip = false } = {}) {
   const fig = HOME_FIGURES[exerciseId] || HOME_FIGURES.agachamento;
   const name = getHomeExercise(exerciseId)?.name || HOME_TYPE_TITLE;
   const frames = size === "lg"
@@ -222,7 +233,7 @@ function homeFigureSvg(exerciseId, { size = "lg", band = "" } = {}) {
   return `
     <svg class="stretch-fig home-fig is-${size}${moves}" viewBox="0 0 120 90" role="img" aria-label="Bonequinho: ${escapeHtml(name)}"${homeBandStyle(exerciseId, band)}>
       <line x1="2" y1="87" x2="118" y2="87" class="sf-floor"/>
-      ${frames}
+      ${flip ? `<g transform="translate(120 0) scale(-1 1)">${frames}</g>` : frames}
     </svg>`;
 }
 
@@ -238,7 +249,7 @@ function homeBandStyle(exerciseId, band) {
 function normalizeHomeLive(raw) {
   const data = raw && typeof raw === "object" ? raw : {};
   const plan = getHomePlan(data.plan) ? data.plan : HOME_PLANS[0].id;
-  const total = buildHomeSteps(plan).length;
+  const total = buildHomeSteps(plan, homeStepOpts(data)).length;
   const done = {};
   if (data.done && typeof data.done === "object") {
     Object.entries(data.done).forEach(([id, secs]) => {
@@ -251,9 +262,22 @@ function normalizeHomeLive(raw) {
       if (getHomeExercise(id)?.band && getElasticBand(band)) bands[id] = band;
     });
   }
+  // v2.13: ✋ lado a lado (null = treino começado antes, linha do tempo velha)
+  const split = Array.isArray(data.split) ? data.split.filter((id) => getHomeExercise(id)?.sideOpt) : null;
+  const sides = {};
+  if (data.sides && typeof data.sides === "object") {
+    Object.entries(data.sides).forEach(([id, value]) => {
+      if (!getHomeExercise(id) || !value || typeof value !== "object") return;
+      const L = Math.round(Number(value.L) || 0);
+      const R = Math.round(Number(value.R) || 0);
+      if (L > 0 || R > 0) sides[id] = { L: Math.max(0, L), R: Math.max(0, R) };
+    });
+  }
   return {
     plan,
     bands,
+    split,
+    sides,
     feel: ["leve", "certo", "pesado"].includes(data.feel) ? data.feel : "",
     step: Math.min(Math.max(0, Math.round(Number(data.step) || 0)), Math.max(0, total - 1)),
     endsAt: Number(data.endsAt) || null,
@@ -267,7 +291,31 @@ function normalizeHomeLive(raw) {
 }
 
 function homeSteps(session = liveSession) {
-  return buildHomeSteps(session?.home?.plan || "");
+  return buildHomeSteps(session?.home?.plan || "", homeStepOpts(session?.home));
+}
+
+// v2.13: ✋ nome do lado ("esquerdo" / "direito")
+function homeSideName(side) {
+  return side === "L" ? "esquerdo" : side === "R" ? "direito" : "";
+}
+
+function homeSideBadge(side) {
+  return side ? `<span class="stretch-side home-side">✋ Lado ${homeSideName(side)}</span>` : "";
+}
+
+// Roscas marcadas "um braço por vez" (pref homeSplit { exerciseId: true })
+function homeSplitPref() {
+  const pref = readLivePrefs().homeSplit;
+  return pref && typeof pref === "object" ? pref : {};
+}
+
+function homeSplitFor(plan) {
+  const pref = homeSplitPref();
+  return (plan?.list || []).filter((id) => getHomeExercise(id)?.sideOpt && pref[id]);
+}
+
+function homeSplitOpts(plan) {
+  return { split: homeSplitFor(plan) };
 }
 
 function homeWorkSeconds(data) {
@@ -332,18 +380,25 @@ function homeAnnounce(step, steps) {
   const exercise = getHomeExercise(step.exerciseId);
   const bandName = exercise?.band ? getElasticBand(liveSession?.home?.bands?.[step.exerciseId] || elasticPick(step.exerciseId))?.name : "";
   const name = `${exercise?.name || ""}${bandName ? `, elástico ${bandName.toLowerCase()}` : ""}`;
+  const startsLeft = step.side === "L" ? ", começa pelo lado esquerdo" : "";
   if (step.kind === "prep") {
     liveBuzz(120);
-    homeSpeak(`Prepara. Primeiro: ${name}`);
+    homeSpeak(`Prepara. Primeiro: ${name}${startsLeft}`);
+  } else if (step.kind === "swap") {
+    liveBuzz([120, 80, 120]);
+    homeSpeak(`Troca de lado. Agora o ${homeSideName(step.side)}`);
   } else if (step.kind === "rest") {
     liveBuzz([80, 60, 80]);
     const index = steps.indexOf(step);
     const prev = steps[index - 1];
     const newRound = prev && step.round > prev.round;
-    homeSpeak(`${newRound ? `Fim da volta ${prev.round}. ` : ""}Descansa. Próximo: ${name}`);
+    homeSpeak(`${newRound ? `Fim da volta ${prev.round}. ` : ""}Descansa. Próximo: ${name}${startsLeft}`);
+  } else if (step.side === "R") {
+    liveBuzz([200]);
+    homeSpeak("Vai! Lado direito");
   } else {
     liveBuzz([200]);
-    homeSpeak(`Vai! ${name}`);
+    homeSpeak(`Vai! ${exercise?.name || ""}${step.side === "L" ? ", lado esquerdo" : ""}`);
   }
 }
 
@@ -359,10 +414,13 @@ function homeCountdown(session, step, leftMs) {
   homeSpeak("3, 2, 1");
 }
 
-// v2.06: exercício de um lado só (remada com um braço): avisa na metade
+// v2.06: exercício de um lado só (remada com um braço): avisa na metade.
+// v2.13: só no treino começado antes da v2.13 (sem split); o novo tem os
+// dois lados em blocos separados.
 let homeHalfKey = "";
 function homeHalfway(session, step, leftMs) {
   if (!step || step.kind !== "work" || !session.home.endsAt) return;
+  if (Array.isArray(session.home.split)) return;
   if (!getHomeExercise(step.exerciseId)?.sides) return;
   const half = (step.secs * 1000) / 2;
   if (leftMs > half || leftMs < half - 2000) return;
@@ -527,6 +585,18 @@ function elasticRefreshIntro() {
   openHomeIntro(elasticSetupPlan, { keepScroll: true });
 }
 
+// v2.13: 👐 dois juntos / ✋ um braço por vez (só nas roscas, fica salvo)
+function homeToggleSplit(el) {
+  const id = el.dataset.ex;
+  if (!getHomeExercise(id)?.sideOpt) return;
+  const pref = { ...homeSplitPref() };
+  if (pref[id]) delete pref[id];
+  else pref[id] = true;
+  storeLivePrefs({ homeSplit: pref });
+  tobaToast(pref[id] ? `✋ ${getHomeExercise(id).name}: um braço por vez` : `👐 ${getHomeExercise(id).name}: os dois juntos`);
+  openHomeIntro(el.dataset.plan, { keepScroll: true });
+}
+
 function elasticCycleIntro(el) {
   const id = el.dataset.ex;
   elasticStorePicks({ [id]: elasticNext(elasticPick(id)) });
@@ -552,7 +622,7 @@ function homeMenuButton({ click, attrs = "", icon, title, desc }) {
 
 function homePlanButton(plan) {
   const count = (healthDb.workouts || []).filter((workout) => workout.type === "home" && workout.home?.plan === plan.id).length;
-  const minutes = Math.round(getHomePlanSeconds(plan.id) / 60);
+  const minutes = Math.round(getHomePlanSeconds(plan.id, homeSplitOpts(plan)) / 60);
   return homeMenuButton({
     click: "startHomeLive",
     attrs: ` data-plan="${plan.id}"`,
@@ -623,13 +693,15 @@ function homeFormatSecs(secs) {
 }
 
 function homeIntroChips(plan) {
-  const minutes = Math.round(getHomePlanSeconds(plan.id) / 60);
+  const minutes = Math.round(getHomePlanSeconds(plan.id, homeSplitOpts(plan)) / 60);
+  const sided = plan.list.some((id) => homeIsSplit(id, homeSplitOpts(plan)));
   const kcal = estimateHomeKcal(plan.id, minutes, toIsoDate());
   return [
     `⏱️ ~${minutes} min`,
     `🔁 ${plan.rounds} ${plan.rounds === 1 ? "volta" : "voltas"}`,
     `🔥 ${plan.work} s / 😮‍💨 ${plan.rest} s`,
     isElasticPlan(plan) ? "🟣 com elástico" : "",
+    sided ? "✋ lado a lado" : "",
     kcal ? `⚡ ~${kcal} kcal` : "",
   ].filter(Boolean).map((chip) => `<span class="workout-chip">${chip}</span>`).join("");
 }
@@ -646,15 +718,23 @@ function openHomeIntro(planId, { keepScroll = false } = {}) {
     openLiveSessionView();
     return;
   }
+  const splitOpts = homeSplitOpts(plan);
   const rows = plan.list.filter((id) => getHomeExercise(id)).map((id, index) => {
     const exercise = getHomeExercise(id);
     const chip = exercise.band ? elasticChip(id, elasticPick(id), "elasticCycleIntro", ` data-plan="${plan.id}"`) : "";
+    const split = homeIsSplit(id, splitOpts);
+    // v2.13: rosca = escolhe 👐 juntos ou ✋ um braço por vez (o Toba lembra)
+    const splitBtn = exercise.sideOpt
+      ? `<button type="button" class="elastic-chip home-split-chip${split ? " is-on" : ""}" data-click="homeToggleSplit" data-ex="${id}" data-plan="${plan.id}" aria-label="${split ? "Um braço por vez: toca pra fazer os dois juntos" : "Dois braços juntos: toca pra fazer um de cada vez"}">${split ? "✋ Um braço por vez" : "👐 Dois juntos"}</button>`
+      : "";
+    const time = split ? `${plan.work} s cada lado (✋ esquerdo, depois direito)` : `${plan.work} s${exercise.sideOpt ? " · os dois braços juntos" : ""}`;
     return `
-      <div class="stretch-row home-intro-row${chip ? " has-band" : ""}">
+      <div class="stretch-row home-intro-row${chip || splitBtn ? " has-band" : ""}">
         ${homeFigureSvg(id, { size: "sm" })}
-        <span class="stretch-row-text"><strong>${index + 1}. ${escapeHtml(exercise.name)}</strong><small>${plan.work} s${exercise.jump ? " · tem pulo" : ""}${exercise.sides ? " · troca de lado na metade" : ""}</small>${chip}</span>
+        <span class="stretch-row-text"><strong>${index + 1}. ${escapeHtml(exercise.name)}</strong><small>${time}${exercise.jump ? " · tem pulo" : ""}</small>${chip || splitBtn ? `<span class="home-intro-chips">${chip}${splitBtn}</span>` : ""}</span>
       </div>`;
   }).join("");
+  const hasSplitOpt = plan.list.some((id) => getHomeExercise(id)?.sideOpt);
   const elastic = isElasticPlan(plan);
   if (elastic) elasticSetupPlan = plan.id;
   const feel = elastic ? elasticLastFeel(plan.id) : "";
@@ -670,6 +750,7 @@ function openHomeIntro(planId, { keepScroll = false } = {}) {
           <button type="button" class="btn btn-secondary btn-sm" data-click="openElasticSetup" data-plan="${plan.id}">✏️ Ajustar</button>
         </div>
         <p class="live-hint">Toca na cor de cada exercício pra trocar (leve → forte). O Toba lembra da próxima vez e soma repetições × kg no 💪 Kg levantado.</p>
+        ${hasSplitOpt ? '<p class="live-hint">👐 / ✋ Rosca: toca pra escolher os dois braços juntos ou um de cada vez (cada lado ganha o tempo inteiro).</p>' : ""}
         ${feelTip ? `<p class="live-hint elastic-feel-tip">🤖 ${escapeHtml(feelTip)}</p>` : ""}
       </div>` : "";
   const title = document.getElementById("liveStartTitle");
@@ -727,6 +808,7 @@ function openHomeHelp(planId) {
       <li>🔥 <b>Vai!</b> ${plan.work} s fazendo o exercício no teu ritmo (o bonequinho mostra o movimento).</li>
       <li>😮‍💨 <b>Descansa</b> ${plan.rest} s e a tela já mostra o próximo.</li>
       <li>🔁 ${escapeHtml(rounds)}</li>
+      ${plan.list.some((id) => getHomeExercise(id)?.sides || getHomeExercise(id)?.sideOpt) ? `<li>✋ <b>Um lado só</b> (tríceps, remada de um braço, coice e as roscas marcadas ✋): ${plan.work} s no <b>esquerdo</b>, ${HOME_SWAP_SECONDS} s pra trocar e ${plan.work} s no <b>direito</b>. Cada lado conta as repetições dele no Kg levantado.</li>` : ""}
       <li>🔊 A voz avisa cada troca e conta o 3-2-1: dá pra deixar o celular no chão.</li>
       <li>⏸ Pausa, pula ou volta quando quiser. 🏁 Terminar agora salva o que já fez.</li>
     </ul>
@@ -935,7 +1017,8 @@ function homeStartBands(plan) {
 
 function startHomeLive(planId) {
   const plan = getHomePlan(planId) || HOME_PLANS[0];
-  const steps = buildHomeSteps(plan.id);
+  const split = homeSplitFor(plan);
+  const steps = buildHomeSteps(plan.id, { split });
   if (!steps.length) return;
   const now = Date.now();
   liveSession = {
@@ -948,7 +1031,7 @@ function startHomeLive(planId) {
     title: plan.name,
     current: 0,
     exercises: [],
-    home: normalizeHomeLive({ plan: plan.id, step: 0, endsAt: now + steps[0].secs * 1000, bands: homeStartBands(plan) }),
+    home: normalizeHomeLive({ plan: plan.id, split, step: 0, endsAt: now + steps[0].secs * 1000, bands: homeStartBands(plan) }),
     rest: { duration: LIVE_REST_DEFAULT, startedAt: null, endsAt: null, alerted: false },
     restDefault: LIVE_REST_DEFAULT,
     updatedAt: now,
@@ -967,6 +1050,11 @@ function startHomeLive(planId) {
 function homeCredit(data, step, secs) {
   if (!step || step.kind !== "work" || !(secs > 0)) return;
   data.done[step.exerciseId] = Math.round((data.done[step.exerciseId] || 0) + secs);
+  if (step.side) { // v2.13: ✋ cada lado com os segundos dele
+    const sides = data.sides[step.exerciseId] || { L: 0, R: 0 };
+    sides[step.side] = Math.round((sides[step.side] || 0) + secs);
+    data.sides[step.exerciseId] = sides;
+  }
 }
 
 function homeTick(now = Date.now()) {
@@ -1055,18 +1143,19 @@ function renderHomeLive(session) {
   const step = steps[data.step];
   const exercise = getHomeExercise(step.exerciseId);
   const paused = !data.endsAt;
-  const phase = step.kind === "work" ? "is-work" : step.kind === "rest" ? "is-rest" : "is-prep";
-  const phaseText = paused ? "⏸ Pausado" : step.kind === "work" ? "🔥 Vai!" : step.kind === "rest" ? "😮‍💨 Descansa" : "Prepara...";
+  const phase = step.kind === "work" ? "is-work" : step.kind === "rest" || step.kind === "swap" ? "is-rest" : "is-prep";
+  const phaseText = paused ? "⏸ Pausado" : step.kind === "work" ? "🔥 Vai!" : step.kind === "swap" ? "🔄 Troca de lado" : step.kind === "rest" ? "😮‍💨 Descansa" : "Prepara...";
   const roundText = plan && plan.rounds > 1 ? `<span class="stretch-side">Volta ${step.round}/${plan.rounds}</span>` : "";
+  const sideText = homeSideBadge(step.side);
   const nextWork = steps.slice(data.step + 1).find((item) => item.kind === "work" && step.kind === "work");
   const nextExercise = nextWork ? getHomeExercise(nextWork.exerciseId) : null;
   const quip = HOME_QUIPS[(data.step + session.startedAt) % HOME_QUIPS.length];
 
   return `${top}
     <div class="stretch-stage home-stage ${phase}${paused ? " is-paused" : ""}">
-      <div class="stretch-phase">${phaseText} ${roundText}</div>
-      ${homeFigureSvg(step.exerciseId, { size: "lg", band: data.bands[step.exerciseId] })}
-      <div class="stretch-name">${step.kind === "work" ? "" : "<small>Próximo</small> "}${escapeHtml(exercise?.name || "")}</div>
+      <div class="stretch-phase">${phaseText} ${roundText} ${sideText}</div>
+      ${homeFigureSvg(step.exerciseId, { size: "lg", band: data.bands[step.exerciseId], flip: step.side === "R" })}
+      <div class="stretch-name">${step.kind === "work" ? "" : step.kind === "swap" ? "<small>Agora o outro lado</small> " : "<small>Próximo</small> "}${escapeHtml(exercise?.name || "")}</div>
       ${exercise?.band ? `<div class="elastic-live">${elasticChip(step.exerciseId, data.bands[step.exerciseId] || elasticPick(step.exerciseId), "homeCycleBand")}<small>toca pra trocar a cor</small></div>` : ""}
       <div class="stretch-timer">
         <div class="stretch-ring">
@@ -1078,6 +1167,7 @@ function renderHomeLive(session) {
         </div>
         <p class="stretch-how">${escapeHtml(exercise?.how || "")}</p>
       </div>
+      ${step.side && exercise?.sideOpt ? `<p class="stretch-tip">✋ Um braço por vez: só a mão do lado ${homeSideName(step.side)} puxa, a outra fica na cintura.</p>` : ""}
       ${exercise?.tip ? `<p class="stretch-tip">💡 ${escapeHtml(exercise.tip)}</p>` : ""}
     </div>
 
@@ -1089,8 +1179,8 @@ function renderHomeLive(session) {
 
     ${nextExercise ? `
       <div class="stretch-next">
-        ${homeFigureSvg(nextWork.exerciseId, { size: "sm", band: data.bands[nextWork.exerciseId] })}
-        <span><small>Depois</small><strong>${escapeHtml(nextExercise.name)}</strong>${nextExercise.band ? `<small>${escapeHtml(elasticBandLabel(data.bands[nextWork.exerciseId] || elasticPick(nextWork.exerciseId)))}</small>` : ""}</span>
+        ${homeFigureSvg(nextWork.exerciseId, { size: "sm", band: data.bands[nextWork.exerciseId], flip: nextWork.side === "R" })}
+        <span><small>Depois</small><strong>${escapeHtml(nextExercise.name)}${nextWork.side ? ` · ✋ ${homeSideName(nextWork.side)}` : ""}</strong>${nextExercise.band ? `<small>${escapeHtml(elasticBandLabel(data.bands[nextWork.exerciseId] || elasticPick(nextWork.exerciseId)))}</small>` : ""}</span>
       </div>` : ""}
 
     <p class="live-hint stretch-quip">${escapeHtml(quip)}</p>
@@ -1114,6 +1204,7 @@ function renderHomeDone(session) {
   const minutes = Math.max(1, Math.round(homeMovingMs(session) / 60000));
   const kcal = estimateHomeKcal(data.plan, minutes, session.date);
   const done = Object.keys(data.done);
+  const sidedLine = Object.entries(data.sides || {}).filter(([id]) => data.done[id] > 0).map(([id, value]) => `✋ ${escapeHtml(getHomeExercise(id)?.name || id)}: E ${formatLiveSeconds(value.L || 0)} · D ${formatLiveSeconds(value.R || 0)}`).join("<br>");
   const figures = done.slice(0, 18).map((id) => `<span class="stretch-done-fig" title="${escapeHtml(getHomeExercise(id)?.name || id)}">${homeFigureSvg(id, { size: "sm", band: data.bands[id] })}</span>`).join("");
   const elastic = isElasticPlan(data.plan);
   const lift = elastic ? calcElasticLift({ date: session.date, home: { plan: data.plan, done: data.done, kg: homeBandKg(data) } }, healthDb) : null;
@@ -1133,6 +1224,7 @@ function renderHomeDone(session) {
       <div class="stretch-done-title">🏆 Academia na sala: aprovada!</div>
       <p class="toba-sheet-text">${done.length} ${done.length === 1 ? "exercício" : "exercícios"} · ${formatLiveClock(workSecs * 1000)} no pau · ${minutes} min no total. Vale XP, sequência, troféu e pinta o mapa de calor 🔥</p>
       ${figures ? `<div class="stretch-done-figs">${figures}</div>` : ""}
+      ${sidedLine ? `<p class="live-hint home-sides-line">${sidedLine}</p>` : ""}
       ${elasticBlock}
       <form data-submit="saveHomeLive">
         <div class="grid-2">
@@ -1328,6 +1420,10 @@ function saveHomeLive() {
     notes: document.getElementById("home-notes").value.trim(),
     home: { plan: data.plan, done: { ...data.done } },
   };
+  // v2.13: ✋ lado a lado (split = roscas um braço por vez; sides = segundos de cada lado)
+  if (Array.isArray(data.split)) workout.home.split = data.split.slice();
+  const sided = Object.entries(data.sides || {}).filter(([id]) => data.done[id] > 0);
+  if (sided.length) workout.home.sides = Object.fromEntries(sided.map(([id, value]) => [id, { L: value.L || 0, R: value.R || 0 }]));
   // v2.06: 🟣 elástico: cor, nível e kg de cada exercício + como tava
   const bandIds = Object.keys(data.bands || {}).filter((id) => data.done[id] > 0);
   if (isElasticPlan(data.plan) && bandIds.length) {
@@ -1386,10 +1482,12 @@ function renderHomeWorkoutDetail(workout) {
       const band = getElasticBand(workout.home?.bands?.[id]);
       const kg = Number(workout.home?.kg?.[id]) || 0;
       const bandText = band ? ` · ${band.dot} ${escapeHtml(band.name)}${kg ? ` ${formatWorkoutNumber(kg, 1)} kg` : ""}` : "";
+      const side = workout.home?.sides?.[id];
+      const sideText = side ? ` · ✋ E ${formatLiveSeconds(Number(side.L) || 0)} / D ${formatLiveSeconds(Number(side.R) || 0)}` : "";
       return `
       <div class="stretch-row">
         ${homeFigureSvg(id, { size: "sm", band: band?.id || "" })}
-        <span class="stretch-row-text"><strong>${escapeHtml(getHomeExercise(id).name)}</strong><small>${formatLiveSeconds(secs)} no pau${bandText}</small></span>
+        <span class="stretch-row-text"><strong>${escapeHtml(getHomeExercise(id).name)}</strong><small>${formatLiveSeconds(secs)} no pau${sideText}${bandText}</small></span>
       </div>`;
     }).join("");
   if (!items) return "";
@@ -1450,7 +1548,11 @@ function readHomeFormExtras(original) {
   const planId = document.getElementById("workout-home-plan")?.value || "";
   const plan = getHomePlan(planId);
   const home = { ...(original && original.home && typeof original.home === "object" ? original.home : {}), plan: plan ? plan.id : "" };
-  if (original?.home?.plan !== home.plan) delete home.done; // trocou o plano: os segundos de antes não valem
+  if (original?.home?.plan !== home.plan) { // trocou o plano: os segundos de antes não valem
+    delete home.done;
+    delete home.sides;
+    home.split = []; // v2.13: anotado novo já conta o tempo cheio de cada lado
+  }
   return { title: plan ? plan.name : HOME_TYPE_TITLE, home };
 }
 
@@ -1476,6 +1578,7 @@ tobaActions({
   elasticSetupReset,
   elasticSetupKg,
   elasticCycleIntro,
+  homeToggleSplit, // v2.13
   homeCycleBand,
   homePickFeel,
 });

@@ -75,7 +75,8 @@
     </div>
 
     <!-- v1.68: velocímetro, fantasma e balão do Cloba (navegando); v1.70: skins (DRIVE_SPEEDOS) -->
-    <div class="dv-speedo dv-sp-toba" id="speedo" hidden>
+    <!-- v2.13: tocar no velocímetro abre o ✏ limite certo daqui -->
+    <div class="dv-speedo dv-sp-toba" id="speedo" role="button" tabindex="0" data-click="openLimitSheet" aria-label="Limite da via" hidden>
       <span class="dv-speedo-dial"><b id="speedoValue">0</b><small>km/h</small></span>
       <span class="dv-speedo-limit" id="speedoLimit" hidden>--</span>
     </div>
@@ -151,6 +152,20 @@
     </div>
   </div>
 
+  <!-- ✏ Limite certo aqui + 📸 radar (v2.13) -->
+  <div class="toba-modal" id="limitSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <div class="dv-pl-head">
+          <h3>✏ Limite e radar daqui</h3>
+          <small id="limitSheetSub"></small>
+        </div>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="limitSheetBody"></div>
+    </div>
+  </div>
+
   <!-- 📌 Lugares de uma lista do Toba Places (v1.83) -->
   <div class="toba-modal" id="placesSheet">
     <div class="toba-sheet">
@@ -214,6 +229,7 @@
   <script src="../../assets/toba-player.js"></script>
   <script src="js/drive-core.js"></script>
   <script src="../../assets/toba-maps.js"></script>
+  <script src="js/drive-radar.js"></script>
   <script src="js/drive-route.js"></script>
   <script src="js/drive-models.js"></script>
   <script src="js/drive-map.js"></script>

@@ -7,7 +7,7 @@
  *   cota grátis do TomTom e o mapa já visto abre offline. Trânsito NÃO entra.
  * - NUNCA mexe no localStorage: seus dados não passam por aqui.
  * Mudou a lista de arquivos? Aumente a versão abaixo. */
-const VERSION = "toba-v67";
+const VERSION = "toba-v68";
 const TILE_CACHE = "toba-tiles-v1";
 const TILE_MAX = 3000;
 const NETWORK_TIMEOUT_MS = 4000;
@@ -29,6 +29,7 @@ const PRECACHE = [
   "./assets/toba-maps.js",
   "./assets/portal.css",
   "./assets/portal.js",
+  "./assets/portal-views.js",
   "./assets/toba-player.css",
   "./assets/toba-player.js",
   "./assets/perfil.css",
@@ -143,6 +144,7 @@ const PRECACHE = [
   "./TobaRacing/TobaDrive/css/drive.css",
   "./TobaRacing/TobaDrive/js/drive-metrics.js",
   "./TobaRacing/TobaDrive/js/drive-core.js",
+  "./TobaRacing/TobaDrive/js/drive-radar.js",
   "./TobaRacing/TobaDrive/js/drive-route.js",
   "./TobaRacing/TobaDrive/js/drive.js",
   "./TobaRacing/TobaDrive/js/drive-models.js",

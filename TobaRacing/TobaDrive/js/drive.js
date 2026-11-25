@@ -412,7 +412,7 @@ function drawCar() {
   let heading = nav.pos.heading;
   const r = nav.route;
   if (nav.mode === "nav" && r && !nav.rerouting) {
-    const loc = driveLocateOnRoute(r, ll, nav.seg);
+    const loc = navSnap(); // v2.13: com rumo e continuidade (viaduto/trevo)
     if (loc && loc.dist <= Math.max(25, Math.min(nav.pos.acc, 45))) {
       const p = drivePointAlong(r, loc.seg, loc.along);
       if (p) {
@@ -424,6 +424,52 @@ function drawCar() {
   }
   nav.carView = { lat: ll[0], lng: ll[1], heading };
   if (nav.map) nav.map.car(ll, heading, currentVehicle(), currentRouteColor(), nav.mode === "nav");
+}
+
+// v2.13: onde o carro tá na rota, com RUMO e CONTINUIDADE (driveSnapOnRoute). Antes era só
+// o ponto mais perto: no trevo Imigrantes -> Bandeirantes a rota passa embaixo do viaduto e
+// volta por cima, e o carango pulava pra pista de cima (e o limite ia junto). Pulo de verdade
+// (túnel, GPS que voltou longe) só vale depois de 3 leituras seguidas concordando.
+// Uma conta por leitura do GPS (drawCar e navTick usam a mesma).
+function navSnap() {
+  const r = nav.route;
+  const pos = nav.pos;
+  if (!r || !pos) return null;
+  if (nav.snapMemo && nav.snapMemo.route === r && nav.snapMemo.at === pos.at) return nav.snapMemo.loc;
+  const st = nav.snap && nav.snap.route === r ? nav.snap : null;
+  const now = Number(pos.at) || Date.now();
+  const res = driveSnapOnRoute(r, [pos.lat, pos.lng], {
+    heading: pos.heading,
+    speed: pos.speed,
+    along: st ? st.along : null,
+    dt: st ? (now - st.at) / 1000 : 0,
+  });
+  let loc = res.best;
+  const j = res.jump;
+  if (j && (!loc || loc.dist > 25) && j.dist <= 25) {
+    const same = nav.jump && nav.jump.route === r && Math.abs(j.along - nav.jump.along) < 30 + (pos.speed || 0) * 3;
+    nav.jump = { route: r, along: j.along, n: same ? nav.jump.n + 1 : 1 };
+    if (nav.jump.n >= 3) {
+      loc = j;
+      nav.jump = null;
+    }
+  } else {
+    nav.jump = null;
+  }
+  if (loc && loc.dist <= Math.max(40, Math.min(pos.acc, 60) * 1.3)) nav.snap = { route: r, along: loc.along, at: now };
+  nav.snapMemo = { route: r, at: pos.at, loc };
+  return loc;
+}
+
+// v2.13: segundos até chegar: tempo da TomTom de cada trecho que falta (+ trânsito de agora)
+// × 🧠 Fator Rafa (quanto tu costuma levar a mais que a TomTom; driveEtaFactor)
+function navTimeLeft(r, along) {
+  return driveRouteTimeLeft(r, along) * driveEtaFactorNow().f;
+}
+
+function driveEtaFactorNow() {
+  if (!nav.etaFactor || Date.now() - nav.etaFactor.at > 60000) nav.etaFactor = { at: Date.now(), ...driveEtaFactor(driveDb) };
+  return nav.etaFactor;
 }
 
 // Trechos lentos/parados da rota TomTom (amarelo = lento, vermelho = parado)
@@ -539,6 +585,211 @@ function renderStyleSheet() {
   }).join("");
   const gotSp = DRIVE_SPEEDOS.filter((v) => driveVehicleUnlocked(v, stats)).length;
   document.getElementById("speedoCount").textContent = `${gotSp}/${DRIVE_SPEEDOS.length}`;
+}
+
+/* ---------------------------------------------------------------------
+ * v2.13: ✏ Limite daqui (tocar no velocímetro navegando)
+ * Mostra quem disse o quê (TomTom, OpenStreetMap, tua correção) e grava a correção em
+ * TOBA_DRIVE_DB.limitFixes: vale pra via inteira do OSM nesse sentido (ou o pedaço com o
+ * mesmo limite do TomTom em volta, até 400 m), aqui e no Android Auto (ponte autoTuning).
+ * ------------------------------------------------------------------- */
+const DRIVE_LIMIT_CHOICES = [20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120];
+const DRIVE_LIMIT_FIX_MAX = 300;
+
+function limitHereInfo() {
+  const r = nav.route;
+  if (!r || nav.mode !== "nav") return null;
+  const seg = Math.max(0, Math.min((r.coords?.length || 2) - 2, nav.seg || 0));
+  const a = r.coords[seg];
+  const b = r.coords[seg + 1];
+  const p = nav.carView ? [nav.carView.lat, nav.carView.lng] : nav.pos ? [nav.pos.lat, nav.pos.lng] : a;
+  const fixId = r.limFix?.[seg] || "";
+  return {
+    seg,
+    lat: p[0],
+    lng: p[1],
+    head: Math.round(driveBearing(a, b)),
+    tt: r.limTT ? r.limTT[seg] || 0 : driveLimitAt({ limits: r.limits }, seg) || 0,
+    osm: r.osm ? r.osm.kmh[seg] || 0 : null, // null = OSM ainda não respondeu
+    way: r.osm ? r.osm.way[seg] || 0 : 0,
+    fix: fixId ? (driveDb.limitFixes || []).find((x) => x.id === fixId) || null : null,
+    now: driveLimitAt(r, seg) || 0,
+    street: [...(r.steps || [])].reverse().find((s) => (r.cum[s.idx] ?? 0) <= nav.along + 3 && s.street)?.street || "",
+  };
+}
+
+function openLimitSheet() {
+  const info = limitHereInfo();
+  if (!info) return;
+  nav.limitInfo = info; // congela o lugar do toque (o carro segue andando)
+  const who = (label, v, on) =>
+    `<div class="${on ? "is-on" : ""}"><span>${label}</span><b>${v}</b></div>`;
+  const osmTxt = info.osm === null ? "buscando..." : info.osm ? `${info.osm} km/h` : "não sabe";
+  const fixTxt = info.fix ? (info.fix.kmh < 0 ? "sem limite" : `${info.fix.kmh} km/h`) : "—";
+  const src = info.fix ? "fix" : info.tt ? "tt" : info.osm ? "osm" : "";
+  document.getElementById("limitSheetSub").textContent = info.street || "A via onde tu tá agora";
+  document.getElementById("limitSheetBody").innerHTML = `
+    <div class="dv-lim-who">
+      ${who("🗺️ TomTom", info.tt ? `${info.tt} km/h` : "não sabe", src === "tt")}
+      ${who("🌍 OpenStreetMap", osmTxt, src === "osm")}
+      ${who("✏ Tua correção", fixTxt, src === "fix")}
+    </div>
+    <p class="dv-hint">Vale a que tá marcada: tua correção, depois a TomTom, e o OpenStreetMap só onde a TomTom não sabe. Qual é a placa daqui?</p>
+    <div class="dv-lim-grid">
+      ${DRIVE_LIMIT_CHOICES.map((k) => chip(String(k), "pickLimitFix", { kmh: k }, info.now === k ? " is-on" : "")).join("")}
+      ${chip("🤷", "pickLimitFix", { kmh: -1 })}
+    </div>
+    ${info.fix ? `<button type="button" class="btn btn-outline btn-block" data-click="clearLimitFix">↩️ Tirar minha correção</button>` : ""}
+    <p class="dv-hint">Vale pra essa rua inteira nesse sentido, aqui e no 🚘 Android Auto. 🤷 = não tem placa ou não sei (não conta pro 😇 Pé de anjo).</p>
+    ${radarSheetHtml(info)}`;
+  openTobaModal("limitSheet");
+}
+
+function limitFixChanged() {
+  saveDriveDb({ silent: true }); // também manda pro carro (tobaShareDriveTuning)
+  if (nav.route && typeof gameApplyLimits === "function") {
+    gameApplyLimits(nav.route);
+    game.limRoute = null; // placa troca na hora, sem esperar firmar
+  }
+  closeTobaModal("limitSheet");
+}
+
+function pickLimitFix(el) {
+  const info = nav.limitInfo;
+  const kmh = Number(el.dataset.kmh);
+  if (!info || !kmh) return;
+  const list = Array.isArray(driveDb.limitFixes) ? driveDb.limitFixes : [];
+  // correção velha do mesmo lugar (mesma via e sentido, ou a menos de 40 m no mesmo sentido) sai
+  const same = (x) => driveAngleDiff(x.head, info.head) <= 45
+    && ((info.way && x.way === info.way) || driveDist([x.lat, x.lng], [info.lat, info.lng]) < 40);
+  driveDb.limitFixes = [
+    ...list.filter((x) => !same(x)),
+    {
+      id: driveNewId("lf"),
+      lat: Math.round(info.lat * 1e6) / 1e6,
+      lng: Math.round(info.lng * 1e6) / 1e6,
+      head: info.head,
+      kmh,
+      ...(info.way ? { way: info.way } : {}),
+      street: info.street,
+      at: Date.now(),
+    },
+  ].slice(-DRIVE_LIMIT_FIX_MAX);
+  limitFixChanged();
+  tobaToast(kmh < 0 ? "✏ Anotado: aqui não tem placa" : `✏ Anotado: ${kmh} km/h aqui`);
+}
+
+function clearLimitFix() {
+  const info = nav.limitInfo;
+  if (!info?.fix) return;
+  driveDb.limitFixes = (driveDb.limitFixes || []).filter((x) => x.id !== info.fix.id);
+  limitFixChanged();
+  tobaToast("↩️ Voltou o limite do mapa");
+}
+
+/* ---------------------------------------------------------------------
+ * v2.13: 📸 Radar daqui (na mesma folha do ✏ limite)
+ * 📸 Tem radar aqui = radar onde o carro tá, no sentido da rota. 🚫 Esse radar não existe =
+ * tira o próximo radar avisado (até 500 m na frente ou 150 m pra trás, o que já passou).
+ * Grava em TOBA_DRIVE_DB.radarFixes; o drive-radar.js aplica aqui e no Android Auto.
+ * ------------------------------------------------------------------- */
+const DRIVE_RADAR_FIX_NEAR_M = 200;
+
+function radarHereInfo() {
+  const r = nav.route;
+  const list = typeof game === "object" && game && Array.isArray(game.radars) ? game.radars : [];
+  let target = null;
+  list.forEach((x) => {
+    const d = x.along - nav.along;
+    if (d < -150 || d > 500) return;
+    if (!target || Math.abs(d) < Math.abs(target.along - nav.along)) target = x;
+  });
+  const here = nav.limitInfo || limitHereInfo();
+  const mine = (driveDb.radarFixes || []).filter((f) =>
+    here && driveDist([f.lat, f.lng], [here.lat, here.lng]) <= DRIVE_RADAR_FIX_NEAR_M);
+  let head = here ? here.head : 0;
+  if (target && r && r.coords[target.seg + 1]) head = Math.round(driveBearing(r.coords[target.seg], r.coords[target.seg + 1]));
+  return { target, targetHead: head, mine, d: target ? Math.round(target.along - nav.along) : 0 };
+}
+
+function radarSheetHtml() {
+  const ri = radarHereInfo();
+  nav.radarInfo = ri;
+  const where = ri.target
+    ? `${ri.d >= 0 ? `Próximo radar a ${Math.max(10, Math.round(ri.d / 10) * 10)} m` : `Radar que passou há ${Math.max(10, Math.round(-ri.d / 10) * 10)} m`}${ri.target.limit ? ` (limite ${ri.target.limit})` : ""}${ri.target.mine ? " · marcado por ti" : ""}.`
+    : "Nenhum radar no mapa por aqui.";
+  return `
+    <h4 class="dv-lim-h">📸 Radar daqui</h4>
+    <p class="dv-hint">${where}</p>
+    <div class="dv-lim-radar">
+      <button type="button" class="btn btn-outline" data-click="pickRadarAdd">📸 Tem radar aqui</button>
+      <button type="button" class="btn btn-outline" data-click="pickRadarDel"${ri.target ? "" : " disabled"}>🚫 Esse radar não existe</button>
+    </div>
+    ${ri.mine.length ? `<button type="button" class="btn btn-outline btn-block" data-click="clearRadarFix">↩️ Tirar minhas marcações de radar daqui (${ri.mine.length})</button>` : ""}
+    <p class="dv-hint">Vale aqui e no 🚘 Android Auto, só nesse sentido. Radares: CET-SP, DER-SP, Inmetro e outros pelo Pardal · © colaboradores do OpenStreetMap (ODbL).</p>`;
+}
+
+function radarFixChanged(msg) {
+  saveDriveDb({ silent: true });
+  if (typeof gameRefreshRadars === "function") gameRefreshRadars();
+  closeTobaModal("limitSheet");
+  tobaToast(msg);
+}
+
+function pickRadarAdd() {
+  const info = nav.limitInfo;
+  if (!info) return;
+  const list = Array.isArray(driveDb.radarFixes) ? driveDb.radarFixes : [];
+  // um 🚫 meu do mesmo lugar e sentido sai (mudei de ideia)
+  const same = (x) => driveDist([x.lat, x.lng], [info.lat, info.lng]) < 40 && driveAngleDiff(x.head, info.head) <= 60;
+  driveDb.radarFixes = [
+    ...list.filter((x) => !same(x)),
+    {
+      id: driveNewId("rf"),
+      kind: "add",
+      lat: Math.round(info.lat * 1e6) / 1e6,
+      lng: Math.round(info.lng * 1e6) / 1e6,
+      head: info.head,
+      ...(info.now > 0 ? { limit: info.now } : {}),
+      street: info.street,
+      at: Date.now(),
+    },
+  ].slice(-DRIVE_LIMIT_FIX_MAX);
+  radarFixChanged("📸 Anotado: tem radar aqui");
+}
+
+function pickRadarDel() {
+  const ri = nav.radarInfo;
+  const t = ri?.target;
+  if (!t) return;
+  const list = Array.isArray(driveDb.radarFixes) ? driveDb.radarFixes : [];
+  if (t.mine && list.some((x) => x.id === t.mine)) {
+    // radar que eu mesmo marquei: só tira a marcação
+    driveDb.radarFixes = list.filter((x) => x.id !== t.mine);
+  } else {
+    const same = (x) => driveDist([x.lat, x.lng], [t.lat, t.lng]) < 40 && driveAngleDiff(x.head, ri.targetHead) <= 60;
+    driveDb.radarFixes = [
+      ...list.filter((x) => !same(x)),
+      {
+        id: driveNewId("rf"),
+        kind: "del",
+        lat: t.lat,
+        lng: t.lng,
+        head: ri.targetHead,
+        street: nav.limitInfo?.street || "",
+        at: Date.now(),
+      },
+    ].slice(-DRIVE_LIMIT_FIX_MAX);
+  }
+  radarFixChanged("🚫 Anotado: esse radar não existe");
+}
+
+function clearRadarFix() {
+  const ri = nav.radarInfo;
+  if (!ri?.mine?.length) return;
+  const ids = new Set(ri.mine.map((x) => x.id));
+  driveDb.radarFixes = (driveDb.radarFixes || []).filter((x) => !ids.has(x.id));
+  radarFixChanged("↩️ Voltaram os radares do mapa");
 }
 
 function openStyleSheet() {
@@ -817,13 +1068,20 @@ function renderRoute() {
     body = `<div class="dv-hint">🧭 ${nav.pos ? "Montando a rota..." : "Esperando o GPS achar tu..."}</div>`;
   } else if (nav.route) {
     const r = nav.route;
+    // v2.13: 🧠 Fator Rafa (o etaS gravado no Partiu continua o da TomTom, pras conquistas)
+    const fx = driveEtaFactorNow();
+    const secs = r.duration * fx.f;
+    const pct = Math.round((fx.f - 1) * 100);
+    const fxLine = pct
+      ? `<div class="dv-source dv-eta-fx">🧠 Fator Rafa: a TomTom diz ${driveFormatDuration(r.duration)}, mas tu costuma levar ${pct > 0 ? `${pct}% a mais` : `${-pct}% a menos`} (${fx.n} viagens)</div>`
+      : "";
     body = `
       <div class="toba-stats dv-stats">
         <div class="toba-stat"><span class="toba-stat-label">🛣️ Distância</span><span class="toba-stat-value">${driveFormatKm(r.distance)} km</span></div>
-        <div class="toba-stat"><span class="toba-stat-label">⏱️ Tempo</span><span class="toba-stat-value">${driveFormatDuration(r.duration)}</span></div>
-        <div class="toba-stat"><span class="toba-stat-label">🏁 Chega</span><span class="toba-stat-value">${driveFormatClock(Date.now() + r.duration * 1000)}</span></div>
+        <div class="toba-stat"><span class="toba-stat-label">⏱️ Tempo</span><span class="toba-stat-value">${driveFormatDuration(secs)}</span></div>
+        <div class="toba-stat"><span class="toba-stat-label">🏁 Chega</span><span class="toba-stat-value">${driveFormatClock(Date.now() + secs * 1000)}</span></div>
       </div>
-      <div class="dv-source${r.provider === "tomtom" && r.trafficDelay >= 300 ? " is-late" : ""}">${routeSourceLine(r)}</div>`;
+      <div class="dv-source${r.provider === "tomtom" && r.trafficDelay >= 300 ? " is-late" : ""}">${routeSourceLine(r)}</div>${fxLine}`;
   } else {
     body = `<div class="dv-error">😵 ${escapeHtml(nav.routeError || "Sem rota.")}</div>`;
   }
@@ -874,14 +1132,14 @@ function startNav(resumed = null) {
     if (nav.map) nav.map.setView([nav.pos.lat, nav.pos.lng], 17);
     drawCar(); // v1.77: carango já na pista (sem esperar a próxima leitura do GPS)
     if (trip) {
-      const eta = driveFormatClock(Date.now() + nav.route.duration * 1000);
+      const eta = driveFormatClock(Date.now() + navTimeLeft(nav.route, 0) * 1000);
       driveSpeak(`Voltei! Seguindo pra ${nav.dest?.name || "o destino"}. Chegada às ${eta.replace(":", " e ")}.`);
       tobaToast("🔄 Rota de volta, piloto!");
       navTick();
       return;
     }
     const first = nav.route.steps.find((s) => s.type === "depart");
-    const eta = driveFormatClock(Date.now() + nav.route.duration * 1000);
+    const eta = driveFormatClock(Date.now() + navTimeLeft(nav.route, 0) * 1000);
     // A 1ª manobra longe já entra no "Partiu" (senão a fala de longe cortava ele)
     const next = driveNextStep(nav.route, 0);
     let then = "";
@@ -911,12 +1169,14 @@ function navTick() {
     }
   }
 
-  const loc = driveLocateOnRoute(r, here, nav.seg);
+  const loc = navSnap();
   if (loc) {
     nav.seg = loc.seg;
     nav.along = loc.along;
     const limit = Math.max(40, Math.min(pos.acc, 60) * 1.3);
     nav.offCount = loc.dist > limit && pos.acc <= 60 ? nav.offCount + 1 : 0;
+  } else if (pos.acc <= 60) {
+    nav.offCount += 1; // v2.13: nenhum pedaço da rota no rumo do carro por perto
   }
   const total = r.cum[r.cum.length - 1] || r.distance;
   const left = Math.max(0, total - nav.along);
@@ -958,7 +1218,7 @@ function renderNav(next, left, total) {
   const then = document.getElementById("navThen");
   then.hidden = !(after && gap < 250);
   if (!then.hidden) then.innerHTML = `Depois: <b>${after.icon}</b> ${escapeHtml(after.text)}`;
-  const secs = r.duration * (left / (total || 1));
+  const secs = navTimeLeft(r, nav.along); // v2.13: era regra de três pela distância
   document.getElementById("navEta").textContent = driveFormatClock(Date.now() + secs * 1000);
   document.getElementById("navLeft").textContent = left >= 1000 ? `${driveFormatKm(left)} km` : driveFormatDist(left);
   document.getElementById("navLeftSub").textContent = `faltam · ${driveFormatDuration(secs)}`;
@@ -1062,7 +1322,7 @@ async function checkTraffic(total) {
   }
   if (!fresh || nav.mode !== "nav" || nav.dest !== target || nav.routeId !== routeId || nav.rerouting) return;
   const r = nav.route;
-  const nowLeft = r.duration * (Math.max(0, (r.cum[r.cum.length - 1] || r.distance) - nav.along) / (total || 1));
+  const nowLeft = driveRouteTimeLeft(r, nav.along); // v2.13: pelo tempo de cada trecho
   const save = nowLeft - fresh.duration;
   if (save >= DRIVE_SWAP_SAVE_S) {
     nav.route = fresh;
@@ -1079,9 +1339,10 @@ async function checkTraffic(total) {
     navTick();
     return;
   }
-  // Mesmo caminho: só acerta a chegada com o trânsito de agora
-  const leftNow = Math.max(1, (r.cum[r.cum.length - 1] || r.distance) - nav.along);
-  r.duration = fresh.duration * ((r.cum[r.cum.length - 1] || r.distance) / leftNow);
+  // Mesmo caminho: só acerta a chegada com o trânsito de agora (v2.13: o acerto vai
+  // encolhendo junto com o que falta, sem mexer no tempo de cada trecho)
+  const plan = driveRouteTimeLeft({ ...r, live: null }, nav.along);
+  r.live = { adj: fresh.duration - plan, base: Math.max(1, plan) };
   r.trafficDelay = fresh.trafficDelay;
 }
 
@@ -1352,6 +1613,12 @@ tobaActions({
   toggleMapStyle,
   toggleTraffic,
   openStyleSheet,
+  openLimitSheet,
+  pickLimitFix,
+  clearLimitFix,
+  pickRadarAdd,
+  pickRadarDel,
+  clearRadarFix,
   pickVehicle,
   pickRouteColor,
   pickSpeedo,

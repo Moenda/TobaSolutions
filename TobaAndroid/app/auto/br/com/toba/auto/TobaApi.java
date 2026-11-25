@@ -334,6 +334,53 @@ final class TobaApi {
         }
     }
 
+    /* ------------------------------------------------------------ v2.13: OpenStreetMap */
+
+    /** Os mesmos espelhos do Overpass que o mapa usa pros radares (auto-map.js). */
+    private static final String[] OVERPASS = {
+            "https://overpass-api.de/api/interpreter",
+            "https://overpass.private.coffee/api/interpreter",
+            "https://overpass.kumi.systems/api/interpreter",
+    };
+
+    /**
+     * v2.13: as vias do OpenStreetMap em volta da rota (limite maxspeed, sentido e desenho),
+     * pra segunda opinião do limite (LimitMatch). Grátis e sem chave; caiu = fica só o TomTom.
+     */
+    static List<LimitMatch.Way> osmWays(Route r) throws IOException {
+        String body = "data=" + URLEncoder.encode(LimitMatch.overpassQuery(r.lat, r.lon, r.cum), "UTF-8");
+        IOException last = null;
+        for (String base : OVERPASS) {
+            HttpURLConnection con = (HttpURLConnection) new URL(base).openConnection();
+            try {
+                con.setConnectTimeout(10000);
+                con.setReadTimeout(30000);
+                con.setDoOutput(true);
+                con.setRequestMethod("POST");
+                con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+                con.setRequestProperty("User-Agent", "TobaApp/" + BuildConfig.VERSION_NAME + " (Android Auto)");
+                try (java.io.OutputStream os = con.getOutputStream()) {
+                    os.write(body.getBytes(StandardCharsets.UTF_8));
+                }
+                int code = con.getResponseCode();
+                if (code >= 400) {
+                    last = new HttpError(code, "");
+                    continue;
+                }
+                String json;
+                try (InputStream in = con.getInputStream()) {
+                    json = new String(readAll(in), StandardCharsets.UTF_8);
+                }
+                return LimitMatch.parseOverpass(json);
+            } catch (IOException e) {
+                last = e;
+            } finally {
+                con.disconnect();
+            }
+        }
+        throw last != null ? last : new IOException("Overpass fora");
+    }
+
     /** "50.00KPH" -> 50; "30.00MPH" -> 48. Lixo -> 0. */
     static int parseLimit(String raw) {
         if (raw == null) return 0;

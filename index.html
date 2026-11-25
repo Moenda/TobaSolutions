@@ -44,6 +44,9 @@
       Cada app é um <a class="app-card" data-id="...">. Para um app novo,
       copie um card "Em breve" e troque o href (ver _molde-app/README.md).
       O data-id é a chave salva em toba_modules_config: nunca mude o de um app existente.
+      v2.13: o card também vira linha / quadradinho / ⭐ Meu painel sozinho
+      (assets/portal-views.js). Número do app nessas visões = entrada nova em
+      PORTAL_APP_STATS (mesma data-id).
     -->
     <nav class="portal-grid" id="modulesGrid" aria-label="Apps do Toba">
       <a href="./TobaBank/TobaBank-Index.html" class="app-card" data-id="toba-bank" id="cardTobaBank">
@@ -144,12 +147,26 @@
         </div>
       </a>
     </nav>
+
+    <!-- v2.13: visões Linha / Quadradinho / Meu painel (desenhadas por portal-views.js).
+         Na visão "Cards completos" fica escondida e aparece o #modulesGrid. -->
+    <div class="pv-wrap" id="portalViews" hidden></div>
   </div>
 
   <div id="tobaSettingsExtra" hidden>
     <div class="toba-settings-section">
       <div class="toba-settings-label">🎛️ Painel</div>
+      <div class="pv-picker-label">🖼️ Visão da página inicial</div>
+      <div class="pv-picker" id="portalViewPicker" role="group" aria-label="Visão da página inicial"></div>
       <div class="toba-menu">
+        <button type="button" class="toba-menu-btn" data-click="openPinsConfig">
+          <span class="toba-menu-icon">⭐</span>
+          <span class="toba-menu-text">
+            <span class="toba-menu-title">Números do Meu painel</span>
+            <span class="toba-menu-desc" id="portalPinsMenuDesc">Escolhe o que aparece no ⭐ Meu painel</span>
+          </span>
+          <span class="toba-hub-chevron">›</span>
+        </button>
         <button type="button" class="toba-menu-btn" data-open="cardsModal">
           <span class="toba-menu-icon">🧩</span>
           <span class="toba-menu-text">
@@ -300,6 +317,18 @@
     </div>
   </div>
 
+  <!-- v2.13: números do ⭐ Meu painel (toca pra ligar/desligar, portal-views.js) -->
+  <div class="toba-modal" id="pinsModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>⭐ Números do Meu painel</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <p class="toba-sheet-text">Toca pra ligar ou desligar. Eles aparecem na ordem em que tu escolheu. <b id="portalPinsCount"></b></p>
+      <div class="pv-pin-list" id="portalPinsList"></div>
+    </div>
+  </div>
+
   <div class="toba-modal" id="orderModal">
     <div class="toba-sheet">
       <div class="toba-sheet-header">
@@ -324,6 +353,7 @@
   <script src="TobaHealth/js/hall-shared.js"></script>
   <script src="TobaRoutine/js/routine-alerts.js"></script>
   <script src="assets/portal.js"></script>
+  <script src="assets/portal-views.js"></script>
   <script src="assets/pwa-register.js"></script>
 </body>
 

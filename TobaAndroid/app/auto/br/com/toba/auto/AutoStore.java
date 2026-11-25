@@ -112,6 +112,36 @@ final class AutoStore {
         }
     }
 
+    /**
+     * v2.13: ajustes que o 🧭 Toba Drive do site manda pela ponte autoTuning:
+     * limitFixes = ✏ correções de limite [{lat, lng, head, kmh (-1 = sem limite), way?}];
+     * etaFactor = 🧠 Fator Rafa (quanto tu costuma levar a mais/menos que a TomTom, 1 = igual).
+     * Quem calcula é o site: aqui só guarda e lê.
+     */
+    static String limitFixes(Context c) {
+        return prefs(c).getString("limit_fixes", "[]");
+    }
+
+    static double etaFactor(Context c) {
+        double f = prefs(c).getFloat("eta_factor", 1f);
+        return f >= 0.8 && f <= 1.5 ? f : 1.0;
+    }
+
+    static boolean setTuning(Context c, String json) {
+        try {
+            JSONObject in = new JSONObject(json == null || json.isEmpty() ? "{}" : json);
+            SharedPreferences.Editor ed = prefs(c).edit();
+            JSONArray fixes = in.optJSONArray("limitFixes");
+            if (fixes != null && fixes.length() <= 500) ed.putString("limit_fixes", fixes.toString());
+            double f = in.optDouble("etaFactor", 1);
+            ed.putFloat("eta_factor", (float) (f >= 0.8 && f <= 1.5 ? f : 1.0));
+            ed.apply();
+            return true;
+        } catch (org.json.JSONException e) {
+            return false;
+        }
+    }
+
     static boolean setFavorites(Context c, String json) {
         try {
             JSONArray in = new JSONArray(json == null ? "[]" : json);
@@ -144,6 +174,8 @@ final class AutoStore {
     static final class Resume {
         final long at;
         final double meters;
+        /** v2.13: segundos com limite conhecido e acima do limite que a viagem já tinha. */
+        double limitS, overS;
 
         Resume(long at, double meters) {
             this.at = at;
@@ -177,14 +209,24 @@ final class AutoStore {
                 long at = t.optLong("at", 0);
                 if (at <= 0) return null;
                 // não apaga nada agora: se o app cair no meio, o pedaço que já tinha fica no diário
-                return new Resume(at, t.optDouble("km", 0) * 1000.0);
+                Resume r = new Resume(at, t.optDouble("km", 0) * 1000.0);
+                r.limitS = t.optDouble("limitS", 0);
+                r.overS = t.optDouble("overS", 0);
+                return r;
             } catch (Exception e) {
                 return null;
             }
         }
     }
 
-    static void logTrip(Context c, Place dest, double meters, long startedAt, boolean arrived, boolean sim) {
+    /**
+     * v2.13: limitS = segundos navegando com o limite da via conhecido; overS = segundos acima
+     * do limite (só estouro de 4 s+ seguidos conta). O site vira isso no cleanSpeed das
+     * conquistas 😇 Pé de anjo / 🧘 Motorista de comercial (antes o carro não mandava nada).
+     * eta = previsão da TomTom no começo (segundos; 0 = viagem que continuou), pro 🧠 Fator Rafa.
+     */
+    static void logTrip(Context c, Place dest, double meters, long startedAt, boolean arrived, boolean sim,
+                        double limitS, double overS, long etaS) {
         if (meters < 200) return;
         synchronized (LOCK) {
             try {
@@ -203,6 +245,9 @@ final class AutoStore {
                         .put("lon", dest == null ? 0 : dest.lon)
                         .put("arrived", arrived)
                         .put("sim", sim)
+                        .put("limitS", Math.round(limitS))
+                        .put("overS", Math.round(overS))
+                        .put("eta", etaS)
                         .put("source", "auto"));
                 while (arr.length() > TRIPS_MAX) arr.remove(0);
                 prefs(c).edit().putString(KEY_TRIPS, arr.toString()).apply();

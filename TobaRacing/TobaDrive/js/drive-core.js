@@ -21,6 +21,8 @@ function createEmptyDriveDb() {
     recent: [], // [{ name, address, lat, lng, at (ms), placeId? }] (mais novo primeiro)
     trips: [], // [{ id: "t-..", date, startedAt, endedAt, name, lat, lng, km, arrived, etaS?, source?: "auto", autoAt?, autoAts? (v2.03), joined? (v2.03: quantos pedaços), stops?/stopMs?/stopNames? (v2.05: paradas no caminho), parts? (v2.05: pedaços originais de um 🔗 Juntar, pro ✂️ Separar) }]
     autoSkip: [], // v2.02: "at" das viagens do Android Auto que foram apagadas (não voltam no import)
+    limitFixes: [], // v2.13: ✏ correções de limite [{ id: "lf-..", lat, lng, head (rumo), kmh (-1 = sem limite), way? (via do OSM), street?, at }]
+    radarFixes: [], // v2.13: 📸/🚫 marcações de radar [{ id: "rf-..", kind: "add"|"del", lat, lng, head (sentido), limit?, street?, at }] (drive-radar.js)
   };
 }
 
@@ -56,6 +58,34 @@ function normalizeDriveDb(db) {
   }));
   out.trips = (Array.isArray(out.trips) ? out.trips : []).filter((t) => t && typeof t.date === "string");
   out.autoSkip = (Array.isArray(out.autoSkip) ? out.autoSkip : []).map(Number).filter((n) => n > 0).slice(-400);
+  // v2.13: ✏ correções de limite (banco antigo não tem: vira [])
+  out.limitFixes = (Array.isArray(out.limitFixes) ? out.limitFixes : [])
+    .filter((x) => x && driveValidPoint(x) && driveNum(x.head) !== null && driveNum(x.kmh) && (Number(x.kmh) === -1 || (Number(x.kmh) >= 5 && Number(x.kmh) < 200)))
+    .map((x) => ({
+      id: String(x.id || `lf-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`),
+      lat: Number(x.lat),
+      lng: Number(x.lng),
+      head: Number(x.head),
+      kmh: Number(x.kmh),
+      ...(Number(x.way) ? { way: Number(x.way) } : {}),
+      street: String(x.street || ""),
+      at: Number(x.at) || 0,
+    }))
+    .slice(-300);
+  // v2.13: 📸/🚫 marcações de radar (banco antigo não tem: vira [])
+  out.radarFixes = (Array.isArray(out.radarFixes) ? out.radarFixes : [])
+    .filter((x) => x && driveValidPoint(x) && driveNum(x.head) !== null && (x.kind === "add" || x.kind === "del"))
+    .map((x) => ({
+      id: String(x.id || `rf-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`),
+      kind: x.kind,
+      lat: Number(x.lat),
+      lng: Number(x.lng),
+      head: Number(x.head),
+      ...(x.kind === "add" && Number(x.limit) >= 5 && Number(x.limit) < 200 ? { limit: Number(x.limit) } : {}),
+      street: String(x.street || ""),
+      at: Number(x.at) || 0,
+    }))
+    .slice(-300);
   out.trips.forEach((t) => {
     t.km = Number(t.km) || 0;
     t.arrived = Boolean(t.arrived);
@@ -104,6 +134,7 @@ function saveDriveDb(options = {}) {
   }
   if (!options.silent) tobaSaved();
   if (typeof tobaShareDriveFavs === "function") tobaShareDriveFavs(driveDb); // v1.80: ⭐ no Android Auto
+  if (typeof tobaShareDriveTuning === "function") tobaShareDriveTuning(driveDb); // v2.13: ✏ limites + 🧠 Fator Rafa
   return true;
 }
 

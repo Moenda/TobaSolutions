@@ -846,23 +846,25 @@ const HOME_EXERCISES = [
   { id: "cadeira-parede", name: "Cadeirinha na parede", how: "Costas na parede, desce até a coxa ficar paralela ao chão, como se sentasse numa cadeira invisível. Segura.", tip: "Queimou? É a coxa ficando forte. Segura mais 5.", groups: { quadriceps: 0.75, gluteos: 0.25 }, rpm: 14, effort: 0.7 },
   // v2.06: 🟣 elástico (super band de loop, sem âncora na porta). band: true
   // = usa elástico (chip de cor); lvl = nível sugerido no 1º treino (1 = o mais
-  // leve, 4 = o mais forte); sides: true = troca de lado na metade do tempo.
+  // leve, 4 = o mais forte); sides: true = um lado só (v2.13: vira dois blocos
+  // com o tempo CHEIO cada, ✋ esquerdo e ✋ direito); sideOpt: true = dá pra
+  // fazer com os dois braços juntos OU um de cada vez (a pessoa escolhe no 👐).
   { id: "remada-curvada", name: "Remada curvada", how: "Pisa no meio do elástico com os dois pés, inclina o tronco pra frente com as costas retas e o joelho dobradinho. Puxa as pontas até a barriga, cotovelo raspando no corpo, e volta devagar.", tip: "Aperta as escápulas lá em cima, como se segurasse um lápis entre elas.", groups: { costas: 0.6, biceps: 0.2, ombros: 0.1, antebraco: 0.1 }, rpm: 14, effort: 0.7, band: true, lvl: 3 },
   { id: "remada-sentada", name: "Remada sentada", how: "Sentado no chão, pernas esticadas e o elástico passado na sola dos pés. Puxa as pontas até a barriga com o peito aberto e volta controlando.", tip: "Tronco parado: quem puxa é o braço e as costas, não o balanço.", groups: { costas: 0.6, biceps: 0.2, ombros: 0.1, antebraco: 0.1 }, rpm: 14, effort: 0.65, band: true, lvl: 2 },
   { id: "encolhimento", name: "Encolhimento", how: "Pisa no elástico com os dois pés, pontas na mão e braços esticados do lado do corpo. Sobe os ombros em direção à orelha, segura 1 s e desce devagar.", tip: "Só o ombro sobe: braço esticado o tempo todo, sem girar.", groups: { costas: 0.8, ombros: 0.2 }, rpm: 20, effort: 0.5, band: true, lvl: 3 },
   { id: "thruster-elastico", name: "Agachamento com desenvolvimento", how: "Pisa no elástico, pontas na altura do ombro. Agacha e, na subida, já empurra as mãos lá pra cima até esticar os braços. Desce as mãos e agacha de novo.", tip: "Um movimento só: a força da perna ajuda a empurrar.", groups: { quadriceps: 0.4, ombros: 0.35, gluteos: 0.15, triceps: 0.1 }, rpm: 14, effort: 0.8, band: true, lvl: 2, bodyFrac: 0.7 },
   { id: "abdominal-crunch-elastico", name: "Abdominal com elástico", how: "Deitado, joelhos dobrados, o elástico passando por trás das costas e as pontas nas mãos perto do joelho. Sobe o tronco contraindo a barriga contra o elástico e desce devagar.", tip: "Olha pro teto e não puxa o pescoço.", groups: { abdomen: 1 }, rpm: 20, effort: 0.55, band: true, lvl: 1, bodyFrac: 0.3 },
-  { id: "coice-gluteo", name: "Coice de glúteo", how: "De quatro, o elástico preso nas mãos no chão e passando pela sola de um pé. Empurra o pé pra trás e pra cima esticando a perna e volta devagar.", tip: "Na metade do tempo troca de perna (a voz avisa). Sem arquear a lombar.", groups: { gluteos: 0.75, posterior: 0.25 }, rpm: 16, effort: 0.55, band: true, lvl: 1, sides: true, bodyFrac: 0.15 },
+  { id: "coice-gluteo", name: "Coice de glúteo", how: "De quatro, o elástico preso nas mãos no chão e passando pela sola de um pé. Empurra o pé pra trás e pra cima esticando a perna e volta devagar.", tip: "Primeiro a perna esquerda, depois a direita, cada uma com o tempo inteiro (a voz avisa a troca). Sem arquear a lombar.", groups: { gluteos: 0.75, posterior: 0.25 }, rpm: 16, effort: 0.55, band: true, lvl: 1, sides: true, bodyFrac: 0.15 },
   { id: "face-pull", name: "Face pull sentado", how: "Sentado no chão, pernas esticadas e o elástico na sola dos pés. Puxa as pontas na direção do rosto abrindo os cotovelos lá no alto, até as mãos passarem do lado da orelha. Volta devagar.", tip: "Cotovelo mais alto que a mão e peito aberto: é o ombro de trás que trabalha.", groups: { ombros: 0.6, costas: 0.4 }, rpm: 16, effort: 0.5, band: true, lvl: 1 },
   { id: "crucifixo-invertido", name: "Crucifixo invertido", how: "Pisa no elástico, tronco inclinado pra frente, uma ponta em cada mão. Abre os braços pros lados com o cotovelo quase esticado, feito asa, e desce devagar.", tip: "Sobe só até a altura do ombro. Pescoço solto.", groups: { ombros: 0.6, costas: 0.4 }, rpm: 16, effort: 0.45, band: true, lvl: 1 },
   { id: "terra-elastico", name: "Levantamento terra com elástico", how: "Pisa no elástico com os pés na largura do quadril, dobra o quadril pra trás e segura as pontas. Sobe empurrando o quadril pra frente até ficar em pé, apertando o bumbum.", tip: "Costas retas SEMPRE. Quem levanta é o quadril, não a lombar.", groups: { posterior: 0.35, gluteos: 0.35, costas: 0.2, antebraco: 0.1 }, rpm: 14, effort: 0.75, band: true, lvl: 4, bodyFrac: 0.5 },
-  { id: "remada-unilateral", name: "Remada com um braço", how: "Passo à frente pisando no elástico com o pé da frente, mão livre no joelho. Puxa a ponta com a outra mão até a cintura e volta devagar.", tip: "Na metade do tempo troca de braço (a voz avisa).", groups: { costas: 0.6, biceps: 0.25, ombros: 0.15 }, rpm: 14, effort: 0.65, band: true, lvl: 2, sides: true },
-  { id: "rosca-direta", name: "Rosca direta", how: "Pisa no meio do elástico, pontas na mão com a palma pra cima. Sobe as mãos até o ombro dobrando só o cotovelo e desce devagar.", tip: "Cotovelo colado no corpo. Se o ombro mexe junto, o elástico tá pesado.", groups: { biceps: 0.8, antebraco: 0.2 }, rpm: 16, effort: 0.65, band: true, lvl: 2 },
-  { id: "rosca-martelo", name: "Rosca martelo", how: "Igual a rosca, mas com as palmas viradas uma pra outra (pegada de martelo). Sobe até o ombro e desce devagar.", tip: "Engrossa o braço de lado e o antebraço. Popeye aprova 🥬", groups: { biceps: 0.6, antebraco: 0.4 }, rpm: 16, effort: 0.6, band: true, lvl: 2 },
-  { id: "rosca-inversa", name: "Rosca inversa", how: "Igual a rosca, mas com a palma virada pra baixo. Sobe até o ombro e desce devagar.", tip: "Pesa mais que a rosca normal: vai de elástico mais leve.", groups: { antebraco: 0.55, biceps: 0.45 }, rpm: 16, effort: 0.55, band: true, lvl: 1 },
+  { id: "remada-unilateral", name: "Remada com um braço", how: "Passo à frente pisando no elástico com o pé da frente, mão livre no joelho. Puxa a ponta com a outra mão até a cintura e volta devagar.", tip: "Primeiro o braço esquerdo, depois o direito, cada um com o tempo inteiro (a voz avisa a troca).", groups: { costas: 0.6, biceps: 0.25, ombros: 0.15 }, rpm: 14, effort: 0.65, band: true, lvl: 2, sides: true },
+  { id: "rosca-direta", name: "Rosca direta", how: "Pisa no meio do elástico, pontas na mão com a palma pra cima. Sobe as mãos até o ombro dobrando só o cotovelo e desce devagar.", tip: "Cotovelo colado no corpo. Se o ombro mexe junto, o elástico tá pesado.", groups: { biceps: 0.8, antebraco: 0.2 }, rpm: 16, effort: 0.65, band: true, lvl: 2, sideOpt: true },
+  { id: "rosca-martelo", name: "Rosca martelo", how: "Igual a rosca, mas com as palmas viradas uma pra outra (pegada de martelo). Sobe até o ombro e desce devagar.", tip: "Engrossa o braço de lado e o antebraço. Popeye aprova 🥬", groups: { biceps: 0.6, antebraco: 0.4 }, rpm: 16, effort: 0.6, band: true, lvl: 2, sideOpt: true },
+  { id: "rosca-inversa", name: "Rosca inversa", how: "Igual a rosca, mas com a palma virada pra baixo. Sobe até o ombro e desce devagar.", tip: "Pesa mais que a rosca normal: vai de elástico mais leve.", groups: { antebraco: 0.55, biceps: 0.45 }, rpm: 16, effort: 0.55, band: true, lvl: 1, sideOpt: true },
   { id: "agachamento-elastico", name: "Agachamento com elástico", how: "Pisa no elástico com os pés na largura do ombro e segura as pontas na altura do ombro. Agacha levando o quadril pra trás e sobe empurrando o chão.", tip: "O elástico pesa mais lá em cima: termina a subida apertando o bumbum.", groups: { quadriceps: 0.5, gluteos: 0.35, posterior: 0.15 }, rpm: 16, effort: 0.75, band: true, lvl: 4, bodyFrac: 0.7 },
   { id: "supino-chao", name: "Supino deitado com elástico", how: "Deitado de barriga pra cima, joelhos dobrados, o elástico passando pelas costas na altura do peito. Uma ponta em cada mão: empurra pro teto até esticar os braços e desce devagar.", tip: "Cotovelo a uns 45° do corpo, não aberto em T. Ombro agradece.", groups: { peito: 0.6, triceps: 0.25, ombros: 0.15 }, rpm: 16, effort: 0.65, band: true, lvl: 2 },
-  { id: "triceps-cabeca", name: "Tríceps acima da cabeça", how: "Pisa numa ponta do elástico e segura a outra com as duas mãos atrás da cabeça, cotovelo apontando pro teto. Estica os braços pra cima e volta devagar. (O do vídeo é na porta: esse é o sem porta.)", tip: "Cotovelo parado perto da orelha: só o antebraço mexe.", groups: { triceps: 0.85, ombros: 0.15 }, rpm: 16, effort: 0.55, band: true, lvl: 1 },
+  { id: "triceps-cabeca", name: "Tríceps acima da cabeça", how: "Um braço por vez: pisa numa ponta do elástico com o pé de trás e segura a outra com a mão atrás da cabeça, cotovelo apontando pro teto. A outra mão segura o cotovelo parado. Estica o braço pra cima e volta devagar. (O do vídeo é na porta: esse é o sem porta.)", tip: "Cotovelo parado perto da orelha: só o antebraço mexe. Primeiro o esquerdo, depois o direito, cada um com o tempo inteiro.", groups: { triceps: 0.85, ombros: 0.15 }, rpm: 16, effort: 0.55, band: true, lvl: 1, sides: true },
   { id: "abdominal-elastico", name: "Abdominal sentado com elástico", how: "Sentado, pernas esticadas, o elástico passando pela sola dos pés e por trás das costas. Inclina o tronco pra trás devagar contra o elástico, segura 1 s e volta.", tip: "Barriga encolhida e lombar firme: quem segura é o abdômen.", groups: { abdomen: 0.85, quadriceps: 0.15 }, rpm: 18, effort: 0.5, band: true, lvl: 1, bodyFrac: 0.3 },
   { id: "desenvolvimento-elastico", name: "Desenvolvimento com elástico", how: "Pisa no elástico, pontas na altura do ombro com a palma pra frente. Empurra as mãos pra cima até esticar os braços e desce devagar.", tip: "Barriga firme, sem arquear a lombar pra trás.", groups: { ombros: 0.7, triceps: 0.3 }, rpm: 14, effort: 0.6, band: true, lvl: 1 },
 ];
@@ -904,13 +906,13 @@ const HOME_PLANS = [
   // v2.06: 🟣 elástico (cat "elastico"). Ids começam com "el-": a conquista
   // tc-todos (os 5 de sem equipamento) não conta esses; el-todos conta.
   {
-    id: "el-corpo", cat: "elastico", name: "Corpo todo com elástico 22 min", short: "Corpo todo", icon: "🧍", met: 5,
+    id: "el-corpo", cat: "elastico", name: "Corpo todo com elástico 24 min", short: "Corpo todo", icon: "🧍", met: 5,
     desc: "O do vídeo do Roman: peito, costas, ombro, bíceps, tríceps, perna e abdômen.",
     work: 40, rest: 20, rounds: 3, roundRest: 45,
     list: ["supino-chao", "remada-sentada", "desenvolvimento-elastico", "rosca-direta", "triceps-cabeca", "agachamento-elastico", "abdominal-elastico"],
   },
   {
-    id: "el-um", cat: "elastico", name: "Um elástico só 16 min", short: "Um elástico", icon: "🎯", met: 5,
+    id: "el-um", cat: "elastico", name: "Um elástico só 19 min", short: "Um elástico", icon: "🎯", met: 5,
     desc: "O vídeo \"What can you do with just one band?\": costas, peito, braço, trapézio, ombro, perna, abdômen e glúteo.",
     work: 40, rest: 20, rounds: 2, roundRest: 45,
     list: ["remada-curvada", "supino-chao", "rosca-martelo", "triceps-cabeca", "encolhimento", "thruster-elastico", "abdominal-crunch-elastico", "coice-gluteo"],
@@ -922,7 +924,7 @@ const HOME_PLANS = [
     list: ["remada-sentada", "face-pull", "remada-curvada", "crucifixo-invertido", "terra-elastico"],
   },
   {
-    id: "el-biceps", cat: "elastico", name: "Bíceps com elástico 13 min", short: "Bíceps 13", icon: "🥬", met: 4,
+    id: "el-biceps", cat: "elastico", name: "Bíceps com elástico 15 min", short: "Bíceps 15", icon: "🥬", met: 4,
     desc: "Braço de Popeye: três roscas e uma remada pra fechar.",
     work: 40, rest: 20, rounds: 3, roundRest: 45,
     list: ["rosca-direta", "remada-unilateral", "rosca-martelo", "rosca-inversa"],
@@ -991,29 +993,58 @@ function isElasticPlan(planOrId) {
   return String(id || "").startsWith("el-");
 }
 
-// Linha do tempo: [{ kind: "prep"|"work"|"rest", exerciseId, secs, round }]
+// v2.13 (pedido do Rafa): exercício de um lado só ganha o tempo CHEIO em
+// cada lado: ✋ esquerdo, "Troca de lado" (HOME_SWAP_SECONDS) e ✋ direito.
+// Antes (v2.06) era um bloco só com "troca de lado" na metade.
+const HOME_SWAP_SECONDS = 6;
+
+// Esse exercício vai lado a lado? sides = sempre; sideOpt = só se a pessoa
+// escolheu "um braço por vez" (opts.split = [ids]). opts.legacy = linha do
+// tempo de antes da v2.13 (treino ao vivo começado antes / anotado antes).
+function homeIsSplit(exerciseId, opts = {}) {
+  if (opts.legacy) return false;
+  const exercise = getHomeExercise(exerciseId);
+  if (!exercise) return false;
+  if (exercise.sides) return true;
+  return Boolean(exercise.sideOpt && Array.isArray(opts.split) && opts.split.includes(exerciseId));
+}
+
+// Opções da linha do tempo de um treino salvo (home.split gravado desde v2.13)
+function homeStepOpts(home) {
+  const data = home && typeof home === "object" ? home : {};
+  return Array.isArray(data.split) ? { split: data.split } : { legacy: true };
+}
+
+// Linha do tempo: [{ kind: "prep"|"work"|"swap"|"rest", exerciseId, secs, round, side? }]
 // O "rest" já mostra o PRÓXIMO exercício (exerciseId = o que vem depois).
-function buildHomeSteps(planId) {
+// v2.13: side "L"/"R" no work do exercício lado a lado; "swap" = a troca.
+function buildHomeSteps(planId, opts = {}) {
   const plan = getHomePlan(planId);
   if (!plan) return [];
   const list = plan.list.filter((id) => getHomeExercise(id));
   if (!list.length) return [];
-  const steps = [{ kind: "prep", exerciseId: list[0], secs: HOME_PREP_SECONDS, round: 1 }];
+  const steps = [{ kind: "prep", exerciseId: list[0], secs: HOME_PREP_SECONDS, round: 1, side: homeIsSplit(list[0], opts) ? "L" : "" }];
   for (let round = 1; round <= plan.rounds; round += 1) {
     list.forEach((exerciseId, index) => {
-      steps.push({ kind: "work", exerciseId, secs: plan.work, round });
+      if (homeIsSplit(exerciseId, opts)) {
+        steps.push({ kind: "work", exerciseId, secs: plan.work, round, side: "L" });
+        steps.push({ kind: "swap", exerciseId, secs: HOME_SWAP_SECONDS, round, side: "R" });
+        steps.push({ kind: "work", exerciseId, secs: plan.work, round, side: "R" });
+      } else {
+        steps.push({ kind: "work", exerciseId, secs: plan.work, round });
+      }
       const lastOfRound = index === list.length - 1;
       if (lastOfRound && round === plan.rounds) return; // acabou: sem descanso no fim
       const secs = lastOfRound ? plan.roundRest : plan.rest;
       const next = lastOfRound ? list[0] : list[index + 1];
-      if (secs > 0) steps.push({ kind: "rest", exerciseId: next, secs, round: lastOfRound ? round + 1 : round });
+      if (secs > 0) steps.push({ kind: "rest", exerciseId: next, secs, round: lastOfRound ? round + 1 : round, side: homeIsSplit(next, opts) ? "L" : "" });
     });
   }
   return steps;
 }
 
-function getHomePlanSeconds(planId) {
-  return buildHomeSteps(planId).reduce((sum, step) => sum + step.secs, 0);
+function getHomePlanSeconds(planId, opts = {}) {
+  return buildHomeSteps(planId, opts).reduce((sum, step) => sum + step.secs, 0);
 }
 
 // Segundos trabalhados por exercício. Ao vivo grava `home.done`; anotado na
@@ -1022,7 +1053,7 @@ function getHomeDone(workout) {
   const home = workout && workout.home && typeof workout.home === "object" ? workout.home : {};
   if (home.done && typeof home.done === "object" && !Array.isArray(home.done)) return home.done;
   const done = {};
-  buildHomeSteps(home.plan || "").forEach((step) => {
+  buildHomeSteps(home.plan || "", homeStepOpts(home)).forEach((step) => {
     if (step.kind === "work") done[step.exerciseId] = (done[step.exerciseId] || 0) + step.secs;
   });
   return done;

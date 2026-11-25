@@ -373,6 +373,131 @@ async function driveOverpass(query) {
   throw last || new Error("Overpass fora");
 }
 
+/* ---------- v2.13: limite de velocidade do OpenStreetMap (2ª opinião do TomTom) ----------
+ * As vias em volta da rota (maxspeed, sentido e desenho), num pedido só por POST (a rota
+ * vira uma linha de pontos a cada ~120 m no "around"). Cache neste aparelho por rota
+ * (início/fim/tamanho), 14 dias, até 6 rotas: o caminho de todo dia não pergunta de novo.
+ * Recálculo em menos de 45 s reaproveita as vias que acabaram de vir. Falhou = só TomTom. */
+const DRIVE_OSM_CACHE_KEY = "toba_drive_osm_cache";
+const DRIVE_OSM_CACHE_MAX = 6;
+const DRIVE_OSM_CACHE_MS = 14 * 24 * 3600 * 1000;
+let driveOsmLast = null; // { at, ways }
+
+function driveOsmRouteKey(route) {
+  const c = route.coords;
+  const a = c[0];
+  const b = c[c.length - 1];
+  const len = route.cum[route.cum.length - 1] || 0;
+  return `${a[0].toFixed(3)},${a[1].toFixed(3)}>${b[0].toFixed(3)},${b[1].toFixed(3)}~${Math.round(len / 300)}`;
+}
+
+function driveOsmQuery(route) {
+  const { coords, cum } = route;
+  const len = cum[cum.length - 1] || 0;
+  const step = Math.max(120, len / 500);
+  const pts = [];
+  let next = 0;
+  coords.forEach((p, i) => {
+    if (cum[i] >= next || i === coords.length - 1) {
+      pts.push(`${p[0].toFixed(5)},${p[1].toFixed(5)}`);
+      next = cum[i] + step;
+    }
+  });
+  return `[out:json][timeout:25];way[highway~"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|service|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$"](around:30,${pts.join(",")});out tags geom;`;
+}
+
+async function driveOverpassPost(query) {
+  let last = null;
+  for (const base of DRIVE_OVERPASS_MIRRORS) {
+    const ctrl = typeof AbortController === "function" ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), 30000) : null;
+    try {
+      const res = await fetch(base.replace(/\?data=$/, ""), {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+        body: `data=${encodeURIComponent(query)}`,
+        ...(ctrl ? { signal: ctrl.signal } : {}),
+      });
+      if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status });
+      return await res.json();
+    } catch (err) {
+      last = err; // 429/504/timeout: próximo espelho
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+  throw last || new Error("Overpass fora");
+}
+
+// Guarda só o pedaço das vias perto da rota (rua transversal comprida vira 2-3 pontos):
+// cache pequeno, que o localStorage é o mesmo dos bancos do Toba
+function driveOsmPrune(route, ways) {
+  const G = 0.001;
+  const cells = new Set();
+  const { coords, cum } = route;
+  let next = 0;
+  coords.forEach((p, i) => {
+    const add = (q) => {
+      const a = Math.floor(q[0] / G);
+      const b = Math.floor(q[1] / G);
+      for (let da = -1; da <= 1; da += 1) for (let db = -1; db <= 1; db += 1) cells.add(`${a + da}:${b + db}`);
+    };
+    if (cum[i] >= next || i === coords.length - 1) {
+      add(p);
+      next = cum[i] + 50;
+    }
+    if (i > 0 && cum[i] - cum[i - 1] > 50) {
+      const n = Math.ceil((cum[i] - cum[i - 1]) / 50);
+      for (let k = 1; k < n; k += 1) add([coords[i - 1][0] + ((p[0] - coords[i - 1][0]) * k) / n, coords[i - 1][1] + ((p[1] - coords[i - 1][1]) * k) / n]);
+    }
+  });
+  const out = [];
+  ways.forEach((w) => {
+    let run = [];
+    const flush = () => {
+      if (run.length >= 2) out.push({ ...w, pts: run });
+      run = [];
+    };
+    w.pts.forEach((q, i) => {
+      const near = cells.has(`${Math.floor(q[0] / G)}:${Math.floor(q[1] / G)}`);
+      const nextNear = i + 1 < w.pts.length && cells.has(`${Math.floor(w.pts[i + 1][0] / G)}:${Math.floor(w.pts[i + 1][1] / G)}`);
+      const prevNear = i > 0 && cells.has(`${Math.floor(w.pts[i - 1][0] / G)}:${Math.floor(w.pts[i - 1][1] / G)}`);
+      if (near || nextNear || prevNear) run.push(q);
+      else flush();
+    });
+    flush();
+  });
+  return out;
+}
+
+async function driveFetchOsmWays(route) {
+  if (!route?.coords || route.coords.length < 2) return [];
+  const key = driveOsmRouteKey(route);
+  let all = {};
+  try {
+    all = JSON.parse(localStorage.getItem(DRIVE_OSM_CACHE_KEY) || "{}") || {};
+  } catch (err) {
+    all = {};
+  }
+  const hit = all[key];
+  if (hit && Date.now() - hit.t < DRIVE_OSM_CACHE_MS && Array.isArray(hit.w)) return hit.w;
+  if (driveOsmLast && Date.now() - driveOsmLast.at < 45000) return driveOsmLast.ways;
+  const ways = driveOsmPrune(route, driveOsmWaysFromOverpass(await driveOverpassPost(driveOsmQuery(route))));
+  driveOsmLast = { at: Date.now(), ways };
+  try {
+    if (JSON.stringify(ways).length > 300000) return ways; // rota gigante: não guarda
+    all[key] = { t: Date.now(), w: ways };
+    Object.keys(all)
+      .sort((a, b) => all[b].t - all[a].t)
+      .slice(DRIVE_OSM_CACHE_MAX)
+      .forEach((k) => delete all[k]);
+    localStorage.setItem(DRIVE_OSM_CACHE_KEY, JSON.stringify(all));
+  } catch (err) {
+    /* storage cheio: só não guarda */
+  }
+  return ways;
+}
+
 // Cache dos radares por caixa (só deste aparelho, conveniência): { "<caixa>": { t, r: [[lat,lng,limite]] } }
 function driveRadarCacheRead() {
   try {
@@ -430,7 +555,11 @@ async function driveRadarsInBox(s, w, n, e) {
   return rows;
 }
 
-// Radares a até 40 m da linha da rota: [{ lat, lng, along, limit }]
+// Radares a até 18 m da linha da rota: [{ lat, lng, along, seg, limit, dirs, mine? }]
+// v2.13: dentro de SP vem do Pardal (CET/DER/Inmetro + OSM, drive-radar.js) sem perguntar
+// pro Overpass; fora de SP (ou Pardal fora do ar sem cópia) é o Overpass como antes. Em cima
+// disso entram as ✏ marcações do Rafa (📸 tem radar / 🚫 não tem). Radar com sentido
+// conhecido só vale se bate com o rumo da rota ali (pista do outro lado fica de fora).
 async function driveFetchRadars(route) {
   if (!route?.coords?.length || route.distance > 150000) return [];
   let s = 90;
@@ -446,11 +575,20 @@ async function driveFetchRadars(route) {
   // caixa arredondada pra fora (0,01° ≈ 1 km): a mesma volta pra casa reaproveita o cache
   const fl = (v) => Math.floor(v * 100) / 100;
   const ce = (v) => Math.ceil(v * 100) / 100;
-  const rows = await driveRadarsInBox(fl(s - 0.003), fl(w - 0.003), ce(n + 0.003), ce(e + 0.003));
+  const box = [fl(s - 0.003), fl(w - 0.003), ce(n + 0.003), ce(e + 0.003)];
+  const hasRadarDb = typeof tobaRadarMerge === "function";
+  const pardal = hasRadarDb && tobaRadarInSp(...box) ? await tobaRadarPardal() : null;
+  const osm = pardal ? [] : await driveRadarsInBox(...box);
+  const base = osm.map(([lat, lng, lim]) => ({ lat, lng, lim: lim || 0, dirs: [] }));
+  const all = hasRadarDb ? tobaRadarMerge(base, box, pardal, tobaRadarFixes()) : base;
   const out = [];
-  rows.forEach(([lat, lng, limit]) => {
-    const loc = driveLocateOnRoute(route, [lat, lng], 0);
-    if (loc && loc.dist <= DRIVE_RADAR_NEAR_M) out.push({ lat, lng, along: loc.along, limit: limit || 0 });
+  all.forEach((r) => {
+    const loc = driveLocateOnRoute(route, [r.lat, r.lng], 0);
+    if (!loc || loc.dist > DRIVE_RADAR_NEAR_M) return;
+    const a = route.coords[loc.seg];
+    const b = route.coords[loc.seg + 1] || a;
+    if (hasRadarDb && r.dirs.length && !tobaRadarDirOk(r.dirs, driveBearing(a, b))) return;
+    out.push({ lat: r.lat, lng: r.lng, along: loc.along, seg: loc.seg, limit: r.lim || 0, dirs: r.dirs || [], ...(r.mine ? { mine: r.mine } : {}) });
   });
   out.sort((a, b) => a.along - b.along);
   // dois nós do mesmo radar (ou um de cada lado) a menos de 30 m: fica um, com o limite que tiver
@@ -458,6 +596,7 @@ async function driveFetchRadars(route) {
     const prev = out[i - 1];
     if (prev && r.along - prev.along < 30) {
       prev.limit = prev.limit || r.limit;
+      if (r.mine && !prev.mine) prev.mine = r.mine;
       return false;
     }
     return true;

@@ -1,0 +1,938 @@
+{
+  "TobaAndroid/app/auto/br/com/toba/app/HealthReader.java": {
+    "mtime": 1794962939.1104372,
+    "seen": 1795562822.482576,
+    "ast_hash": "f120f47534450e42c7c7e332f15030bc",
+    "semantic_hash": "f120f47534450e42c7c7e332f15030bc"
+  },
+  "TobaAndroid/app/auto/br/com/toba/app/MainActivity.java": {
+    "mtime": 1794962938.2184336,
+    "seen": 1795562822.4825835,
+    "ast_hash": "50311d646c8697549736734d9a202569",
+    "semantic_hash": "50311d646c8697549736734d9a202569"
+  },
+  "TobaAndroid/app/auto/br/com/toba/app/SamsungReader.java": {
+    "mtime": 1794159119.8425176,
+    "seen": 1795562822.482587,
+    "ast_hash": "73f335f65493aec36da5899d2f7e0396",
+    "semantic_hash": "73f335f65493aec36da5899d2f7e0396"
+  },
+  "TobaAndroid/app/auto/br/com/toba/app/ScreenReader.java": {
+    "mtime": 1794782946.2577765,
+    "seen": 1795562822.4825892,
+    "ast_hash": "cf18750dfb90fe40805791edebfe24d3",
+    "semantic_hash": "cf18750dfb90fe40805791edebfe24d3"
+  },
+  "TobaAndroid/app/auto/br/com/toba/app/TobaBridge.java": {
+    "mtime": 1794962938.5960264,
+    "seen": 1795562822.4825914,
+    "ast_hash": "cb39050b3c460873bb834b0c1d6b49ea",
+    "semantic_hash": "cb39050b3c460873bb834b0c1d6b49ea"
+  },
+  "TobaAndroid/app/auto/br/com/toba/app/WorkoutReader.java": {
+    "mtime": 1794962939.4715018,
+    "seen": 1795562822.4825933,
+    "ast_hash": "7c0e239f013a3275a243e7a955ebbaf3",
+    "semantic_hash": "7c0e239f013a3275a243e7a955ebbaf3"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/AutoStore.java": {
+    "mtime": 1794260880.9640737,
+    "seen": 1795562822.4825954,
+    "ast_hash": "d6135e5f257109d5a91f8b75a0d5fb51",
+    "semantic_hash": "d6135e5f257109d5a91f8b75a0d5fb51"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/CarMap.java": {
+    "mtime": 1794434697.509246,
+    "seen": 1795562822.4825969,
+    "ast_hash": "cde75d898899741a9e7fc7cd8af3b662",
+    "semantic_hash": "cde75d898899741a9e7fc7cd8af3b662"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/DriveSync.java": {
+    "mtime": 1794188468.4243276,
+    "seen": 1795562822.4825983,
+    "ast_hash": "10f78bcf5524f8424a5a07425a4b4839",
+    "semantic_hash": "10f78bcf5524f8424a5a07425a4b4839"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/FavScreen.java": {
+    "mtime": 1793880849.9774387,
+    "seen": 1795562822.4826,
+    "ast_hash": "e61389729921494d074d39235d432e1a",
+    "semantic_hash": "e61389729921494d074d39235d432e1a"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/Geo.java": {
+    "mtime": 1794260881.3593733,
+    "seen": 1795562822.4826014,
+    "ast_hash": "6610bec1bbc1a7189d3aa068d47aec61",
+    "semantic_hash": "6610bec1bbc1a7189d3aa068d47aec61"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/HomeScreen.java": {
+    "mtime": 1794188409.6070337,
+    "seen": 1795562822.4826035,
+    "ast_hash": "12efe92c125c82a6cbce7f4ac9a4f4e3",
+    "semantic_hash": "12efe92c125c82a6cbce7f4ac9a4f4e3"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/Maneuvers.java": {
+    "mtime": 1793880850.3171527,
+    "seen": 1795562822.482605,
+    "ast_hash": "3341884b82cbd3689247cfb5dfad14f0",
+    "semantic_hash": "3341884b82cbd3689247cfb5dfad14f0"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/MapRenderer.java": {
+    "mtime": 1793848184.7207236,
+    "seen": 1795562822.482621,
+    "ast_hash": "34bfad6b8ff1e9b943b1fdc00af84920",
+    "semantic_hash": "34bfad6b8ff1e9b943b1fdc00af84920"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/NavEngine.java": {
+    "mtime": 1794960427.9908054,
+    "seen": 1795562822.4826221,
+    "ast_hash": "9ead71cd3326dbcfa360c74da1f20b33",
+    "semantic_hash": "9ead71cd3326dbcfa360c74da1f20b33"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/NavService.java": {
+    "mtime": 1793880851.537958,
+    "seen": 1795562822.482624,
+    "ast_hash": "9e1b3a5f7e6c65eefa01fca8797e1d7f",
+    "semantic_hash": "9e1b3a5f7e6c65eefa01fca8797e1d7f"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/Place.java": {
+    "mtime": 1793848184.749786,
+    "seen": 1795562822.4826252,
+    "ast_hash": "95d7ed91c2de902f4637df6fd33809e4",
+    "semantic_hash": "95d7ed91c2de902f4637df6fd33809e4"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/PreviewScreen.java": {
+    "mtime": 1794188409.9605691,
+    "seen": 1795562822.482627,
+    "ast_hash": "55bf640fdb6b4a2ca27211a1a6cccfad",
+    "semantic_hash": "55bf640fdb6b4a2ca27211a1a6cccfad"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/RecentScreen.java": {
+    "mtime": 1793848184.7695224,
+    "seen": 1795562822.4826283,
+    "ast_hash": "532006bd7c669efdfa3b9555dcf41acd",
+    "semantic_hash": "532006bd7c669efdfa3b9555dcf41acd"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/Route.java": {
+    "mtime": 1793880851.9338584,
+    "seen": 1795562822.4826303,
+    "ast_hash": "664ff1507d0720ae96aa6daa233e6cee",
+    "semantic_hash": "664ff1507d0720ae96aa6daa233e6cee"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/SearchScreen.java": {
+    "mtime": 1793848184.7853,
+    "seen": 1795562822.4826317,
+    "ast_hash": "2af29a4fc6acf384a7c286badc0f6986",
+    "semantic_hash": "2af29a4fc6acf384a7c286badc0f6986"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/TobaApi.java": {
+    "mtime": 1793880852.306145,
+    "seen": 1795562822.4826336,
+    "ast_hash": "6e0b5712ed9b30bac16579f91a251b46",
+    "semantic_hash": "6e0b5712ed9b30bac16579f91a251b46"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/TobaCarAppService.java": {
+    "mtime": 1793848184.7974148,
+    "seen": 1795562822.4826357,
+    "ast_hash": "e2b2bf18aa40059c58d155a144697a25",
+    "semantic_hash": "e2b2bf18aa40059c58d155a144697a25"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/TobaCarSession.java": {
+    "mtime": 1793848184.7974148,
+    "seen": 1795562822.4826374,
+    "ast_hash": "44016f49fc86be3be71974203df4dc9b",
+    "semantic_hash": "44016f49fc86be3be71974203df4dc9b"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/Voice.java": {
+    "mtime": 1794188408.9090314,
+    "seen": 1795562822.4826388,
+    "ast_hash": "c35c4166fcc6a96df56be3a335a15b50",
+    "semantic_hash": "c35c4166fcc6a96df56be3a335a15b50"
+  },
+  "TobaAndroid/app/auto/br/com/toba/auto/WebMap.java": {
+    "mtime": 1794434697.8372936,
+    "seen": 1795562822.4826403,
+    "ast_hash": "2ef9096a29fa77d19de36150a6fac053",
+    "semantic_hash": "2ef9096a29fa77d19de36150a6fac053"
+  },
+  "TobaAndroid/app/build.gradle": {
+    "mtime": 1794962937.0668108,
+    "seen": 1795562822.482642,
+    "ast_hash": "0d670fca305269017d805ce5f4e070c7",
+    "semantic_hash": "0d670fca305269017d805ce5f4e070c7"
+  },
+  "TobaAndroid/app/src/main/java/br/com/toba/app/AlarmReceiver.java": {
+    "mtime": 1792528675.0088663,
+    "seen": 1795562822.4826434,
+    "ast_hash": "9565f28017407dd88f34104074ce7864",
+    "semantic_hash": "9565f28017407dd88f34104074ce7864"
+  },
+  "TobaAndroid/app/src/main/java/br/com/toba/app/Alarms.java": {
+    "mtime": 1792528675.0098684,
+    "seen": 1795562822.482645,
+    "ast_hash": "1b2f333da0b28824ed9516deb0a9d92a",
+    "semantic_hash": "1b2f333da0b28824ed9516deb0a9d92a"
+  },
+  "TobaAndroid/app/src/main/java/br/com/toba/app/BootReceiver.java": {
+    "mtime": 1792446476.3448775,
+    "seen": 1795562822.4826465,
+    "ast_hash": "8fc17a29f0fb1aa43d7428d5432b12cf",
+    "semantic_hash": "8fc17a29f0fb1aa43d7428d5432b12cf"
+  },
+  "TobaAndroid/app/src/main/java/br/com/toba/app/Notifier.java": {
+    "mtime": 1792701706.8565958,
+    "seen": 1795562822.4826481,
+    "ast_hash": "01421477a136aeddae3df711160a20e7",
+    "semantic_hash": "01421477a136aeddae3df711160a20e7"
+  },
+  "TobaAndroid/app/src/main/java/br/com/toba/app/PurchaseListener.java": {
+    "mtime": 1792701706.8565958,
+    "seen": 1795562822.4826496,
+    "ast_hash": "8c6e443d65b9e1cc2cc4df35850a6ee4",
+    "semantic_hash": "8c6e443d65b9e1cc2cc4df35850a6ee4"
+  },
+  "TobaAndroid/app/src/main/java/br/com/toba/app/PurchaseParser.java": {
+    "mtime": 1792446476.354694,
+    "seen": 1795562822.4826512,
+    "ast_hash": "a93651a4a7c71b39589ad45720358e66",
+    "semantic_hash": "a93651a4a7c71b39589ad45720358e66"
+  },
+  "TobaAndroid/app/src/main/java/br/com/toba/app/TobaStore.java": {
+    "mtime": 1792701706.8591497,
+    "seen": 1795562822.4826527,
+    "ast_hash": "baa5289a4ab6b583a1eff4b2121f03c4",
+    "semantic_hash": "baa5289a4ab6b583a1eff4b2121f03c4"
+  },
+  "TobaAndroid/build.gradle": {
+    "mtime": 1793829099.4835954,
+    "seen": 1795562822.482654,
+    "ast_hash": "b50184f073d71ef01050d217db9b00c1",
+    "semantic_hash": "b50184f073d71ef01050d217db9b00c1"
+  },
+  "TobaAndroid/settings.gradle": {
+    "mtime": 1792446476.371235,
+    "seen": 1795562822.4826555,
+    "ast_hash": "b571b33d7fa86f8b26b93c02d40937b1",
+    "semantic_hash": "b571b33d7fa86f8b26b93c02d40937b1"
+  },
+  "TobaBank/js/bank-core.js": {
+    "mtime": 1793799065.240703,
+    "seen": 1795562822.4826572,
+    "ast_hash": "63bbaf6bb446a662303f6da1e90f1e62",
+    "semantic_hash": "63bbaf6bb446a662303f6da1e90f1e62"
+  },
+  "TobaBank/js/bank-metrics.js": {
+    "mtime": 1794609419.8303356,
+    "seen": 1795562822.4826586,
+    "ast_hash": "55afba7db2ed3e01842466f9f871f538",
+    "semantic_hash": "55afba7db2ed3e01842466f9f871f538"
+  },
+  "TobaBank/js/categorias.js": {
+    "mtime": 1794074307.995195,
+    "seen": 1795562822.48266,
+    "ast_hash": "84321a89e91da3b8a38fe223bfe67b86",
+    "semantic_hash": "84321a89e91da3b8a38fe223bfe67b86"
+  },
+  "TobaBank/js/gastos.js": {
+    "mtime": 1794609419.4993503,
+    "seen": 1795562822.4826617,
+    "ast_hash": "f1d2cc413d9cabfa326465243e934971",
+    "semantic_hash": "f1d2cc413d9cabfa326465243e934971"
+  },
+  "TobaBank/js/investimento.js": {
+    "mtime": 1793800767.6387837,
+    "seen": 1795562822.4826632,
+    "ast_hash": "b9e1dda1744e43915fe54397b5244b2e",
+    "semantic_hash": "b9e1dda1744e43915fe54397b5244b2e"
+  },
+  "TobaBank/js/raxador.js": {
+    "mtime": 1792188127.3431876,
+    "seen": 1795562822.4826646,
+    "ast_hash": "025cb68a9915e72c834328cdc689deff",
+    "semantic_hash": "025cb68a9915e72c834328cdc689deff"
+  },
+  "TobaHealth/js/forca.js": {
+    "mtime": 1794000820.6209402,
+    "seen": 1795562822.4826663,
+    "ast_hash": "cf5413fe735f8a4460870b278f6bc57b",
+    "semantic_hash": "cf5413fe735f8a4460870b278f6bc57b"
+  },
+  "TobaHealth/js/hall-shared.js": {
+    "mtime": 1793993683.0635417,
+    "seen": 1795562822.4826684,
+    "ast_hash": "c8ac887e03c53d2a8aa882210c687082",
+    "semantic_hash": "c8ac887e03c53d2a8aa882210c687082"
+  },
+  "TobaHealth/js/hall.js": {
+    "mtime": 1794970567.8188741,
+    "seen": 1795562822.4826698,
+    "ast_hash": "978a3e65e28bbd2a7d83217c4c2da1dd",
+    "semantic_hash": "978a3e65e28bbd2a7d83217c4c2da1dd"
+  },
+  "TobaHealth/js/health-core.js": {
+    "mtime": 1794782948.7432942,
+    "seen": 1795562822.4826713,
+    "ast_hash": "d46d550190a39004c0c46e009870fa07",
+    "semantic_hash": "d46d550190a39004c0c46e009870fa07"
+  },
+  "TobaHealth/js/health-metrics.js": {
+    "mtime": 1794782949.118905,
+    "seen": 1795562822.482673,
+    "ast_hash": "71a36b5c4e08417c1184a78f223bd17b",
+    "semantic_hash": "71a36b5c4e08417c1184a78f223bd17b"
+  },
+  "TobaHealth/js/pesagem.js": {
+    "mtime": 1793754144.077411,
+    "seen": 1795562822.4826744,
+    "ast_hash": "6a6cece5485ad75b1b5f75850325298b",
+    "semantic_hash": "6a6cece5485ad75b1b5f75850325298b"
+  },
+  "TobaHealth/js/relogio-analise.js": {
+    "mtime": 1794966876.4721863,
+    "seen": 1795562822.4826763,
+    "ast_hash": "3365bf6ef21b49a6f275f8ddaccdff1f",
+    "semantic_hash": "3365bf6ef21b49a6f275f8ddaccdff1f"
+  },
+  "TobaHealth/js/relogio-balanca.js": {
+    "mtime": 1794074956.174327,
+    "seen": 1795562822.4826775,
+    "ast_hash": "e6c4f885a1d441b426629c779f552540",
+    "semantic_hash": "e6c4f885a1d441b426629c779f552540"
+  },
+  "TobaHealth/js/relogio-calorias.js": {
+    "mtime": 1794264497.7574625,
+    "seen": 1795562822.4826791,
+    "ast_hash": "970a214256d6059280020047926c346e",
+    "semantic_hash": "970a214256d6059280020047926c346e"
+  },
+  "TobaHealth/js/relogio-dia.js": {
+    "mtime": 1794966876.9543512,
+    "seen": 1795562822.4826806,
+    "ast_hash": "ace06b9d81d39083bf5d99d4e3b8e891",
+    "semantic_hash": "ace06b9d81d39083bf5d99d4e3b8e891"
+  },
+  "TobaHealth/js/relogio-horas.js": {
+    "mtime": 1794966201.430014,
+    "seen": 1795562822.4826822,
+    "ast_hash": "f89cc749c3466d7209207b84f1cba0b7",
+    "semantic_hash": "f89cc749c3466d7209207b84f1cba0b7"
+  },
+  "TobaHealth/js/relogio-nota.js": {
+    "mtime": 1794966875.9712648,
+    "seen": 1795562822.4826837,
+    "ast_hash": "42daccef07151572946f30a9c815ab60",
+    "semantic_hash": "42daccef07151572946f30a9c815ab60"
+  },
+  "TobaHealth/js/relogio-passos.js": {
+    "mtime": 1794183937.2031918,
+    "seen": 1795562822.482685,
+    "ast_hash": "0486ff9c09dd406bf4d957b2e5e08a50",
+    "semantic_hash": "0486ff9c09dd406bf4d957b2e5e08a50"
+  },
+  "TobaHealth/js/relogio-recordes.js": {
+    "mtime": 1794966537.7846985,
+    "seen": 1795562822.4826868,
+    "ast_hash": "0765da5b908acf2c7bf594157fc58f59",
+    "semantic_hash": "0765da5b908acf2c7bf594157fc58f59"
+  },
+  "TobaHealth/js/relogio-samsung.js": {
+    "mtime": 1794264496.7823117,
+    "seen": 1795562822.4826882,
+    "ast_hash": "9a2ad6e5d86cbc5b60b0326d7da7f7ff",
+    "semantic_hash": "9a2ad6e5d86cbc5b60b0326d7da7f7ff"
+  },
+  "TobaHealth/js/relogio-sono.js": {
+    "mtime": 1794966537.3511255,
+    "seen": 1795562822.4826899,
+    "ast_hash": "1b3b7072c0b6d5307f26f09b7e67fe4b",
+    "semantic_hash": "1b3b7072c0b6d5307f26f09b7e67fe4b"
+  },
+  "TobaHealth/js/relogio-stress.js": {
+    "mtime": 1794966201.7684958,
+    "seen": 1795562822.4826913,
+    "ast_hash": "d648c14ce8a40dfd1b9d820ae5fcb352",
+    "semantic_hash": "d648c14ce8a40dfd1b9d820ae5fcb352"
+  },
+  "TobaHealth/js/relogio.js": {
+    "mtime": 1794966538.167977,
+    "seen": 1795562822.482693,
+    "ast_hash": "19470edcf3b7f521cdfd53af21bf8d78",
+    "semantic_hash": "19470edcf3b7f521cdfd53af21bf8d78"
+  },
+  "TobaHealth/js/screen-core.js": {
+    "mtime": 1794782949.4679859,
+    "seen": 1795562822.4826944,
+    "ast_hash": "8fdea2878cc1d347485f76bcf89dbaec",
+    "semantic_hash": "8fdea2878cc1d347485f76bcf89dbaec"
+  },
+  "TobaHealth/js/screen.js": {
+    "mtime": 1794782949.8118634,
+    "seen": 1795562822.4826958,
+    "ast_hash": "d617f526fed6ad7d10b709e48e57deb4",
+    "semantic_hash": "d617f526fed6ad7d10b709e48e57deb4"
+  },
+  "TobaHealth/js/sessao-alongamento.js": {
+    "mtime": 1794263978.8150504,
+    "seen": 1795562822.4826977,
+    "ast_hash": "2fe2bab392470d207932bcf07b66543f",
+    "semantic_hash": "2fe2bab392470d207932bcf07b66543f"
+  },
+  "TobaHealth/js/sessao-caminhada.js": {
+    "mtime": 1794263979.625591,
+    "seen": 1795562822.482699,
+    "ast_hash": "b6fbf5298f625b21b698b45162381d3e",
+    "semantic_hash": "b6fbf5298f625b21b698b45162381d3e"
+  },
+  "TobaHealth/js/sessao-casa.js": {
+    "mtime": 1794534118.8093872,
+    "seen": 1795562822.4827006,
+    "ast_hash": "ec03eb8c9f8cf92327879991ade87360",
+    "semantic_hash": "ec03eb8c9f8cf92327879991ade87360"
+  },
+  "TobaHealth/js/sessao-saitama.js": {
+    "mtime": 1794263978.481735,
+    "seen": 1795562822.482702,
+    "ast_hash": "f1716c770899dd04e206ebdaffacf01d",
+    "semantic_hash": "f1716c770899dd04e206ebdaffacf01d"
+  },
+  "TobaHealth/js/sessao.js": {
+    "mtime": 1794263978.1408422,
+    "seen": 1795562822.4827037,
+    "ast_hash": "e9ab1f43ffc8ba76101d5380436c5d2c",
+    "semantic_hash": "e9ab1f43ffc8ba76101d5380436c5d2c"
+  },
+  "TobaHealth/js/treino-mes.js": {
+    "mtime": 1794970565.052937,
+    "seen": 1795562822.482705,
+    "ast_hash": "f4ea5371ca6c87b7a01b6a927193520a",
+    "semantic_hash": "f4ea5371ca6c87b7a01b6a927193520a"
+  },
+  "TobaHealth/js/treino-raiox.js": {
+    "mtime": 1794970566.3976169,
+    "seen": 1795562822.4827068,
+    "ast_hash": "c6b6e66b2a246e2a5a4253385cfaa6f3",
+    "semantic_hash": "c6b6e66b2a246e2a5a4253385cfaa6f3"
+  },
+  "TobaHealth/js/treinos-relogio.js": {
+    "mtime": 1794263980.8126478,
+    "seen": 1795562822.4827082,
+    "ast_hash": "4c13d2723706528c292a693b4cfb1ea9",
+    "semantic_hash": "4c13d2723706528c292a693b4cfb1ea9"
+  },
+  "TobaHealth/js/treinos.js": {
+    "mtime": 1794970567.4619963,
+    "seen": 1795562822.4827096,
+    "ast_hash": "1350374238143d4d182f73ea7ea27c7a",
+    "semantic_hash": "1350374238143d4d182f73ea7ea27c7a"
+  },
+  "TobaKitchen/js/chas.js": {
+    "mtime": 1794083022.2228248,
+    "seen": 1795562822.4827113,
+    "ast_hash": "8e95f6b61a931e0d8e69ff34419ca14e",
+    "semantic_hash": "8e95f6b61a931e0d8e69ff34419ca14e"
+  },
+  "TobaKitchen/js/compras.js": {
+    "mtime": 1794081061.559216,
+    "seen": 1795562822.4827259,
+    "ast_hash": "a24dd002a8c1da6a6fefae1e07fd2176",
+    "semantic_hash": "a24dd002a8c1da6a6fefae1e07fd2176"
+  },
+  "TobaKitchen/js/kitchen-core.js": {
+    "mtime": 1794081060.4890785,
+    "seen": 1795562822.4827278,
+    "ast_hash": "558fabfe63bc4c9e902c70718c37e719",
+    "semantic_hash": "558fabfe63bc4c9e902c70718c37e719"
+  },
+  "TobaKitchen/js/kitchen-recipes.js": {
+    "mtime": 1794083022.6807933,
+    "seen": 1795562822.4827292,
+    "ast_hash": "c2b46ce2de1ea1c25a694fbc1e20344f",
+    "semantic_hash": "c2b46ce2de1ea1c25a694fbc1e20344f"
+  },
+  "TobaKitchen/js/receitas.js": {
+    "mtime": 1794081061.207786,
+    "seen": 1795562822.4827309,
+    "ast_hash": "e6aec37505ff65762aee31b9f83b0966",
+    "semantic_hash": "e6aec37505ff65762aee31b9f83b0966"
+  },
+  "TobaKitchen/js/semana.js": {
+    "mtime": 1793543475.5714977,
+    "seen": 1795562822.4827323,
+    "ast_hash": "0fc8ac34e037cd615eac43ece351bc1a",
+    "semantic_hash": "0fc8ac34e037cd615eac43ece351bc1a"
+  },
+  "TobaRacing/TobaDrive/js/auto-map.js": {
+    "mtime": 1794960426.7029214,
+    "seen": 1795562822.4827337,
+    "ast_hash": "f16c735c0f258a977d9ceec4a6870d0a",
+    "semantic_hash": "f16c735c0f258a977d9ceec4a6870d0a"
+  },
+  "TobaRacing/TobaDrive/js/drive-core.js": {
+    "mtime": 1794432434.0504215,
+    "seen": 1795562822.4827356,
+    "ast_hash": "ebf84573188d1a6555fb3ac4d14302e0",
+    "semantic_hash": "ebf84573188d1a6555fb3ac4d14302e0"
+  },
+  "TobaRacing/TobaDrive/js/drive-game.js": {
+    "mtime": 1793880859.0877328,
+    "seen": 1795562822.482737,
+    "ast_hash": "c039972eafc843d4eb22ee1c1f773316",
+    "semantic_hash": "c039972eafc843d4eb22ee1c1f773316"
+  },
+  "TobaRacing/TobaDrive/js/drive-map.js": {
+    "mtime": 1794434696.7040644,
+    "seen": 1795562822.4827387,
+    "ast_hash": "db8db8b53f5bb5f7070dd65f2de0b28c",
+    "semantic_hash": "db8db8b53f5bb5f7070dd65f2de0b28c"
+  },
+  "TobaRacing/TobaDrive/js/drive-metrics.js": {
+    "mtime": 1794434697.1540236,
+    "seen": 1795562822.4827402,
+    "ast_hash": "d172cf818e695277c74f761a0dbe6ec2",
+    "semantic_hash": "d172cf818e695277c74f761a0dbe6ec2"
+  },
+  "TobaRacing/TobaDrive/js/drive-models.js": {
+    "mtime": 1793880860.650494,
+    "seen": 1795562822.4827418,
+    "ast_hash": "edd2fa917033918f97e177775a750a0a",
+    "semantic_hash": "edd2fa917033918f97e177775a750a0a"
+  },
+  "TobaRacing/TobaDrive/js/drive-route.js": {
+    "mtime": 1793880860.1806686,
+    "seen": 1795562822.4827433,
+    "ast_hash": "7f33f66d90e1ade640bc133639b83977",
+    "semantic_hash": "7f33f66d90e1ade640bc133639b83977"
+  },
+  "TobaRacing/TobaDrive/js/drive.js": {
+    "mtime": 1794960427.4459076,
+    "seen": 1795562822.482745,
+    "ast_hash": "62b90caf3002547cf5a38797a98a112a",
+    "semantic_hash": "62b90caf3002547cf5a38797a98a112a"
+  },
+  "TobaRacing/js/combustivel.js": {
+    "mtime": 1793557698.8201501,
+    "seen": 1795562822.4827464,
+    "ast_hash": "99eb6016dda8d3defa81a76862611067",
+    "semantic_hash": "99eb6016dda8d3defa81a76862611067"
+  },
+  "TobaRacing/js/racing-core.js": {
+    "mtime": 1793338052.4458325,
+    "seen": 1795562822.4827492,
+    "ast_hash": "28b53c98285e6116a780148a7b85867a",
+    "semantic_hash": "28b53c98285e6116a780148a7b85867a"
+  },
+  "TobaRacing/js/racing-drive.js": {
+    "mtime": 1794432433.7303715,
+    "seen": 1795562822.482751,
+    "ast_hash": "5ef09a561d1445767d92db5fdec46b70",
+    "semantic_hash": "5ef09a561d1445767d92db5fdec46b70"
+  },
+  "TobaRacing/js/racing-metrics.js": {
+    "mtime": 1793557698.475078,
+    "seen": 1795562822.4827526,
+    "ast_hash": "fcb4c3da0de197e42a5e263ef96e0907",
+    "semantic_hash": "fcb4c3da0de197e42a5e263ef96e0907"
+  },
+  "TobaRoutine/js/agenda.js": {
+    "mtime": 1792705786.9247136,
+    "seen": 1795562822.482754,
+    "ast_hash": "0a5948fc8ae0b02356d1615ab41ee269",
+    "semantic_hash": "0a5948fc8ae0b02356d1615ab41ee269"
+  },
+  "TobaRoutine/js/calendar.js": {
+    "mtime": 1792705788.9657755,
+    "seen": 1795562822.4827557,
+    "ast_hash": "92caf54649d9f0f9106528c7970989e1",
+    "semantic_hash": "92caf54649d9f0f9106528c7970989e1"
+  },
+  "TobaRoutine/js/routine-alerts.js": {
+    "mtime": 1793880466.9849145,
+    "seen": 1795562822.482757,
+    "ast_hash": "a7b52127854a2461ad340037b559dca2",
+    "semantic_hash": "a7b52127854a2461ad340037b559dca2"
+  },
+  "TobaRoutine/js/routine-core.js": {
+    "mtime": 1792705787.659804,
+    "seen": 1795562822.4827588,
+    "ast_hash": "c484fe12ebc544ca63c84cf7003a7c05",
+    "semantic_hash": "c484fe12ebc544ca63c84cf7003a7c05"
+  },
+  "TobaRoutine/js/routine-events.js": {
+    "mtime": 1793626081.7894833,
+    "seen": 1795562822.4827602,
+    "ast_hash": "282a9b1fce1d5f71c242e4a9f9e5a530",
+    "semantic_hash": "282a9b1fce1d5f71c242e4a9f9e5a530"
+  },
+  "TobaRoutine/js/routine-metrics.js": {
+    "mtime": 1793880466.2867584,
+    "seen": 1795562822.4827616,
+    "ast_hash": "f88118c87e67948de4f63e3929ac3c48",
+    "semantic_hash": "f88118c87e67948de4f63e3929ac3c48"
+  },
+  "TobaRoutine/js/routine-plan.js": {
+    "mtime": 1792530164.1558666,
+    "seen": 1795562822.4827633,
+    "ast_hash": "136b3d7509760c09279416536c594cc2",
+    "semantic_hash": "136b3d7509760c09279416536c594cc2"
+  },
+  "TobaRoutine/js/routine-task-sheet.js": {
+    "mtime": 1792705789.661479,
+    "seen": 1795562822.4827647,
+    "ast_hash": "071dc39d777e2e8985ccdce98e5dde06",
+    "semantic_hash": "071dc39d777e2e8985ccdce98e5dde06"
+  },
+  "TobaRoutine/js/routine.js": {
+    "mtime": 1793880466.6433952,
+    "seen": 1795562822.4827664,
+    "ast_hash": "6154708d608f8e174998c88de0796bbd",
+    "semantic_hash": "6154708d608f8e174998c88de0796bbd"
+  },
+  "TobaRoutine/js/task.js": {
+    "mtime": 1792620591.2447681,
+    "seen": 1795562822.4827678,
+    "ast_hash": "32910d52f81fcef6f55019ae9cc2e5e5",
+    "semantic_hash": "32910d52f81fcef6f55019ae9cc2e5e5"
+  },
+  "TobaTurism/js/places-map.js": {
+    "mtime": 1793748577.8671453,
+    "seen": 1795562822.4827697,
+    "ast_hash": "a54e4db340e4c25533a4aea9d8906ed0",
+    "semantic_hash": "a54e4db340e4c25533a4aea9d8906ed0"
+  },
+  "TobaTurism/js/places.js": {
+    "mtime": 1793958726.3161507,
+    "seen": 1795562822.4827712,
+    "ast_hash": "abe33688885d554c91100f70fac581d9",
+    "semantic_hash": "abe33688885d554c91100f70fac581d9"
+  },
+  "TobaTurism/js/turism-core.js": {
+    "mtime": 1793746982.5659666,
+    "seen": 1795562822.4827728,
+    "ast_hash": "fd4220d232bcf4982b28c5e874146c51",
+    "semantic_hash": "fd4220d232bcf4982b28c5e874146c51"
+  },
+  "TobaTurism/js/turism-metrics.js": {
+    "mtime": 1793994511.680409,
+    "seen": 1795562822.4827745,
+    "ast_hash": "04885f2f0a5b0f7572ff2f61df4ef68f",
+    "semantic_hash": "04885f2f0a5b0f7572ff2f61df4ef68f"
+  },
+  "_molde-app/js/modulo.js": {
+    "mtime": 1792188135.014313,
+    "seen": 1795562822.482776,
+    "ast_hash": "66edc7082e59234221a45c2006f29808",
+    "semantic_hash": "66edc7082e59234221a45c2006f29808"
+  },
+  "_molde-app/js/molde-core.js": {
+    "mtime": 1792188134.6859634,
+    "seen": 1795562822.4827776,
+    "ast_hash": "fd4117687259a2979f624c01247e19ca",
+    "semantic_hash": "fd4117687259a2979f624c01247e19ca"
+  },
+  "assets/amigos.js": {
+    "mtime": 1793880855.1208248,
+    "seen": 1795562822.4827788,
+    "ast_hash": "2e58101d9f4647cf235949a1af375dce",
+    "semantic_hash": "2e58101d9f4647cf235949a1af375dce"
+  },
+  "assets/perfil-hall.js": {
+    "mtime": 1794970568.851987,
+    "seen": 1795562822.4827805,
+    "ast_hash": "865a163e5f905e9685f7df8139188034",
+    "semantic_hash": "865a163e5f905e9685f7df8139188034"
+  },
+  "assets/perfil.js": {
+    "mtime": 1793669412.9740226,
+    "seen": 1795562822.4827821,
+    "ast_hash": "5ce3d0e53ec5c27ada5178a4b92c9c85",
+    "semantic_hash": "5ce3d0e53ec5c27ada5178a4b92c9c85"
+  },
+  "assets/portal.js": {
+    "mtime": 1793880855.6325247,
+    "seen": 1795562822.4827836,
+    "ast_hash": "c32a6bda2a45ad558a296959ec1ee219",
+    "semantic_hash": "c32a6bda2a45ad558a296959ec1ee219"
+  },
+  "assets/pwa-register.js": {
+    "mtime": 1792105608.1862907,
+    "seen": 1795562822.4827852,
+    "ast_hash": "87cf92f8e1cd791595f614ffa8d68883",
+    "semantic_hash": "87cf92f8e1cd791595f614ffa8d68883"
+  },
+  "assets/toba-cloud.js": {
+    "mtime": 1793880437.506972,
+    "seen": 1795562822.482787,
+    "ast_hash": "a323d26026676ba9a6f5ddb4fe3ebf25",
+    "semantic_hash": "a323d26026676ba9a6f5ddb4fe3ebf25"
+  },
+  "assets/toba-common.js": {
+    "mtime": 1794970569.2549717,
+    "seen": 1795562822.482788,
+    "ast_hash": "4eee5f79f3c5b6e2748a5972ae58e0e9",
+    "semantic_hash": "4eee5f79f3c5b6e2748a5972ae58e0e9"
+  },
+  "assets/toba-maps.js": {
+    "mtime": 1793880855.9943485,
+    "seen": 1795562822.4827895,
+    "ast_hash": "277dcb0a5cd9714b06dc42b1a300aec7",
+    "semantic_hash": "277dcb0a5cd9714b06dc42b1a300aec7"
+  },
+  "assets/toba-player.js": {
+    "mtime": 1794959619.73869,
+    "seen": 1795562822.4827912,
+    "ast_hash": "7941b072c770bfe6cb0d8b5f7042ca41",
+    "semantic_hash": "7941b072c770bfe6cb0d8b5f7042ca41"
+  },
+  "assets/toba-social.js": {
+    "mtime": 1793880856.3669224,
+    "seen": 1795562822.4827926,
+    "ast_hash": "5c05bec53c93d7df850d7ee19215f6b4",
+    "semantic_hash": "5c05bec53c93d7df850d7ee19215f6b4"
+  },
+  "sw.js": {
+    "mtime": 1794970569.663956,
+    "seen": 1795562822.4827945,
+    "ast_hash": "2172db78ce2efec1aa1592b9c924a3c3",
+    "semantic_hash": "2172db78ce2efec1aa1592b9c924a3c3"
+  },
+  "CLAUDE.md": {
+    "mtime": 1794970570.069347,
+    "seen": 1795562822.482796,
+    "ast_hash": "7c7d7dcd308f49449f68789bc2f7bd8c",
+    "semantic_hash": "7c7d7dcd308f49449f68789bc2f7bd8c"
+  },
+  "PATCH-NOTES.md": {
+    "mtime": 1794970570.859366,
+    "seen": 1795562822.4827979,
+    "ast_hash": "a35294bd8f756eec766defcc7ffdeceb",
+    "semantic_hash": "a35294bd8f756eec766defcc7ffdeceb"
+  },
+  "Toba-Amigos.html": {
+    "mtime": 1793880847.0288005,
+    "seen": 1795562822.482799,
+    "ast_hash": "c12ac7f019b3ff1ba2ef08f3a9d97e77",
+    "semantic_hash": "c12ac7f019b3ff1ba2ef08f3a9d97e77"
+  },
+  "Toba-Perfil.html": {
+    "mtime": 1793880847.3964555,
+    "seen": 1795562822.4828007,
+    "ast_hash": "82a4ed21eaf24c96fcc6bc2bb4662415",
+    "semantic_hash": "82a4ed21eaf24c96fcc6bc2bb4662415"
+  },
+  "TobaAndroid/INSTALAR.md": {
+    "mtime": 1792528675.0059063,
+    "seen": 1795562822.4828024,
+    "ast_hash": "6b9ada0ca81b992b0bb7e1dee715f2c6",
+    "semantic_hash": "6b9ada0ca81b992b0bb7e1dee715f2c6"
+  },
+  "TobaAndroid/README.md": {
+    "mtime": 1794159121.727291,
+    "seen": 1795562822.482804,
+    "ast_hash": "44ab6d036a8b0685001ea9f0b18f11c7",
+    "semantic_hash": "44ab6d036a8b0685001ea9f0b18f11c7"
+  },
+  "TobaBank/TobaBank-Gastos.html": {
+    "mtime": 1794609420.5319037,
+    "seen": 1795562822.4828055,
+    "ast_hash": "1526fc850c556af18f41344c5800635d",
+    "semantic_hash": "1526fc850c556af18f41344c5800635d"
+  },
+  "TobaBank/TobaBank-Index.html": {
+    "mtime": 1793572048.015082,
+    "seen": 1795562822.482807,
+    "ast_hash": "68091eab7a39be0b1008256b53f0b7b1",
+    "semantic_hash": "68091eab7a39be0b1008256b53f0b7b1"
+  },
+  "TobaBank/TobaBank-Investimento.html": {
+    "mtime": 1793800766.9267855,
+    "seen": 1795562822.4828086,
+    "ast_hash": "fa2538de095bdef1d903402b5be86d89",
+    "semantic_hash": "fa2538de095bdef1d903402b5be86d89"
+  },
+  "TobaBank/TobaBank-Raxador.html": {
+    "mtime": 1793572048.776711,
+    "seen": 1795562822.4828103,
+    "ast_hash": "1997806600b8a5a2c12a0be4ce270564",
+    "semantic_hash": "1997806600b8a5a2c12a0be4ce270564"
+  },
+  "TobaHealth/TobaHealth-Index.html": {
+    "mtime": 1794782947.6743317,
+    "seen": 1795562822.482812,
+    "ast_hash": "c54b8d7e493de20da6d99af7917b5ce8",
+    "semantic_hash": "c54b8d7e493de20da6d99af7917b5ce8"
+  },
+  "TobaHealth/TobaHealth-Pesagem.html": {
+    "mtime": 1793753855.7611806,
+    "seen": 1795562822.4828131,
+    "ast_hash": "b12fd8cd00031d09331fa9608e440d94",
+    "semantic_hash": "b12fd8cd00031d09331fa9608e440d94"
+  },
+  "TobaHealth/TobaHealth-Relogio.html": {
+    "mtime": 1794782948.0155313,
+    "seen": 1795562822.4828148,
+    "ast_hash": "51bcbf851e5a916a251f32a175e79e69",
+    "semantic_hash": "51bcbf851e5a916a251f32a175e79e69"
+  },
+  "TobaHealth/TobaHealth-Screen.html": {
+    "mtime": 1794782948.409197,
+    "seen": 1795562822.4828165,
+    "ast_hash": "739899c2343846c9245d9dd7d4786f5a",
+    "semantic_hash": "739899c2343846c9245d9dd7d4786f5a"
+  },
+  "TobaHealth/TobaHealth-Treinos.html": {
+    "mtime": 1794970568.5048866,
+    "seen": 1795562822.482818,
+    "ast_hash": "d5e7f94e0b67aef186de41a495977685",
+    "semantic_hash": "d5e7f94e0b67aef186de41a495977685"
+  },
+  "TobaKitchen/TobaKitchen-Compras.html": {
+    "mtime": 1793572050.1814744,
+    "seen": 1795562822.4828193,
+    "ast_hash": "6a01f22b5848ea5b3a39c692eb202553",
+    "semantic_hash": "6a01f22b5848ea5b3a39c692eb202553"
+  },
+  "TobaKitchen/TobaKitchen-Index.html": {
+    "mtime": 1793572050.5874674,
+    "seen": 1795562822.4828212,
+    "ast_hash": "1d2e96b48ac76d17dda297bc30e1cf93",
+    "semantic_hash": "1d2e96b48ac76d17dda297bc30e1cf93"
+  },
+  "TobaKitchen/TobaKitchen-Receitas.html": {
+    "mtime": 1794081061.8526754,
+    "seen": 1795562822.4828227,
+    "ast_hash": "e7de3edd6cf4f86541b576fe16cc968d",
+    "semantic_hash": "e7de3edd6cf4f86541b576fe16cc968d"
+  },
+  "TobaKitchen/TobaKitchen-Semana.html": {
+    "mtime": 1793880864.7714713,
+    "seen": 1795562822.482824,
+    "ast_hash": "98ae3e8a25553f244ecb72ef6d30ff3c",
+    "semantic_hash": "98ae3e8a25553f244ecb72ef6d30ff3c"
+  },
+  "TobaRacing/TobaDrive/TobaDrive-Auto.html": {
+    "mtime": 1794188406.5738091,
+    "seen": 1795562822.4828258,
+    "ast_hash": "cb25ea091a37f60d7b2ea10dabc19a60",
+    "semantic_hash": "cb25ea091a37f60d7b2ea10dabc19a60"
+  },
+  "TobaRacing/TobaDrive/TobaDrive.html": {
+    "mtime": 1794188470.0932024,
+    "seen": 1795562822.4828272,
+    "ast_hash": "88a16fe3ef0c2f50a9cbf90126042fcf",
+    "semantic_hash": "88a16fe3ef0c2f50a9cbf90126042fcf"
+  },
+  "TobaRacing/TobaRacing-Combustivel.html": {
+    "mtime": 1793880853.6900914,
+    "seen": 1795562822.482829,
+    "ast_hash": "6cb198eb94868c2c263ece5a95e520dd",
+    "semantic_hash": "6cb198eb94868c2c263ece5a95e520dd"
+  },
+  "TobaRacing/TobaRacing-Index.html": {
+    "mtime": 1794188470.7767074,
+    "seen": 1795562822.4828305,
+    "ast_hash": "2703a6e84d4c1ab29e14ed21c1e22869",
+    "semantic_hash": "2703a6e84d4c1ab29e14ed21c1e22869"
+  },
+  "TobaRoutine/TobaRoutine-Agenda.html": {
+    "mtime": 1793880865.8704205,
+    "seen": 1795562822.4828324,
+    "ast_hash": "828bffc40cb777651b51ec30a07d95f3",
+    "semantic_hash": "828bffc40cb777651b51ec30a07d95f3"
+  },
+  "TobaRoutine/TobaRoutine-Calendar.html": {
+    "mtime": 1793572052.6769948,
+    "seen": 1795562822.4828339,
+    "ast_hash": "61c9eac836afb29e860a4eaf89b6600e",
+    "semantic_hash": "61c9eac836afb29e860a4eaf89b6600e"
+  },
+  "TobaRoutine/TobaRoutine-Index.html": {
+    "mtime": 1793572053.0760696,
+    "seen": 1795562822.4828355,
+    "ast_hash": "9d1529ae8c38b5fbc3aac717c249f84c",
+    "semantic_hash": "9d1529ae8c38b5fbc3aac717c249f84c"
+  },
+  "TobaRoutine/TobaRoutine-Rotina.html": {
+    "mtime": 1793880866.2451692,
+    "seen": 1795562822.482837,
+    "ast_hash": "c987d92aa608d1db4f66d9f864a02fa7",
+    "semantic_hash": "c987d92aa608d1db4f66d9f864a02fa7"
+  },
+  "TobaRoutine/TobaRoutine-Task.html": {
+    "mtime": 1793880865.5365546,
+    "seen": 1795562822.4828386,
+    "ast_hash": "5405b8285b5677bdb97ed51b6284e665",
+    "semantic_hash": "5405b8285b5677bdb97ed51b6284e665"
+  },
+  "TobaTurism/TobaTurism-Index.html": {
+    "mtime": 1793572054.113903,
+    "seen": 1795562822.48284,
+    "ast_hash": "28a72c63307c5672d7a99855c9b3c2e5",
+    "semantic_hash": "28a72c63307c5672d7a99855c9b3c2e5"
+  },
+  "TobaTurism/TobaTurism-Places.html": {
+    "mtime": 1793994512.0548677,
+    "seen": 1795562822.4828415,
+    "ast_hash": "01a4e0e42a6272854a7b6dfde31f4bfa",
+    "semantic_hash": "01a4e0e42a6272854a7b6dfde31f4bfa"
+  },
+  "_molde-app/README.md": {
+    "mtime": 1792446475.5545497,
+    "seen": 1795562822.4828432,
+    "ast_hash": "f49ca360290f097bbdb43cccb24996ff",
+    "semantic_hash": "f49ca360290f097bbdb43cccb24996ff"
+  },
+  "_molde-app/TobaMolde-Index.html": {
+    "mtime": 1792188133.2343278,
+    "seen": 1795562822.4828446,
+    "ast_hash": "2cd899d431580f23acae8d9f294ad0b1",
+    "semantic_hash": "2cd899d431580f23acae8d9f294ad0b1"
+  },
+  "_molde-app/TobaMolde-Modulo.html": {
+    "mtime": 1792188133.6533854,
+    "seen": 1795562822.4828465,
+    "ast_hash": "2920d258f87d4d204dcf424185f613c1",
+    "semantic_hash": "2920d258f87d4d204dcf424185f613c1"
+  },
+  "index.html": {
+    "mtime": 1793880856.6979163,
+    "seen": 1795562822.482848,
+    "ast_hash": "1f7a1577050cb4b101d86f68c5018168",
+    "semantic_hash": "1f7a1577050cb4b101d86f68c5018168"
+  },
+  "TobaAndroid/app/src/main/res/mipmap-xxhdpi/ic_launcher.png": {
+    "mtime": 1792446476.3604245,
+    "seen": 1795562822.4828496,
+    "ast_hash": "a21fee0f4ace0f3b6387c6b754797708",
+    "semantic_hash": "a21fee0f4ace0f3b6387c6b754797708"
+  },
+  "TobaAndroid/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
+    "mtime": 1792446476.3622382,
+    "seen": 1795562822.482851,
+    "ast_hash": "db2ef19eb7c7e2136a5d04e4eb4ccb88",
+    "semantic_hash": "db2ef19eb7c7e2136a5d04e4eb4ccb88"
+  },
+  "icons/apple-touch-icon.png": {
+    "mtime": 1792105608.2214835,
+    "seen": 1795562822.4828527,
+    "ast_hash": "b6b1902e0b67513e004a94d559d57ec0",
+    "semantic_hash": "b6b1902e0b67513e004a94d559d57ec0"
+  },
+  "icons/icon-192.png": {
+    "mtime": 1792105608.2184143,
+    "seen": 1795562822.4828541,
+    "ast_hash": "a21fee0f4ace0f3b6387c6b754797708",
+    "semantic_hash": "a21fee0f4ace0f3b6387c6b754797708"
+  },
+  "icons/icon-512.png": {
+    "mtime": 1792105608.2345123,
+    "seen": 1795562822.4828558,
+    "ast_hash": "db2ef19eb7c7e2136a5d04e4eb4ccb88",
+    "semantic_hash": "db2ef19eb7c7e2136a5d04e4eb4ccb88"
+  },
+  "icons/icon-maskable-512.png": {
+    "mtime": 1792105608.202352,
+    "seen": 1795562822.4828572,
+    "ast_hash": "689cfe37831884058c002eab53abb9e8",
+    "semantic_hash": "689cfe37831884058c002eab53abb9e8"
+  }
+}

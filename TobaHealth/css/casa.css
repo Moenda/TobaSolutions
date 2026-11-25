@@ -404,3 +404,23 @@
   border-color: var(--home-work);
   background: rgba(240, 136, 62, 0.18);
 }
+
+/* v2.13: ✋ lado a lado (tríceps, remada de um braço, coice e roscas) */
+.home-intro-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.home-split-chip.is-on {
+  border-color: var(--home-work);
+  background: rgba(240, 136, 62, 0.18);
+}
+
+.home-side {
+  background: rgba(240, 136, 62, 0.22);
+}
+
+.home-sides-line {
+  line-height: 1.5;
+}

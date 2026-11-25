@@ -2916,3 +2916,69 @@ O Rafa viu HRV e respiração parados em 08/11, "nada no Health Connect" no 🩺
 **Como testar:** Treinos › resumo do mês: 🔁 Repetições e ⚡ Carga da semana; tocar em cada um (o ‹ volta pro Treinos). Histórico mensal › Novembro: sem Elíptico e sem o card do Saitama, com 🔁 e ⚡ lado a lado. Abrir uma caminhada: "📊 Esse treino x teu normal", tocar nas linhas troca o gráfico; "🗓️ Semana desse treino" › ⚡ Ver a carga... e ‹ volta pro treino. Abrir a caminhada de 02/11: card 🗺️ explicando o 📭. ⚙️ mostra "Patch v2.12".
 
 **Commit sugerido:** `v2.12 - Carga do mes semana a semana (faixa ideal, melhor dia, sequencias, 80/20, folga, papo com recomendacao) + Repeticoes (Saitama x elastico) no lugar do card do Saitama + Eliptico some quando zero + comparativo do treino repaginado + aviso de por que o mapa nao veio`
+
+## v2.13 — ✋ Elástico com lado esquerdo e direito (tempo cheio em cada lado)
+
+**Arquivos alterados (parte do elástico):** `TobaHealth/js/health-metrics.js`, `TobaHealth/js/sessao-casa.js`, `TobaHealth/css/casa.css`, `assets/toba-common.js` (só `TOBA_PATCH_VERSION`), `sw.js` (VERSION), `CLAUDE.md`, `PATCH-NOTES.md`.
+
+1. **✋ Um lado de cada vez com o tempo inteiro (Rafa: "os mesmos 45 segundos que tenho pro supino tenho pros 2 braços no tríceps"):** o treino com elástico é por tempo, e o exercício de um lado só agora vira **dois blocos com o tempo cheio**: ✋ **esquerdo** (40/45 s do plano), 🔄 **Troca de lado** (6 s, com 3-2-1 falado) e ✋ **direito**. Antes era um bloco só com "troca de lado" na metade (20 s pra cada lado).
+   - Sempre lado a lado: **Tríceps acima da cabeça** (virou um braço por vez, a outra mão segura o cotovelo), **Remada com um braço** e **Coice de glúteo**.
+   - **Roscas (direta, martelo, inversa):** botão **👐 Dois juntos / ✋ Um braço por vez** em cada rosca na abertura do treino. O Toba lembra a escolha (pref `homeSplit`).
+2. **🔊 Voz:** "Vai! Tríceps acima da cabeça, lado esquerdo", na virada "Troca de lado. Agora o direito" e "Vai! Lado direito". No descanso antes já avisa "começa pelo lado esquerdo".
+3. **Tela ao vivo:** selo ✋ Lado esquerdo/direito, bonequinho espelha no lado direito, "Depois: Rosca direta · ✋ direito". Na rosca um braço por vez aparece a dica de qual mão puxa.
+4. **Reps e 💪 Kg levantado por lado:** cada lado conta os segundos dele, então as reps (e o kg) somam os dois braços. Fim do treino e página do treino mostram "✋ E 2min / D 2min".
+5. **Planos mais longos:** Corpo todo 22 → **24 min**, Um elástico 16 → **19 min**, Bíceps 13 → **15 min** (com as roscas juntas; com ✋ o ~min da abertura já mostra o tempo de verdade). Costas não muda.
+
+**Dados:** treino salvo ganha `home.split` (roscas feitas um braço por vez; lista vazia = nenhuma) e `home.sides` (`{ exerciseId: { L: s, R: s } }`). `home.done` continua a soma dos dois lados. Treino **antigo** (sem `home.split`) e treino ao vivo começado antes do patch seguem a linha do tempo velha (nada muda no kg/troféu de quem já tinha). Anotado na mão com plano novo grava `split: []` (conta o tempo cheio de cada lado).
+
+**Como testar:** ▶ Iniciar › 🏠 › Bíceps com elástico: tocar 👐 na Rosca direta (vira ✋ e o ~min sobe), ▶ Iniciar e ver o ✋ Lado esquerdo → 🔄 Troca de lado → ✋ Lado direito com voz. Terminar e conferir "E / D" e o kg levantado. Abrir um treino de elástico antigo: mesmos números de antes.
+
+**Commit sugerido:** `v2.13 - Elastico com lado esquerdo e direito (tempo cheio em cada lado, roscas juntas ou um braco por vez, voz na troca)`
+
+### v2.13 (mesmo commit) — 🖼️ Página inicial com visões: ▦ Quadradinho, ☰ Linha e ⭐ Meu painel
+
+**Arquivos novos/alterados (parte da página inicial):** `assets/portal-views.js` (NOVO), `assets/portal.js`, `assets/portal.css`, `index.html`, `sw.js` (cache do arquivo novo), `CLAUDE.md`, `_molde-app/README.md`.
+
+1. **Rafa: "com mt módulo as linhas são grandes e eu preciso ficar descendo".** A ⚙️ › 🎛️ Painel ganhou **🖼️ Visão da página inicial** com 4 botões (um toque troca e o Toba lembra):
+   - **▦ Quadradinho (padrão):** 3 apps por linha, ícone grande, nome e 1 número (o primeiro do Configurador de cards). Bolinha azul = Beta, 🤖N vermelho no Bank = compras do cartão esperando aprovação. Os 7 apps cabem numa tela.
+   - **☰ Linha:** uma linha enxuta por app com até 3 números em chips; a frase zoeira só aparece em app sem número.
+   - **⭐ Meu painel:** quadrinhos com os números que tu escolhe de qualquer app (💵 Livre hoje, ⚖️ Peso, ✅ Tarefas hoje, 🏁 km/l...) + barrinha com os atalhos de todos os apps + ✏️ Escolher os números. Até 8, na ordem em que foram escolhidos. Tocar num quadrinho abre o app dele.
+   - **🃏 Completo:** os cards de antes, com Gasto rápido, lista de tarefas e o 🙈.
+2. **⭐ Números do Meu painel** (na ⚙️ e no ✏️ da página): chips por app, toca liga/desliga.
+3. **Ordem dos apps / esconder** vale nas 4 visões. O **Configurador de cards** manda nos números da Linha e do Quadradinho (Simples = sem número) e o 🙈 esconder valores/peso vale também nelas.
+4. **Módulo novo fica fácil:** o card no `index.html` já vira linha, quadradinho e atalho do dock sozinho; número = 1 entrada em `PORTAL_APP_STATS` (ver `_molde-app/README.md`).
+
+**Dados:** nada muda nos bancos dos apps. Preferência nova de UI `toba_portal_view` (`{ view, pins }`), que o backup geral já pega.
+
+**Como testar:** abrir o Toba: vem no ▦ Quadradinho. ⚙️ › Painel › tocar ☰ Linha, ⭐ Meu painel e 🃏 Completo (a página muda atrás da folha). No ⭐ Meu painel: ✏️ Escolher os números, ligar 📍 Km no mês e ver o quadrinho novo. 🔀 Ordem dos apps: esconder um app some nas 4 visões. Configurador › Bank em Simples: o Bank fica sem número no Quadradinho. ⚙️ mostra "Patch v2.13".
+
+**Commit sugerido (junto com o resto da v2.13):** `... + pagina inicial com visoes Quadradinho, Linha, Meu painel e Completo (escolha na engrenagem)`
+
+### v2.13 (mesmo commit) — 🧭 Toba Drive e 🚘 Auto: sem pulo no viaduto, limite de 3 fontes com ✏ correção, 😇 conquista justa e chegada mais certa (APK 3.4)
+
+**Arquivos alterados (parte do Drive):** `TobaRacing/TobaDrive/js/drive-metrics.js`, `drive.js`, `drive-game.js`, `drive-route.js`, `drive-core.js`, `TobaRacing/TobaDrive/TobaDrive.html`, `css/drive.css`, `assets/toba-common.js`, `TobaAndroid/app/auto/br/com/toba/auto/RouteSnap.java` (NOVO), `LimitMatch.java` (NOVO), `NavEngine.java`, `Route.java`, `TobaApi.java`, `AutoStore.java`, `DriveSync.java`, `TobaAndroid/app/auto/br/com/toba/app/TobaBridge.java`, `TobaAndroid/app/build.gradle` (**APK 3.4**, versionCode 25), `CLAUDE.md`. Radares: `TobaRacing/TobaDrive/js/drive-radar.js` (NOVO), `js/auto-map.js`, `TobaDrive-Auto.html`, `sw.js` (arquivo novo na lista, segue toba-v68).
+
+1. **🌉 Viaduto (Rafa: "to na Imigrantes e vou subir pra Bandeirantes, embaixo do viaduto ele marca que to em cima").** No trevo a rota passa embaixo do viaduto, dá a volta na alça e sobe **por cima do mesmo lugar**. O Toba pegava o pedaço da rota mais perto, e embaixo do viaduto o pedaço de cima tá a 0 m: o carango pulava pra cima, voltava pra alça e subia de novo, e o **limite trocava junto**. Agora, no celular e no carro, um pedaço da rota só vale se:
+   - **o rumo bate** com o do GPS (até 60°, andando a 15 km/h ou mais);
+   - **fica perto de onde tu tava**: no máximo uns 40 m pra trás e, pra frente, o que dá pra andar desde a última leitura.
+   Pulo de verdade (túnel, GPS que voltou longe) só vale depois de 3 leituras seguidas concordando. No teste do trevo, a conta velha errava 7 de 7 leituras perto do viaduto e a nova não errou nenhuma.
+2. **🐢 Limite de 3 fontes (Rafa: "tem mt velocidade de rua errada").** Antes era só a TomTom. Agora vale, nessa ordem: **✏ tua correção**, depois a **TomTom**, e o **OpenStreetMap** (placa `maxspeed` das vias da rota, a mesma fonte grátis dos radares) só onde a TomTom não sabe (Rafa escolheu a TomTom como principal). O OSM só vale quando a via dele mais perto (até 15 m) corre no **mesmo sentido**, assim a marginal do lado não empresta o limite pra tua pista. As vias ficam guardadas no celular por 14 dias (o caminho de todo dia não pergunta de novo).
+3. **✏ Corrigir o limite:** navegando **no celular**, **toca no velocímetro** (no Android Auto não tem toque no mapa; a correção feita no celular vai pro carro). Abre "✏ Limite daqui" mostrando o que a TomTom diz, o que o OpenStreetMap diz e qual tá valendo. Um toque no número certo (20 a 120, ou 🤷 sem placa) grava pra **rua inteira nesse sentido**, no celular e no **Android Auto**. Placa com borda laranja = limite da tua correção. ↩️ tira a correção.
+4. **Limite firme:** o número novo só aparece depois de uns 30 m (ou 3 s) no trecho novo, pra não ficar piscando na divisa.
+5. **😇 Pé de anjo / 🧘 Motorista de comercial mais justos (Rafa: "nunca vou conseguir a conquista").** Antes, 3 s acima do limite já matava a viagem, e um pulo de limite errado bastava. Agora: só conta estouro de **4 s seguidos** (igual o Cloba reclamando) e nunca nos **8 s depois do limite trocar** (tempo pra frear). E as viagens do **Android Auto passam a contar**: o carro grava o tempo dentro do limite (antes não mandava nada, então pelo carro a conquista nunca vinha).
+6. **⏱️ Chegada mais certa (Rafa: "o Waze sempre mostra uns minutos depois do Toba e normalmente tá mais certo").**
+   - **Tempo de cada trecho:** a TomTom manda o tempo com trânsito até cada manobra, e o Toba jogava isso fora: o "falta X min" era uma regra de três pela distância. Rodovia livre no começo deixava a parte travada do fim "rápida" demais. Agora conta trecho por trecho (exemplo do teste: 10 km com 8 km de rodovia em 5 min e 2 km travados em 15 min; no km 8 a conta velha dizia "faltam 4 min" e a nova diz 15).
+   - **Trânsito a cada 5 min no carro também:** igual ao celular, pergunta de novo pra TomTom. Caminho 3 min+ mais rápido = troca e avisa; senão só acerta a chegada.
+   - **🧠 Fator Rafa:** com as tuas viagens que chegaram (celular e carro), o Toba aprende quanto tu costuma levar a mais (ou a menos) que a TomTom: mediana das últimas 20 com previsão de 5 min+, sem o tempo parado. Precisa de 3 viagens e vale de -15% a +35%. Aparece na prévia ("🧠 Fator Rafa: a TomTom diz 22 min, mas tu costuma levar 12% a mais"). As conquistas de tempo (⏱️ previsão do Partiu) continuam com o número da TomTom.
+7. **📸 Radares certos (Rafa: "tinha lugar que tem radar mas não tem e lugar que não tinha radar mas tem").** Antes o radar vinha só do OpenStreetMap, que é mapa colaborativo: radar tirado fica lá anos e radar novo demora pra alguém marcar.
+   - **Base oficial nova:** o **Pardal** (dados abertos, ODbL) junta os radares da **CET-SP**, do **DER-SP** (rodovias, Imigrantes e Bandeirantes inclusive), do **Inmetro**, ANTT, PRF e do OSM, atualizado todo dia. São ~5.200 radares no estado de SP, com o **sentido que o radar fiscaliza** e marcado quando tá **desligado**. Radar desligado **some** (mesmo que o OSM ainda tenha) e radar oficial que o OSM não tinha **entra**. O arquivo (~230 KB) baixa a cada 3 dias e serve o celular e o carro. Fora de SP (ou sem internet e sem cópia) segue o OpenStreetMap como antes.
+   - **Sentido:** radar com sentido conhecido só avisa se bate com o rumo da rota (radar da pista do outro lado fica quieto).
+   - **✏ Marcar radar:** navegando no celular, **toca no velocímetro** (a mesma folha do limite, agora "✏ Limite e radar daqui"). **📸 Tem radar aqui** põe um radar onde tu tá, nesse sentido. **🚫 Esse radar não existe** tira o próximo radar avisado (até 500 m na frente ou o que acabou de passar). ↩️ tira tuas marcações dali. Vale no celular **e no 🚘 Android Auto** sem APK novo (o carro lê o mesmo banco do Toba Drive).
+
+**Dados:** `TOBA_DRIVE_DB.radarFixes` (NOVO, opcional): `[{ id: "rf-..", kind: "add"|"del", lat, lng, head, limit?, street, at }]`, até 300; cópia do Pardal em `toba_radar_pardal_sp` (só do aparelho). `TOBA_DRIVE_DB.limitFixes` (NOVO, opcional): `[{ id: "lf-..", lat, lng, head, kmh (-1 = sem limite), way? (via do OSM), street, at }]`, até 300. Banco antigo vira `[]` no `normalizeDriveDb`. Viagens do carro (APK 3.4) trazem `limitS`/`overS`/`eta` e entram com `cleanSpeed` e `etaS`; viagens antigas não mudam. Cache novo só do aparelho: `toba_drive_osm_cache`. Ponte nova `TOBA_NATIVE.autoTuning(json)` (`version()` 19), e o site checa se existe.
+
+**APK:** precisa do **APK 3.4** (versionCode 25) pro carro: Sync Gradle → Generate Signed APK → instalar pelo **KingInstaller** (adb push + KingInstaller, como sempre). Sem o APK novo, o celular já ganha tudo; o carro segue como antes.
+
+**Como testar:** Toba Drive navegando: tocar no velocímetro → aparecem TomTom / OpenStreetMap / Tua correção → tocar 40 → placa vira 40 com borda laranja; ↩️ volta. Prévia de uma rota depois de 3+ viagens que chegaram: linha 🧠 Fator Rafa. No carro (DHU ou no Peugeot): passar no trevo Imigrantes → Bandeirantes e ver a seta e o limite sem pular pra pista de cima. Radar: na folha do velocímetro, 🚫 no próximo radar → some do mapa no celular e, na próxima vez que o carro carregar aquela região, no Auto também; 📸 põe um radar com a plaquinha. ⚙️ mostra "APK 3.4 · Patch v2.13".
+
+**✅ Commit sugerido da v2.13 INTEIRA (enxuto, use este no lugar dos de cima):** `v2.13 - Elastico com lado E/D, pagina inicial com visoes, Toba Drive/Auto sem pulo no viaduto, limite e radar certos com correcao, chegada mais precisa (APK 3.4)`

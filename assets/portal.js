@@ -129,6 +129,7 @@ function applyPortalCards() {
     grid.appendChild(c.element);
     c.element.hidden = !c.visible;
   });
+  if (typeof renderPortalViews === "function") renderPortalViews();
 }
 
 function renderOrderList() {
@@ -725,9 +726,8 @@ function renderTurismCard() {
 
 // App Android (v1.47): compras lidas das notificações esperando aprovação
 // no Gastos. Só lê a fila do app e o TOBA_BANK_DB (tira o que já foi lançado).
-function renderPortalPending() {
-  const box = document.getElementById("portalPending");
-  if (!box) return;
+// Também usado pelas visões da página inicial (portal-views.js, bolinha 🤖 no Bank).
+function portalPendingInfo() {
   let count = 0;
   let total = 0;
   if (TOBA_NATIVE && typeof TOBA_NATIVE.getPendingPurchases === "function") {
@@ -743,8 +743,16 @@ function renderPortalPending() {
       });
     } catch (err) {
       count = 0;
+      total = 0;
     }
   }
+  return { count, total };
+}
+
+function renderPortalPending() {
+  const box = document.getElementById("portalPending");
+  if (!box) return;
+  const { count, total } = portalPendingInfo();
   box.hidden = !count;
   box.innerHTML = count
     ? `<span class="portal-pending-icon">🤖<b>${count}</b></span><span class="portal-pending-text"><strong>${count === 1 ? "1 compra do cartão" : `${count} compras do cartão`} esperando aprovação</strong><span>${formatCurrency(total)} · toque pra lançar ou descartar no Gastos</span></span><span class="toba-hub-chevron">›</span>`
@@ -759,6 +767,8 @@ function renderPortalPanels() {
   renderKitchenCard();
   renderRacingCard();
   renderTurismCard();
+  // v2.13: visão da página inicial escolhida na ⚙️ (portal-views.js)
+  if (typeof renderPortalViews === "function") renderPortalViews();
   tobaPlayerCheck();
   // App Android: refaz os avisos das tarefas a cada abertura (o portal é a tela mais aberta)
   syncRoutineAlerts(readRoutineDbRaw());

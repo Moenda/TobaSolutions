@@ -131,6 +131,292 @@ function driveLocateOnRoute(route, p, hintSeg = 0) {
   return best;
 }
 
+/* ---------- v2.13: grudar na rota com rumo e continuidade ----------
+ * Caso do Rafa (Imigrantes -> Bandeirantes): no trevo a rota passa por baixo do viaduto,
+ * dá a volta na alça e sobe passando POR CIMA do mesmo lugar (a linha cruza ela mesma).
+ * O "mais perto" do driveLocateOnRoute pulava pra pista de cima e o limite ia junto.
+ * Aqui um pedaço só vale se o rumo dele bate com o do GPS (até 60°, andando a 15 km/h+)
+ * e se fica perto de onde o carro estava (até 40 m pra trás; pra frente, o que dá pra
+ * andar no tempo desde a última leitura). O resto é só "candidato a pulo" (jump).
+ * Mesma conta do RouteSnap.java do Android Auto. */
+const DRIVE_SNAP_MAX_TURN = 60;
+const DRIVE_SNAP_BEHIND_M = 40;
+const DRIVE_SNAP_AHEAD_M = 60;
+const DRIVE_SNAP_NEAR_M = 80;
+
+function driveAngleDiff(a, b) {
+  const d = (((b - a) % 360) + 360) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
+// st = { heading (graus|null), speed (m/s), along (m da última leitura aceita|null), dt (s) }
+function driveSnapOnRoute(route, p, st = {}) {
+  const { coords, cum } = route || {};
+  const out = { best: null, jump: null };
+  if (!coords || coords.length < 2) return out;
+  const speed = Number(st.speed) || 0;
+  const useHead = Number.isFinite(st.heading) && speed > 4;
+  const hasPrev = Number.isFinite(st.along);
+  const dt = Math.max(0, Math.min(600, Number(st.dt) || 0));
+  const ahead = hasPrev ? st.along + DRIVE_SNAP_AHEAD_M + dt * Math.max(speed * 1.8, 20) : Infinity;
+  const behind = hasPrev ? st.along - DRIVE_SNAP_BEHIND_M : -Infinity;
+  for (let i = 0; i < coords.length - 1; i += 1) {
+    const pr = driveProjectOnSegment(p, coords[i], coords[i + 1]);
+    if (pr.dist > DRIVE_SNAP_NEAR_M) continue;
+    const segLen = cum[i + 1] - cum[i];
+    if (useHead && segLen > 3 && driveAngleDiff(driveBearing(coords[i], coords[i + 1]), st.heading) > DRIVE_SNAP_MAX_TURN) continue;
+    const hit = { seg: i, dist: pr.dist, along: cum[i] + pr.t * segLen };
+    if (hit.along >= behind && hit.along <= ahead) {
+      if (!out.best || hit.dist < out.best.dist) out.best = hit;
+    } else if (!out.jump || hit.dist < out.jump.dist) {
+      out.jump = hit;
+    }
+  }
+  return out;
+}
+
+/* ---------- v2.13: limite com 3 fontes (✏ correção > TomTom > OpenStreetMap) ----------
+ * (Rafa: a TomTom é a principal; o OSM só tapa buraco onde a TomTom não sabe.)
+ * route.limits = TomTom ({from, to, kmh}); route.osm = { kmh: [], way: [] } por trecho
+ * (driveMatchOsm, vias do Overpass); fixes = TOBA_DRIVE_DB.limitFixes. Resultado fica em
+ * route.limArr (o que vale) + route.limTT/route.limOsm (pro ✏ mostrar quem disse o quê).
+ * Mesma regra do LimitMatch.java do Android Auto. */
+const DRIVE_OSM_NEAR_M = 15;
+const DRIVE_OSM_SAME_DIR = 35;
+const DRIVE_FIX_NEAR_M = 25;
+const DRIVE_FIX_SAME_DIR = 35;
+const DRIVE_FIX_SPREAD_M = 400;
+
+// "60" -> 60; "60 km/h" -> 60; "40 mph" -> 64; "BR:urban", "none", "50;60" -> 0
+function driveParseMaxspeed(raw) {
+  const s = String(raw ?? "").trim().toLowerCase();
+  const m = s.match(/^([0-9]+(?:\.[0-9]+)?)\s*(km\/h|kmh|kph|mph)?$/);
+  if (!m) return 0;
+  let v = Number(m[1]);
+  if (m[2] === "mph") v *= 1.609344;
+  const k = Math.round(v);
+  return k >= 5 && k < 200 ? k : 0;
+}
+
+// Overpass (out tags geom) -> [{ id, kmh, back, oneway, pts: [[lat,lng]] }] (compacto, vai pro cache)
+function driveOsmWaysFromOverpass(json) {
+  return (json?.elements || [])
+    .filter((el) => el && el.type === "way" && Array.isArray(el.geometry) && el.geometry.length >= 2)
+    .map((el) => {
+      const t = el.tags || {};
+      const all = driveParseMaxspeed(t.maxspeed);
+      const fwd = driveParseMaxspeed(t["maxspeed:forward"]);
+      const bwd = driveParseMaxspeed(t["maxspeed:backward"]);
+      const ow = String(t.oneway || "");
+      const oneway = ow === "-1" ? -1
+        : ["yes", "true", "1"].includes(ow) || t.junction === "roundabout" || (t.highway === "motorway" && ow !== "no") ? 1 : 0;
+      return {
+        id: Number(el.id) || 0,
+        kmh: fwd || all,
+        back: bwd || all,
+        oneway,
+        pts: el.geometry.map((g) => [Math.round(g.lat * 1e6) / 1e6, Math.round(g.lon * 1e6) / 1e6]),
+      };
+    });
+}
+
+// Pra cada trecho da rota: a via do OSM mais perto do meio dele (até 15 m) no MESMO sentido
+// (mão dupla vale no contrário). Via sem maxspeed também conta: se a mais perto não tem
+// limite, o OSM "não sabe" e fica o do TomTom (a marginal do lado não rouba o limite).
+function driveMatchOsm(route, ways) {
+  const coords = route?.coords || [];
+  const n = Math.max(0, coords.length - 1);
+  const out = { kmh: new Array(n).fill(0), way: new Array(n).fill(0) };
+  if (!n || !Array.isArray(ways) || !ways.length) return out;
+  const G = 0.002;
+  const key = (a, b) => `${a}:${b}`;
+  const grid = new Map();
+  ways.forEach((w, wi) => {
+    for (let k = 0; k < w.pts.length - 1; k += 1) {
+      const [a0, a1] = [Math.min(w.pts[k][0], w.pts[k + 1][0]), Math.max(w.pts[k][0], w.pts[k + 1][0])];
+      const [b0, b1] = [Math.min(w.pts[k][1], w.pts[k + 1][1]), Math.max(w.pts[k][1], w.pts[k + 1][1])];
+      for (let a = Math.floor(a0 / G); a <= Math.floor(a1 / G); a += 1) {
+        for (let b = Math.floor(b0 / G); b <= Math.floor(b1 / G); b += 1) {
+          const kk = key(a, b);
+          if (!grid.has(kk)) grid.set(kk, []);
+          grid.get(kk).push([wi, k]);
+        }
+      }
+    }
+  });
+  for (let i = 0; i < n; i += 1) {
+    const a = coords[i];
+    const b = coords[i + 1];
+    if (driveDist(a, b) < 0.5) continue;
+    const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    const head = driveBearing(a, b);
+    const ca = Math.floor(mid[0] / G);
+    const cb = Math.floor(mid[1] / G);
+    let bestD = DRIVE_OSM_NEAR_M;
+    let found = null;
+    const seen = new Set();
+    for (let da = -1; da <= 1; da += 1) {
+      for (let db = -1; db <= 1; db += 1) {
+        for (const [wi, k] of grid.get(key(ca + da, cb + db)) || []) {
+          const sk = wi * 100000 + k;
+          if (seen.has(sk)) continue;
+          seen.add(sk);
+          const w = ways[wi];
+          const d = driveProjectOnSegment(mid, w.pts[k], w.pts[k + 1]).dist;
+          if (d > bestD) continue;
+          const diff = driveAngleDiff(driveBearing(w.pts[k], w.pts[k + 1]), head);
+          let v;
+          if (diff <= DRIVE_OSM_SAME_DIR && w.oneway !== -1) v = w.kmh;
+          else if (diff >= 180 - DRIVE_OSM_SAME_DIR && w.oneway !== 1) v = w.back;
+          else continue;
+          bestD = d;
+          found = { kmh: v || 0, way: w.id };
+        }
+      }
+    }
+    if (found) {
+      out.kmh[i] = found.kmh;
+      out.way[i] = found.way;
+    }
+  }
+  return out;
+}
+
+// Junta tudo em route.limArr. fixes = [{ lat, lng, head, kmh (-1 = sem limite), way? }]
+function driveBuildLimits(route, fixes = []) {
+  const coords = route?.coords || [];
+  const n = Math.max(0, coords.length - 1);
+  const tt = new Array(n).fill(0);
+  (route?.limits || []).forEach((l) => {
+    for (let i = Math.max(0, l.from); i < Math.min(n, Math.max(l.to, l.from + 1)); i += 1) tt[i] = l.kmh;
+  });
+  const osm = route?.osm?.kmh || [];
+  const out = tt.map((v, i) => (v > 0 ? v : osm[i] || 0));
+  const fixOf = new Array(n).fill(""); // id da ✏ correção que vale em cada trecho
+  const heads = [];
+  for (let i = 0; i < n; i += 1) heads.push(driveBearing(coords[i], coords[i + 1]));
+  (Array.isArray(fixes) ? fixes : []).forEach((f) => {
+    if (!f || !Number.isFinite(Number(f.lat)) || !Number.isFinite(Number(f.head)) || !Number(f.kmh)) return;
+    const val = f.kmh < 0 ? 0 : Number(f.kmh);
+    // 1) a via do OSM inteira, no mesmo sentido da correção
+    const way = Number(f.way) || 0;
+    let byWay = false;
+    if (way && route?.osm?.way) {
+      route.osm.way.forEach((w, i) => {
+        if (w === way && driveAngleDiff(heads[i], f.head) <= 45) {
+          out[i] = val;
+          fixOf[i] = f.id || "";
+          byWay = true;
+        }
+      });
+    }
+    if (byWay) return;
+    // 2) sem via: trecho mais perto (mesmo sentido) e o pedaço com o mesmo limite do TomTom em volta (400 m)
+    let seed = -1;
+    let bestD = DRIVE_FIX_NEAR_M;
+    for (let i = 0; i < n; i += 1) {
+      if (driveAngleDiff(heads[i], f.head) > DRIVE_FIX_SAME_DIR) continue;
+      const d = driveProjectOnSegment([Number(f.lat), Number(f.lng)], coords[i], coords[i + 1]).dist;
+      if (d < bestD) {
+        bestD = d;
+        seed = i;
+      }
+    }
+    if (seed < 0) return;
+    const base = tt[seed];
+    const at = route.cum[seed];
+    const put = (i) => {
+      out[i] = val;
+      fixOf[i] = f.id || "";
+    };
+    put(seed);
+    for (let i = seed + 1; i < n && tt[i] === base && route.cum[i] - at <= DRIVE_FIX_SPREAD_M; i += 1) put(i);
+    for (let i = seed - 1; i >= 0 && tt[i] === base && at - route.cum[i + 1] <= DRIVE_FIX_SPREAD_M; i -= 1) put(i);
+  });
+  route.limFix = fixOf;
+  route.limTT = tt;
+  route.limArr = out;
+  return out;
+}
+
+/* ---------- v2.13: chegada pelo tempo de cada trecho da TomTom ----------
+ * A TomTom manda o tempo (com trânsito) até cada manobra (steps[].time). Entre uma manobra
+ * e outra a conta é pela distância só daquele pedaço. Antes era regra de três da rota
+ * toda: rodovia livre no começo deixava a parte travada do fim "rápida" demais.
+ * route.live = { adj, base }: acerto do trânsito de agora (checkTraffic), encolhe junto. */
+// [[metros, segundos desde o começo]] da rota. TomTom manda o tempo ACUMULADO até cada
+// manobra; Valhalla manda quanto cada manobra dura (aí soma). OSRM/sem tempo: [] (regra de três).
+function driveRouteTimeline(route) {
+  if (route?._tl) return route._tl;
+  const cum = route?.cum || [];
+  const steps = route?.steps || [];
+  const out = [];
+  if (route?.provider === "tomtom") {
+    steps.forEach((s) => out.push([cum[s.idx], Number(s.time) || 0]));
+  } else if (route?.provider === "valhalla" || route?.provider === "osrm") {
+    let acc = 0;
+    steps.forEach((s) => {
+      out.push([cum[s.idx], acc]);
+      acc += Number(s.time) || 0;
+    });
+  }
+  if (route) route._tl = out;
+  return out;
+}
+
+function driveRouteTimeLeft(route, along) {
+  const total = Number(route?.duration) || 0;
+  const cum = route?.cum || [];
+  const len = cum[cum.length - 1] || Number(route?.distance) || 0;
+  let tPrev = 0;
+  let dPrev = 0;
+  let at = null;
+  for (const [d, t] of driveRouteTimeline(route)) {
+    if (!(t > 0) || !Number.isFinite(d) || t < tPrev || d < dPrev || t > total) continue;
+    if (d >= along) {
+      const span = d - dPrev;
+      at = span <= 0 ? t : tPrev + ((t - tPrev) * (along - dPrev)) / span;
+      break;
+    }
+    tPrev = t;
+    dPrev = d;
+  }
+  if (at === null) {
+    const span = len - dPrev;
+    at = span <= 0 ? total : tPrev + ((total - tPrev) * Math.max(0, along - dPrev)) / span;
+  }
+  let left = Math.max(0, total - Math.min(total, at));
+  const live = route?.live;
+  if (live && live.base > 0) left = Math.max(0, left + live.adj * Math.min(1, left / live.base));
+  return left;
+}
+
+/* ---------- v2.13: 🧠 Fator Rafa ----------
+ * Quanto tu costuma levar a mais (ou a menos) que a previsão da TomTom, pelas tuas
+ * viagens que chegaram (celular e carro): mediana das últimas 20 com previsão de 5 min+,
+ * tirando o tempo parado (posto, mercado). Viagem que caiu e voltou, juntada ou que tu
+ * mudou de ideia no caminho (2x a previsão) fica fora. Precisa de 3+; vale de 0,85 a 1,35.
+ * Só muda a chegada mostrada: o etaS gravado (conquistas de tempo) continua o da TomTom. */
+const DRIVE_ETA_MIN_TRIPS = 3;
+
+function driveEtaFactor(db) {
+  const trips = driveSafeDb(db).trips
+    .filter((t) => t && t.arrived && Number(t.etaS) >= 300 && !t.joined && !t.parts && !(Array.isArray(t.autoAts) && t.autoAts.length > 1))
+    .sort((a, b) => (Number(b.startedAt) || 0) - (Number(a.startedAt) || 0));
+  const ratios = [];
+  for (const t of trips) {
+    const s = ((Number(t.endedAt) || 0) - (Number(t.startedAt) || 0) - (Number(t.stopMs) || 0)) / 1000;
+    const r = s / Number(t.etaS);
+    if (r >= 0.5 && r <= 2) ratios.push(r);
+    if (ratios.length >= 20) break;
+  }
+  if (ratios.length < DRIVE_ETA_MIN_TRIPS) return { f: 1, n: ratios.length };
+  ratios.sort((a, b) => a - b);
+  const mid = ratios.length / 2;
+  const med = ratios.length % 2 ? ratios[Math.floor(mid)] : (ratios[mid - 1] + ratios[mid]) / 2;
+  return { f: Math.round(Math.max(0.85, Math.min(1.35, med)) * 100) / 100, n: ratios.length };
+}
+
 /* ---------- textos ---------- */
 function driveFormatKm(m) {
   const km = (Number(m) || 0) / 1000;
@@ -322,8 +608,10 @@ function driveTomTomLimits(route) {
     .filter((s) => s.kmh > 0);
 }
 
-// Limite no ponto "seg" da rota (índice do segmento onde o carro está) ou null
+// Limite no ponto "seg" da rota (índice do segmento onde o carro está) ou null.
+// v2.13: com o OSM e a ✏ correção (driveBuildLimits) quando já foi juntado.
 function driveLimitAt(route, seg) {
+  if (Array.isArray(route?.limArr)) return route.limArr[seg] || null;
   const hit = (route?.limits || []).find((l) => seg >= l.from && seg < l.to);
   return hit ? hit.kmh : null;
 }

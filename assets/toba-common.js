@@ -738,7 +738,7 @@ const TOBA_NATIVE = window.TobaNative || null;
 
 // v1.86: versão do patch, mostrada embaixo do backup na ⚙️ ("APK 2.1 · Patch v1.86").
 // TODO patch novo sobe aqui junto da entrada do PATCH-NOTES (CLAUDE.md seção 7).
-const TOBA_PATCH_VERSION = "v2.12";
+const TOBA_PATCH_VERSION = "v2.13";
 
 // Versão do APK pelo User-Agent ("... TobaApp/2.1"); "" no navegador.
 function tobaApkVersion() {
@@ -768,6 +768,23 @@ function tobaShareDriveFavs(db) {
     TOBA_NATIVE.autoFavorites(JSON.stringify(favs));
   } catch (err) {
     console.error("Não deu pra mandar os favoritos pro carro", err);
+  }
+}
+
+// v2.13 (APK 3.4): ajustes do 🧭 Toba Drive pro Android Auto (ponte autoTuning):
+// ✏ correções de limite (TOBA_DRIVE_DB.limitFixes) e 🧠 Fator Rafa (driveEtaFactor). O fator
+// mora no drive-metrics.js: página que não carrega ele (Bank, Health...) não manda nada,
+// pra não apagar o que o Drive/portal já mandou.
+function tobaShareDriveTuning(db) {
+  if (!TOBA_NATIVE || typeof TOBA_NATIVE.autoTuning !== "function" || typeof driveEtaFactor !== "function") return;
+  try {
+    const data = db || JSON.parse(localStorage.getItem("TOBA_DRIVE_DB") || "null");
+    const fixes = (data && Array.isArray(data.limitFixes) ? data.limitFixes : [])
+      .filter((f) => f && Number.isFinite(Number(f.lat)) && Number.isFinite(Number(f.lng)) && Number.isFinite(Number(f.head)) && Number(f.kmh))
+      .map((f) => ({ lat: Number(f.lat), lng: Number(f.lng), head: Number(f.head), kmh: Number(f.kmh), ...(Number(f.way) ? { way: Number(f.way) } : {}) }));
+    TOBA_NATIVE.autoTuning(JSON.stringify({ limitFixes: fixes, etaFactor: driveEtaFactor(data).f }));
+  } catch (err) {
+    console.error("Não deu pra mandar os ajustes pro carro", err);
   }
 }
 
@@ -871,6 +888,14 @@ function tobaReadAutoTrips() {
 }
 
 // Junta as viagens do carro no banco do Drive (mexe no objeto). Devolve quantas mudaram.
+// v2.13: mesma regra do gameTripExtras do celular: limite conhecido em 50%+ do tempo e
+// menos de 3 s acima (o carro só conta estouro de 4 s+ seguidos). null = APK antigo.
+function tobaAutoClean(c, at, end) {
+  if (!c || c.limitS === undefined || c.limitS === null) return null;
+  const secs = Math.max(1, (end - at) / 1000);
+  return Number(c.limitS) >= secs * 0.5 && (Number(c.overS) || 0) < 3;
+}
+
 function tobaMergeAutoTrips(db, carTrips = tobaReadAutoTrips()) {
   if (!db || !Array.isArray(db.trips) || !Array.isArray(carTrips) || !carTrips.length) return 0;
   const skip = new Set((Array.isArray(db.autoSkip) ? db.autoSkip : []).map(Number));
@@ -899,6 +924,12 @@ function tobaMergeAutoTrips(db, carTrips = tobaReadAutoTrips()) {
         mine.arrived = true;
         upd = true;
       }
+      // v2.13: o carro continuou: o 😇 limpo também é refeito com o tempo todo
+      const clean = tobaAutoClean(c, at, end);
+      if (clean !== null && Number(mine.autoAt) === at && mine.source === "auto" && mine.cleanSpeed !== clean) {
+        mine.cleanSpeed = clean;
+        upd = true;
+      }
       if (upd) changed += 1;
       return;
     }
@@ -915,6 +946,9 @@ function tobaMergeAutoTrips(db, carTrips = tobaReadAutoTrips()) {
         twin.startedAt = Math.min(Number(twin.startedAt) || at, at);
       }
       if (c.arrived) twin.arrived = true;
+      // v2.13: o celular não contou o limite (modo jogo desligado)? fica o do carro
+      const clean = tobaAutoClean(c, at, end);
+      if (clean !== null && twin.cleanSpeed === undefined) twin.cleanSpeed = clean;
       return;
     }
     const lat = Number(c.lat);
@@ -933,6 +967,11 @@ function tobaMergeAutoTrips(db, carTrips = tobaReadAutoTrips()) {
       source: "auto",
       autoAt: at,
     };
+    // v2.13 (APK 3.4): o carro manda o tempo no limite (😇 Pé de anjo / 🧘 Motorista de
+    // comercial) e a previsão da TomTom do começo (🧠 Fator Rafa). APK antigo não manda.
+    const clean = tobaAutoClean(c, at, end);
+    if (clean !== null) part.cleanSpeed = clean;
+    if (Number(c.eta) > 0) part.etaS = Math.round(Number(c.eta));
     // v2.03: viagem do carro que caiu e voltou pro mesmo destino = a mesma viagem
     const prev = okPoint ? tobaTripToContinue(db.trips, part) : null;
     if (prev) {
@@ -1354,4 +1393,5 @@ document.addEventListener("DOMContentLoaded", () => {
   ensureTobaSettings();
   tobaSyncAutoTrips(); // v2.02: viagens do Android Auto pro histórico do Drive
   tobaShareDriveFavs();
+  tobaShareDriveTuning(); // v2.13
 });

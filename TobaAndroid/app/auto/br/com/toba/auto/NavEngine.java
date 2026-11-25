@@ -88,6 +88,39 @@ final class NavEngine implements LocationListener {
     private double driven;
     private Location odo;
 
+    /* v2.13: grudar na rota com rumo e continuidade (RouteSnap) */
+    private double snapAlong = Double.NaN; // metros da rota na última leitura aceita
+    private long snapAt;
+    private double jumpAlong = Double.NaN; // candidato a pulo (túnel, GPS que voltou longe)
+    private int jumpCount;
+
+    /* v2.13: limite firme + conta do 😇 Pé de anjo / 🧘 Motorista de comercial */
+    private int limShown;                  // o que a placa mostra
+    private int limPend = -1;              // limite novo esperando firmar
+    private long limPendAt;
+    private double limPendAlong;
+    private long limChangedAt;
+    private long lastTick;
+    private double tripLimitS, tripOverS;
+    private long overSince;
+    private boolean overCounted;
+    private long tripEta;                  // previsão da TomTom no começo (0 = viagem que continuou)
+    static final double OVER_TOL = 1.07;   // mesma folga do celular (DRIVE_OVER_TOLERANCE)
+    static final long OVER_RUN_MS = 4000;  // só estouro de 4 s+ seguidos conta
+    static final long LIMIT_GRACE_MS = 8000; // trocou o limite: 8 s pra frear antes de contar
+
+    /* v2.13: chegada mais certa (tempo de cada trecho da TomTom + trânsito a cada 5 min + 🧠 Fator Rafa) */
+    private double liveAdj, liveBase;      // segundos a mais/menos que o trânsito de agora deu
+    private long lastTrafficCheck;
+    private boolean trafficBusy;
+    static final long TRAFFIC_CHECK_MS = 5 * 60 * 1000L;
+    static final long SWAP_SAVE_S = 180;   // caminho novo 3 min+ mais rápido = troca
+
+    /* v2.13: limite do OpenStreetMap das vias da rota (LimitMatch) */
+    private java.util.List<LimitMatch.Way> osmWays;
+    private long osmAt;
+    private boolean osmBusy;
+
     private boolean simulating;
     private boolean tripSimulated; // v2.02: a viagem usou o Simular (o diário marca sim:true)
     private double simAlong;
@@ -199,6 +232,8 @@ final class NavEngine implements LocationListener {
             map.setCar(loc.getLatitude(), loc.getLongitude(), heading, speed());
         }
         refreshLimit(loc);
+        tickLimit(loc);
+        checkTraffic();
         pushHud();
         changed();
     }
@@ -265,9 +300,15 @@ final class NavEngine implements LocationListener {
         // voltou pro MESMO destino em até 15 min? segue a MESMA viagem do diário: mesmo
         // começo, km somados. Viagem que chegou ou foi pra outro lugar começa do zero.
         AutoStore.Resume back = simulate ? null : AutoStore.takeResume(app, to);
+        tripLimitS = 0;
+        tripOverS = 0;
+        tripEta = r.time;
         if (back != null) {
             startedAt = back.at;
             driven = back.meters;
+            tripLimitS = back.limitS; // v2.13: o tempo no limite segue junto
+            tripOverS = back.overS;
+            tripEta = 0;
         }
         useRoute(r);
         AutoStore.addRecent(app, to);
@@ -300,9 +341,118 @@ final class NavEngine implements LocationListener {
         nextIdx = -1;
         spoken.clear();
         remaining = r.length;
-        remainingSec = r.time;
+        remainingSec = Math.round(r.time * AutoStore.etaFactor(app));
         simAlong = 0;
+        snapAlong = Double.NaN;
+        jumpAlong = Double.NaN;
+        jumpCount = 0;
+        liveAdj = 0;
+        liveBase = 0;
+        lastTrafficCheck = System.currentTimeMillis();
+        limPend = -1;
+        mergeLimits(r);
+        loadOsm(r);
         map.setRoute(r);
+    }
+
+    /* ------------------------------------------------------------ v2.13: limite */
+
+    /** ✏ correção > TomTom > OpenStreetMap, por trecho da rota (LimitMatch.combine). */
+    private void mergeLimits(Route r) {
+        try {
+            r.merged = LimitMatch.combine(r.lat, r.lon, r.cum, r.tomtomPerSeg(), r.osm,
+                    LimitMatch.parseFixes(AutoStore.limitFixes(app)));
+        } catch (RuntimeException e) {
+            r.merged = null; // fica o do TomTom
+        }
+    }
+
+    /**
+     * Busca as vias do OpenStreetMap em volta da rota (1 pedido por rota; recálculo em
+     * menos de 45 s reaproveita as vias que já vieram). Caiu = fica o do TomTom.
+     */
+    private void loadOsm(Route r) {
+        final java.util.List<LimitMatch.Way> have = osmWays;
+        if (have != null && System.currentTimeMillis() - osmAt < 45000) {
+            io.execute(() -> {
+                LimitMatch.Osm o = LimitMatch.match(r.lat, r.lon, have);
+                main.post(() -> {
+                    r.osm = o;
+                    mergeLimits(r);
+                });
+            });
+            return;
+        }
+        if (osmBusy) return;
+        osmBusy = true;
+        io.execute(() -> {
+            java.util.List<LimitMatch.Way> ways = null;
+            LimitMatch.Osm o = null;
+            try {
+                ways = TobaApi.osmWays(r);
+                o = LimitMatch.match(r.lat, r.lon, ways);
+            } catch (IOException | RuntimeException ignored) {
+                // Overpass fora: segue só com o TomTom
+            }
+            final java.util.List<LimitMatch.Way> got = ways;
+            final LimitMatch.Osm res = o;
+            main.post(() -> {
+                osmBusy = false;
+                if (got == null) return;
+                osmWays = got;
+                osmAt = System.currentTimeMillis();
+                r.osm = res;
+                mergeLimits(r);
+                if (route != null && route != r) loadOsm(route); // trocou de rota enquanto buscava
+                pushHud();
+            });
+        });
+    }
+
+    /**
+     * Limite firme: o novo só aparece depois de 30 m (ou 3 s) no trecho novo, pra um GPS
+     * tremido na divisa não ficar piscando. E conta o tempo no limite / acima dele pra
+     * conquista: estouro só vale depois de 4 s seguidos e nunca nos 8 s depois de trocar.
+     */
+    private void tickLimit(Location loc) {
+        long now = System.currentTimeMillis();
+        double dt = lastTick == 0 ? 0 : Math.min(3, (now - lastTick) / 1000.0);
+        lastTick = now;
+        int raw = rawLimit();
+        if (raw == limShown) {
+            limPend = -1;
+        } else if (raw != limPend) {
+            limPend = raw;
+            limPendAt = now;
+            limPendAlong = along;
+        } else if (now - limPendAt >= 3000 || Math.abs(along - limPendAlong) >= 30 || state != State.NAVIGATING) {
+            limShown = raw;
+            limPend = -1;
+            limChangedAt = now;
+        }
+        if (state != State.NAVIGATING || simulating || rerouting) {
+            overSince = 0;
+            return;
+        }
+        int lim = limShown;
+        if (lim > 0) tripLimitS += dt;
+        double kmh = loc.hasSpeed() ? loc.getSpeed() * 3.6 : 0;
+        boolean goodGps = !loc.hasAccuracy() || loc.getAccuracy() <= 30;
+        boolean over = lim > 0 && goodGps && kmh > lim * OVER_TOL && now - limChangedAt > LIMIT_GRACE_MS;
+        if (!over) {
+            overSince = 0;
+            overCounted = false;
+            return;
+        }
+        if (overSince == 0) overSince = now;
+        if (now - overSince >= OVER_RUN_MS) {
+            if (!overCounted) {
+                tripOverS += (now - overSince) / 1000.0; // os 4 s que esperou entram de uma vez
+                overCounted = true;
+            } else {
+                tripOverS += dt;
+            }
+        }
     }
 
     void stop(boolean byUser) {
@@ -363,7 +513,7 @@ final class NavEngine implements LocationListener {
 
     private void finishTrip(boolean arrived) {
         stopSimulation();
-        AutoStore.logTrip(app, dest, driven, startedAt, arrived, tripSimulated);
+        AutoStore.logTrip(app, dest, driven, startedAt, arrived, tripSimulated, tripLimitS, tripOverS, tripEta);
         try {
             nav.navigationEnded();
         } catch (RuntimeException ignored) {
@@ -422,25 +572,43 @@ final class NavEngine implements LocationListener {
         Route r = route;
         int n = r.size();
         double lat = loc.getLatitude(), lon = loc.getLongitude();
-        int bestI = -1;
-        double best = Double.MAX_VALUE, bestT = 0;
-        for (int pass = 0; pass < 2 && (bestI < 0 || best > 60); pass++) {
-            int from = pass == 0 ? Math.max(0, seg - 3) : 0;
-            int to = pass == 0 ? Math.min(n - 2, seg + 400) : n - 2;
-            for (int i = from; i <= to; i++) {
-                double[] b = Geo.enu(r.lat[i], r.lon[i], r.lat[i + 1], r.lon[i + 1]);
-                double[] p = Geo.enu(r.lat[i], r.lon[i], lat, lon);
-                double len2 = b[0] * b[0] + b[1] * b[1];
-                double t = len2 < 1e-6 ? 0 : Math.max(0, Math.min(1, (p[0] * b[0] + p[1] * b[1]) / len2));
-                double d = Math.hypot(p[0] - t * b[0], p[1] - t * b[1]);
-                if (d < best) {
-                    best = d;
-                    bestI = i;
-                    bestT = t;
-                }
+        // v2.13: rumo + continuidade (RouteSnap). Antes era só o ponto mais perto (procurando
+        // pra frente): no trevo Imigrantes -> Bandeirantes a rota passa embaixo do viaduto e
+        // volta por cima, e a seta pulava pra pista de cima (e o limite junto).
+        long nowMs = System.currentTimeMillis();
+        double gpsHead = loc.hasBearing() ? loc.getBearing() : Double.NaN;
+        double spd = loc.hasSpeed() ? loc.getSpeed() : 0;
+        RouteSnap.Result sr = RouteSnap.locate(r.lat, r.lon, r.cum, lat, lon, gpsHead, spd,
+                snapAlong, Double.isNaN(snapAlong) ? 0 : (nowMs - snapAt) / 1000.0);
+        RouteSnap.Hit hit = sr.best;
+        if (sr.jump != null && (hit == null || hit.dist > 25) && sr.jump.dist <= 25) {
+            // pulo só depois de 3 leituras seguidas concordando (o carro andando pra frente nele)
+            boolean same = !Double.isNaN(jumpAlong) && Math.abs(sr.jump.along - jumpAlong) < 30 + spd * 3;
+            jumpCount = same ? jumpCount + 1 : 1;
+            jumpAlong = sr.jump.along;
+            if (jumpCount >= 3) {
+                hit = sr.jump;
+                jumpCount = 0;
+                jumpAlong = Double.NaN;
             }
+        } else {
+            jumpCount = 0;
+            jumpAlong = Double.NaN;
         }
-        if (bestI < 0) return;
+        int bestI = hit == null ? -1 : hit.seg;
+        double best = hit == null ? Double.MAX_VALUE : hit.dist;
+        double bestT = hit == null ? 0 : hit.t;
+        if (bestI < 0) {
+            // nenhum pedaço da rota no rumo do carro por perto: conta como descolado
+            driftCount++;
+            if (loc.hasBearing() && spd > 4f) heading = loc.getBearing();
+            map.setCar(lat, lon, heading, speed());
+            if (driftCount >= 4 && System.currentTimeMillis() - lastReroute > 8000) {
+                offCount++;
+                reroute();
+            }
+            return;
+        }
         // v2.02 (23 de Maio): a seta grudava na via lateral da rota mesmo com o carro seguindo
         // na pista principal (correm lado a lado a uns 20-40 m e o limite era 45 m). Agora:
         //  - descolou mais que "soft" (18 m, ou a precisão do GPS se for pior): a seta SOLTA e
@@ -471,6 +639,8 @@ final class NavEngine implements LocationListener {
         seg = bestI;
         double segLen = r.cum[bestI + 1] - r.cum[bestI];
         along = r.cum[bestI] + bestT * segLen;
+        snapAlong = along;
+        snapAt = nowMs;
         double sLat = r.lat[bestI] + (r.lat[bestI + 1] - r.lat[bestI]) * bestT;
         double sLon = r.lon[bestI] + (r.lon[bestI + 1] - r.lon[bestI]) * bestT;
         double segHead = Geo.bearing(r.lat[bestI], r.lon[bestI], r.lat[bestI + 1], r.lon[bestI + 1]);
@@ -479,7 +649,7 @@ final class NavEngine implements LocationListener {
         map.setProgress(seg, along);
 
         remaining = Math.max(0, r.length - along);
-        remainingSec = r.length > 0 ? Math.round(r.time * remaining / r.length) : 0;
+        remainingSec = Math.round(timeLeftNow(r));
 
         nextIdx = -1;
         for (int i = 0; i < r.instr.size(); i++) {
@@ -609,14 +779,89 @@ final class NavEngine implements LocationListener {
 
     /* ------------------------------------------------------------ v1.78: painel do mapa 3D */
 
+    /**
+     * v2.13: segundos até chegar = tempo da TomTom de cada trecho que falta (Route.timeLeft)
+     * + o acerto do trânsito de agora (checkTraffic, encolhendo junto com o que falta)
+     * × 🧠 Fator Rafa (quanto tu costuma levar a mais que a TomTom, calculado no site).
+     */
+    private double timeLeftNow(Route r) {
+        double plan = r.timeLeft(along);
+        double adj = liveBase > 0 ? liveAdj * Math.min(1, plan / liveBase) : 0;
+        return Math.max(0, plan + adj) * AutoStore.etaFactor(app);
+    }
+
+    /**
+     * v2.13: igual ao celular, a cada 5 min pergunta pra TomTom de novo daqui: caminho 3 min+
+     * mais rápido = troca; senão só acerta a chegada com o trânsito de agora.
+     */
+    private void checkTraffic() {
+        if (state != State.NAVIGATING || route == null || rerouting || trafficBusy || simulating || last == null || dest == null) return;
+        long now = System.currentTimeMillis();
+        if (now - lastTrafficCheck < TRAFFIC_CHECK_MS) return;
+        lastTrafficCheck = now;
+        trafficBusy = true;
+        final Route r = route;
+        final Location from = last;
+        final Place to = dest;
+        io.execute(() -> {
+            Route fresh = null;
+            try {
+                fresh = TobaApi.route(app, from, to);
+            } catch (IOException | RuntimeException ignored) {
+                // sem internet: fica a conta que tinha
+            }
+            final Route got = fresh;
+            main.post(() -> {
+                trafficBusy = false;
+                if (got == null || route != r || state != State.NAVIGATING || rerouting) return;
+                double plan = r.timeLeft(along);
+                double nowLeft = plan + (liveBase > 0 ? liveAdj * Math.min(1, plan / liveBase) : 0);
+                if (nowLeft - got.time >= SWAP_SAVE_S) {
+                    long min = Math.round((nowLeft - got.time) / 60.0);
+                    useRoute(got);
+                    if (last != null) progress(last);
+                    voice.say("Trânsito mudou. Achei um caminho " + min + " minutos mais rápido.");
+                } else {
+                    liveAdj = got.time - plan;
+                    liveBase = Math.max(1, plan);
+                    remainingSec = Math.round(timeLeftNow(r));
+                }
+                pushHud();
+                changed();
+            });
+        });
+    }
+
     private float speed() {
         return last != null && last.hasSpeed() ? last.getSpeed() : 0f;
     }
 
-    /** Limite da rua agora (km/h, 0 = não sei). Só com rota (vem do TomTom). */
+    /** Limite da rua agora (km/h, 0 = não sei). v2.13: o firme (tickLimit), sem piscar. */
     int speedLimit() {
+        return limShown;
+    }
+
+    /** v2.13: o limite cru desta leitura (rota: ✏ > TomTom > OSM; sem rota: ✏ ou TomTom da rua). */
+    private int rawLimit() {
         int fromRoute = state == State.NAVIGATING && route != null ? route.limitAt(seg) : 0;
-        return fromRoute > 0 ? fromRoute : limitHere;
+        if (fromRoute > 0) return fromRoute;
+        if (state != State.NAVIGATING && last != null && last.hasBearing() && last.getSpeed() > 2f) {
+            LimitMatch.Fix f = LimitMatch.fixNear(fixesCache(), last.getLatitude(), last.getLongitude(), last.getBearing());
+            if (f != null) return Math.max(0, f.kmh);
+        }
+        return limitHere;
+    }
+
+    private java.util.List<LimitMatch.Fix> fixes;
+    private long fixesAt;
+
+    private java.util.List<LimitMatch.Fix> fixesCache() {
+        long now = System.currentTimeMillis();
+        if (fixes == null || now - fixesAt > 60000) {
+            fixes = LimitMatch.parseFixes(AutoStore.limitFixes(app));
+            fixesAt = now;
+        }
+        return fixes;
     }
 
     /** v1.80: rua onde o carro tá (da manobra que já passou; sem rota, do TomTom). */

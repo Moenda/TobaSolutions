@@ -112,6 +112,11 @@ public final class DriveSync {
         return AutoStore.setFavorites(c, json);
     }
 
+    /** v2.13 (APK 3.4): ✏ correções de limite + 🧠 Fator Rafa do Toba Drive do site pro carro. */
+    public static boolean setTuning(android.content.Context c, String json) {
+        return AutoStore.setTuning(c, json);
+    }
+
     /**
      * v2.02 (APK 2.7): diário das viagens do carro (toba_auto › trips) pro site importar
      * no histórico do 🧭 Toba Drive. [{at, end, km, dest, lat, lon, arrived, source, sim?, min?}].

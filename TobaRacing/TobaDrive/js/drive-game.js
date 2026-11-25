@@ -21,6 +21,10 @@ const DRIVE_JOKE_GAP_MS = 4 * 60 * 1000;
 const DRIVE_IDLE_JOKE_MS = 7 * 60 * 1000;
 const DRIVE_RADAR_WARN_M = 400;
 const DRIVE_OVER_TOLERANCE = 1.07; // 7% de folga (velocímetro de carro mente pra cima, GPS não)
+// v2.13: conta do 😇 Pé de anjo / 🧘 Motorista de comercial mais justa (era 3 s acima = perdeu)
+const DRIVE_OVER_RUN_MS = 4000; // só estouro de 4 s+ seguidos conta (igual o Cloba reclamando)
+const DRIVE_LIMIT_GRACE_MS = 8000; // trocou o limite: 8 s pra frear antes de contar
+const DRIVE_LIMIT_FIRM_M = 30; // limite novo só aparece depois de 30 m (ou 3 s) no trecho novo
 
 const game = {
   on: false,
@@ -32,6 +36,13 @@ const game = {
   lastIdle: 0,
   overSince: 0,
   overSaid: 0,
+  overCounted: false,
+  lim: null, // v2.13: limite firme (o que a placa mostra)
+  limPend: undefined,
+  limPendAt: 0,
+  limPendAlong: 0,
+  limChangedAt: 0,
+  limRoute: null,
   aheadSaid: false,
   before: null, // conquistas já destravadas antes da viagem
   heading: 0,
@@ -133,6 +144,10 @@ function gameStart() {
   game.lastIdle = Date.now();
   game.overSince = 0;
   game.overSaid = 0;
+  game.overCounted = false;
+  game.lim = null;
+  game.limPend = undefined;
+  game.limRoute = null;
   game.aheadSaid = false;
   game.dark = null;
   game.speedoArgs = null;
@@ -194,6 +209,7 @@ async function gameLoadRadars(route) {
   game.radarIdx = 0;
   nav.map?.setRadars?.([]);
   if (!route) return;
+  gameApplyLimits(route); // v2.13: TomTom + ✏ já; o OSM chega depois dos radares
   try {
     const list = await driveFetchRadars(route);
     if (nav.route === route && game.on) {
@@ -207,6 +223,78 @@ async function gameLoadRadars(route) {
   } catch (err) {
     /* Overpass fora: segue sem radar */
   }
+  gameLoadOsmLimits(route); // depois dos radares: o Overpass não gosta de 2 pedidos juntos
+}
+
+// v2.13: ✏ 📸/🚫 marcação de radar no meio da rota: refaz a lista SEM zerar a viagem
+// (radar que já passou não conta de novo pro 📸 dentro do limite; o que já avisou não fala de novo)
+async function gameRefreshRadars() {
+  const route = nav.route;
+  if (!route || !game.on) return;
+  try {
+    const list = await driveFetchRadars(route);
+    if (nav.route !== route) return;
+    const old = game.radars || [];
+    list.forEach((r) => {
+      const was = old.find((o) => Math.abs(o.along - r.along) < 30);
+      if (was) {
+        r.warned = was.warned;
+        r.over = was.over;
+      }
+    });
+    game.radars = list;
+    let idx = 0;
+    while (idx < list.length && list[idx].along < nav.along - 30) idx += 1;
+    game.radarIdx = idx;
+    nav.map?.setRadars?.(list);
+  } catch (err) {
+    /* sem base: fica a lista que tinha */
+  }
+}
+
+/* ---------- v2.13: limite com OpenStreetMap + ✏ correção ---------- */
+function gameApplyLimits(route) {
+  if (!route) return;
+  try {
+    driveBuildLimits(route, typeof driveDb === "object" && driveDb ? driveDb.limitFixes : []);
+  } catch (err) {
+    route.limArr = null; // fica o do TomTom
+  }
+}
+
+async function gameLoadOsmLimits(route) {
+  if (!route || route.osm || typeof driveFetchOsmWays !== "function") return;
+  try {
+    const ways = await driveFetchOsmWays(route);
+    route.osm = driveMatchOsm(route, ways);
+    gameApplyLimits(route);
+  } catch (err) {
+    /* Overpass fora: fica o do TomTom */
+  }
+}
+
+// Limite firme: o novo só aparece depois de 30 m (ou 3 s) no trecho novo (GPS tremendo na
+// divisa não fica piscando). Rota nova = vale na hora.
+function gameFirmLimit(raw, now) {
+  if (game.limRoute !== nav.route) {
+    game.limRoute = nav.route;
+    if (raw !== game.lim) game.limChangedAt = now;
+    game.lim = raw;
+    game.limPend = undefined;
+    return game.lim;
+  }
+  if (raw === game.lim) {
+    game.limPend = undefined;
+  } else if (raw !== game.limPend) {
+    game.limPend = raw;
+    game.limPendAt = now;
+    game.limPendAlong = nav.along;
+  } else if (now - game.limPendAt >= 3000 || Math.abs(nav.along - game.limPendAlong) >= DRIVE_LIMIT_FIRM_M) {
+    game.lim = raw;
+    game.limPend = undefined;
+    game.limChangedAt = now;
+  }
+  return game.lim;
 }
 
 /* ---------- a cada leitura do GPS (chamado pelo navTick) ---------- */
@@ -222,13 +310,19 @@ function gameTick(next, left, total) {
   const lastP = trip.path[trip.path.length - 1];
   if (!lastP || driveDist(lastP, [pos.lat, pos.lng]) > 25) trip.path.push([pos.lat, pos.lng]);
 
-  // 🏎️ limite e velocímetro
-  const limit = driveLimitAt(nav.route, nav.seg);
-  const over = Boolean(limit && kmh > limit * DRIVE_OVER_TOLERANCE && pos.acc <= 30);
+  // 🏎️ limite e velocímetro (v2.13: limite firme, 8 s de folga quando troca, e só
+  // estouro de 4 s+ seguidos conta pro 😇 Pé de anjo / 🧘 Motorista de comercial)
+  const limit = gameFirmLimit(driveLimitAt(nav.route, nav.seg), now);
+  const over = Boolean(limit && kmh > limit * DRIVE_OVER_TOLERANCE && pos.acc <= 30 && now - game.limChangedAt > DRIVE_LIMIT_GRACE_MS);
   if (limit) trip.limitS += dt;
-  if (over) trip.overS += dt;
   if (over && !game.overSince) game.overSince = now;
-  if (!over) game.overSince = 0;
+  if (!over) {
+    game.overSince = 0;
+    game.overCounted = false;
+  } else if (now - game.overSince >= DRIVE_OVER_RUN_MS) {
+    trip.overS += game.overCounted ? dt : (now - game.overSince) / 1000; // os 4 s esperados entram de uma vez
+    game.overCounted = true;
+  }
   document.body.classList.toggle("is-over", over);
   game.speedoArgs = [kmh, limit, over];
   renderSpeedo(kmh, limit, over);
@@ -311,6 +405,8 @@ function renderSpeedo(kmh = 0, limit = null, over = false) {
   const sign = document.getElementById("speedoLimit");
   sign.hidden = !limit;
   if (limit) sign.textContent = String(limit);
+  // v2.13: borda laranja = limite que veio da tua ✏ correção
+  sign.classList.toggle("is-fix", Boolean(limit && nav.route?.limFix?.[nav.seg]));
 }
 
 function renderGhost(elapsed, frac) {

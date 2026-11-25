@@ -15,6 +15,7 @@ final class Route {
         String message;     // frase pronta em pt-BR ("Vire à direita na Rua Augusta")
         String street;
         int exit;           // saída da rotatória (0 = não sei)
+        double time = -1;   // v2.13: segundos do começo da rota até aqui, com trânsito (-1 = não veio)
         double lat, lon;
     }
 
@@ -63,8 +64,53 @@ final class Route {
         return lat.length;
     }
 
-    /** v1.78: limite da rua no trecho seg (km/h), 0 = não sei. */
+    /**
+     * v2.13: limite já juntado por trecho (✏ correção > TomTom > OpenStreetMap), feito pelo
+     * NavEngine com o LimitMatch. null = ainda não juntou: vale só o do TomTom.
+     */
+    volatile int[] merged;
+    /** v2.13: limite e via do OpenStreetMap por trecho (null = o Overpass ainda não respondeu). */
+    volatile LimitMatch.Osm osm;
+
+    /**
+     * v2.13: segundos que faltam daqui (along = metros andados na rota). A TomTom manda o
+     * tempo com trânsito até cada manobra: entre uma manobra e a outra a conta é pela
+     * distância daquele pedaço só. Antes era regra de três da rota inteira (rodovia livre
+     * no começo deixava a parte travada do fim "rápida" demais).
+     */
+    double timeLeft(double alongM) {
+        double tPrev = 0, dPrev = 0;
+        for (Instr it : instr) {
+            if (it.time < 0 || it.time < tPrev || it.offset < dPrev) continue;
+            if (it.offset >= alongM) {
+                double span = it.offset - dPrev;
+                double at = span <= 0 ? it.time : tPrev + (it.time - tPrev) * (alongM - dPrev) / span;
+                return Math.max(0, time - at);
+            }
+            tPrev = it.time;
+            dPrev = it.offset;
+        }
+        double span = length - dPrev;
+        double at = span <= 0 ? time : tPrev + (time - tPrev) * Math.max(0, alongM - dPrev) / span;
+        return Math.max(0, time - Math.min(time, at));
+    }
+
+    /** v2.13: limite do TomTom por trecho (0 = TomTom não mandou). */
+    int[] tomtomPerSeg() {
+        int n = Math.max(0, lat.length - 1);
+        int[] out = new int[n];
+        for (int i = 0; i < n; i++) out[i] = tomtomAt(i);
+        return out;
+    }
+
+    /** v1.78: limite da rua no trecho seg (km/h), 0 = não sei. v2.13: com OSM e ✏ correção. */
     int limitAt(int seg) {
+        int[] m = merged;
+        if (m != null) return seg >= 0 && seg < m.length ? m[seg] : 0;
+        return tomtomAt(seg);
+    }
+
+    private int tomtomAt(int seg) {
         for (int[] l : limits) {
             if (seg >= l[0] && seg < Math.max(l[1], l[0] + 1)) return l[2];
         }
@@ -219,6 +265,7 @@ final class Route {
                 it.message = o.optString("message", "");
                 it.street = o.optString("street", "");
                 it.exit = o.optInt("roundaboutExitNumber", 0);
+                if (o.has("travelTimeInSeconds")) it.time = o.optDouble("travelTimeInSeconds", -1);
                 JSONObject pt = o.optJSONObject("point");
                 if (pt != null) {
                     it.lat = pt.optDouble("latitude");

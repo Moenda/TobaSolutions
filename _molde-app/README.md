@@ -27,6 +27,7 @@ Esta pasta é um app **funcionando** de exemplo: abra `_molde-app/TobaMolde-Inde
    </a>
    ```
    Mantenha o `data-id` (ele é a chave da ordem salva em `toba_modules_config`).
+   Desde v2.13 esse card já aparece sozinho nas visões ☰ Linha, ▦ Quadradinho e ⭐ Meu painel (dock). Quer número do app nelas (e no ⭐ Meu painel)? Acrescente uma entrada com a mesma `data-id` em `PORTAL_APP_STATS` (`assets/portal-views.js`): `items` (key, label, short) e `read()` que só lê o banco do app (sem dados = `null`). O script de contas do app entra no `index.html` antes do `portal.js`.
 6. **PATCH-NOTES.md:** entrada nova no final, como todo patch.
 
 ## Regras do molde (iguais em todos os apps)

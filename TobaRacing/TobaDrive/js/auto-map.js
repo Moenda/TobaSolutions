@@ -839,7 +839,7 @@ function amShowOverview() {
 }
 
 
-/* ---------- 📸 radares (v1.80): OpenStreetMap pelo Overpass ----------
+/* ---------- 📸 radares (v1.80): OpenStreetMap pelo Overpass (v2.13: + Pardal + ✏ do Rafa) ----------
  * Caixas de ~4 km em volta do carro. Falhou = segue sem radar.
  * v2.03 (pedidos do Rafa):
  * - VOZ UMA VEZ SÓ por radar, número redondo e por extenso ("Radar a trezentos metros"),
@@ -1005,6 +1005,9 @@ async function amRadarBox(s, w, n, e) {
   return rows;
 }
 
+// v2.13: Overpass (com as ruas) + Pardal (CET/DER/Inmetro, drive-radar.js) + ✏ marcações do
+// Rafa (📸/🚫 do celular, TOBA_DRIVE_DB.radarFixes: mesma origem, mesmo banco). Um dos dois
+// (Overpass ou Pardal) basta; os dois fora = tenta essa caixa de novo em 5 min.
 function amRadarLoad(lat, lon) {
   const ty = Math.floor(lat / AM_RADAR_TILE);
   const tx = Math.floor(lon / AM_RADAR_TILE);
@@ -1014,19 +1017,29 @@ function amRadarLoad(lat, lon) {
   const r2 = (v) => Math.round(v * 100) / 100;
   const s = r2(ty * AM_RADAR_TILE - 0.02);
   const w = r2(tx * AM_RADAR_TILE - 0.02);
-  amRadarBox(s, w, r2(s + AM_RADAR_TILE + 0.04), r2(w + AM_RADAR_TILE + 0.04))
-    .then((rows) => {
+  const n = r2(s + AM_RADAR_TILE + 0.04);
+  const e = r2(w + AM_RADAR_TILE + 0.04);
+  const hasDb = typeof tobaRadarMerge === "function";
+  const pardalP = hasDb && tobaRadarInSp(s, w, n, e) ? tobaRadarPardal().catch(() => null) : Promise.resolve(null);
+  Promise.all([amRadarBox(s, w, n, e).catch(() => null), pardalP])
+    .then(([rows, pardal]) => {
+      if (!rows && !pardal) throw new Error("sem radar");
       amRadar.tiles.add(key);
-      rows.forEach(([la, lo, lim, heads, dirs]) => {
-        const id = `${la},${lo}`;
-        const old = amRadar.list.get(id);
-        amRadar.list.set(id, {
-          lat: la,
-          lon: lo,
-          lim: lim || (old && old.lim) || 0,
-          heads: Array.isArray(heads) ? heads : (old && old.heads) || [],
-          dirs: Array.isArray(dirs) ? dirs : (old && old.dirs) || [],
-        });
+      const base = (rows || []).map(([la, lo, lim, heads, dirs]) => ({
+        lat: la,
+        lng: lo,
+        lim: lim || 0,
+        heads: Array.isArray(heads) ? heads : [],
+        dirs: Array.isArray(dirs) ? dirs : [],
+      }));
+      const all = hasDb ? tobaRadarMerge(base, [s, w, n, e], pardal, tobaRadarFixes()) : base;
+      // a caixa inteira vem de novo: o que tava nela e não veio (desligado, 🚫) sai
+      amRadar.list.forEach((r, id) => {
+        if (r.lat >= s && r.lat <= n && r.lon >= w && r.lon <= e) amRadar.list.delete(id);
+      });
+      all.forEach((r) => {
+        const id = `${r.lat},${r.lng}`;
+        amRadar.list.set(id, { lat: r.lat, lon: r.lng, lim: r.lim || 0, heads: r.heads || [], dirs: r.dirs || [] });
       });
       if (amRadar.list.size > 600) {
         // guarda só os mais perto
