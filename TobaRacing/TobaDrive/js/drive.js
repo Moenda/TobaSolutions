@@ -646,6 +646,7 @@ function openLimitSheet() {
 
 function limitFixChanged() {
   saveDriveDb({ silent: true }); // também manda pro carro (tobaShareDriveTuning)
+  renderFixesMenuDesc(); // v2.16
   if (nav.route && typeof gameApplyLimits === "function") {
     gameApplyLimits(nav.route);
     game.limRoute = null; // placa troca na hora, sem esperar firmar
@@ -730,6 +731,7 @@ function radarSheetHtml() {
 
 function radarFixChanged(msg) {
   saveDriveDb({ silent: true });
+  renderFixesMenuDesc(); // v2.16
   if (typeof gameRefreshRadars === "function") gameRefreshRadars();
   closeTobaModal("limitSheet");
   tobaToast(msg);
@@ -917,6 +919,7 @@ function reportDone(msg) {
   driveDb.reports = (driveDb.reports || []).filter((x) => x.at !== nav.reportAt);
   driveDb.reportSkip = [...(driveDb.reportSkip || []), nav.reportAt].slice(-100); // não volta do carro
   saveDriveDb({ silent: true }); // também manda pro carro (tobaShareDriveTuning)
+  renderFixesMenuDesc(); // v2.16
   if (typeof gameRefreshRadars === "function") gameRefreshRadars();
   if (nav.route && typeof gameApplyLimits === "function") {
     gameApplyLimits(nav.route);
@@ -971,6 +974,136 @@ function reportRadarDel(el) {
 
 function reportDismiss() {
   reportDone("✅ Tirado da lista");
+}
+
+/* ---------------------------------------------------------------------
+ * v2.16: ✏ Minhas correções (⚙ › Correções)
+ * Rafa: "queria ter um Minhas correções e dá pra editar ou apagar de lá, agora que a TomTom
+ * voltou quero resetar pra ver como tá". Lista TOBA_DRIVE_DB.limitFixes e .radarFixes, mais
+ * novo primeiro: ✏ troca o número do limite, 🗑 apaga uma, e lá embaixo apaga todas (com
+ * confirmação). Vale pro celular e pro 🚘 Android Auto (saveDriveDb manda pro carro).
+ * ------------------------------------------------------------------- */
+const DRIVE_COMPASS = ["norte", "nordeste", "leste", "sudeste", "sul", "sudoeste", "oeste", "noroeste"];
+
+function driveCompass(head) {
+  const h = ((Number(head) % 360) + 360) % 360;
+  return DRIVE_COMPASS[Math.round(h / 45) % 8];
+}
+
+function fixesCounts() {
+  return { lim: (driveDb.limitFixes || []).length, radar: (driveDb.radarFixes || []).length };
+}
+
+function renderFixesMenuDesc() {
+  const el = document.getElementById("fixesMenuDesc");
+  if (!el) return;
+  const c = fixesCounts();
+  el.textContent = c.lim || c.radar
+    ? `${c.lim} ${c.lim === 1 ? "limite" : "limites"} · ${c.radar} ${c.radar === 1 ? "radar" : "radares"}`
+    : "Nenhuma ainda (toca no velocímetro navegando)";
+}
+
+function fixRowHtml(f, kind) {
+  const when = f.at ? new Date(f.at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "";
+  const plate = kind === "lim"
+    ? `<span class="dv-fix-plate${f.kmh < 0 ? " is-none" : ""}">${f.kmh < 0 ? "🤷" : f.kmh}</span>`
+    : `<span class="dv-fix-plate is-radar">${f.kind === "del" ? "🚫" : "📸"}</span>`;
+  const what = kind === "lim"
+    ? (f.kmh < 0 ? "Sem placa" : `${f.kmh} km/h`)
+    : (f.kind === "del" ? "Radar que não existe" : `Tem radar${f.limit ? ` (${f.limit})` : ""}`);
+  const editing = kind === "lim" && nav.fixEdit === f.id;
+  const map = `https://www.google.com/maps/search/?api=1&query=${f.lat},${f.lng}`;
+  return `
+    <div class="dv-fix-row${editing ? " is-edit" : ""}">
+      <div class="dv-fix-main">
+        ${plate}
+        <span class="dv-fix-txt"><b>${escapeHtml(f.street || "Rua sem nome")}</b><small>${what} · sentido ${driveCompass(f.head)}${when ? ` · ${when}` : ""}</small></span>
+        <a class="dv-fix-btn" href="${map}" target="_blank" rel="noopener" aria-label="Ver no mapa">🗺️</a>
+        ${kind === "lim" ? `<button type="button" class="dv-fix-btn" data-click="editLimitFix" data-id="${escapeHtml(f.id)}" aria-label="Editar">✏</button>` : ""}
+        <button type="button" class="dv-fix-btn is-del" data-click="delFix" data-kind="${kind}" data-id="${escapeHtml(f.id)}" aria-label="Apagar">🗑️</button>
+      </div>
+      ${editing ? `<div class="dv-lim-grid dv-fix-edit">
+        ${DRIVE_LIMIT_CHOICES.map((k) => chip(String(k), "setLimitFixKmh", { id: f.id, kmh: k }, f.kmh === k ? " is-on" : "")).join("")}
+        ${chip("🤷", "setLimitFixKmh", { id: f.id, kmh: -1 }, f.kmh < 0 ? " is-on" : "")}
+      </div>` : ""}
+    </div>`;
+}
+
+function renderFixesSheet() {
+  const lims = [...(driveDb.limitFixes || [])].sort((a, b) => (b.at || 0) - (a.at || 0));
+  const rads = [...(driveDb.radarFixes || [])].sort((a, b) => (b.at || 0) - (a.at || 0));
+  const c = fixesCounts();
+  document.getElementById("fixesSheetSub").textContent = c.lim || c.radar
+    ? `${c.lim} ${c.lim === 1 ? "limite" : "limites"} · ${c.radar} ${c.radar === 1 ? "radar" : "radares"} · vale no celular e no 🚘 Auto`
+    : "Tudo limpo: vale só a TomTom e a base de radares";
+  const empty = (txt) => `<p class="dv-hint dv-fix-empty">${txt}</p>`;
+  document.getElementById("fixesSheetBody").innerHTML = `
+    <div class="section-title dv-title-row"><span>🐢 Limites</span><span class="dv-count">${c.lim}</span></div>
+    <div class="dv-fix-list">${lims.length ? lims.map((f) => fixRowHtml(f, "lim")).join("") : empty("Nenhum limite corrigido. Navegando, toca no velocímetro pra corrigir.")}</div>
+    <div class="section-title dv-title-row"><span>📸 Radares</span><span class="dv-count">${c.radar}</span></div>
+    <div class="dv-fix-list">${rads.length ? rads.map((f) => fixRowHtml(f, "radar")).join("") : empty("Nenhum radar marcado.")}</div>
+    ${c.lim || c.radar ? `<div class="dv-fix-danger">
+      ${c.lim ? `<button type="button" class="btn btn-outline btn-block" data-click="clearAllFixes" data-what="lim">🗑️ Apagar todos os limites (${c.lim})</button>` : ""}
+      ${c.radar ? `<button type="button" class="btn btn-outline btn-block" data-click="clearAllFixes" data-what="radar">🗑️ Apagar todos os radares (${c.radar})</button>` : ""}
+      ${c.lim && c.radar ? `<button type="button" class="btn btn-danger btn-block" data-click="clearAllFixes" data-what="all">☢️ Apagar tudo e voltar pro mapa puro</button>` : ""}
+    </div>` : ""}`;
+  renderFixesMenuDesc();
+}
+
+function openFixesSheet() {
+  nav.fixEdit = null;
+  closeTobaModal("settingsModal");
+  renderFixesSheet();
+  openTobaModal("fixesSheet");
+}
+
+function fixesChanged(msg) {
+  saveDriveDb({ silent: true }); // também manda pro carro (tobaShareDriveTuning)
+  if (nav.route && typeof gameApplyLimits === "function") {
+    gameApplyLimits(nav.route);
+    if (typeof game === "object" && game) game.limRoute = null;
+  }
+  if (nav.route && typeof gameRefreshRadars === "function") gameRefreshRadars();
+  renderFixesSheet();
+  if (msg) tobaToast(msg);
+}
+
+function editLimitFix(el) {
+  nav.fixEdit = nav.fixEdit === el.dataset.id ? null : el.dataset.id;
+  renderFixesSheet();
+}
+
+function setLimitFixKmh(el) {
+  const f = (driveDb.limitFixes || []).find((x) => x.id === el.dataset.id);
+  const kmh = Number(el.dataset.kmh);
+  if (!f || !kmh) return;
+  f.kmh = kmh;
+  f.at = Date.now();
+  nav.fixEdit = null;
+  fixesChanged(kmh < 0 ? "✏ Agora: sem placa" : `✏ Agora: ${kmh} km/h`);
+}
+
+function delFix(el) {
+  const key = el.dataset.kind === "lim" ? "limitFixes" : "radarFixes";
+  driveDb[key] = (driveDb[key] || []).filter((x) => x.id !== el.dataset.id);
+  if (nav.fixEdit === el.dataset.id) nav.fixEdit = null;
+  fixesChanged("🗑️ Apagada");
+}
+
+async function clearAllFixes(el) {
+  const what = el.dataset.what;
+  const c = fixesCounts();
+  const txt = what === "lim"
+    ? `Apagar as ${c.lim} correções de limite? Volta a valer só a TomTom.`
+    : what === "radar"
+      ? `Apagar as ${c.radar} marcações de radar? Volta a valer só a base de radares.`
+      : `Apagar TODAS as correções (${c.lim} limites e ${c.radar} radares)? Volta a valer só a TomTom e a base de radares, no celular e no carro.`;
+  const ok = await showPageMessage(txt, { confirm: true, confirmLabel: "Apagar", title: "Resetar correções?", icon: "🧹" });
+  if (!ok) return;
+  if (what !== "radar") driveDb.limitFixes = [];
+  if (what !== "lim") driveDb.radarFixes = [];
+  nav.fixEdit = null;
+  fixesChanged("🧹 Limpo! Agora é a TomTom pura");
 }
 
 function openStyleSheet() {
@@ -1739,6 +1872,7 @@ function syncPrefInputs() {
   document.getElementById("prefTolls").checked = p.avoidTolls;
   document.getElementById("prefCopilot").checked = p.copilot;
   document.getElementById("prefGame").checked = p.gameView;
+  renderFixesMenuDesc(); // v2.16
 }
 
 function prefChange() {
@@ -1798,6 +1932,11 @@ tobaActions({
   pickLimitFix,
   clearLimitFix,
   pickRadarAdd,
+  openFixesSheet,
+  editLimitFix,
+  setLimitFixKmh,
+  delFix,
+  clearAllFixes,
   pickRadarDel,
   clearRadarFix,
   openReport,

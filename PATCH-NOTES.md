@@ -3057,3 +3057,20 @@ Rafa testou a v2.14: "ainda tá mostrando a velocidade do OSM ao invés do TomTo
 **Como testar:** Toba Drive navegando: tocar no velocímetro → só aparecem 🗺️ TomTom e ✏ Tua correção; numa rua que antes mostrava o número do OSM, a placa agora é a da TomTom. ⚙️ mostra "Patch v2.15".
 
 **Commit sugerido:** `v2.15 - Limite de velocidade so da TomTom (celular e Auto), sem o OpenStreetMap, e conserto da trava que desligava o limite da TomTom no celular (APK 3.6)`
+
+## v2.16 — ⚙ do Toba Drive repaginada + ✏ Minhas correções
+
+Rafa: "olha como tá as opções do Toba Drive, tá bem zuado, bem feio" e "queria ter um Minhas correções e dá pra editar ou apagar de lá, agora que o TomTom voltou quero resetar pra ver como tá".
+
+**Arquivos alterados:** `TobaRacing/TobaDrive/TobaDrive.html`, `js/drive.js`, `css/drive.css`, `assets/toba-common.js` (Patch v2.16), `sw.js` (toba-v71), `CLAUDE.md`. Sem APK novo (segue 3.6).
+
+1. **⚙ bonita:** os quadradinhos laranja soltos viraram um **cartão** igual ao da Conta e do Dados, uma linha por opção com ícone, nome, explicação curtinha e **chavinha liga/desliga** laranja: 🔊 Voz, 🤡 Cloba copiloto, 🔆 Tela acesa, 💸 Fugir de pedágio, 🎮 Mapa de jogo. O 🗣️ Testar a voz ficou um link discreto embaixo.
+2. **✏ Minhas correções** (⚙ › Correções, mostra quantas tem): lista as **correções de limite** (plaquinha com o número) e os **radares marcados** (📸 tem / 🚫 não tem), mais nova primeiro, com rua, sentido e data.
+   - **🗺️** abre o lugar no Google Maps (pra lembrar onde foi).
+   - **✏** (limite) abre os números ali mesmo pra trocar.
+   - **🗑️** apaga uma.
+   - Embaixo: **Apagar todos os limites**, **Apagar todos os radares** e **☢️ Apagar tudo e voltar pro mapa puro** (com confirmação). Vale no celular e no 🚘 Android Auto.
+
+**Como testar:** Toba Drive › ⚙ → cartão com chavinhas; "Minhas correções" mostra "N limites · N radares" → abre a lista → ✏ troca o número, 🗑️ apaga, "Apagar todos os limites" → volta a valer só a TomTom. ⚙ mostra "Patch v2.16".
+
+**Commit sugerido:** `v2.16 - Configuracoes do Toba Drive em cartao com chavinhas + Minhas correcoes (editar, apagar e apagar tudo de limite e radar)`

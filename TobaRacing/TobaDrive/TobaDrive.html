@@ -122,15 +122,63 @@
     </div>
   </div>
 
+  <!-- v2.16: ⚙ do Toba Drive repaginada (cartão com chavinhas) + ✏ Minhas correções -->
   <div id="tobaSettingsExtra" hidden>
     <div class="toba-settings-section">
       <div class="toba-settings-label">🧭 Navegação</div>
-      <label class="check-row"><input type="checkbox" id="prefVoice" data-change="prefChange" /> 🔊 Voz falando as manobras</label>
-      <label class="check-row"><input type="checkbox" id="prefAwake" data-change="prefChange" /> 🔆 Tela acesa navegando</label>
-      <label class="check-row"><input type="checkbox" id="prefTolls" data-change="prefChange" /> 💸 Fugir de pedágio</label>
-      <label class="check-row"><input type="checkbox" id="prefCopilot" data-change="prefChange" /> 🤡 Cloba copiloto (piadinhas na voz)</label>
-      <label class="check-row"><input type="checkbox" id="prefGame" data-change="prefChange" /> 🎮 Mapa de jogo (inclinado, gira com o carro)</label>
-      <button type="button" class="btn btn-outline btn-sm" data-click="testVoice">🗣️ Testar a voz</button>
+      <div class="dv-set-list">
+        <label class="dv-set-row">
+          <span class="dv-set-ic">🔊</span>
+          <span class="dv-set-txt"><b>Voz</b><small>Fala as manobras</small></span>
+          <input type="checkbox" class="dv-switch" id="prefVoice" data-change="prefChange" />
+        </label>
+        <label class="dv-set-row">
+          <span class="dv-set-ic">🤡</span>
+          <span class="dv-set-txt"><b>Cloba copiloto</b><small>Piadinhas na voz</small></span>
+          <input type="checkbox" class="dv-switch" id="prefCopilot" data-change="prefChange" />
+        </label>
+        <label class="dv-set-row">
+          <span class="dv-set-ic">🔆</span>
+          <span class="dv-set-txt"><b>Tela acesa</b><small>Não apaga navegando</small></span>
+          <input type="checkbox" class="dv-switch" id="prefAwake" data-change="prefChange" />
+        </label>
+        <label class="dv-set-row">
+          <span class="dv-set-ic">💸</span>
+          <span class="dv-set-txt"><b>Fugir de pedágio</b><small>Rota sem pedágio quando der</small></span>
+          <input type="checkbox" class="dv-switch" id="prefTolls" data-change="prefChange" />
+        </label>
+        <label class="dv-set-row">
+          <span class="dv-set-ic">🎮</span>
+          <span class="dv-set-txt"><b>Mapa de jogo</b><small>Inclinado, gira com o carro</small></span>
+          <input type="checkbox" class="dv-switch" id="prefGame" data-change="prefChange" />
+        </label>
+      </div>
+      <button type="button" class="dv-set-test" data-click="testVoice">🗣️ Testar a voz</button>
+    </div>
+    <div class="toba-settings-section">
+      <div class="toba-settings-label">✏ Correções</div>
+      <button type="button" class="toba-menu-btn" data-click="openFixesSheet">
+        <span class="toba-menu-icon">✏</span>
+        <span class="toba-menu-text">
+          <span class="toba-menu-title">Minhas correções</span>
+          <span class="toba-menu-desc" id="fixesMenuDesc">Limites e radares que tu marcou</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ✏ Minhas correções (v2.16): editar ou apagar limite e radar marcados -->
+  <div class="toba-modal" id="fixesSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <div class="dv-pl-head">
+          <h3>✏ Minhas correções</h3>
+          <small id="fixesSheetSub"></small>
+        </div>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="fixesSheetBody"></div>
     </div>
   </div>
 
