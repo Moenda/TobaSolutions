@@ -223,7 +223,7 @@ async function gameLoadRadars(route) {
   } catch (err) {
     /* Overpass fora: segue sem radar */
   }
-  gameLoadOsmLimits(route); // depois dos radares: o Overpass não gosta de 2 pedidos juntos
+  // v2.15: limite do OpenStreetMap desligado (Rafa: "deixa só o TomTom"); gameLoadOsmLimits fica sem uso
 }
 
 // v2.13: ✏ 📸/🚫 marcação de radar no meio da rota: refaz a lista SEM zerar a viagem

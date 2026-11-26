@@ -102,13 +102,16 @@ async function driveFetchTomTom(from, to, options = {}) {
   if (prefs.avoidTolls) params.set("avoid", "tollRoads");
   if (Number.isFinite(options.heading) && options.speed > 3) params.set("vehicleHeading", String(Math.round(options.heading) % 360));
   const locs = `${from.lat.toFixed(6)},${from.lng.toFixed(6)}:${to.lat.toFixed(6)},${to.lng.toFixed(6)}`;
-  // v1.68: limite de velocidade da via (velocímetro). Se o TomTom recusar esse pedaço
-  // (400), tenta de novo sem ele e lembra neste aparelho (toba_tomtom_nospeed).
-  let withSpeed = true;
+  // v1.68: limite de velocidade da via (velocímetro). Se o TomTom recusar (400), tenta de
+  // novo sem ele SÓ NESSE PEDIDO.
+  // v2.15: antes isso ficava gravado pra sempre (toba_tomtom_nospeed): qualquer 400 (que quase
+  // sempre é "não achei caminho", não o limite) desligava o limite da TomTom no celular e
+  // sobrava só o do OpenStreetMap. O Android Auto nunca gravou: por isso lá vinha certo.
+  const withSpeed = !options.noSpeed;
   try {
-    withSpeed = localStorage.getItem(DRIVE_NO_SPEED_KEY) !== "1";
+    localStorage.removeItem(DRIVE_NO_SPEED_KEY); // limpa a trava velha
   } catch (err) {
-    withSpeed = true;
+    /* sem storage */
   }
   if (withSpeed) params.append("sectionType", "speedLimit");
   tobaTomTomCountRoute();
@@ -116,14 +119,7 @@ async function driveFetchTomTom(from, to, options = {}) {
     const route = driveRouteFromTomTom(await driveFetchJson(`${DRIVE_TOMTOM_ROUTE_URL}${locs}/json?${params}`));
     if (route) return route;
   } catch (err) {
-    if (err.status === 400 && withSpeed) {
-      try {
-        localStorage.setItem(DRIVE_NO_SPEED_KEY, "1");
-      } catch (e) {
-        /* sem storage */
-      }
-      return driveFetchTomTom(from, to, options);
-    }
+    if (err.status === 400 && withSpeed) return driveFetchTomTom(from, to, { ...options, noSpeed: true });
     // 400 = TomTom não achou caminho (ex.: destino no meio do mato): não é culpa da chave
     if (err.status && err.status !== 400 && err.status < 500) tobaTomTomOff(`rota HTTP ${err.status}`);
     console.warn("TomTom falhou, tentando Valhalla", err);

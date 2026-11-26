@@ -3041,3 +3041,19 @@ O Rafa viu HRV e respiração parados em 08/11, "nada no Health Connect" no 🩺
 **Como testar:** DHU ou no Peugeot. Sem rota: botão 📍 no lado do mapa → toca → aparece a lista → 🚦 Limite da via → aviso "🚦 Limite marcado!". Com rota: 📍 na faixa de cima → toca e não escolhe nada → fecha em 8 s. No celular: abrir o 🧭 Toba Drive → "📍 Marcados no carro 2" → abrir o do limite → tocar 40 → some da lista e a placa daquele trecho vira 40 (celular e carro). Abrir o do radar → 🚫 Não existe num radar da lista. ⚙️ mostra "APK 3.5 · Patch v2.14".
 
 **Commit sugerido (parte do Auto):** `... + botao 📍 no Android Auto pra marcar radar/limite e corrigir no celular (APK 3.5)`
+
+## v2.15 — 🗺️ Limite só da TomTom (celular e Android Auto) · APK 3.6
+
+Rafa testou a v2.14: "ainda tá mostrando a velocidade do OSM ao invés do TomTom" e pediu "deixa só o TomTom, mais confiável".
+
+**Arquivos alterados:** `TobaRacing/TobaDrive/js/drive-route.js`, `drive-metrics.js`, `drive-game.js`, `drive.js`, `TobaAndroid/app/auto/br/com/toba/auto/NavEngine.java`, `TobaAndroid/app/build.gradle` (**APK 3.6**, versionCode 27), `assets/toba-common.js` (Patch v2.15), `sw.js` (toba-v70), `CLAUDE.md`.
+
+1. **🐛 Por que o celular mostrava o OSM:** desde a v1.68, se a TomTom respondesse um erro 400 numa rota, o Toba achava que a culpa era do pedido de limite e **desligava o limite da TomTom pra sempre naquele celular** (chave `toba_tomtom_nospeed`). Só que o 400 quase sempre é "não achei caminho" (destino estranho, ponto no meio do mato). Bastou acontecer uma vez: a TomTom parou de mandar limite no celular e sobrou só o OpenStreetMap. O Android Auto nunca gravou essa trava, por isso no carro vinha certo. Agora o 400 tenta sem limite **só naquele pedido**, e a trava velha é apagada sozinha.
+2. **🗺️ Só TomTom:** o limite do OpenStreetMap saiu do celular e do carro. Vale **✏ tua correção** e, sem correção, a **TomTom**. Onde a TomTom não sabe, fica sem placa (melhor sem placa que placa errada). A folha "✏ Limite e radar daqui" não mostra mais a linha do OpenStreetMap. Os **radares** continuam iguais (Pardal + OSM + tuas marcações).
+3. Correção ✏ antiga que tinha sido gravada "pela via do OSM" continua valendo, só que pelo trecho mais perto + o pedaço com o mesmo limite da TomTom em volta (até 400 m).
+
+**APK:** o celular já fica certo sem APK novo (é site). Pro carro largar o OSM precisa do **APK 3.6** (versionCode 27): Sync Gradle → Generate Signed APK → `adb push` → **KingInstaller**.
+
+**Como testar:** Toba Drive navegando: tocar no velocímetro → só aparecem 🗺️ TomTom e ✏ Tua correção; numa rua que antes mostrava o número do OSM, a placa agora é a da TomTom. ⚙️ mostra "Patch v2.15".
+
+**Commit sugerido:** `v2.15 - Limite de velocidade so da TomTom (celular e Auto), sem o OpenStreetMap, e conserto da trava que desligava o limite da TomTom no celular (APK 3.6)`

@@ -176,6 +176,10 @@ function driveSnapOnRoute(route, p, st = {}) {
 }
 
 /* ---------- v2.13: limite com 3 fontes (✏ correção > TomTom > OpenStreetMap) ----------
+ * v2.15 (Rafa: "deixa só o TomTom, mais confiável"): o OpenStreetMap SAIU do limite.
+ * Vale ✏ correção > TomTom; onde a TomTom não sabe, fica sem placa. route.osm não é mais
+ * preenchido (gameLoadOsmLimits não é chamado), então a correção por via do OSM não roda
+ * e vale o trecho mais perto + o pedaço com o mesmo limite TomTom em volta.
  * (Rafa: a TomTom é a principal; o OSM só tapa buraco onde a TomTom não sabe.)
  * route.limits = TomTom ({from, to, kmh}); route.osm = { kmh: [], way: [] } por trecho
  * (driveMatchOsm, vias do Overpass); fixes = TOBA_DRIVE_DB.limitFixes. Resultado fica em
@@ -291,7 +295,8 @@ function driveBuildLimits(route, fixes = []) {
     for (let i = Math.max(0, l.from); i < Math.min(n, Math.max(l.to, l.from + 1)); i += 1) tt[i] = l.kmh;
   });
   const osm = route?.osm?.kmh || [];
-  const out = tt.map((v, i) => (v > 0 ? v : osm[i] || 0));
+  const out = tt.slice(); // v2.15: só TomTom (osm fica de fora mesmo se vier)
+  void osm;
   const fixOf = new Array(n).fill(""); // id da ✏ correção que vale em cada trecho
   const heads = [];
   for (let i = 0; i < n; i += 1) heads.push(driveBearing(coords[i], coords[i + 1]));

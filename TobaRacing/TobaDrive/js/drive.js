@@ -625,17 +625,15 @@ function openLimitSheet() {
   nav.limitInfo = info; // congela o lugar do toque (o carro segue andando)
   const who = (label, v, on) =>
     `<div class="${on ? "is-on" : ""}"><span>${label}</span><b>${v}</b></div>`;
-  const osmTxt = info.osm === null ? "buscando..." : info.osm ? `${info.osm} km/h` : "não sabe";
   const fixTxt = info.fix ? (info.fix.kmh < 0 ? "sem limite" : `${info.fix.kmh} km/h`) : "—";
-  const src = info.fix ? "fix" : info.tt ? "tt" : info.osm ? "osm" : "";
+  const src = info.fix ? "fix" : info.tt ? "tt" : "";
   document.getElementById("limitSheetSub").textContent = info.street || "A via onde tu tá agora";
   document.getElementById("limitSheetBody").innerHTML = `
     <div class="dv-lim-who">
       ${who("🗺️ TomTom", info.tt ? `${info.tt} km/h` : "não sabe", src === "tt")}
-      ${who("🌍 OpenStreetMap", osmTxt, src === "osm")}
       ${who("✏ Tua correção", fixTxt, src === "fix")}
     </div>
-    <p class="dv-hint">Vale a que tá marcada: tua correção, depois a TomTom, e o OpenStreetMap só onde a TomTom não sabe. Qual é a placa daqui?</p>
+    <p class="dv-hint">Vale a que tá marcada: tua correção, senão a TomTom. Onde a TomTom não sabe, fica sem placa. Qual é a placa daqui?</p>
     <div class="dv-lim-grid">
       ${DRIVE_LIMIT_CHOICES.map((k) => chip(String(k), "pickLimitFix", { kmh: k }, info.now === k ? " is-on" : "")).join("")}
       ${chip("🤷", "pickLimitFix", { kmh: -1 })}
@@ -896,7 +894,7 @@ function renderReportSheet() {
         ${DRIVE_LIMIT_CHOICES.map((k) => chip(String(k), "reportLimit", { kmh: k }, r.limit === k ? " is-on" : "")).join("")}
         ${chip("🤷", "reportLimit", { kmh: -1 })}
       </div>
-      <p class="dv-hint">Vale pra essa rua nesse sentido, aqui e no 🚘 Android Auto (tua correção ganha da TomTom e do OpenStreetMap). 🤷 = não tem placa ou não sei.</p>` : ""}
+      <p class="dv-hint">Vale pra essa rua nesse sentido, aqui e no 🚘 Android Auto (tua correção ganha da TomTom). 🤷 = não tem placa ou não sei.</p>` : ""}
     ${radarHtml}
     <button type="button" class="btn btn-outline btn-block" data-click="reportDismiss">✅ Tava certo, tirar da lista</button>`;
   return true;

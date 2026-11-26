@@ -351,7 +351,8 @@ final class NavEngine implements LocationListener {
         lastTrafficCheck = System.currentTimeMillis();
         limPend = -1;
         mergeLimits(r);
-        loadOsm(r);
+        // v2.15 (APK 3.6): limite do OpenStreetMap desligado, Rafa: "deixa só o TomTom".
+        // ✏ correção > TomTom; loadOsm fica sem uso.
         map.setRoute(r);
     }
 
