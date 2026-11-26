@@ -15,7 +15,8 @@
  *      com a mesma data-id do card (items = o que dá pra escolher,
  *      read = os valores, só leitura do banco do app).
  *
- * Preferência: "toba_portal_view" = { view, pins, layout, slots }.
+ * Preferência: "toba_portal_view" = { view, pins, layout, slots, widgets }.
+ *   v2.17: widgets = a home de widgets da visão ⭐ (ver portal-widgets.js).
  *   v2.14: o ⭐ Meu painel virou mostrador de relógio: um molde (layout)
  *   com quadradinhos e cada um guarda o que vai nele (slots[i]):
  *     "<data-id>:<key>" = número de um app (PORTAL_APP_STATS)
@@ -30,7 +31,7 @@ const PORTAL_VIEW_KEY = "toba_portal_view";
 const PORTAL_VIEWS = [
   { id: "quad", icon: "▦", label: "Quadradinho", desc: "3 por linha" },
   { id: "linha", icon: "☰", label: "Linha", desc: "enxuta" },
-  { id: "painel", icon: "⭐", label: "Meu painel", desc: "tu monta" },
+  { id: "painel", icon: "⭐", label: "Meus widgets", desc: "tu monta" },
   { id: "cards", icon: "🃏", label: "Completo", desc: "cards de antes" },
 ];
 const PORTAL_PINS_MAX = 8;
@@ -69,12 +70,14 @@ function getPortalViewConfig() {
     seen.add(v);
     return v;
   });
+  // v2.17: ⭐ virou widgets (portal-widgets.js); quem não tem ainda ganha a partir dos slots
+  if (typeof wgConfigWidgets === "function") cfg.widgets = wgConfigWidgets(cfg);
   return cfg;
 }
 
 function savePortalViewConfig(cfg) {
   const pins = cfg.slots.filter((v) => v && !/^(app|x):/.test(v)).slice(0, PORTAL_PINS_MAX);
-  if (!writePortalJson(PORTAL_VIEW_KEY, { view: cfg.view, pins, layout: cfg.layout, slots: cfg.slots })) {
+  if (!writePortalJson(PORTAL_VIEW_KEY, { view: cfg.view, pins, layout: cfg.layout, slots: cfg.slots, widgets: cfg.widgets })) {
     showPageMessage("A memória do navegador encheu e a visão não foi salva.", { title: "Não salvou", icon: "💾" });
     return false;
   }
@@ -96,6 +99,8 @@ function portalReadJson(key) {
     return null;
   }
 }
+
+const PORTAL_FIT_KEYS = ["treinos", "km", "semana", "kcal", "minutos", "saitama"];
 
 const PORTAL_APP_STATS = {
   "toba-bank": {
@@ -130,18 +135,14 @@ const PORTAL_APP_STATS = {
     items: [
       { key: "peso", label: "⚖️ Peso", short: "peso" },
       { key: "pesoMes", label: "📉 Peso no mês", short: "no mês" },
-      { key: "treinos", label: "🏋️ Treinos mês", short: "no mês" },
-      { key: "km", label: "📍 Km no mês", short: "no mês" },
-      { key: "semana", label: "📅 Treinos semana", short: "na semana" },
-      { key: "kcal", label: "🔥 Calorias mês", short: "no mês" },
-      { key: "minutos", label: "⏱️ Tempo mês", short: "treinado" },
-      { key: "saitama", label: "👊 Saitama mês", short: "reps" },
       { key: "gordura", label: "🧈 Gordura", short: "gordura" },
     ],
+    // v2.17: os números de treino foram pro 🏋️ Toba Fit (mesmo banco); read() segue devolvendo
+    // todos, então "toba-health:treinos" de quem tinha continua com valor
     lineKeys: () => {
       const cfg = getHealthCardConfig();
       if (cfg.type === "simples") return [];
-      return HEALTH_CARD_METRICS.filter((m) => cfg.metrics[m.key]).map((m) => m.key);
+      return HEALTH_CARD_METRICS.filter((m) => cfg.metrics[m.key] && m.app !== "fit" && PORTAL_FIT_KEYS.indexOf(m.key) < 0).map((m) => m.key);
     },
     read: () => {
       const h = obterResumoTobaHealth();
@@ -170,6 +171,25 @@ const PORTAL_APP_STATS = {
         gordura: h.fat === null ? { value: "--" } : { value: privacy ? "**%" : `${n(h.fat, 1)}%` },
       };
     },
+  },
+
+  // v2.17: 🏋️ Toba Fit (divisão do Health): lê o mesmo TOBA_HEALTH_DB
+  "toba-fit": {
+    items: [
+      { key: "treinos", label: "🏋️ Treinos mês", short: "no mês" },
+      { key: "semana", label: "📅 Treinos semana", short: "na semana" },
+      { key: "km", label: "📍 Km no mês", short: "no mês" },
+      { key: "kcal", label: "🔥 Calorias mês", short: "no mês" },
+      { key: "minutos", label: "⏱️ Tempo mês", short: "treinado" },
+      { key: "saitama", label: "👊 Saitama mês", short: "reps" },
+    ],
+    lineKeys: () => {
+      const cfg = getHealthCardConfig();
+      if (cfg.type === "simples") return [];
+      const keys = HEALTH_CARD_METRICS.filter((m) => cfg.metrics[m.key] && PORTAL_FIT_KEYS.indexOf(m.key) >= 0).map((m) => m.key);
+      return keys.length ? keys : ["treinos", "semana"];
+    },
+    read: () => PORTAL_APP_STATS["toba-health"].read(),
   },
 
   "toba-kitchen": {
@@ -601,8 +621,8 @@ let painelPress = null;
 let painelSkipClick = false;
 document.addEventListener("pointerdown", (event) => {
   painelSkipClick = false; // toque novo = gesto novo
-  const tile = event.target instanceof Element ? event.target.closest("#portalViews .pv-slot") : null;
-  if (!tile || painelEditing) return;
+  const tile = event.target instanceof Element ? event.target.closest("#portalViews .pv-slot, #portalViews .wg") : null;
+  if (!tile || painelEditing || tile.closest(".wg-gal-preview")) return;
   clearTimeout(painelPress?.timer);
   painelPress = {
     x: event.clientX,
@@ -633,7 +653,7 @@ document.addEventListener("click", (event) => {
   event.stopPropagation();
 }, true);
 document.addEventListener("contextmenu", (event) => {
-  if (event.target instanceof Element && event.target.closest("#portalViews .pv-slot")) event.preventDefault();
+  if (event.target instanceof Element && event.target.closest("#portalViews .pv-slot, #portalViews .wg")) event.preventDefault();
 });
 
 function renderPortalViews() {
@@ -652,7 +672,8 @@ function renderPortalViews() {
   }
   const apps = portalCards.filter((c) => c.visible).map(portalAppInfo);
   if (cfg.view === "painel") {
-    box.innerHTML = renderPortalPainel(apps, cfg);
+    // v2.17: widgets (portal-widgets.js); o molde de quadradinhos da v2.14 fica de reserva
+    box.innerHTML = typeof renderPortalWidgets === "function" ? renderPortalWidgets(apps, cfg) : renderPortalPainel(apps, cfg);
     return;
   }
   const stats = portalReadAllStats();
@@ -675,9 +696,8 @@ function renderPortalViewPicker() {
     </button>`).join("");
   const pinsBtn = document.getElementById("portalPinsMenuDesc");
   if (pinsBtn) {
-    const layout = portalLayout(cfg);
-    const filled = cfg.slots.slice(0, layout.sizes.length).filter(Boolean).length;
-    pinsBtn.textContent = `${layout.icon} Molde ${layout.label} · ${filled} de ${layout.sizes.length} quadradinhos montados`;
+    const n = Array.isArray(cfg.widgets) ? cfg.widgets.length : 0;
+    pinsBtn.textContent = `🧩 ${n} ${n === 1 ? "widget" : "widgets"} na home · cor de cada app, tamanho e o que abre`;
   }
 }
 

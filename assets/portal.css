@@ -1112,3 +1112,593 @@
   width: 100%;
   margin-bottom: 0.6rem;
 }
+
+/* =====================================================================
+ * v2.17 · ⭐ Meus widgets (portal-widgets.js) — PIMP MY HOME
+ * Cor de cada app = só o tom (--h); luz e saturação iguais pra todo
+ * mundo, então tudo combina. "Escuro com borda" = fundo do app + borda
+ * e detalhes na cor do app.
+ * ===================================================================== */
+.wg-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: 132px;
+  grid-auto-flow: dense;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.wg {
+  --acc: hsl(var(--h) 92% 80%);
+  --trk: rgba(255, 255, 255, 0.2);
+  --sub: rgba(255, 255, 255, 0.8);
+  --ink: hsl(var(--h) 60% 16%);
+  position: relative;
+  min-width: 0;
+  border-radius: 22px;
+  overflow: hidden;
+  color: #fff;
+  background:
+    radial-gradient(130% 90% at 0% 0%, rgba(255, 255, 255, 0.13), transparent 55%),
+    linear-gradient(155deg, hsl(var(--h) 50% 34%), hsl(var(--h) 56% 20%));
+  box-shadow: 0 8px 20px hsl(var(--h) 60% 6% / 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transition: transform 0.15s ease;
+}
+
+.wg.is-soft {
+  background:
+    radial-gradient(130% 90% at 0% 0%, rgba(255, 255, 255, 0.1), transparent 55%),
+    linear-gradient(155deg, hsl(var(--h) 20% 30%), hsl(var(--h) 24% 18%));
+}
+
+.wg.is-escuro {
+  --acc: hsl(var(--h) 78% 66%);
+  --trk: rgba(255, 255, 255, 0.1);
+  --sub: var(--muted);
+  --ink: #0d1117;
+  background:
+    radial-gradient(120% 80% at 0% 0%, hsl(var(--h) 60% 45% / 0.2), transparent 60%),
+    var(--surface);
+  box-shadow: inset 0 0 0 1.5px hsl(var(--h) 65% 55% / 0.55);
+}
+
+.wg.is-P { grid-column: span 2; }
+.wg.is-M { grid-column: span 4; }
+.wg.is-G { grid-column: span 4; grid-row: span 2; }
+
+.wg-grid > .wg:active:not(.is-editing) { transform: scale(0.98); }
+
+.wg-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.wg-cover.is-still { cursor: default; }
+
+.wg-body {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+  box-sizing: border-box;
+  height: 100%;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.wg-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--sub);
+  min-width: 0;
+}
+
+.wg-head-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wg-head-go {
+  flex: 0 0 auto;
+  font-size: 0.66rem;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0.9;
+}
+
+.wg.is-P .wg-head-go { max-width: 45%; overflow: hidden; text-overflow: ellipsis; }
+
+.wg-big {
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.wg-big.is-sm { font-size: 1.12rem; letter-spacing: -0.01em; }
+.wg-big.is-red { color: #ffb3ab; }
+.wg.is-escuro .wg-big.is-red { color: var(--red); }
+.wg-big.is-alert { color: var(--acc); }
+.wg-big.is-clock { font-size: 2.4rem; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+
+.wg-sub {
+  font-size: 0.72rem;
+  color: var(--sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.wg-sub.is-good { color: var(--acc); font-weight: 700; }
+.wg-sub.is-hot { color: #ffc4b8; font-weight: 700; }
+.wg.is-escuro .wg-sub.is-hot { color: var(--coral); }
+
+.wg-accent {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--acc);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wg-push { margin-top: auto; }
+.wg-foot { margin-top: auto; }
+
+.wg-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.wg-row.wg-base { justify-content: flex-start; align-items: baseline; gap: 10px; }
+
+.wg-bar {
+  position: relative;
+  display: block;
+  height: 8px;
+  margin: 4px 0 1px;
+  border-radius: 8px;
+  background: var(--trk);
+}
+
+.wg-bar b {
+  display: block;
+  height: 100%;
+  border-radius: 8px;
+  background: var(--acc);
+}
+
+.wg-bar-mark {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 14px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: #fff;
+}
+
+.wg-ringrow {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.wg-ring {
+  position: relative;
+  flex: 0 0 auto;
+  width: 60px;
+  height: 60px;
+}
+
+.wg-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.wg-ring circle { fill: none; stroke-width: 7; }
+.wg-ring-bg { stroke: var(--trk); }
+.wg-ring-fg { stroke: var(--acc); stroke-linecap: round; }
+
+.wg-ring-in {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.wg-col { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.wg-end { justify-content: flex-end; }
+.wg-right { margin-left: auto; align-items: flex-end; }
+.wg-grow { flex: 1 1 auto; justify-content: center; gap: 6px; }
+
+.wg-split { flex: 1 1 auto; display: flex; gap: 14px; min-height: 0; }
+.wg-split > .wg-col:first-child { flex: 0 0 auto; }
+
+.wg-mini { display: block; font-size: 0.7rem; font-weight: 600; }
+.wg-mini .wg-bar { height: 5px; margin: 2px 0 0; }
+
+.wg-week { display: flex; gap: 3px; }
+
+.wg-week i {
+  width: 19px;
+  height: 19px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  font-size: 0.58rem;
+  font-style: normal;
+  font-weight: 800;
+  background: var(--trk);
+  color: var(--sub);
+}
+
+.wg-week i.is-on { background: var(--acc); color: var(--ink); }
+.wg-week i.is-today { box-shadow: 0 0 0 1.5px #fff; }
+
+.wg-list { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+
+.wg-check {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 29px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wg-check-box {
+  flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid var(--sub);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.wg-check.is-square .wg-check-box { border-radius: 6px; }
+.wg-check.is-done .wg-check-box { background: var(--acc); border-color: var(--acc); color: var(--ink); }
+
+.wg-check-name {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wg-check.is-done .wg-check-name { opacity: 0.55; text-decoration: line-through; }
+.wg-check-time { margin-left: auto; font-size: 0.68rem; color: var(--sub); }
+
+.wg-line {
+  font-size: 0.86rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wg-tiles {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.wg-tiles.is-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 6px; }
+
+.wg-tiles > span {
+  padding: 6px 4px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
+  text-align: center;
+  min-width: 0;
+}
+
+.wg.is-escuro .wg-tiles > span { background: var(--surface-3); }
+.wg-tiles b { display: block; font-size: 1.05rem; }
+.wg-tiles b.is-red { color: #ffb3ab; }
+.wg-tiles i { display: block; font-size: 0.6rem; font-style: normal; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.wg-spark { width: 100%; height: 40px; margin-top: auto; }
+.wg-spark polyline { fill: none; stroke: var(--acc); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+
+.wg-empty { margin: auto 0; font-size: 0.84rem; font-weight: 600; color: var(--sub); }
+.wg-emoji { font-size: 2rem; line-height: 1.1; }
+
+.wg-flag {
+  display: block;
+  height: 5px;
+  margin-top: 4px;
+  border-radius: 3px;
+  background: repeating-linear-gradient(90deg, #fff 0 7px, #111 7px 14px);
+  opacity: 0.85;
+}
+
+/* Modo montar */
+@keyframes wgWiggle {
+  from { transform: rotate(-0.6deg); }
+  to { transform: rotate(0.6deg); }
+}
+
+.wg.is-editing { animation: wgWiggle 0.22s ease-in-out infinite alternate; }
+.wg-grid .wg.is-editing:nth-child(2n) { animation-delay: 0.11s; }
+.wg.is-editing .wg-check { pointer-events: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wg.is-editing { animation: none; }
+}
+
+.wg-x {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 3;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  background: var(--red);
+  color: #fff;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.wg-grip {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  z-index: 3;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 1.15rem;
+  cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.wg.is-dragging {
+  z-index: 10;
+  animation: none;
+  opacity: 0.92;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+  transition: none;
+}
+
+.wg.is-drop { outline: 2px dashed #fff; outline-offset: 2px; }
+
+.wg-editbar {
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-lg);
+  border: 1px dashed rgba(88, 166, 255, 0.5);
+  background: rgba(88, 166, 255, 0.07);
+}
+
+.wg-editbar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wg-editbar-head > span { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.wg-hint { margin: 6px 0 0; font-size: 0.74rem; color: var(--muted); }
+
+.wg-btn {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.wg-btn.is-add { background: var(--btn-green); color: #fff; }
+.wg-btn.is-done { background: var(--blue); color: #0d1117; }
+.wg-btn.is-wide { width: 100%; min-height: 46px; background: hsl(var(--h) 50% 38%); color: #fff; font-size: 0.92rem; }
+
+.wg-undo {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.wg-addbig {
+  width: 100%;
+  min-height: 56px;
+  margin-bottom: 12px;
+  border-radius: 20px;
+  border: 2px dashed var(--border);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Folha: apps, galeria e config */
+.wg-sheet { padding-bottom: 1rem; }
+
+.wg-apps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding-bottom: 0.5rem;
+}
+
+.wg-app-tile {
+  min-height: 92px;
+  padding: 12px;
+  border: 0;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  text-align: left;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+  background:
+    radial-gradient(130% 90% at 0% 0%, rgba(255, 255, 255, 0.13), transparent 55%),
+    linear-gradient(155deg, hsl(var(--h) 50% 34%), hsl(var(--h) 56% 20%));
+}
+
+.wg-app-tile.is-soft { background: linear-gradient(155deg, hsl(var(--h) 20% 30%), hsl(var(--h) 24% 18%)); }
+.wg-app-icon { font-size: 1.6rem; }
+.wg-app-tile b { display: block; font-size: 1rem; }
+.wg-app-tile i { display: block; font-size: 0.72rem; font-style: normal; opacity: 0.85; }
+
+.wg-back {
+  margin: 0 0 10px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--blue);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.wg-gal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-2);
+}
+
+.wg-gal-text b { display: block; font-size: 0.95rem; }
+.wg-gal-text span { display: block; font-size: 0.76rem; color: var(--muted); }
+
+.wg-gal-preview .wg { height: 132px; }
+.wg-gal-preview.is-P .wg { width: calc(50% - 5px); }
+.wg-gal-preview.is-G .wg { height: 274px; }
+.wg-gal-preview .wg-check { pointer-events: none; }
+
+.wg-pills { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.wg-pills-label { font-size: 0.72rem; color: var(--muted); margin-right: 2px; }
+
+.wg-pill {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wg-pill.is-on, .wg-open.is-on { background: var(--blue); border-color: var(--blue); color: #0d1117; }
+.wg-pill:disabled { opacity: 0.4; cursor: default; }
+
+.wg-opens { display: flex; flex-direction: column; gap: 6px; }
+
+.wg-open {
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wg-sec { margin-top: 14px; }
+.wg-sec-label { margin-bottom: 6px; font-size: 0.76rem; font-weight: 700; color: var(--text-2); }
+
+.wg-actions { display: flex; gap: 8px; margin-top: 18px; }
+.wg-actions .btn { flex: 1 1 0; }
+.wg-actions .btn-primary { flex: 2 1 0; }
+
+.wg-body > * { flex-shrink: 0; }
+.wg.is-P .wg-big { font-size: 1.45rem; }
+.wg.is-P .wg-big.is-sm { font-size: 1.05rem; }
+.wg.is-P .wg-big.is-clock { font-size: 2.2rem; }
+
+.wg-badge {
+  flex: 0 0 auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--trk);
+  color: var(--acc);
+  font-size: 0.66rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.wg.is-editing .wg-head-go,
+.wg.is-editing .wg-badge { visibility: hidden; }

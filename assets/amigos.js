@@ -827,7 +827,8 @@ function amOpenTrophy(el) {
 // Duelo por módulo (v1.62): cada app do Toba num card com o emoji dele na frente.
 const AM_DUEL_MODULES = [
   { icon: "🎮", name: "Toba Perfil", sections: ["base"] },
-  { icon: "🥗", name: "Toba Health", sections: ["treinos", "peso"], heat: true },
+  { icon: "🫀", name: "Toba Health", sections: ["peso"] },
+  { icon: "🏋️", name: "Toba Fit", sections: ["treinos"], heat: true }, // v2.17: treinos saíram do Health
   { icon: "⚡", name: "Toba Routine", sections: ["rotina"] },
   { icon: "🍳", name: "Toba Kitchen", sections: ["cozinha"] },
   { icon: "🏁", name: "Toba Racing", sections: ["racing"] },
@@ -997,11 +998,11 @@ const AM_HELP = {
   duelo: {
     title: "👑 Placar do Duelo",
     html: `
-      <p>O duelo é separado por app do Toba: 🎮 Perfil, 🥗 Health, ⚡ Routine, 🍳 Kitchen, 🏁 Racing e 🌎 Tourism. Cada um tem o placarzinho dele.</p>
+      <p>O duelo é separado por app do Toba: 🎮 Perfil, 🫀 Health, 🏋️ Fit, ⚡ Routine, 🍳 Kitchen, 🏁 Racing e 🌎 Tourism. Cada um tem o placarzinho dele.</p>
       <p>Cada número vale um ponto pra quem tiver mais: ganhou a linha, leva a 👑.</p>
       <p>O placar soma as coroas. Empate na linha não vale ponto, e o ⚖️ peso não tem coroa (não é competição de quem pesa mais 😂).</p>
       <p>Linha 🙈 = o amigo escondeu aquele app, então não conta.</p>
-      <p>🔥 No 🥗 Health tem o mapa de calor dos dois lado a lado: dá pra ver quem pula perna. 🦩</p>
+      <p>🔥 No 🏋️ Fit tem o mapa de calor dos dois lado a lado: dá pra ver quem pula perna. 🦩</p>
       <p>Ganhou o placar contra um amigo de verdade? Tem troféu 🤝 Amizade esperando por ti. (Ganhar do Cloba não conta, ele é de mentira. 👻)</p>`,
   },
   adicionar: {

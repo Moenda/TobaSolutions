@@ -1128,7 +1128,7 @@ tobaActions({
     tobaOpenReminder({
       id: "treino",
       title: "🏋️ Hora do treino",
-      message: "Bora treinar? Registra no Toba Health!",
+      message: "Bora treinar? Registra no Toba Fit!",
       times: ["18:00"],
       days: ["MO", "WE", "FR"],
     }),

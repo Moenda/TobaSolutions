@@ -31,17 +31,20 @@ const BANK_CARD_DEFAULTS = {
 
 // Números que dá pra ligar no card do Health. A key é o que fica salvo em
 // toba_health_card_config.metrics: não renomeie; número novo = item novo.
+// v2.17: app "fit" = número dos treinos, que aparece no card do 🏋️ Toba Fit
+// (mesma config salva, mesmas chavinhas: só mudou de card).
 const HEALTH_CARD_METRICS = [
   { key: "peso", label: "⚖️ Peso atual", on: true },
   { key: "pesoMes", label: "📉 Peso no mês", on: true },
-  { key: "treinos", label: "🏋️ Treinos no mês", on: true },
-  { key: "km", label: "📍 Km no mês", on: true },
-  { key: "semana", label: "📅 Treinos na semana", on: false },
-  { key: "kcal", label: "🔥 Calorias no mês", on: false },
-  { key: "minutos", label: "⏱️ Tempo treinado no mês", on: false },
-  { key: "saitama", label: "👊 Reps do Saitama no mês", on: false },
+  { key: "treinos", label: "🏋️ Treinos no mês", on: true, app: "fit" },
+  { key: "km", label: "📍 Km no mês", on: true, app: "fit" },
+  { key: "semana", label: "📅 Treinos na semana", on: false, app: "fit" },
+  { key: "kcal", label: "🔥 Calorias no mês", on: false, app: "fit" },
+  { key: "minutos", label: "⏱️ Tempo treinado no mês", on: false, app: "fit" },
+  { key: "saitama", label: "👊 Reps do Saitama no mês", on: false, app: "fit" },
   { key: "gordura", label: "🧈 Gordura (última pesagem)", on: false },
 ];
+const isFitMetric = (m) => m.app === "fit";
 
 const HEALTH_CARD_DEFAULTS = {
   type: "personalizado",
@@ -94,16 +97,22 @@ function loadPortalCards() {
   try {
     const parsed = JSON.parse(saved);
     const ordered = [];
-    // Aplica a ordem salva aos apps que ainda existem; apps novos vão pro fim.
+    // Aplica a ordem salva aos apps que ainda existem. App novo (ex.: 🏋️ Toba Fit
+    // na v2.17) entra logo depois do card que vem antes dele no index.html
+    // (o Fit nasce do lado do Health); sem vizinho salvo, vai pro fim.
+    const dom = portalCards.slice();
     parsed.forEach((item) => {
       const found = portalCards.find((c) => c.id === item.id);
-      if (found) {
+      if (found && !ordered.includes(found)) {
         found.visible = item.visible;
         ordered.push(found);
       }
     });
-    portalCards.forEach((c) => {
-      if (!ordered.includes(c)) ordered.push(c);
+    dom.forEach((c, i) => {
+      if (ordered.includes(c)) return;
+      const prev = i > 0 ? ordered.indexOf(dom[i - 1]) : -1;
+      if (prev >= 0) ordered.splice(prev + 1, 0, c);
+      else ordered.push(c);
     });
     portalCards = ordered;
   } catch (e) {
@@ -402,10 +411,10 @@ function renderHealthCard(cfg) {
     return;
   }
 
-  // Sem nenhuma pesagem nem treino (ex.: amigo que só usa o Bank): fica a
-  // frase do card e só os atalhos, em vez de um monte de "--".
+  // Sem nenhuma pesagem (ex.: amigo que só usa o Bank): fica a frase do card
+  // e só os atalhos, em vez de um monte de "--". Os treinos são do card do Fit (v2.17).
   const h = obterResumoTobaHealth();
-  const isEmpty = h.weight === null && h.lastWorkoutDaysAgo === null;
+  const isEmpty = h.weight === null || !HEALTH_CARD_METRICS.some((m) => !isFitMetric(m) && cfg.metrics[m.key]);
   desc.hidden = !isEmpty;
   body.hidden = isEmpty && !cfg.links;
   const hasWeight = cfg.metrics.peso || cfg.metrics.pesoMes || cfg.metrics.gordura;
@@ -413,13 +422,40 @@ function renderHealthCard(cfg) {
     ? `<span class="eye-toggle-btn is-health" role="button" tabindex="0" data-click="toggleHealthPrivacy" aria-label="${cfg.privacy ? "Mostrar o peso" : "Esconder o peso"}">${cfg.privacy ? "👁️ Mostrar" : "🙈 Esconder"}</span>`
     : "";
 
-  const html = isEmpty ? "" : HEALTH_CARD_METRICS.filter((m) => cfg.metrics[m.key])
+  const html = isEmpty ? "" : HEALTH_CARD_METRICS.filter((m) => !isFitMetric(m) && cfg.metrics[m.key])
     .map((m) => buildHealthTile(m.key, h, cfg.privacy))
     .join("");
   const grid = document.getElementById("tobaHealthMetricsGrid");
   grid.innerHTML = html;
   grid.hidden = !html;
   document.getElementById("tobaHealthQuickRow").hidden = !cfg.links;
+}
+
+/* ---------------------------------------------------------------------
+ * Card do 🏋️ Toba Fit (v2.17): os números de treino que eram do card do
+ * Health. Mesma config (toba_health_card_config) e mesmo banco (TOBA_HEALTH_DB),
+ * só leitura.
+ * ------------------------------------------------------------------- */
+function renderFitCard(cfg) {
+  const desc = document.getElementById("tobaFitDesc");
+  const body = document.getElementById("tobaFitCustomBody");
+  if (!desc || !body) return;
+  if (cfg.type === "simples") {
+    desc.hidden = false;
+    body.hidden = true;
+    return;
+  }
+  const h = obterResumoTobaHealth();
+  const isEmpty = h.lastWorkoutDaysAgo === null || !HEALTH_CARD_METRICS.some((m) => isFitMetric(m) && cfg.metrics[m.key]);
+  desc.hidden = !isEmpty;
+  body.hidden = isEmpty && !cfg.links;
+  const html = isEmpty ? "" : HEALTH_CARD_METRICS.filter((m) => isFitMetric(m) && cfg.metrics[m.key])
+    .map((m) => buildHealthTile(m.key, h, cfg.privacy))
+    .join("");
+  const grid = document.getElementById("tobaFitMetricsGrid");
+  grid.innerHTML = html;
+  grid.hidden = !html;
+  document.getElementById("tobaFitQuickRow").hidden = !cfg.links;
 }
 
 function fillHealthCardForm(cfg) {
@@ -429,8 +465,12 @@ function fillHealthCardForm(cfg) {
   document.getElementById("radioHealthPersonalizadoLabel").classList.toggle("active", isCustom);
   document.getElementById("radioHealthSimplesLabel").classList.toggle("active", !isCustom);
   document.getElementById("thCustomDrawer").hidden = !isCustom;
-  document.getElementById("healthCardChecks").innerHTML = HEALTH_CARD_METRICS.map((m) => `
-    <label class="check-row"><span>${m.label}</span><input type="checkbox" data-metric="${m.key}" data-change="updateHealthCardConfig"${cfg.metrics[m.key] ? " checked" : ""} /></label>`).join("");
+  // v2.17: duas turmas na mesma folha, 🫀 card do Health e 🏋️ card do Fit
+  const row = (m) => `
+    <label class="check-row"><span>${m.label}</span><input type="checkbox" data-metric="${m.key}" data-change="updateHealthCardConfig"${cfg.metrics[m.key] ? " checked" : ""} /></label>`;
+  document.getElementById("healthCardChecks").innerHTML =
+    `<div class="check-list-hint">🫀 No card do Toba Health</div>${HEALTH_CARD_METRICS.filter((m) => !isFitMetric(m)).map(row).join("")}` +
+    `<div class="check-list-hint">🏋️ No card do Toba Fit</div>${HEALTH_CARD_METRICS.filter(isFitMetric).map(row).join("")}`;
   document.getElementById("chkHealthLinks").checked = cfg.links;
   document.getElementById("chkHealthPrivacy").checked = cfg.privacy;
 }
@@ -449,6 +489,7 @@ function updateHealthCardConfigFromUI() {
   fillHealthCardForm(cfg);
   writePortalJson(HEALTH_CARD_KEY, cfg);
   renderHealthCard(cfg);
+  renderFitCard(cfg);
   tobaSaved();
 }
 
@@ -577,6 +618,8 @@ function toggleRoutineFromCard(el, event) {
   }
   syncRoutineAlerts(data);
   renderRoutineCard();
+  // v2.17: o widget ✅ Tarefas de hoje da home marca por aqui também
+  if (typeof renderPortalViews === "function") renderPortalViews();
   if (wasDone) {
     tobaToast("↩ Desmarcada (o XP saiu junto)");
     tobaPlayerCheck();
@@ -762,7 +805,9 @@ function renderPortalPending() {
 function renderPortalPanels() {
   renderPortalPending();
   renderBankCard(getBankCardConfig());
-  renderHealthCard(getHealthCardConfig());
+  const healthCfg = getHealthCardConfig();
+  renderHealthCard(healthCfg);
+  renderFitCard(healthCfg);
   renderRoutineCard();
   renderKitchenCard();
   renderRacingCard();
@@ -868,6 +913,11 @@ tobaActions({
     event.preventDefault();
     event.stopPropagation();
     window.location.href = `./TobaHealth/${el.dataset.page}`;
+  },
+  goFitPage: (el, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    window.location.href = `./TobaFit/${el.dataset.page}`;
   },
   openHealthCardConfig: () => {
     fillHealthCardForm(getHealthCardConfig());

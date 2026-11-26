@@ -350,7 +350,7 @@ function renderHallSaitamaPage(data) {
 function renderHallMusclePage(data) {
   const { heat } = data;
   if (!Object.keys(heat).length) {
-    return tobaEmpty("🛋️", "Nenhum músculo acordado ainda", "Registra um treino no Toba Health que o boneco começa a pegar fogo.", { compact: true });
+    return tobaEmpty("🛋️", "Nenhum músculo acordado ainda", "Registra um treino no 🏋️ Toba Fit que o boneco começa a pegar fogo.", { compact: true });
   }
   const shape = getBodyShape(heat);
   const { lazy } = describeMuscleHeat(heat);

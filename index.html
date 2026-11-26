@@ -66,18 +66,36 @@
 
       <a href="./TobaHealth/TobaHealth-Index.html" class="app-card" data-id="toba-health">
         <div class="app-card-top">
-          <span class="app-icon">🥗</span>
+          <span class="app-icon">🫀</span>
           <span class="app-title">Toba Health</span>
           <span id="tobaHealthCardTopAction"></span>
         </div>
         <div class="app-desc" id="tobaHealthDesc">
-          Shape de respeito, proteína no teto e água na guela sem choro <b>(•̀_•́)⁠o</b>
+          Balança, sono e o 🩻 Raio-X do relógio: a máquina por dentro sem enrolação <b>(•̀_•́)⁠o</b>
         </div>
         <div class="card-custom-body is-health" id="tobaHealthCustomBody" hidden>
           <div class="toba-stats" id="tobaHealthMetricsGrid"></div>
           <div class="quick-add-row" id="tobaHealthQuickRow" hidden>
-            <span class="quick-add-btn" role="button" tabindex="0" data-click="goHealthPage" data-page="TobaHealth-Treinos.html">🏋️ Treinos</span>
+            <span class="quick-add-btn" role="button" tabindex="0" data-click="goHealthPage" data-page="TobaHealth-Relogio.html">🩻 Raio-X</span>
             <span class="quick-add-btn" role="button" tabindex="0" data-click="goHealthPage" data-page="TobaHealth-Pesagem.html">⚖️ Pesagem</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- v2.17: 🏋️ Toba Fit saiu de dentro do Health (dados seguem no TOBA_HEALTH_DB) -->
+      <a href="./TobaFit/TobaFit-Index.html" class="app-card" data-id="toba-fit">
+        <div class="app-card-top">
+          <span class="app-icon">🏋️</span>
+          <span class="app-title">Toba Fit</span>
+          <span class="badge badge-beta">🔥 Novo</span>
+        </div>
+        <div class="app-desc" id="tobaFitDesc">
+          Saitama, elástico, caminhada e o boneco pegando fogo no Hall <b>ᕦ(ò_óˇ)ᕤ</b>
+        </div>
+        <div class="card-custom-body is-health" id="tobaFitCustomBody" hidden>
+          <div class="toba-stats" id="tobaFitMetricsGrid"></div>
+          <div class="quick-add-row" id="tobaFitQuickRow" hidden>
+            <span class="quick-add-btn" role="button" tabindex="0" data-click="goFitPage" data-page="TobaFit-Treinos.html">🏋️ Treinos</span>
           </div>
         </div>
       </a>
@@ -162,7 +180,7 @@
         <button type="button" class="toba-menu-btn" data-click="openPinsConfig">
           <span class="toba-menu-icon">⭐</span>
           <span class="toba-menu-text">
-            <span class="toba-menu-title">Montar o Meu painel</span>
+            <span class="toba-menu-title">Montar os widgets</span>
             <span class="toba-menu-desc" id="portalPinsMenuDesc">Molde com quadradinhos ＋ que tu escolhe</span>
           </span>
           <span class="toba-hub-chevron">›</span>
@@ -212,10 +230,10 @@
           <span class="toba-hub-chevron">›</span>
         </button>
         <button type="button" class="toba-menu-btn" data-click="openHealthCardConfig">
-          <span class="toba-menu-icon">🥗</span>
+          <span class="toba-menu-icon">🫀</span>
           <span class="toba-menu-text">
-            <span class="toba-menu-title">Toba Health</span>
-            <span class="toba-menu-desc">Peso, treinos, km e mais</span>
+            <span class="toba-menu-title">Toba Health e 🏋️ Toba Fit</span>
+            <span class="toba-menu-desc">Peso e gordura · treinos, km, Saitama e mais</span>
           </span>
           <span class="toba-hub-chevron">›</span>
         </button>
@@ -263,7 +281,7 @@
   <div class="toba-modal" id="healthCardModal">
     <div class="toba-sheet">
       <div class="toba-sheet-header">
-        <h3>🥗 Card do Toba Health</h3>
+        <h3>🫀 Cards do Health e 🏋️ do Fit</h3>
         <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
       </div>
 
@@ -281,7 +299,7 @@
       <div class="check-list" id="thCustomDrawer">
         <div class="check-list-hint">Escolha o que aparece. Par fica mais bonito 😎</div>
         <div class="check-group" id="healthCardChecks"></div>
-        <label class="check-row"><span>🔗 Atalhos Treinos e Pesagem</span><input type="checkbox" id="chkHealthLinks" data-change="updateHealthCardConfig" checked /></label>
+        <label class="check-row"><span>🔗 Atalhos (Raio-X, Pesagem e Treinos)</span><input type="checkbox" id="chkHealthLinks" data-change="updateHealthCardConfig" checked /></label>
         <label class="check-row"><span>🙈 Esconder o peso (** kg)</span><input type="checkbox" id="chkHealthPrivacy" data-change="updateHealthCardConfig" /></label>
       </div>
     </div>
@@ -329,6 +347,17 @@
     </div>
   </div>
 
+  <!-- v2.17: ⭐ Meus widgets: ＋ escolhe o app, galeria, ⚙️ config de cada widget (portal-widgets.js) -->
+  <div class="toba-modal" id="widgetModal">
+    <div class="toba-sheet wg-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="wgSheetTitle">＋ Novo widget</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="wgSheetBody"></div>
+    </div>
+  </div>
+
   <div class="toba-modal" id="orderModal">
     <div class="toba-sheet">
       <div class="toba-sheet-header">
@@ -353,6 +382,7 @@
   <script src="TobaHealth/js/hall-shared.js"></script>
   <script src="TobaRoutine/js/routine-alerts.js"></script>
   <script src="assets/portal.js"></script>
+  <script src="assets/portal-widgets.js"></script>
   <script src="assets/portal-views.js"></script>
   <script src="assets/pwa-register.js"></script>
 </body>

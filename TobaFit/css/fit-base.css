@@ -1,0 +1,48 @@
+/* Toba Fit (v2.17) · o que é comum às telas do Fit (treinos, Saitama, elástico,
+ * caminhada, alongamento). Os estilos dos treinos continuam em ../TobaHealth/css/
+ * (mesmos arquivos de sempre); aqui só a cor do app e o respiro dos cards.
+ * A base vem de ../assets/toba-common.css, carregado antes deste arquivo. */
+
+:root {
+  --accent: var(--coral);
+}
+
+/* Cards empilhados com respiro entre eles (igual ao Health) */
+.card + .card,
+.card + details.card,
+details.card + .card {
+  margin-top: 0.9rem;
+}
+
+/* Título pequeno de grupo (tipos de treino, seções do Força) */
+.hub-title {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-weight: 700;
+  margin: 0.2rem 0 0.6rem;
+}
+
+/* Botões gerados pelo Força/Treinos: só o .btn solto ganha respiro em cima */
+.btn + .btn {
+  margin-top: 8px;
+}
+
+.btn-row > .btn + .btn,
+.toba-sheet-footer .btn + .btn,
+.toba-dialog-actions .btn + .btn {
+  margin-top: 0;
+}
+
+/* Hub: aviso de onde foi parar cada coisa */
+.fit-moved {
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.fit-empty-span {
+  grid-column: 1 / -1;
+}

@@ -3074,3 +3074,41 @@ Rafa: "olha como tá as opções do Toba Drive, tá bem zuado, bem feio" e "quer
 **Como testar:** Toba Drive › ⚙ → cartão com chavinhas; "Minhas correções" mostra "N limites · N radares" → abre a lista → ✏ troca o número, 🗑️ apaga, "Apagar todos os limites" → volta a valer só a TomTom. ⚙ mostra "Patch v2.16".
 
 **Commit sugerido:** `v2.16 - Configuracoes do Toba Drive em cartao com chavinhas + Minhas correcoes (editar, apagar e apagar tudo de limite e radar)`
+
+## v2.17 — ⭐ PIMP MY HOME: home de widgets coloridos por app
+
+Rafa: "olha esses card com a mesma cor do fundo... a gente não quer aquele menu com 499 itens pra tu escolher, a gente quer C U S T O M I Z A Ç Ã O" e "deixa as cores combinando, moderno". Aprovou o mock clicável antes.
+
+**Arquivos:** `assets/portal-widgets.js` (NOVO), `assets/portal-views.js`, `assets/portal.js` (1 linha), `assets/portal.css` (bloco v2.17 no fim), `index.html` (folha `#widgetModal` + script), `assets/toba-common.js` (Patch v2.17), `sw.js` (toba-v72 + portal-widgets.js no cache), `CLAUDE.md`. Sem APK novo.
+
+1. **⭐ Meus widgets** (a visão ⭐ da ⚙️ › Painel): cada widget é de um app e tem a **cor do app** (Bank verde, Routine âmbar, Health verde salada, Fit roxo, Kitchen terracota, Racing vinho, Tourism azul, Extras grafite). Todas com a mesma luz e saturação, só muda o tom, então combinam. Dá pra trocar cada um pra **🌑 Escuro com borda** na cor do app.
+2. **＋ Widget → escolhe o APP → galeria** com os widgets prontos daquele app, já com teus dados de verdade, e os tamanhos **Pequeno / Médio / Grandão**. "＋ Botar na home" e pronto.
+3. **👆 Ao tocar, abre…** em cada widget: o Livre hoje vai direto pro 💸 Gastos (ou Lançar gasto, Compras pra aprovar, Investimentos…), o Tempo de tela pro 🩻 Raio-X, as Calorias pros 🏋️ Treinos, a Lista de compras pra 🛒 Compras. Os **ícones de baixo continuam indo pro menu do app**.
+4. **Mexe ali mesmo:** marca a tarefa de hoje (✅ igual ao card do Routine, com XP) e o item da lista de compras (🛒, mesmo marcado da página Compras) sem abrir nada.
+5. **Modo montar:** segura um widget (ou ✏️ Montar a home) → tudo treme, **⠿ arrasta** pra mudar de lugar, **✕** tira (com ↩ Desfazer), tocar abre a **⚙️ config**: tamanho, ao tocar abre, o que mostrar (ex.: barra do mês e sobra no Livre hoje, top apps no Tempo de tela, esconder as feitas), cor e ⬆️⬇️.
+6. **Widgets:** 🏦 Livre hoje (+ barra do mês com o risquinho do ritmo e a sobra), Gasto do mês, Cofre, Pra aprovar, Gasto rápido · ⚡ Tarefas de hoje, Hoje (anel), Sequência, Rotina da semana, 📱 Tempo de tela (hoje x ontem + top apps) · 🫀 Passos, Sono, Peso (+ tendência) · 🏋️ Calorias (anel + dias de treino da semana), Treinos · 🍳 Lista de compras, Cozinha hoje · 🏁 Km no mês, Consumo, Última viagem (chegou X min antes do previsto) · 🌎 Próximo rolê (um lugar da lista, muda todo dia), Lugares · ✨ Relógio, Atalho de app, 🔢 Número (qualquer número dos apps, os do painel antigo).
+7. **Nada se perde:** quem tinha o painel de quadradinhos da v2.14 ganha os widgets equivalentes (Livre hoje, tarefas, relógio, peso, atalhos, números) na primeira vez. Os quadradinhos seguem gravados.
+8. Já aponta pro **🏋️ Toba Fit** (card `toba-fit`, `TobaFit/TobaFit-Treinos.html`) e pro **📱 Screen no Routine** (`TobaRoutine/TobaRoutine-Screen.html`) da divisão do Health que vai no mesmo commit.
+
+**Como testar:** ⚙️ › Painel › ⭐ Meus widgets → home colorida. Toca no Livre hoje → abre o Gastos. Toca no círculo de uma tarefa → marca (+XP). Segura um widget → modo montar, ⠿ arrasta, ✕ tira, ↩ Desfazer. ＋ Widget → 🫀 Health → galeria → Pequeno/Médio → Botar na home. Toca num widget no modo montar → troca "Ao tocar, abre…" pro 🩻 Raio-X. ⚙️ mostra "Patch v2.17".
+
+## v2.17 (parte 2) — 🫀 Toba Health enxuto + 🏋️ Toba Fit novo + 📱 Toba Screen no Routine
+
+Rafa: "o Toba Health precisa passar por um revamp... health é saúde, mas dentro tem o de tela, o negócio da academia, as receitas e bioimpedância... tá muito amplo e o ícone é uma salada". Mesmo commit dos widgets da home (Patch v2.17).
+
+**Arquivos novos:** `TobaFit/TobaFit-Index.html`, `TobaFit/TobaFit-Treinos.html`, `TobaFit/js/fit-core.js`, `TobaFit/js/fit-hub.js`, `TobaFit/css/fit-base.css`, `TobaRoutine/TobaRoutine-Screen.html`, `TobaRoutine/js/screen-routine.js`, `TobaRoutine/css/screen-routine.css`.
+**Arquivos alterados:** `index.html`, `assets/portal.js`, `assets/amigos.js`, `assets/toba-cloud.js`, `assets/perfil.js`, `assets/perfil-hall.js`, `assets/toba-common.js` (Patch v2.17), `manifest.webmanifest`, `sw.js` (toba-v72), `TobaHealth/TobaHealth-Index.html`, `TobaHealth-Relogio.html`, `TobaHealth-Pesagem.html`, `TobaHealth-Treinos.html` e `TobaHealth-Screen.html` (viraram redirecionadores), `TobaHealth/css/health-base.css`, `TobaHealth/js/health-core.js`, `TobaHealth/js/treinos.js`, `TobaRoutine/TobaRoutine-Index.html`, `CLAUDE.md`.
+
+1. **🫀 Toba Health** (tchau salada 🥗): só o corpo por dentro. No hub ficam o **🩻 Raio-X** (sono, passos, calorias, batimento, corpo por dentro) e o **⚖️ Pesagem & Bioimpedância**. Card da página inicial com coração, frase nova e atalhos 🩻 Raio-X e ⚖️ Pesagem.
+2. **🏋️ Toba Fit** (app novo, cor coral): Treinos & Cargas (força, elástico, Saitama, treino em casa, caminhada, alongamento, ⌚ treinos do relógio, 🔬 Raio-X do treino) + atalho pro 🏆 Hall dos Heróis (no Perfil) + resumo do mês no hub. Card próprio na página inicial, nascendo logo depois do Health, com os números de treino que antes ficavam no card do Health (mesmas chavinhas: ⚙ › Cards › "Toba Health e Toba Fit", agora separadas em 🫀 e 🏋️).
+3. **📱 Toba Screen foi pro ⚡ Routine** (tempo de tela é hábito): card novo no hub do Routine. Continua lendo sozinho quando tu abre o Health ou o Raio-X.
+4. **🍳 Receitas e chás** já moravam no Kitchen: nada mudou lá.
+5. **Nada se perde:** links velhos, favoritos, o atalho "Treinos" do ícone e a notificação do treino ao vivo (`?live=1`) caem na página nova sozinhos. No 🤝 duelo dos amigos o Health virou 🫀 (peso) e nasceu o 🏋️ Fit (treinos + mapa de calor). Na ⚙ da Conta o chip "Health" virou "🫀 Health + Fit" (mesmo banco).
+
+**Dados:** Nenhuma mudança no banco. Treinos, tempo de tela, pesagens e relógio continuam no `TOBA_HEALTH_DB` (mesma chave, mesmo Firebase, mesmo backup). XP, conquistas e Hall iguais. A config do card (`toba_health_card_config`) é a mesma: os números de treino só aparecem no card do Fit.
+
+**APK:** nenhum APK novo (o APK abre o Raio-X pelo caminho de sempre).
+
+**Como testar:** página inicial → card 🫀 Toba Health (peso + atalhos Raio-X/Pesagem) e logo depois o 🏋️ Toba Fit (treinos/km). Abrir o Fit → Treinos & Cargas → ‹ volta pro hub do Fit. Abrir `TobaHealth/TobaHealth-Treinos.html` direto → vai sozinho pro Fit. ⚡ Routine → 📱 Toba Screen → ‹ volta pro Routine. Perfil/Hall e duelo dos amigos com 🫀 e 🏋️. ⚙ mostra "Patch v2.17".
+
+**Commit sugerido (parte):** `... + Toba Health enxuto (coracao), Toba Fit novo com os treinos e Toba Screen no Routine`

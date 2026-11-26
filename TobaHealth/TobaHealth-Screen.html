@@ -3,122 +3,22 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="color-scheme" content="dark" />
-  <meta name="supported-color-schemes" content="dark" />
-  <title>Toba Health | 📱 Toba Screen</title>
+  <title>📱 Toba Screen</title>
   <meta name="theme-color" content="#0d1117" />
-  <link rel="manifest" href="../manifest.webmanifest" />
   <link rel="icon" href="../icons/icon-192.png" />
-  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="Toba" />
-  <link rel="stylesheet" href="../assets/toba-common.css" />
-  <link rel="stylesheet" href="css/health-base.css" />
-  <link rel="stylesheet" href="css/relogio.css" />
-  <link rel="stylesheet" href="css/screen.css" />
+  <!-- v2.17: esta página mudou de casa. O nome do arquivo fica (favoritos, atalhos,
+       notificação do treino ao vivo ?live=1 e links antigos): só redireciona,
+       levando junto o ?query e o #hash. Nenhum dado mora aqui. -->
+  <script>
+    location.replace("../TobaRoutine/TobaRoutine-Screen.html" + location.search + location.hash);
+  </script>
+  <style>body { background: #0d1117; color: #f0f6fc; font-family: system-ui, sans-serif; padding: 2rem; } a { color: #58a6ff; }</style>
 </head>
 
 <body>
-  <div class="container" id="screenPage">
-    <header class="toba-header">
-      <a class="toba-back" href="TobaHealth-Index.html" data-label="Voltar para o Toba Health" aria-label="Voltar para o Toba Health">‹</a>
-      <a class="toba-titles" href="TobaHealth-Index.html">
-        <span class="toba-app">🥗 Toba Health</span>
-        <span class="toba-page">📱 Toba Screen</span>
-      </a>
-      <div class="toba-header-actions">
-        <button type="button" class="toba-icon-btn watch-sync-btn" id="screenSyncBtn" data-click="screenPull" aria-label="Ler o tempo de tela" hidden>🔄</button>
-        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
-      </div>
-    </header>
-
-    <div id="screenConnect" hidden></div>
-    <div class="watch-daynav" id="screenDayNav"></div>
-    <div id="screenBody"></div>
-    <p class="watch-sync-line" id="screenSyncLine"></p>
-  </div>
-
-  <div id="tobaSettingsExtra" hidden>
-    <div class="toba-settings-section">
-      <div class="toba-settings-label">📱 Toba Screen</div>
-      <div class="toba-menu">
-        <button type="button" class="toba-menu-btn" data-click="openScreenGoal">
-          <span class="toba-menu-icon">🎯</span>
-          <span class="toba-menu-text">
-            <span class="toba-menu-title">Meta de tela</span>
-            <span class="toba-menu-desc">Quanto de celular por dia (ou a 🧠 automática)</span>
-          </span>
-          <span class="toba-hub-chevron">›</span>
-        </button>
-        <button type="button" class="toba-menu-btn" data-click="screenAskFromSettings">
-          <span class="toba-menu-icon">🔐</span>
-          <span class="toba-menu-text">
-            <span class="toba-menu-title">Acesso ao uso</span>
-            <span class="toba-menu-desc">A chavinha do Android que deixa o Toba ler (só no app)</span>
-          </span>
-          <span class="toba-hub-chevron">›</span>
-        </button>
-        <button type="button" class="toba-menu-btn" data-click="scrDiag">
-          <span class="toba-menu-icon">🩺</span>
-          <span class="toba-menu-text">
-            <span class="toba-menu-title">Diagnóstico</span>
-            <span class="toba-menu-desc">O que veio na última leitura</span>
-          </span>
-          <span class="toba-hub-chevron">›</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div class="toba-modal" id="screenAppModal">
-    <div class="toba-sheet">
-      <div class="toba-sheet-header">
-        <h3 id="screenAppTitle" class="scr-app-title">📱 App</h3>
-        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
-      </div>
-      <div id="screenAppBody"></div>
-      <div class="toba-sheet-footer">
-        <button type="button" class="btn btn-primary" data-close>Fechar 👍</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="toba-modal" id="screenGoalModal">
-    <div class="toba-sheet">
-      <div class="toba-sheet-header">
-        <h3>🎯 Meta de tela</h3>
-        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
-      </div>
-      <div class="card-title">📱 Tempo de tela por dia</div>
-      <div class="watch-chips" id="screenGoalChips"></div>
-      <p class="watch-muted">🧠 Automática = a mediana dos teus últimos 28 dias −10%: vai descendo junto contigo, sempre um passinho abaixo do teu normal.</p>
-      <div class="toba-sheet-footer">
-        <button type="button" class="btn btn-primary" data-close>Concluído 👍</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="toba-modal" id="screenHelpModal">
-    <div class="toba-sheet">
-      <div class="toba-sheet-header">
-        <h3 id="screenHelpTitle">❔ Entenda</h3>
-        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
-      </div>
-      <div id="screenHelpBody"></div>
-      <div class="toba-sheet-footer">
-        <button type="button" class="btn btn-secondary" data-close>Fechar 👍</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="../assets/toba-common.js"></script>
-  <script src="../assets/toba-cloud.js"></script>
-  <script src="js/health-core.js"></script>
-  <script src="js/health-metrics.js"></script>
-  <script src="js/screen-core.js"></script>
-  <script src="js/screen.js"></script>
-  <script src="../assets/pwa-register.js"></script>
+  <p>Mudou de casa! 🚚 <a href="../TobaRoutine/TobaRoutine-Screen.html">Abrir o 📱 Toba Screen no ⚡ Toba Routine</a></p>
 </body>
 
 </html>

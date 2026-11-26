@@ -44,7 +44,7 @@ const TOBA_CLOUD_NAG_SNOOZE_DAYS = 30; // ✕ no aviso "sem Conta Toba" (v1.83)
 // Ordem = ordem dos chips na folha. Nunca troque uma "key" (é o id na nuvem).
 const TOBA_CLOUD_KEYS = [
   { key: "TOBA_BANK_DB", label: "Bank", emoji: "🏦" },
-  { key: "TOBA_HEALTH_DB", label: "Health", emoji: "🥗" },
+  { key: "TOBA_HEALTH_DB", label: "Health + Fit", emoji: "🫀" }, // v2.17: o Fit mora no mesmo banco
   { key: "TOBA_ROUTINE_DB", label: "Routine", emoji: "✅" },
   { key: "TOBA_KITCHEN_DB", label: "Kitchen", emoji: "🍳" },
   { key: "TOBA_RACING_DB", label: "Racing", emoji: "🏎️" },

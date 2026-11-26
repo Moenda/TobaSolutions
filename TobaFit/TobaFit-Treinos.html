@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
+  <title>Toba Fit | Treinos & Cargas</title>
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="icon" href="../icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Toba" />
+  <link rel="stylesheet" href="../assets/toba-common.css" />
+  <link rel="stylesheet" href="../assets/toba-player.css" />
+  <link rel="stylesheet" href="css/fit-base.css" />
+  <link rel="stylesheet" href="../TobaHealth/css/treinos.css" />
+  <link rel="stylesheet" href="../TobaHealth/css/sessao.css" />
+  <link rel="stylesheet" href="../TobaHealth/css/alongamento.css" />
+  <link rel="stylesheet" href="../TobaHealth/css/casa.css" />
+  <link rel="stylesheet" href="../TobaHealth/css/caminhada.css" />
+  <link rel="stylesheet" href="../TobaHealth/css/treino-raiox.css" />
+  <link rel="stylesheet" href="../TobaHealth/css/treino-mes.css" />
+</head>
+
+<body>
+  <div class="container">
+    <header class="toba-header">
+      <a class="toba-back" href="TobaFit-Index.html" data-label="Voltar para o Toba Fit" aria-label="Voltar para o Toba Fit">‹</a>
+      <a class="toba-titles" href="TobaFit-Index.html">
+        <span class="toba-app">🏋️ Toba Fit</span>
+        <span class="toba-page">🏋️ Treinos</span>
+      </a>
+      <div class="toba-header-actions">
+        <button type="button" class="toba-add-btn" id="headerAddBtn" data-click="newWorkout">+ Treino</button>
+        <button type="button" class="toba-icon-btn toba-gear" data-click="openSettings" aria-label="Configurações">⚙️</button>
+      </div>
+    </header>
+
+    <div id="viewTraining" class="app-view active">
+      <div id="playerStrip"></div>
+      <div id="liveSessionLaunch"></div>
+      <!-- v2.04: ⌚ Treinos do relógio (saiu do 🩻 Raio-X) + ⌚ Sincronizar (treinos-relogio.js) -->
+      <div id="trainingWatch" class="training-watch" hidden>
+        <div class="training-watch-bar">
+          <span class="training-watch-line" id="trainingWatchLine"></span>
+          <button type="button" class="btn btn-secondary btn-sm training-watch-sync" id="trainingWatchSyncBtn" data-click="trainingWatchSync">⌚ Sincronizar</button>
+        </div>
+        <div id="watchGone" hidden></div>
+        <div id="watchInbox" hidden></div>
+      </div>
+
+      <div class="section-title is-first" id="workoutMonthTitle">🏋️ Treinos do mês</div>
+      <div class="toba-stats" id="workoutSummary"></div>
+
+      <details class="card workout-history-card" open>
+        <summary class="workout-history-summary">
+          <span class="card-title">📜 Histórico mensal</span>
+          <span class="workout-history-count" id="workoutHistoryCount"></span>
+          <span class="workout-chevron" aria-hidden="true">›</span>
+        </summary>
+        <div class="workout-month-list" id="workoutHistory"></div>
+      </details>
+    </div>
+
+    <div id="viewMonth" class="app-view">
+      <h1 id="workoutMonthDetailTitle" hidden>🏆 Mês</h1>
+      <div class="card"><div id="workoutMonthContent"></div></div>
+      <div id="workoutMonthHeat"></div>
+      <div class="section-title">📜 Treinos do mês</div>
+      <div id="workoutMonthRecords" class="workout-records"></div>
+    </div>
+
+    <div id="viewDetail" class="app-view">
+      <h1 id="workoutDetailTitle" hidden>🏆 Detalhes</h1>
+      <div class="card"><div id="workoutDetailContent"></div></div>
+    </div>
+
+    <div id="viewSession" class="app-view">
+      <div id="liveSessionContent"></div>
+      <div id="liveRest" class="live-rest" hidden></div>
+    </div>
+
+    <div id="viewWorkout" class="app-view">
+      <div id="workoutViewContent"></div>
+    </div>
+
+    <div id="viewSummary" class="app-view">
+      <div id="strengthSummaryContent"></div>
+    </div>
+
+    <div id="viewWalks" class="app-view">
+      <div id="walkHistoryContent"></div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="workoutModal" data-backdrop="static">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="workoutModalTitle">🏋️ Registrar treino</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+
+      <div id="workoutTypePicker">
+        <div class="hub-title">💪 Força</div>
+        <div class="toba-menu">
+          <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="strength">
+            <span class="toba-menu-icon">💪</span>
+            <span class="toba-menu-text">
+              <span class="toba-menu-title">Treino de força</span>
+              <span class="toba-menu-desc">Monte por grupo muscular, salve como Treino A, B, C e repita.</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="hub-title">🏠 Treinos em casa</div>
+        <div class="toba-menu">
+          <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="home">
+            <span class="toba-menu-icon">🔥</span>
+            <span class="toba-menu-text">
+              <span class="toba-menu-title">HIIT, Tabata e circuitos</span>
+              <span class="toba-menu-desc">Sem equipamento: HIIT, Tabata, cardio sem pulo, força e abdômen.</span>
+            </span>
+          </button>
+          <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="saitama">
+            <span class="toba-menu-icon">👊</span>
+            <span class="toba-menu-text">
+              <span class="toba-menu-title">Treino do Mestre Saitama</span>
+              <span class="toba-menu-desc">O herói do expediente registra o que aguentou hoje.</span>
+            </span>
+          </button>
+          <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="stretch">
+            <span class="toba-menu-icon">🧘</span>
+            <span class="toba-menu-text">
+              <span class="toba-menu-title">Alongamento</span>
+              <span class="toba-menu-desc">10 ou 20 min em casa, com timer e bonequinho de cada posição.</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="hub-title">🚶 Cardio</div>
+        <div class="toba-menu">
+          <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="walking">
+            <span class="toba-menu-icon">🚶</span>
+            <span class="toba-menu-text">
+              <span class="toba-menu-title">Caminhada / Corrida</span>
+              <span class="toba-menu-desc">Ao vivo com GPS, na rua ou na esteira. Do passeio ao sprint atrás do ônibus.</span>
+            </span>
+          </button>
+          <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="bike">
+            <span class="toba-menu-icon">🚴</span>
+            <span class="toba-menu-text">
+              <span class="toba-menu-title">Bike</span>
+              <span class="toba-menu-desc">Pedalando rumo ao shape, ou só fugindo da esteira.</span>
+            </span>
+          </button>
+          <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="elliptical">
+            <span class="toba-menu-icon">🏃</span>
+            <span class="toba-menu-text">
+              <span class="toba-menu-title">Elíptico</span>
+              <span class="toba-menu-desc">Corrida sem sair do lugar. A academia agradece.</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="section-divider"></div>
+        <div class="hub-title">Do seu jeito</div>
+        <button type="button" class="toba-menu-btn" data-click="selectWorkoutType" data-type="custom">
+          <span class="toba-menu-icon">➕</span>
+          <span class="toba-menu-text">
+            <span class="toba-menu-title">Treino personalizado</span>
+            <span class="toba-menu-desc">Outra atividade, com os dados que você quiser.</span>
+          </span>
+        </button>
+      </div>
+
+      <form id="workoutForm" data-submit="saveWorkout" hidden>
+        <button type="button" class="back-nav-btn workout-back-types" data-click="backToWorkoutTypes">‹ Tipos de treino</button>
+        <div id="workoutFormFields"></div>
+        <label class="live-check" id="workoutWatchRow" hidden>
+          <input type="checkbox" id="workout-watch-pending" />
+          <span>⌚ Completar com o relógio<small class="watch-pending-hint">Tempo, kcal e batimento do relógio passam a valer no próximo ⌚ Sincronizar. Pode deixar em branco.</small></span>
+        </label>
+        <div class="toba-sheet-footer">
+          <button type="submit" class="btn btn-primary">Salvar treino 💪</button>
+        </div>
+      </form>
+
+      <div id="strengthPanel" hidden></div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="liveStartModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="liveStartTitle">▶ Iniciar treino</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="liveStartList"></div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="homeHelpModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="homeHelpTitle">❔ Treino em casa</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="homeHelpBody"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-primary" data-close>Bora 👊</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="liveExerciseModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>➕ Adicionar exercício</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="liveExerciseList"></div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="liveFinishModal" data-backdrop="static">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🏁 Finalizar treino</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form data-submit="finishLiveSession">
+        <p class="toba-sheet-text" id="liveFinishSummary"></p>
+        <div class="form-group" id="liveTitleGroup">
+          <label for="live-title">Nome do treino</label>
+          <input id="live-title" class="form-control" type="text" maxlength="40" placeholder="Ex: Treino A" />
+        </div>
+        <div class="live-walk-note" id="liveWalkNote" hidden>
+          <strong>🚶 E os 10 km do careca?</strong>
+          <span>A caminhada / corrida entra como <b>exercício próprio</b>: depois de salvar, toque em ➕ Registrar treino › 🚶 Caminhada / Corrida (lá tem distância, tempo e calorias). No mesmo dia dos 100 de cada, ela vale o "Careca completo" 🦲</span>
+        </div>
+        <div class="form-group">
+          <label for="live-calories">Calorias (kcal, opcional)</label>
+          <input id="live-calories" class="form-control" type="number" inputmode="numeric" min="0" step="1" />
+        </div>
+        <div class="form-group">
+          <label for="live-notes">Observações (opcional)</label>
+          <input id="live-notes" class="form-control" type="text" maxlength="160" placeholder="Como foi o treino?" />
+        </div>
+        <label class="live-check" id="liveWatchRow" hidden>
+          <input type="checkbox" id="live-watch-pending" />
+          <span>⌚ Vai mesclar com o relógio?<small class="watch-pending-hint">Tempo, kcal e batimento do relógio passam a valer no próximo ⌚ Sincronizar. Dá pra editar depois.</small></span>
+        </label>
+        <label class="live-check" id="liveSaveRoutineRow">
+          <input type="checkbox" id="live-save-routine" />
+          <span id="liveSaveRoutineText">💾 Salvar como modelo</span>
+        </label>
+        <div class="toba-sheet-footer">
+          <button type="submit" class="btn btn-primary">Salvar treino 💪</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="watchMergeModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🔗 Mesclar com qual treino?</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="watchMergeBody"></div>
+      <p class="watch-muted">Mesclou = valem o tempo, as kcal e os km do relógio (e o batimento entra junto). Quer outro número? ✏️ Editar no treino. Dá pra desmesclar lá também.</p>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="watchIgnoredModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🙈 Treinos ignorados</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="watchIgnoredBody"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn btn-secondary" data-close>Fechar 👍</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="walkFinishModal" data-backdrop="static">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🏁 Fim da caminhada</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form data-submit="saveWalkLive">
+        <p class="toba-sheet-text" id="walkFinishSummary"></p>
+        <input type="hidden" id="walk-finish-activity" value="walk" />
+        <div class="form-group">
+          <span class="form-label">Foi o quê?</span>
+          <div class="walk-chips">
+            <button type="button" class="live-chip active" data-click="pickWalkFinishActivity" data-walk-activity="walk">🚶 Caminhada</button>
+            <button type="button" class="live-chip" data-click="pickWalkFinishActivity" data-walk-activity="run">🏃 Corrida</button>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="walk-finish-km">Distância (km)</label>
+            <input id="walk-finish-km" class="form-control" type="number" inputmode="decimal" min="0" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label for="walk-finish-minutes">Tempo (min)</label>
+            <input id="walk-finish-minutes" class="form-control" type="number" inputmode="numeric" min="1" step="1" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="walk-finish-calories">Calorias (kcal, estimadas pelo seu peso)</label>
+          <input id="walk-finish-calories" class="form-control" type="number" inputmode="numeric" min="0" step="1" />
+        </div>
+        <div class="form-group">
+          <label for="walk-finish-notes">Observações (opcional)</label>
+          <input id="walk-finish-notes" class="form-control" type="text" maxlength="160" placeholder="Por onde andou?" />
+        </div>
+        <label class="live-check" id="walkWatchRow" hidden>
+          <input type="checkbox" id="walk-watch-pending" />
+          <span>⌚ Vai mesclar com o relógio?<small class="watch-pending-hint">Tempo, kcal, km e batimento do relógio passam a valer no próximo ⌚ Sincronizar. Dá pra editar depois.</small></span>
+        </label>
+        <div class="toba-sheet-footer">
+          <button type="submit" class="btn btn-primary">Salvar no histórico 🚶</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="workoutChartModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="workoutChartTitle">📊 Últimos 7 dias</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="workoutChartDescription" class="toba-sheet-text"></div>
+      <div class="workout-chart" id="workoutChart" role="img" aria-label="Comparativo dos últimos sete dias"></div>
+      <div id="workoutChartWeek" class="workout-chart-week"></div>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="exerciseLoadModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>⚖️ Tipo de carga</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <form id="exerciseLoadForm" data-submit="saveExerciseLoad">
+        <p class="toba-sheet-text"><b id="exerciseLoadName"></b>: como você anota a carga? Vale para todos os treinos desse exercício, inclusive os antigos.</p>
+        <div class="form-group">
+          <label for="exercise-load-type">Carga anotada</label>
+          <select id="exercise-load-type" class="form-control">
+            <option value="total">Total (barra, máquina, peso do corpo)</option>
+            <option value="perHand">Por halter / mão (conta 2×)</option>
+          </select>
+        </div>
+        <label class="live-check">
+          <input type="checkbox" id="exercise-load-unilateral" />
+          <span>Unilateral: um lado de cada vez, reps por lado (conta 2×)</span>
+        </label>
+        <div class="toba-sheet-footer">
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toba-modal" id="muscleHelpModal">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>🔥 Manual do boneco</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div class="toba-sheet-text muscle-help">
+        <p>O boneco é o seu raio-X de academia de casa 🩻. Cada pedaço pinta conforme o <b>esforço</b> (pts) que aquele músculo levou no período (o treino, o mês ou a vida toda).</p>
+
+        <div class="muscle-help-title">🎨 As cores</div>
+        <div class="muscle-legend muscle-help-legend" aria-hidden="true"><span>pouco</span><i class="lv-1"></i><i class="lv-2"></i><i class="lv-3"></i><i class="lv-4"></i><i class="lv-5"></i><span>pegando fogo</span></div>
+        <ul>
+          <li><b>Cinza:</b> músculo em coma. Nem sabe que você treina 😴</li>
+          <li><b>Verde → vermelho:</b> é comparação. O vermelho é o campeão do período, o resto pinta em relação a ele. Vermelho não é lesão, é o queridinho 🏆</li>
+        </ul>
+
+        <div class="muscle-help-title">🧮 Como o Toba conta</div>
+        <p>Cada exercício tem uma <b>carga normal</b>: o peso que um cara comum de 30 anos faz 10 reps bem feitas (supino 60 kg, rosca 25 kg, leg press 150 kg, flexão = ~48 kg do seu corpo). Aí é uma conta de 3 passos:</p>
+        <ol class="muscle-help-steps">
+          <li><b>Intensidade</b> = sua carga ÷ carga normal (entre 0,25× e 2×).</li>
+          <li><b>Pontos</b> = reps × intensidade. 1 pt = 1 rep na carga normal.</li>
+          <li><b>Divide</b> os pontos entre os músculos que trabalham no exercício.</li>
+        </ol>
+        <div class="muscle-help-example">
+          <b>Exemplo:</b> 10 reps de leg press com 200 kg → 200 ÷ 150 = 1,33× → <b>13 pts</b> → 60% quadríceps (8), 25% glúteo (3), 10% posterior (1), 5% panturrilha.<br />
+          10 reps de rosca com 25 kg → 25 ÷ 25 = 1× → <b>10 pts</b> → 80% bíceps (8), 20% antebraço (2).<br />
+          Perna levantou 8× mais kg e empatou com o bíceps: os dois treinaram na carga normal deles 🤝
+        </div>
+        <ul>
+          <li><b>Nenhum exercício é solo:</b> flexão vai 55% peito, 15% tríceps, 10% ombro, 10% costas e 10% abdômen. Agachamento: 50% quadríceps, 25% glúteo, 10% posterior e o resto pro core e panturrilha.</li>
+          <li><b>Sem carga anotada:</b> a série vale meio esforço (0,5×).</li>
+          <li><b>Caminhada, bike e elíptico:</b> cada km vira umas reps de perna a 0,4× (sem km, ele estima pelo tempo). Pinta, mas de leve 🚶</li>
+        </ul>
+        <p>Toca num músculo do boneco pra ver os pts, as reps que couberam pra ele e quando foi o último treino dele.</p>
+
+        <div class="muscle-help-title">📐 Os modelos de shape</div>
+        <p>No 🏆 Hall dos Heróis (lá no 🎮 Perfil do jogador), o Toba soma a vida toda e divide em dois times:</p>
+        <ul>
+          <li><b>💪 Tronco:</b> peito, costas, ombros, bíceps, tríceps, antebraço e abdômen.</li>
+          <li><b>🦵 Perna:</b> quadríceps, posterior, glúteos e panturrilha.</li>
+        </ul>
+        <p>Se um time tem mais de 1,3× o esforço do outro (uns 57% do total), ele manda no shape:</p>
+        <ul>
+          <li><b>🔻 Triângulo invertido:</b> tronco passou de 57%. Shape V chegando... mas a perna de sabiá tá logo ali 🐦</li>
+          <li><b>🔺 Triângulo:</b> perna passou de 57%. Perna de jogador, peito de goleiro reserva 🦵</li>
+          <li><b>▭ Retângulo:</b> os dois entre 43% e 57%. Equilíbrio de monge shaolin 🧘</li>
+        </ul>
+
+        <div class="muscle-help-title">⚖️ Como equilibrar</div>
+        <ul>
+          <li><b>Caça os cinzas:</b> músculo cinza ou no fim do ranking é o próximo da fila. O Toba até zoa quem ficou de fora 🦩</li>
+          <li><b>Virou 🔻?</b> Dia de perna: agachamento, afundo, panturrilha, e caminhada e bike também ajudam.</li>
+          <li><b>Virou 🔺?</b> Sobe pro tronco: flexão, barra, mergulho e abdominal.</li>
+          <li><b>Não precisa tudo vermelho:</b> a meta é o boneco colorido por igual, sem buraco cinza. Constância ganha de treino monstro uma vez por mês 🐢</li>
+        </ul>
+        <p class="muscle-help-motto">Nunca foi sorte, Toba. Nunca foi sorte. 🙏</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="tobaSettingsExtra" hidden>
+    <div class="toba-settings-section">
+      <div class="toba-settings-label">🔔 Lembretes</div>
+      <button type="button" class="toba-menu-btn" data-click="openWorkoutReminder">
+        <span class="toba-menu-icon">📅</span>
+        <span class="toba-menu-text">
+          <span class="toba-menu-title">Lembrete de treino</span>
+          <span class="toba-menu-desc">Nos dias e na hora que você treina</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </button>
+    </div>
+    <div class="toba-settings-section">
+      <div class="toba-settings-label">⌚ Relógio</div>
+      <button type="button" class="toba-menu-btn" data-click="openWatchIgnored">
+        <span class="toba-menu-icon">🙈</span>
+        <span class="toba-menu-text">
+          <span class="toba-menu-title">Treinos do relógio ignorados</span>
+          <span class="toba-menu-desc">Ignorou sem querer? Volta pra lista daqui</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="../assets/toba-common.js"></script>
+  <script src="../assets/toba-cloud.js"></script>
+  <script src="../TobaHealth/js/health-core.js"></script>
+  <script src="js/fit-core.js"></script>
+  <script src="../TobaHealth/js/health-metrics.js"></script>
+  <script src="../TobaRoutine/js/routine-metrics.js"></script>
+  <script src="../TobaKitchen/js/kitchen-recipes.js"></script>
+  <script src="../TobaRacing/js/racing-metrics.js"></script>
+  <script src="../TobaTurism/js/turism-metrics.js"></script>
+  <script src="../TobaRacing/TobaDrive/js/drive-metrics.js"></script>
+  <script src="../assets/toba-player.js"></script>
+  <script src="../TobaHealth/js/hall-shared.js"></script>
+  <script src="../TobaHealth/js/hall.js"></script>
+  <script src="../TobaHealth/js/forca.js"></script>
+  <script src="../TobaHealth/js/sessao.js"></script>
+  <script src="../TobaHealth/js/sessao-saitama.js"></script>
+  <script src="../assets/toba-maps.js"></script>
+  <script src="../TobaHealth/js/sessao-alongamento.js"></script>
+  <script src="../TobaHealth/js/sessao-casa.js"></script>
+  <script src="../TobaHealth/js/sessao-caminhada.js"></script>
+  <script src="../TobaHealth/js/relogio.js"></script>
+  <script src="../TobaHealth/js/treinos-relogio.js"></script>
+  <script src="../TobaHealth/js/treino-mes.js"></script>
+  <script src="../TobaHealth/js/treinos.js"></script>
+  <script src="../TobaHealth/js/treino-raiox.js"></script>
+  <script src="../assets/pwa-register.js"></script>
+</body>
+
+</html>

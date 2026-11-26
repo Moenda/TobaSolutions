@@ -1,0 +1,6 @@
+/* 📱 Toba Screen no ⚡ Toba Routine (v2.17). A tela usa os estilos de sempre
+ * (../TobaHealth/css/relogio.css + screen.css); aqui só a cor do Routine. */
+
+:root {
+  --accent: var(--gold-2);
+}

@@ -1,4 +1,5 @@
-/* Toba Health · o que é comum às telas do Health (Pesagem + Treinos).
+/* Toba Health · o que é comum às telas do Health (Pesagem + Raio-X; desde v2.17
+ * os Treinos são do Toba Fit, que tem o fit-base.css igualzinho com outra cor).
  * A base (cores, botões, cards, modais, cabeçalho, quadradinhos) vem de
  * ../assets/toba-common.css, carregado antes deste arquivo. */
 
@@ -32,4 +33,12 @@ details.card + .card {
 .toba-sheet-footer .btn + .btn,
 .toba-dialog-actions .btn + .btn {
   margin-top: 0;
+}
+
+/* v2.17: hub avisa onde foram parar os Treinos (Toba Fit) e o Toba Screen (Routine) */
+.health-moved {
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.45;
 }

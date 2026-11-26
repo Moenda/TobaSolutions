@@ -290,7 +290,7 @@ async function importHealthBackup(text) {
 
 async function clearHealthData() {
   const confirmed = await showPageMessage(
-    "Isso apaga TUDO do Toba Health (pesagens, treinos e perfil). Não dá para desfazer!",
+    "Isso apaga TUDO do Toba Health (pesagens, relógio, tempo de tela e os treinos do 🏋️ Toba Fit, que moram no mesmo banco). Não dá para desfazer!",
     { title: "Apagar tudo?", icon: "🚨", confirm: true, confirmLabel: "Apagar tudo" },
   );
   if (!confirmed) return;
