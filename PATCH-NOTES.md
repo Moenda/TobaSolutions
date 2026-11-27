@@ -3112,3 +3112,29 @@ Rafa: "o Toba Health precisa passar por um revamp... health é saúde, mas dentr
 **Como testar:** página inicial → card 🫀 Toba Health (peso + atalhos Raio-X/Pesagem) e logo depois o 🏋️ Toba Fit (treinos/km). Abrir o Fit → Treinos & Cargas → ‹ volta pro hub do Fit. Abrir `TobaHealth/TobaHealth-Treinos.html` direto → vai sozinho pro Fit. ⚡ Routine → 📱 Toba Screen → ‹ volta pro Routine. Perfil/Hall e duelo dos amigos com 🫀 e 🏋️. ⚙ mostra "Patch v2.17".
 
 **Commit sugerido (parte):** `... + Toba Health enxuto (coracao), Toba Fit novo com os treinos e Toba Screen no Routine`
+
+---
+
+## v2.18 — 🍦 ULTRA SESSÃO ICE TOBA NINJA CREAMi
+
+**Arquivos novos/alterados:** `TobaKitchen/js/sorvetes.js` (NOVO), `TobaKitchen/js/kitchen-recipes.js`, `TobaKitchen/js/kitchen-core.js`, `TobaKitchen/js/receitas.js`, `TobaKitchen/TobaKitchen-Receitas.html`, `TobaKitchen/TobaKitchen-Index.html`, `TobaKitchen/css/kitchen-base.css`, `assets/toba-player.js`, `assets/toba-common.js` (Patch v2.18), `sw.js` (toba-v73), `CLAUDE.md`.
+
+1. **Chip 🍦 Sorvetes no Livro de Receitas** (logo depois do 🍵 Chás) e card próprio no hub do Kitchen: 18 receitas fit pra Ninja CREAMi. **11 proteicas** (baunilha clássica, chocolate trufado, pote monstro 50 g, morango, banana com canela, macaco fit, mocha da V60, açaí de tigela, mousse de maracujá, torta de limão, froyo de frutas vermelhas) e **7 só fruta** (sorbet de manga, abacaxi com hortelã, frutas vermelhas, morango, melancia, nice cream de banana e o Tropical do Cloba). Tudo com leite desnatado, whey, iogurte proteico e fruta, sem creme nem açúcar.
+2. **kcal, proteína, carbo e gordura em toda receita**, por pote inteiro ou dividido em 2/3/4 porções, mais "g de proteína a cada 100 kcal" com a nota do Cloba. A conta sai dos ingredientes (cada ingrediente mostra o dele), nunca chutada. Filtros 💪 Proteicos / 🍓 Só fruta / 🧑‍🍳 Meus e ordem 💪 Mais proteína / 🔥 Menos kcal / A–Z.
+3. **🌀 Como bater, passo a passo em toda receita** (toca pra riscar): bate a base, pote até a linha MAX, 24 h no freezer reto, 5–10 min fora e raspar a corcova, **Lite Ice Cream** (Sorbet pra fruta, Smoothie Bowl pro açaí), **Re-spin com 1–2 colheres de leite** (até 2×), Mix-in e o que fazer com a sobra.
+4. **🍫 Mix-ins de um toque** (paçoca, chocolate 70%, morango, frutas vermelhas, banana, nibs, granola, pasta de amendoim): toca e o pote já mostra as calorias com o mix-in.
+5. **🫙 Pote normal 470 ml ou Deluxe 710 ml**: escolhe uma vez e todas as quantidades e contas se ajustam (Deluxe = × 1,5).
+6. **🧊 Congelei / 🍦 Comi**: "Congelei um pote" põe no freezer do Toba com a contagem das 24 h ("pronto sáb. 14:39"); no topo do chip aparecem os potes congelando e os prontos pra bater. "Comi" usa o pote do freezer (ou conta um novo), com desfazer.
+7. **🧑‍🍳 Montar meu pote**: base pronta (proteica, chocolate ou sorbet) ou ingredientes por chip, − / + e quantidades de um toque, com kcal/proteína e a régua da linha MAX ao vivo. "✏️ Fazer minha versão" copia uma receita pronta (com os mix-ins marcados) pra tu mexer.
+8. **📋 Rótulos**: põe a tabela do TEU whey, leite, iogurte e açaí e todas as contas passam a usar os números da tua marca.
+9. **🌀 Guia da Ninja**: o caminho do pote fit, 🆘 "Deu ruim?" (farelento, cristal de gelo, sopa, corcova, chiclete, sem doce, giz, barulhão) com a solução, o que é cada programa, whey x caseína x iogurte e como deixar cremoso sem gordura (goma xantana, leite em pó, banana madura).
+10. **🛒 Ingredientes na lista** de compras (seções do mercado, sem repetir o que já tá lá).
+11. **7 troféus novos na 🍳 Cozinha do Perfil**: 🥶 Brain freeze, 🍨 Sorveteiro da quebrada (10), 🥷 Ninja do freezer (50, título "Ninja do Sorvete"), 🌈 Pote arco-íris (6 sabores), 🍓 Só fruta, juro (5 sorbets), 💪 Pote monstro (50 g de proteína) e 🧊 Semana gelada (5 potes na semana). Sem XP próprio, igual às receitas.
+
+**Dados:** campos novos opcionais no `TOBA_KITCHEN_DB`: `ices` (potes montados), `icePints` (freezer e potes comidos), `iceLabels` (teus rótulos) e `iceSize` (tamanho do pote). Banco antigo abre normal (os campos nascem vazios no `normalizeKitchenDb`), backups antigos importam igual e nada existente mudou de nome. Mesmo Firebase e mesmo backup do Kitchen.
+
+**APK:** nenhum APK novo.
+
+**Como testar:** Kitchen → card 🍦 Sorvetes Ninja CREAMi (ou Receitas → chip 🍦 Sorvetes). Abrir a Baunilha → ver kcal/proteína, tocar em ÷ 2 porções e num mix-in → 🧊 Congelei → voltar e ver no 🧊 No freezer → 🍦 Comi. Trocar pra Pote Deluxe e ver as contas subirem. 🍦 Montar meu pote → Base proteica + morango → Salvar. ✏️ Rótulos → mudar a proteína do whey → contas mudam. Perfil → 🍳 Cozinha → 🥶 Brain freeze. ⚙ mostra "Patch v2.18".
+
+**Commit sugerido:** `v2.18 - Sessao Sorvetes Ninja CREAMi no Kitchen: 18 receitas fit com kcal e proteina por pote, jeito certo de bater, freezer 24h, montar meu pote, rotulos, guia e 7 trofeus`

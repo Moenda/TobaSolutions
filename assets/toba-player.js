@@ -433,6 +433,14 @@ function buildPlayerAchievements() {
     { id: "kt-formiga", cat: "cozinha", tier: "bronze", icon: "🐜", name: "Formiga", desc: "5 sobremesas feitas. O dentista mandou um abraço.", hint: "Faça 5 sobremesas.", metric: (s) => s.kitchenSweet, goal: 5 },
     { id: "kt-larica", cat: "cozinha", tier: "bronze", icon: "🌙", name: "Larica da madrugada", desc: "Cozinhou entre meia-noite e 5 da manhã. A geladeira tem câmera.", hint: "Termine uma receita entre 0h e 5h.", metric: (s) => s.kitchenNight, goal: 1 },
     { id: "kt-semana", cat: "cozinha", tier: "prata", icon: "📅", name: "Semana no controle", desc: "7 receitas da programação feitas na mesma semana. Planejou e cumpriu!", hint: "Marque 7 receitas da Programação da Semana como feitas na mesma semana.", metric: (s) => s.kitchenWeekPlan, goal: 7 },
+    // 🍦 Sorvetes Ninja CREAMi (v2.18): potes comidos (calcKitchenPlayer, kitchen-recipes.js)
+    { id: "kt-ice-1", cat: "cozinha", tier: "bronze", icon: "🥶", name: "Brain freeze", desc: "Primeiro pote da Ninja CREAMi. A testa doeu, mas valeu.", hint: "Coma um pote de sorvete (🍦 Sorvetes no Livro de Receitas).", metric: (s) => s.kitchenIce, goal: 1 },
+    { id: "kt-ice-10", cat: "cozinha", tier: "prata", icon: "🍨", name: "Sorveteiro da quebrada", desc: "10 potes batidos. O carrinho de sorvete da esquina tá com medo.", hint: "Coma 10 potes de sorvete.", metric: (s) => s.kitchenIce, goal: 10 },
+    { id: "kt-ice-50", cat: "cozinha", tier: "ouro", icon: "🥷", name: "Ninja do freezer", desc: "50 potes. A CREAMi já te chama pelo nome.", hint: "Coma 50 potes de sorvete.", metric: (s) => s.kitchenIce, goal: 50, title: "🥷 Ninja do Sorvete" },
+    { id: "kt-ice-sabores", cat: "cozinha", tier: "prata", icon: "🌈", name: "Pote arco-íris", desc: "6 sabores diferentes de sorvete. Baskin Robbins mandou currículo.", hint: "Coma potes de 6 sorvetes diferentes (receitas ou potes teus).", metric: (s) => s.kitchenIceFlavors, goal: 6 },
+    { id: "kt-ice-fruta", cat: "cozinha", tier: "bronze", icon: "🍓", name: "Só fruta, juro", desc: "5 sorbets só de fruta. A nutri chorou de alegria.", hint: "Coma 5 potes de sorbet só de fruta.", metric: (s) => s.kitchenIceFruit, goal: 5 },
+    { id: "kt-ice-monstro", cat: "cozinha", tier: "prata", icon: "💪", name: "Pote monstro", desc: "Um pote com 50 g de proteína ou mais. Sorvete que conta como treino (quase).", hint: "Coma um pote de sorvete com 50 g de proteína ou mais.", metric: (s) => s.kitchenIceMonster, goal: 1 },
+    { id: "kt-ice-semana", cat: "cozinha", tier: "ouro", icon: "🧊", name: "Semana gelada", desc: "5 potes na mesma semana. Isso não é dieta, é estilo de vida.", hint: "Coma 5 potes de sorvete na mesma semana (seg a dom).", metric: (s) => s.kitchenIceWeek, goal: 5 },
     // Toba Racing (desde v1.56; números de calcRacingPlayer em racing-metrics.js)
     { id: "rc-1", cat: "pista", tier: "bronze", icon: "🏁", name: "Pit stop inaugural", desc: "Primeiro abastecimento anotado. A largada foi dada.", hint: "Anote um abastecimento no Toba Racing.", metric: (s) => s.racingFuelings, goal: 1 },
     { id: "rc-10", cat: "pista", tier: "prata", icon: "⛽", name: "O frentista sabe seu nome", desc: "10 abastecimentos anotados. Já ganha bala no caixa.", hint: "Anote 10 abastecimentos.", metric: (s) => s.racingFuelings, goal: 10 },
@@ -1048,6 +1056,7 @@ function computePlayer(options = {}) {
     routineOneoffs: 0, routineBigOneoff: 0,
     kitchenCooked: 0, kitchenDistinct: 0, kitchenMeals: 0, kitchenFullDay: 0, kitchenImprovised: 0,
     kitchenRepeat: 0, kitchenLong: 0, kitchenSweet: 0, kitchenNight: 0, kitchenWeekPlan: 0,
+    kitchenIce: 0, kitchenIceFlavors: 0, kitchenIceFruit: 0, kitchenIceMonster: 0, kitchenIceWeek: 0, // v2.18 (🍦)
     racingFuelings: 0, racingKm: 0, racingSegments: 0, racingEco: 0, racingEthanol: 0, racingBigFill: 0, racingFuelTypes: 0, racingRoad: 0,
     turismLists: 0, turismAdded: 0, turismVisits: 0, turismTop: 0, turismNem: 0, turismCities: 0,
     turismKinds: 0, turismSameDay: 0, turismAgain: 0, turismValue: 0, turismZerou: 0,

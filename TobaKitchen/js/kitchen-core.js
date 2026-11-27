@@ -27,6 +27,10 @@ function createEmptyKitchenDb() {
     extrasRecent: [], // v1.53: digitados no Outros que saíram da lista [{ name, aisle }] (seguem como chip; até 24)
     teas: [], // v1.96: blends de chá [{ id: "t-<ts>-<rand4>", name, emoji, purpose, parts: [{ herb?, name?, parts }], howTo, jar?, createdAt, updatedAt }]
     teaBrews: [], // v1.96: xícaras tomadas [{ id: "b-<ts>-<rand4>", teaId, date: "AAAA-MM-DD", doneAt: ms }]
+    ices: [], // v2.18: potes de sorvete montados [{ id: "m-<ts>-<rand4>", name, emoji, program, items: [{ ing, qty }], createdAt, updatedAt }]
+    icePints: [], // v2.18: potes congelados/comidos [{ id: "s-<ts>-<rand4>", iceId, size: "std"|"xl", frozenAt: ms|0, eatenAt: ms|0, date: "AAAA-MM-DD"|"" }]
+    iceLabels: {}, // v2.18: rótulo do usuário { "<id do ingrediente>": { kcal, p, c, f } } (vazio = rótulo médio)
+    iceSize: "std", // v2.18: tamanho do pote da CREAMi ("std" 470 ml | "xl" Deluxe 710 ml)
   };
 }
 
@@ -67,6 +71,30 @@ function normalizeKitchenDb(db) {
     });
   });
   out.teaBrews = Array.isArray(out.teaBrews) ? out.teaBrews.filter((b) => b && typeof b === "object" && b.teaId) : [];
+  // v2.18: sorvetes (bancos antigos não têm; entrada estranha sai da tela mas o que dá pra ler fica)
+  out.ices = Array.isArray(out.ices) ? out.ices.filter((r) => r && typeof r === "object") : [];
+  out.ices.forEach((r) => {
+    r.id = r.id ? String(r.id) : kitchenNewId("m");
+    r.name = String(r.name || "");
+    r.emoji = String(r.emoji || "🍦");
+    r.program = String(r.program || "lite");
+    r.items = Array.isArray(r.items) ? r.items.filter((i) => i && typeof i === "object" && i.ing) : [];
+    r.items.forEach((i) => {
+      i.ing = String(i.ing);
+      i.qty = i.qty === null || i.qty === undefined || i.qty === "" ? null : Number(i.qty) || null;
+    });
+  });
+  out.icePints = Array.isArray(out.icePints) ? out.icePints.filter((p) => p && typeof p === "object" && p.iceId) : [];
+  out.icePints.forEach((p) => {
+    p.id = p.id ? String(p.id) : kitchenNewId("s");
+    p.iceId = String(p.iceId);
+    p.size = p.size === "xl" ? "xl" : "std";
+    p.frozenAt = Number(p.frozenAt) || 0;
+    p.eatenAt = Number(p.eatenAt) || 0;
+    p.date = String(p.date || "");
+  });
+  out.iceLabels = out.iceLabels && typeof out.iceLabels === "object" && !Array.isArray(out.iceLabels) ? out.iceLabels : {};
+  out.iceSize = out.iceSize === "xl" ? "xl" : "std";
   Object.values(out.shopping).forEach((week) => {
     if (week && typeof week === "object" && !Array.isArray(week.checked)) week.checked = [];
   });
@@ -190,7 +218,7 @@ async function importKitchenBackup(text) {
 }
 
 async function resetKitchenData() {
-  const ok = await showPageMessage("Apaga TUDO do Toba Kitchen (contador, programação, despensa, lista de compras e seus blends de chá). As receitas continuam. Não dá para desfazer!", { title: "Apagar tudo?", icon: "🚨", confirm: true, confirmLabel: "Apagar tudo" });
+  const ok = await showPageMessage("Apaga TUDO do Toba Kitchen (contador, programação, despensa, lista de compras, seus blends de chá e seus potes de sorvete). As receitas continuam. Não dá para desfazer!", { title: "Apagar tudo?", icon: "🚨", confirm: true, confirmLabel: "Apagar tudo" });
   if (!ok) return;
   localStorage.removeItem(KITCHEN_KEY); // só a chave deste app
   kitchenDb = createEmptyKitchenDb();

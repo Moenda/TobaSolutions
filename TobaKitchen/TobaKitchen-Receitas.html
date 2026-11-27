@@ -70,6 +70,10 @@
 
     <!-- 🍵 Detalhe do blend de chá (v1.96, js/chas.js) -->
     <section class="app-view" id="viewTea"></section>
+
+    <!-- 🍦 Sorvete aberto e 🌀 Guia da Ninja (v2.18, js/sorvetes.js) -->
+    <section class="app-view" id="viewIce"></section>
+    <section class="app-view" id="viewIceGuide"></section>
   </div>
 
   <!-- Modo cozinha (passo a passo, tela cheia) -->
@@ -137,6 +141,56 @@
     </div>
   </div>
 
+  <!-- 🍦 Montar meu pote (v2.18) -->
+  <div class="toba-modal" id="iceSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3 id="iceSheetTitle">🍦 Montar meu pote</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div class="form-group">
+        <label for="iceName">Nome</label>
+        <input type="text" class="form-control" id="iceName" maxlength="40" placeholder="Ex.: Baunilha com paçoca" autocomplete="off" />
+      </div>
+      <div class="kt-aisle">🎨 Cara do pote</div>
+      <div class="kt-chips is-wrap" id="iceEmojis"></div>
+      <div class="kt-aisle">🎛️ Programa</div>
+      <div class="kt-chips is-wrap" id="icePrograms"></div>
+      <div id="icePresets">
+        <div class="kt-aisle">⚡ Começar de uma base pronta</div>
+        <div class="kt-chips is-wrap">
+          <button type="button" class="chip-btn kt-chip" data-click="icePreset" data-key="proteico">🍦 Base proteica</button>
+          <button type="button" class="chip-btn kt-chip" data-click="icePreset" data-key="chocolate">🍫 Base chocolate</button>
+          <button type="button" class="chip-btn kt-chip" data-click="icePreset" data-key="sorbet">🍧 Base sorbet</button>
+        </div>
+      </div>
+      <div class="section-title" id="icePartsTitle">⚖️ No pote</div>
+      <div id="iceParts"></div>
+      <div class="section-title">🧺 Ingredientes</div>
+      <div id="iceIngs"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn kt-btn-fire" data-click="saveIce">💾 Salvar pote</button>
+        <button type="button" class="btn btn-secondary text-red" id="iceDelete" data-click="deleteIce" hidden>🗑️ Apagar pote</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✏️ Rótulos dos ingredientes dos sorvetes (v2.18) -->
+  <div class="toba-modal" id="iceLabelsSheet">
+    <div class="toba-sheet">
+      <div class="toba-sheet-header">
+        <h3>📋 Rótulos</h3>
+        <button type="button" class="close-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <p class="toba-sheet-text">Copia a tabela nutricional da embalagem do teu (na medida que aparece do lado do nome). Campo vazio = rótulo médio do Toba (o número cinza).</p>
+      <div id="iceLabelsList"></div>
+      <div class="toba-sheet-footer">
+        <button type="button" class="btn kt-btn-fire" data-click="saveIceLabels">💾 Salvar rótulos</button>
+        <button type="button" class="btn btn-secondary" data-click="resetIceLabels">↩ Voltar tudo pro padrão</button>
+      </div>
+    </div>
+  </div>
+
   <script src="../assets/toba-common.js"></script>
   <script src="../assets/toba-cloud.js"></script>
   <script src="js/kitchen-recipes.js"></script>
@@ -149,6 +203,7 @@
   <script src="js/kitchen-core.js"></script>
   <script src="js/receitas.js"></script>
   <script src="js/chas.js"></script>
+  <script src="js/sorvetes.js"></script>
   <script src="../assets/pwa-register.js"></script>
 </body>
 

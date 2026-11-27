@@ -41,6 +41,14 @@
         </span>
         <span class="toba-hub-chevron">›</span>
       </a>
+      <a class="toba-hub-card" href="TobaKitchen-Receitas.html?sorvetes=1">
+        <span class="toba-hub-icon">🍦</span>
+        <span class="toba-hub-text">
+          <span class="toba-hub-title">Sorvetes Ninja CREAMi</span>
+          <span class="toba-hub-desc" id="hubIceDesc">Sorvete fit com whey e fruta, kcal e proteína por pote e o jeito certo de bater.</span>
+        </span>
+        <span class="toba-hub-chevron">›</span>
+      </a>
       <a class="toba-hub-card" href="TobaKitchen-Semana.html">
         <span class="toba-hub-icon">📅</span>
         <span class="toba-hub-text">
@@ -77,6 +85,15 @@
         : k.weekPlanned
           ? `${k.weekPlanned} ${k.weekPlanned === 1 ? "receita programada" : "receitas programadas"} nesta semana`
           : "Escolhe o que comer cada dia e o Toba monta a lista do mercado.";
+      // v2.18: 🍦 freezer da CREAMi
+      const freezer = kitchenIceFreezerOf(kitchenDb);
+      const readyPints = freezer.filter((p) => !kitchenIceLeftMs(p)).length;
+      const icePints = kitchenIceEatenOf(kitchenDb).length;
+      document.getElementById("hubIceDesc").textContent = freezer.length
+        ? `🧊 ${freezer.length} no freezer${readyPints ? ` · ${readyPints} ${readyPints === 1 ? "pronto" : "prontos"} pra bater!` : ""}`
+        : icePints
+          ? `${icePints} ${icePints === 1 ? "pote comido" : "potes comidos"} · ${KITCHEN_ICE_RECIPES.length} receitas fit`
+          : "Sorvete fit com whey e fruta, kcal e proteína por pote e o jeito certo de bater.";
       const pending = kitchenShoppingPending(kitchenDb, kitchenWeekMonday());
       document.getElementById("hubShopDesc").textContent = pending
         ? `${pending} ${pending === 1 ? "item" : "itens"} pra pegar no mercado`

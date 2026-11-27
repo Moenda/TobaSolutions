@@ -40,7 +40,7 @@ function kitchenNormalize(text) {
  * Livro: chips de refeição + lista
  * ------------------------------------------------------------------- */
 function renderBookMeals() {
-  const chips = [{ key: "all", icon: "📚", short: "Todas" }, { key: "chas", icon: "🍵", short: "Chás" }, ...KITCHEN_MEALS]; // v1.96: Chás (js/chas.js) logo depois do Todas
+  const chips = [{ key: "all", icon: "📚", short: "Todas" }, { key: "chas", icon: "🍵", short: "Chás" }, { key: "sorvetes", icon: "🍦", short: "Sorvetes" }, ...KITCHEN_MEALS]; // v1.96: Chás (js/chas.js) logo depois do Todas · v2.18: 🍦 Sorvetes (js/sorvetes.js)
   document.getElementById("bookMeals").innerHTML = chips.map((m) => `
     <button type="button" class="chip-btn kt-chip${bookMeal === m.key ? " is-on" : ""}" data-click="pickBookMeal" data-meal="${m.key}">${m.icon} ${m.short}</button>`).join("");
 }
@@ -76,10 +76,16 @@ function renderBook() {
   renderCookResume();
   // v1.96: chip 🍵 Chás mostra os blends (js/chas.js) no lugar das receitas
   const teaMode = bookMeal === "chas" && typeof renderTeaBook === "function";
-  document.getElementById("pantryLaunch").hidden = teaMode;
-  document.getElementById("bookSearch").placeholder = teaMode ? "🔎 Buscar blend ou erva" : "🔎 Buscar receita ou ingrediente";
+  const iceMode = bookMeal === "sorvetes" && typeof renderIceBook === "function"; // v2.18
+  document.getElementById("pantryLaunch").hidden = teaMode || iceMode;
+  document.getElementById("bookSearch").placeholder = teaMode ? "🔎 Buscar blend ou erva" : iceMode ? "🔎 Buscar sorvete ou fruta" : "🔎 Buscar receita ou ingrediente";
+  if (typeof iceBookTicker === "function") iceBookTicker(iceMode);
   if (teaMode) {
     renderTeaBook(bookQuery);
+    return;
+  }
+  if (iceMode) {
+    renderIceBook(bookQuery);
     return;
   }
   const pantry = kitchenDb.pantry.length;

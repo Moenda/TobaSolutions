@@ -929,3 +929,355 @@
   width: 100%;
   margin: 0.5rem 0 0.4rem;
 }
+
+/* ---------------------------------------------------------------------
+ * 🍦 Sorvetes Ninja CREAMi (v2.18, js/sorvetes.js)
+ * ------------------------------------------------------------------- */
+.kt-ice-launch {
+  background: linear-gradient(140deg, #1f4a6b, #121a2a 75%);
+  border-color: rgba(88, 166, 255, 0.6);
+}
+
+.kt-ice-launch .kt-launch-icon {
+  background: #58a6ff;
+}
+
+.kt-ice-launch .kt-launch-detail {
+  color: #c4dcf7;
+}
+
+.kt-ice-guide-launch {
+  background: linear-gradient(140deg, #3d2a6b, #18142a 75%);
+  border-color: rgba(188, 140, 255, 0.55);
+}
+
+.kt-ice-guide-launch .kt-launch-icon {
+  background: #bc8cff;
+}
+
+.kt-ice-guide-launch .kt-launch-detail {
+  color: #ddcdf7;
+}
+
+.kt-ice-frozen-dot {
+  font-size: 0.8rem;
+}
+
+.kt-ice-note {
+  margin-top: 1rem;
+}
+
+.kt-ice-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--coral);
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Potes no freezer */
+.kt-ice-pint {
+  justify-content: flex-start;
+  border-left: 3px solid #58a6ff;
+}
+
+.kt-ice-pint.is-ready {
+  border-left-color: var(--green, #3fb950);
+}
+
+.kt-ice-pint .kt-recipe-text {
+  cursor: pointer;
+}
+
+.kt-ice-pint-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kt-ice-x {
+  min-width: 34px;
+  height: 34px;
+  justify-content: center;
+  padding: 0 8px;
+}
+
+/* Painel de macros */
+.kt-ice-macros {
+  padding: 0.8rem 0.9rem;
+  margin-bottom: 0.7rem;
+  background: linear-gradient(160deg, rgba(88, 166, 255, 0.1), rgba(255, 123, 114, 0.06));
+}
+
+.kt-ice-macros.is-mini {
+  margin-top: 0.6rem;
+  padding: 0.6rem 0.7rem;
+}
+
+.kt-ice-macro-head {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.kt-ice-macro-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.kt-ice-macro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0.45rem 0.2rem;
+  border-radius: var(--radius);
+  background: var(--surface-3);
+  min-width: 0;
+}
+
+.kt-ice-macro-v {
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.kt-ice-macros.is-mini .kt-ice-macro-v {
+  font-size: 1.02rem;
+}
+
+.kt-ice-macro-v small {
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-left: 1px;
+}
+
+.kt-ice-macro-l {
+  font-size: 0.66rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.kt-ice-macro.is-kcal .kt-ice-macro-v {
+  color: var(--coral);
+}
+
+.kt-ice-macro.is-p .kt-ice-macro-v {
+  color: #58a6ff;
+}
+
+.kt-ice-macro.is-c .kt-ice-macro-v {
+  color: #e3b341;
+}
+
+.kt-ice-macro.is-f .kt-ice-macro-v {
+  color: #bc8cff;
+}
+
+.kt-ice-macro-foot {
+  margin-top: 0.55rem;
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.kt-ice-actions {
+  margin-top: 0.4rem;
+}
+
+.kt-ice-actions .btn {
+  min-height: 48px;
+}
+
+.kt-ice-ing-m {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.kt-ice-tip {
+  margin-top: 0.7rem;
+}
+
+.kt-ice-tag-frozen {
+  color: #58a6ff;
+}
+
+.kt-chip.is-suggested:not(.is-on) {
+  border-style: dashed;
+  border-color: rgba(255, 123, 114, 0.55);
+}
+
+.kt-ice-chip-sub {
+  font-size: 0.66rem;
+  color: var(--muted);
+  margin-left: 2px;
+}
+
+.kt-ice-sub {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-left: 6px;
+}
+
+/* Passo a passo de bater */
+.kt-ice-steps,
+.kt-ice-path {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.kt-ice-step,
+.kt-ice-path-step {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--surface-2, var(--surface-3));
+}
+
+.kt-ice-step {
+  cursor: pointer;
+}
+
+.kt-ice-step.is-done {
+  opacity: 0.55;
+}
+
+.kt-ice-step.is-done .kt-ice-step-title {
+  text-decoration: line-through;
+}
+
+.kt-ice-step-n {
+  flex: 0 0 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #58a6ff;
+  color: #0d1117;
+  font-weight: 900;
+  font-size: 0.8rem;
+}
+
+.kt-ice-step.is-done .kt-ice-step-n {
+  background: var(--green, #3fb950);
+}
+
+.kt-ice-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.kt-ice-step-title {
+  font-weight: 800;
+  font-size: 0.88rem;
+}
+
+.kt-ice-step-text {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+/* Folha de montar o pote */
+.kt-ice-part {
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.kt-ice-part:last-child {
+  border-bottom: none;
+}
+
+.kt-ice-part .kt-ing {
+  border-bottom: none;
+}
+
+.kt-ice-n {
+  min-width: 64px;
+  text-align: center;
+  font-weight: 900;
+  font-size: 0.82rem;
+}
+
+.kt-ice-quick {
+  margin: -0.1rem 0 0.5rem;
+}
+
+.kt-ice-qchip {
+  height: 28px;
+  font-size: 0.74rem;
+}
+
+/* Rótulos */
+.kt-ice-lab {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.kt-ice-lab.is-mine .kt-ice-lab-name {
+  color: var(--coral);
+}
+
+.kt-ice-lab-name {
+  font-weight: 800;
+  font-size: 0.86rem;
+  margin-bottom: 0.4rem;
+}
+
+.kt-ice-lab-name .text-muted {
+  font-weight: 600;
+  font-size: 0.72rem;
+}
+
+.kt-ice-lab-badge {
+  font-size: 0.66rem;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 123, 114, 0.16);
+}
+
+.kt-ice-lab-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.kt-ice-lab-f {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.68rem;
+  color: var(--muted);
+  min-width: 0;
+}
+
+.kt-ice-lab-f .form-control {
+  height: 36px;
+  padding: 0 6px;
+  min-width: 0;
+}
+
+.kt-ice-fix {
+  line-height: 1.55;
+  font-size: 0.84rem;
+}
+
+.kt-ice-prog .kt-tea-role {
+  margin-left: 0;
+  margin-top: 4px;
+  line-height: 1.45;
+}

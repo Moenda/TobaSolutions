@@ -544,6 +544,9 @@ const KITCHEN_SHOP_ITEMS = [
   { id: "milho-lata", name: "Milho em lata", emoji: "🌽", aisle: "mercearia" },
   { id: "pipoca", name: "Pipoca", emoji: "🍿", aisle: "mercearia" },
   { id: "miojo", name: "Miojo", emoji: "🍜", aisle: "mercearia" },
+  { id: "adocante", name: "Adoçante", emoji: "🍬", aisle: "mercearia" }, // v2.18 (sorvetes)
+  { id: "pacoca", name: "Paçoca", emoji: "🥜", aisle: "mercearia" }, // v2.18
+  { id: "chocolate-70", name: "Chocolate 70%", emoji: "🍫", aisle: "mercearia" }, // v2.18
   // Bebidas
   { id: "agua", name: "Água", emoji: "💧", aisle: "bebidas" },
   { id: "agua-gas", name: "Água com gás", emoji: "🫧", aisle: "bebidas" },
@@ -605,6 +608,12 @@ function kitchenShopCatalog() {
   Object.keys(KITCHEN_TEA_HERBS).forEach((id) => {
     const herb = KITCHEN_TEA_HERBS[id];
     push({ id: `cha-${id}`, name: herb.name, emoji: herb.emoji, aisle: "chas" });
+  });
+  // v2.18: ingredientes dos sorvetes (id "ice-<ingrediente>"); básico de casa e nome repetido ficam de fora
+  Object.keys(KITCHEN_ICE_INGS).forEach((id) => {
+    const ing = KITCHEN_ICE_INGS[id];
+    if (ing.staple || ing.shop) return;
+    push({ id: `ice-${id}`, name: ing.name, emoji: ing.emoji, aisle: ing.aisle || "mercearia" });
   });
   return out.sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }));
 }
@@ -744,13 +753,36 @@ function calcKitchenPlayer(data, today) {
   const stats = {
     kitchenCooked: 0, kitchenDistinct: 0, kitchenMeals: 0, kitchenFullDay: 0, kitchenImprovised: 0,
     kitchenRepeat: 0, kitchenLong: 0, kitchenSweet: 0, kitchenNight: 0, kitchenWeekPlan: 0,
+    kitchenIce: 0, kitchenIceFlavors: 0, kitchenIceFruit: 0, kitchenIceMonster: 0, kitchenIceWeek: 0, // v2.18 (🍦 sorvetes)
   };
   const distinct = new Set();
   const meals = new Set();
   const perRecipe = {};
   const dayMeals = {};
   const weekPlanned = {};
-  const timeline = cooked.map((entry) => {
+  // v2.18: potes de sorvete comidos entram na mesma linha do tempo (só conquistas, sem XP)
+  const iceFlavors = new Set();
+  const iceWeeks = {};
+  const iceStep = (pint, date) => {
+    const recipe = kitchenIceRecipe(db, pint.iceId);
+    stats.kitchenIce += 1;
+    iceFlavors.add(String(pint.iceId));
+    stats.kitchenIceFlavors = iceFlavors.size;
+    if (kitchenIceIsFruit(recipe)) stats.kitchenIceFruit += 1;
+    const macros = recipe ? kitchenIcePintMacros(db, recipe, pint.size) : null;
+    if (macros && macros.p >= 50) stats.kitchenIceMonster += 1;
+    const monday = kitchenWeekMonday(date);
+    iceWeeks[monday] = (iceWeeks[monday] || 0) + 1;
+    stats.kitchenIceWeek = Math.max(stats.kitchenIceWeek, iceWeeks[monday]);
+    return { date, stats: { ...stats } };
+  };
+  const steps = [
+    ...cooked.map((entry) => ({ date: entry.date, doneAt: Number(entry.doneAt) || 0, entry })),
+    ...kitchenIceEatenEvents(db, today),
+  ].sort((a, b) => a.date.localeCompare(b.date) || a.doneAt - b.doneAt);
+  const timeline = steps.map((step) => {
+    if (step.pint) return iceStep(step.pint, step.date);
+    const entry = step.entry;
     const recipe = kitchenRecipe(entry.recipeId);
     const plan = entry.planId ? plans[String(entry.planId)] : null;
     // Refeição: a da programação; feita fora dela, vale toda refeição da receita
@@ -1028,4 +1060,461 @@ function kitchenTeaCustomNames(db) {
     out.push(name);
   }));
   return out.sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
+}
+
+/* ---------------------------------------------------------------------
+ * 🍦 Sorvetes Ninja CREAMi (desde v2.18): catálogo + contas puras.
+ * As receitas prontas moram AQUI (fixas, igual aos chás prontos); os potes
+ * que o usuário monta moram no banco (db.ices), e o que ele congelou/comeu
+ * em db.icePints. Macros (kcal, proteína, carbo, gordura) são SEMPRE
+ * calculados dos ingredientes (nunca digitados na receita), já no tamanho
+ * do pote escolhido (db.iceSize) e com o rótulo do usuário (db.iceLabels)
+ * por cima do rótulo médio daqui.
+ * O `id` de ingrediente, de receita, de programa e de tamanho NUNCA muda
+ * (pote e potes comidos gravam eles). Coisa nova = item novo.
+ * ------------------------------------------------------------------- */
+
+// Tamanho do pote. factor multiplica a receita (as daqui são pro pote normal).
+// fillMl = até onde a base cabe (a linha MAX do pote), uma régua aproximada.
+const KITCHEN_ICE_SIZES = {
+  std: { key: "std", icon: "🫙", name: "Pote normal", short: "470 ml", factor: 1, fillMl: 450, models: "CREAMi 7 em 1 (NC300 / NC301)" },
+  xl: { key: "xl", icon: "🪣", name: "Pote Deluxe", short: "710 ml", factor: 1.5, fillMl: 680, models: "CREAMi Deluxe (NC501, pote XL)" },
+};
+
+// Programas da máquina (key gravada no pote do usuário)
+const KITCHEN_ICE_PROGRAMS = [
+  { key: "lite", short: "Lite", icon: "🪶", name: "Lite Ice Cream", about: "O programa do fit. Feito pra base com pouca gordura e pouco açúcar: a lâmina desce mais devagar e raspa mais tempo pra compensar a falta de gordura. É o primeiro da fila pra todo sorvete com whey e leite desnatado." },
+  { key: "sorbet", short: "Sorbet", icon: "🍧", name: "Sorbet", about: "Pra base de fruta com água, suco ou água de coco (sem leite). Fruta bem madura = mais açúcar natural = mais cremoso. Fruta verde vira raspadinha." },
+  { key: "smoothie", short: "Bowl", icon: "🥣", name: "Smoothie Bowl", about: "Pra fruta congelada com um pouco de leite ou iogurte: sai firme, tipo açaí de tigela, bom pra encher de granola por cima." },
+  { key: "icecream", short: "Ice Cream", icon: "🍦", name: "Ice Cream", about: "Pra base tradicional, com gordura (leite integral, creme de leite). Com base fit costuma sair mais seco que o Lite. Usa se o teu Lite deixar o pote mole demais." },
+  { key: "gelato", short: "Gelato", icon: "🍨", name: "Gelato", about: "Pra base cozida estilo creme (gema, creme). No fit quase não entra, mas fica aqui pra quando bater a vontade de sair da dieta." },
+  { key: "milkshake", short: "Shake", icon: "🥤", name: "Milkshake", about: "Pega um pote JÁ batido, faz um buraco até o fundo, põe uns 120 ml de leite desnatado e roda o Milkshake: sai grosso de canudo." },
+  { key: "froyo", short: "Froyo", icon: "🫐", name: "Frozen Yogurt", deluxe: true, about: "Só existe na Deluxe. Pra base de iogurte. Na 7 em 1 usa o Lite Ice Cream que fica igual." },
+];
+
+const KITCHEN_ICE_KINDS = [
+  { key: "liquido", icon: "🥛", name: "Base líquida" },
+  { key: "proteina", icon: "💪", name: "Proteína" },
+  { key: "fruta", icon: "🍓", name: "Frutas (congela madura)" },
+  { key: "textura", icon: "🧪", name: "Cremosidade sem gordura" },
+  { key: "sabor", icon: "🍬", name: "Sabor e doce" },
+  { key: "mixin", icon: "🍫", name: "Mix-ins (entram depois de bater)" },
+];
+
+/* Ingredientes. Os números (kcal, p = proteína, c = carbo, f = gordura) valem
+ * pra `per` na `unit` (100 ml, 100 g, 1 scoop de 30 g, 1 colher...). Rótulo
+ * médio de mercado brasileiro (TACO + rótulos comuns): é estimativa.
+ * label: true = muda muito de marca, o ✏️ Rótulos deixa o usuário pôr o dele.
+ * step = quanto o − / + anda. chips = quantidades de um toque.
+ * shop = nome do item na lista de compras (igual = junta com o que já tem).
+ * staple = básico de casa, não vai pra lista. gosto = sem número (a gosto). */
+const KITCHEN_ICE_INGS = {
+  "leite-desnatado": { name: "Leite desnatado", emoji: "🥛", kind: "liquido", unit: "ml", per: 100, kcal: 33, p: 3.2, c: 4.8, f: 0, step: 10, chips: [150, 200, 250, 300, 350], aisle: "frios", label: true, labelNote: "por 100 ml" },
+  "agua-coco": { name: "Água de coco", emoji: "🥥", kind: "liquido", unit: "ml", per: 100, kcal: 22, p: 0, c: 5.3, f: 0, step: 10, chips: [50, 100, 150], aisle: "bebidas" },
+  cafe: { name: "Café coado (frio)", emoji: "☕", kind: "liquido", unit: "ml", per: 100, kcal: 2, p: 0.1, c: 0.3, f: 0, step: 10, chips: [100, 150, 200], aisle: "mercearia", shop: "Café" },
+  agua: { name: "Água", emoji: "💧", kind: "liquido", unit: "ml", per: 100, kcal: 0, p: 0, c: 0, f: 0, step: 10, chips: [30, 50, 100], staple: true },
+  "whey-baunilha": { name: "Whey de baunilha", emoji: "🍦", kind: "proteina", unit: "scoop", per: 1, kcal: 120, p: 24, c: 3, f: 1.5, step: 0.5, chips: [0.5, 1, 1.5, 2], aisle: "mercearia", label: true, labelNote: "por 1 scoop (≈30 g)" },
+  "whey-chocolate": { name: "Whey de chocolate", emoji: "🍫", kind: "proteina", unit: "scoop", per: 1, kcal: 118, p: 22, c: 4, f: 1.8, step: 0.5, chips: [0.5, 1, 1.5, 2], aisle: "mercearia", label: true, labelNote: "por 1 scoop (≈30 g)" },
+  "whey-morango": { name: "Whey de morango", emoji: "🍓", kind: "proteina", unit: "scoop", per: 1, kcal: 118, p: 23, c: 3.5, f: 1.5, step: 0.5, chips: [0.5, 1, 1.5, 2], aisle: "mercearia", label: true, labelNote: "por 1 scoop (≈30 g)" },
+  "iogurte-proteico": { name: "Iogurte proteico zero (tipo grego)", emoji: "🥣", kind: "proteina", unit: "g", per: 100, kcal: 60, p: 9.4, c: 5.6, f: 0.2, step: 10, chips: [100, 150, 200, 300], aisle: "frios", label: true, labelNote: "por 100 g" },
+  "iogurte-desnatado": { name: "Iogurte natural desnatado", emoji: "🥛", kind: "proteina", unit: "g", per: 100, kcal: 41, p: 3.8, c: 5.7, f: 0.2, step: 10, chips: [100, 170, 200], aisle: "frios", label: true, labelNote: "por 100 g" },
+  morango: { name: "Morango", emoji: "🍓", kind: "fruta", unit: "g", per: 100, kcal: 30, p: 0.9, c: 6.8, f: 0.3, step: 10, chips: [50, 100, 150, 200, 300], aisle: "horti" },
+  banana: { name: "Banana bem madura", emoji: "🍌", kind: "fruta", unit: "g", per: 100, kcal: 98, p: 1.3, c: 26, f: 0.1, step: 10, chips: [50, 80, 100, 200, 300], aisle: "horti", shop: "Banana" },
+  manga: { name: "Manga", emoji: "🥭", kind: "fruta", unit: "g", per: 100, kcal: 60, p: 0.5, c: 15.5, f: 0.3, step: 10, chips: [100, 200, 300, 350], aisle: "horti" },
+  abacaxi: { name: "Abacaxi", emoji: "🍍", kind: "fruta", unit: "g", per: 100, kcal: 48, p: 0.9, c: 12.3, f: 0.1, step: 10, chips: [100, 150, 200, 380], aisle: "horti" },
+  "frutas-vermelhas": { name: "Frutas vermelhas congeladas", emoji: "🫐", kind: "fruta", unit: "g", per: 100, kcal: 45, p: 0.9, c: 10, f: 0.3, step: 10, chips: [40, 100, 200, 320], aisle: "horti" },
+  acai: { name: "Polpa de açaí sem açúcar", emoji: "🟣", kind: "fruta", unit: "g", per: 100, kcal: 58, p: 0.8, c: 6.2, f: 3.9, step: 10, chips: [100, 200], aisle: "horti", label: true, labelNote: "por 100 g" },
+  maracuja: { name: "Polpa de maracujá", emoji: "🟡", kind: "fruta", unit: "g", per: 100, kcal: 39, p: 0.8, c: 9.6, f: 0.2, step: 10, chips: [50, 100, 150], aisle: "horti" },
+  melancia: { name: "Melancia", emoji: "🍉", kind: "fruta", unit: "g", per: 100, kcal: 33, p: 0.9, c: 8.1, f: 0, step: 10, chips: [200, 300, 420], aisle: "horti" },
+  "suco-limao": { name: "Suco de limão", emoji: "🍋", kind: "fruta", unit: "ml", per: 100, kcal: 25, p: 0.4, c: 8, f: 0, step: 5, chips: [15, 30, 40], aisle: "horti", shop: "Limão" },
+  "leite-po-desnatado": { name: "Leite em pó desnatado", emoji: "🥛", kind: "textura", unit: "cs", per: 1, kcal: 29, p: 2.8, c: 4.2, f: 0.1, step: 0.5, chips: [1, 2], aisle: "mercearia", note: "1 colher de sopa ≈ 8 g" },
+  "goma-xantana": { name: "Goma xantana", emoji: "🧪", kind: "textura", unit: "cc", per: 1, kcal: 9, p: 0, c: 2.4, f: 0, step: 0.25, chips: [0.25, 0.5], aisle: "mercearia", note: "¼ de colher de chá já basta (muito vira chiclete)" },
+  "pudim-zero": { name: "Pó de pudim zero açúcar", emoji: "🍮", kind: "textura", unit: "cs", per: 1, kcal: 26, p: 0, c: 6.5, f: 0, step: 0.5, chips: [0.5, 1], aisle: "mercearia", label: true, labelNote: "por 1 colher de sopa (≈8 g)" },
+  cacau: { name: "Cacau em pó 100%", emoji: "🟫", kind: "sabor", unit: "cs", per: 1, kcal: 14, p: 1.2, c: 3.5, f: 0.8, step: 0.5, chips: [0.5, 1, 2], aisle: "mercearia", note: "1 colher de sopa ≈ 6 g" },
+  adocante: { name: "Adoçante (eritritol, xilitol ou sucralose)", emoji: "🍬", kind: "sabor", unit: "gosto", aisle: "mercearia", shop: "Adoçante" },
+  baunilha: { name: "Essência de baunilha", emoji: "🌼", kind: "sabor", unit: "gosto", aisle: "mercearia" },
+  canela: { name: "Canela em pó", emoji: "🟤", kind: "sabor", unit: "gosto", staple: true },
+  hortela: { name: "Hortelã", emoji: "🌱", kind: "sabor", unit: "gosto", aisle: "horti" },
+  "raspas-limao": { name: "Raspas de limão", emoji: "🍋", kind: "sabor", unit: "gosto", aisle: "horti", shop: "Limão" },
+  sal: { name: "Pitada de sal", emoji: "🧂", kind: "sabor", unit: "gosto", staple: true },
+  pacoca: { name: "Paçoca (rolha)", emoji: "🥜", kind: "mixin", unit: "un", per: 1, kcal: 107, p: 3.5, c: 11, f: 5.8, step: 1, chips: [1, 2], aisle: "mercearia", shop: "Paçoca", note: "1 rolha ≈ 20 g" },
+  "chocolate-70": { name: "Chocolate 70% picado", emoji: "🍫", kind: "mixin", unit: "g", per: 10, kcal: 58, p: 0.9, c: 3.6, f: 4.3, step: 5, chips: [10, 15, 20], aisle: "mercearia", shop: "Chocolate 70%" },
+  granola: { name: "Granola sem açúcar", emoji: "🥣", kind: "mixin", unit: "g", per: 10, kcal: 42, p: 1, c: 6.2, f: 1.3, step: 5, chips: [10, 20, 30], aisle: "mercearia", shop: "Granola" },
+  "pasta-amendoim": { name: "Pasta de amendoim", emoji: "🥜", kind: "mixin", unit: "cs", per: 1, kcal: 88, p: 3.8, c: 3, f: 7.4, step: 0.5, chips: [0.5, 1], aisle: "mercearia", note: "1 colher de sopa ≈ 15 g" },
+  nibs: { name: "Nibs de cacau", emoji: "🌰", kind: "mixin", unit: "g", per: 10, kcal: 57, p: 1.3, c: 3.4, f: 4.6, step: 5, chips: [5, 10, 15], aisle: "mercearia" },
+};
+
+// Mix-ins de um toque (na tela da receita): quantidade padrão de cada um
+const KITCHEN_ICE_MIXINS = [
+  { ing: "morango", qty: 50, label: "Morango picado" },
+  { ing: "frutas-vermelhas", qty: 40, label: "Frutas vermelhas" },
+  { ing: "banana", qty: 50, label: "Rodelas de banana" },
+  { ing: "pacoca", qty: 1, label: "Paçoca esfarelada" },
+  { ing: "chocolate-70", qty: 15, label: "Chocolate 70%" },
+  { ing: "nibs", qty: 10, label: "Nibs de cacau" },
+  { ing: "granola", qty: 20, label: "Granola" },
+  { ing: "pasta-amendoim", qty: 1, label: "Fio de pasta de amendoim" },
+];
+
+const KITCHEN_ICE_EMOJIS = ["🍦", "🍨", "🍧", "🍫", "🍓", "🍌", "🥭", "🍍", "🫐", "🍋", "☕", "🥜", "💪", "🟣", "🍉", "🥥"];
+
+/* Receitas prontas (pote normal, 470 ml). line: "proteico" ou "fruta".
+ * items: [{ ing, qty (null = a gosto), optional? }] · mixins: ids sugeridos.
+ * respin: com o que molhar no Re-spin. tip: o pulo do gato dela. */
+const KITCHEN_ICE_RECIPES = [
+  {
+    id: "baunilha", name: "Baunilha proteica clássica", emoji: "🍦", program: "lite", line: "proteico",
+    about: "A base de tudo: o sorvete de baunilha fit que vira qualquer outro com mix-in. Leite desnatado + whey dá a proteína, o leite em pó e a goma xantana seguram a cremosidade sem gordura.",
+    items: [
+      { ing: "leite-desnatado", qty: 320 },
+      { ing: "whey-baunilha", qty: 1 },
+      { ing: "leite-po-desnatado", qty: 1 },
+      { ing: "goma-xantana", qty: 0.25 },
+      { ing: "adocante", qty: null },
+      { ing: "baunilha", qty: null, optional: true },
+    ],
+    mixins: ["pacoca", "morango", "chocolate-70"], respin: "leite",
+    tip: "Põe adoçante a mais do que acha certo: o gelado tira o doce da boca.",
+  },
+  {
+    id: "chocolate", name: "Chocolate trufado fit", emoji: "🍫", program: "lite", line: "proteico",
+    about: "Chocolate de verdade sem gordura: whey de chocolate + cacau 100% pra dar o amargo de trufa. O cacau também ajuda a encorpar.",
+    items: [
+      { ing: "leite-desnatado", qty: 320 },
+      { ing: "whey-chocolate", qty: 1 },
+      { ing: "cacau", qty: 1 },
+      { ing: "leite-po-desnatado", qty: 1 },
+      { ing: "goma-xantana", qty: 0.25 },
+      { ing: "adocante", qty: null },
+      { ing: "sal", qty: null, optional: true },
+    ],
+    mixins: ["banana", "pasta-amendoim", "nibs"], respin: "leite",
+    tip: "Uma pitada de sal deixa o chocolate mais chocolate. Sério.",
+  },
+  {
+    id: "monstro", name: "Pote monstro 50 g", emoji: "💪", program: "lite", line: "proteico",
+    about: "Pra dia de treino pesado: dois scoops no pote, passa dos 50 g de proteína. Com tanto whey a base fica mais seca, então quase sempre pede 2 Re-spins.",
+    items: [
+      { ing: "leite-desnatado", qty: 300 },
+      { ing: "whey-baunilha", qty: 2 },
+      { ing: "goma-xantana", qty: 0.25 },
+      { ing: "adocante", qty: null },
+    ],
+    mixins: ["morango", "pacoca"], respin: "leite",
+    tip: "Ficou borrachudo tipo chiclete? É whey demais pra pouca água: na próxima tira a goma ou põe +30 ml de leite.",
+  },
+  {
+    id: "morango-baunilha", name: "Morango com baunilha", emoji: "🍓", program: "lite", line: "proteico",
+    about: "O sorvete de morango de padaria versão fit: a fruta batida na base dá a cor e o sabor, e ainda ajuda a cremosidade.",
+    items: [
+      { ing: "leite-desnatado", qty: 230 },
+      { ing: "whey-baunilha", qty: 1 },
+      { ing: "morango", qty: 150 },
+      { ing: "goma-xantana", qty: 0.25 },
+      { ing: "adocante", qty: null },
+    ],
+    mixins: ["morango", "chocolate-70"], respin: "leite",
+    tip: "Guarda uns morangos picados pro Mix-in: pedaço de fruta no sorvete é outro nível.",
+  },
+  {
+    id: "banana-canela", name: "Banana com canela", emoji: "🍌", program: "lite", line: "proteico",
+    about: "A banana bem madura faz o papel da gordura: deixa o pote cremoso sem goma nem pudim. Canela por cima e vira sobremesa de vó.",
+    items: [
+      { ing: "leite-desnatado", qty: 250 },
+      { ing: "whey-baunilha", qty: 1 },
+      { ing: "banana", qty: 100 },
+      { ing: "canela", qty: null },
+      { ing: "adocante", qty: null, optional: true },
+    ],
+    mixins: ["granola", "pasta-amendoim"], respin: "leite",
+    tip: "Banana com pintinha preta: quanto mais madura, mais doce e mais cremoso.",
+  },
+  {
+    id: "macaco", name: "Chocolate com banana (Macaco Fit)", emoji: "🐒", program: "lite", line: "proteico",
+    about: "Chocolate + banana, a dupla que nunca erra. A banana encorpa e adoça, o cacau dá a cara de brigadeiro.",
+    items: [
+      { ing: "leite-desnatado", qty: 250 },
+      { ing: "whey-chocolate", qty: 1 },
+      { ing: "banana", qty: 80 },
+      { ing: "cacau", qty: 1 },
+      { ing: "adocante", qty: null, optional: true },
+    ],
+    mixins: ["pacoca", "nibs"], respin: "leite",
+  },
+  {
+    id: "mocha-v60", name: "Mocha da V60", emoji: "☕", program: "lite", line: "proteico",
+    about: "Pra quem ama café coado: passa um café na V60 mais forte, espera esfriar e vira sorvete de mocha. Cafeína + proteína, o pré-treino gelado.",
+    items: [
+      { ing: "cafe", qty: 150 },
+      { ing: "leite-desnatado", qty: 180 },
+      { ing: "whey-chocolate", qty: 1 },
+      { ing: "cacau", qty: 1 },
+      { ing: "goma-xantana", qty: 0.25 },
+      { ing: "adocante", qty: null },
+    ],
+    mixins: ["nibs", "chocolate-70"], respin: "leite",
+    tip: "Faz o café com o dobro de pó (tipo 20 g pra 150 ml). Café fraco some no gelado. E evita depois das 16h, hein.",
+  },
+  {
+    id: "acai", name: "Açaí proteico de tigela", emoji: "🟣", program: "smoothie", line: "proteico",
+    about: "Açaí de verdade, sem xarope de guaraná: polpa sem açúcar + banana + whey. No Smoothie Bowl sai firme igual de tigela. A gordura daqui é a do próprio açaí (gordura boa).",
+    items: [
+      { ing: "acai", qty: 200 },
+      { ing: "banana", qty: 60 },
+      { ing: "leite-desnatado", qty: 120 },
+      { ing: "whey-baunilha", qty: 1 },
+      { ing: "adocante", qty: null, optional: true },
+    ],
+    mixins: ["granola", "banana", "morango"], respin: "leite",
+    tip: "Granola vai por cima na hora de comer (no Mix-in ela amolece).",
+  },
+  {
+    id: "maracuja", name: "Mousse gelado de maracujá", emoji: "🟡", program: "lite", line: "proteico",
+    about: "Gosto de mousse de maracujá, cara de sorvete e proteína de iogurte grego. O azedinho da fruta com o doce do adoçante é viciante.",
+    items: [
+      { ing: "maracuja", qty: 150 },
+      { ing: "iogurte-proteico", qty: 200 },
+      { ing: "whey-baunilha", qty: 1 },
+      { ing: "adocante", qty: null },
+    ],
+    mixins: ["chocolate-70", "granola"], respin: "leite",
+    tip: "Polpa de maracujá é bem ácida: capricha no adoçante e prova a base antes de congelar.",
+  },
+  {
+    id: "torta-limao", name: "Torta de limão gelada", emoji: "🍋", program: "lite", line: "proteico",
+    about: "Iogurte proteico + limão + raspas = recheio de torta de limão. Granola no Mix-in faz o papel da massinha.",
+    items: [
+      { ing: "iogurte-proteico", qty: 200 },
+      { ing: "leite-desnatado", qty: 100 },
+      { ing: "whey-baunilha", qty: 1 },
+      { ing: "suco-limao", qty: 40 },
+      { ing: "raspas-limao", qty: null },
+      { ing: "adocante", qty: null },
+    ],
+    mixins: ["granola"], respin: "leite",
+    tip: "Raspa só a parte verde do limão: o branco amarga.",
+  },
+  {
+    id: "froyo-vermelhas", name: "Frozen yogurt de frutas vermelhas", emoji: "🫐", program: "lite", line: "proteico",
+    about: "Froyo fit: iogurte proteico com frutas vermelhas, azedinho e cremoso. Na Deluxe dá pra usar o programa Frozen Yogurt.",
+    items: [
+      { ing: "iogurte-proteico", qty: 300 },
+      { ing: "frutas-vermelhas", qty: 100 },
+      { ing: "leite-desnatado", qty: 40 },
+      { ing: "adocante", qty: null },
+    ],
+    mixins: ["frutas-vermelhas", "granola"], respin: "leite",
+  },
+  {
+    id: "sorbet-manga", name: "Sorbet de manga com limão", emoji: "🥭", program: "sorbet", line: "fruta",
+    about: "Só fruta: manga madura batida com limão. Sai liso, doce e com aquele azedinho que limpa a boca. Zero gordura.",
+    items: [
+      { ing: "manga", qty: 350 },
+      { ing: "suco-limao", qty: 30 },
+      { ing: "agua", qty: 50 },
+      { ing: "adocante", qty: null, optional: true },
+    ],
+    mixins: [], respin: "agua",
+    tip: "Manga palmer ou tommy bem madura. Manga verde = raspadinha.",
+  },
+  {
+    id: "sorbet-abacaxi", name: "Sorbet de abacaxi com hortelã", emoji: "🍍", program: "sorbet", line: "fruta",
+    about: "O suco de abacaxi com hortelã de padaria virou sorvete. Refrescância nível SP 35 °C.",
+    items: [
+      { ing: "abacaxi", qty: 380 },
+      { ing: "hortela", qty: null },
+      { ing: "agua", qty: 30 },
+    ],
+    mixins: [], respin: "agua",
+    tip: "Bate as folhas de hortelã junto com o abacaxi (umas 8 folhas).",
+  },
+  {
+    id: "sorbet-vermelhas", name: "Sorbet de frutas vermelhas", emoji: "🍒", program: "sorbet", line: "fruta",
+    about: "Frutas vermelhas congeladas com água de coco: cor de picolé de groselha e gosto de fruta de verdade.",
+    items: [
+      { ing: "frutas-vermelhas", qty: 320 },
+      { ing: "agua-coco", qty: 120 },
+      { ing: "adocante", qty: null },
+    ],
+    mixins: [], respin: "agua",
+    tip: "Frutas vermelhas são azedas: adoça bem. Quer sem sementinha? Passa a base na peneira.",
+  },
+  {
+    id: "sorbet-morango", name: "Sorbet de morango", emoji: "🍓", program: "sorbet", line: "fruta",
+    about: "Morango, um tiquinho de limão pra acordar o sabor e só. O sorvete mais leve do livro.",
+    items: [
+      { ing: "morango", qty: 380 },
+      { ing: "suco-limao", qty: 15 },
+      { ing: "adocante", qty: null },
+    ],
+    mixins: [], respin: "agua",
+  },
+  {
+    id: "sorbet-melancia", name: "Sorbet de melancia", emoji: "🍉", program: "sorbet", line: "fruta",
+    about: "Melancia batida e congelada. Quase não tem caloria e mata a sede. Fica mais pra raspadinha cremosa (é quase só água).",
+    items: [
+      { ing: "melancia", qty: 420 },
+      { ing: "suco-limao", qty: 15 },
+      { ing: "hortela", qty: null, optional: true },
+    ],
+    mixins: [], respin: "agua",
+    tip: "Tira as sementes antes de bater. Se sair muito raspadinha, 1 Re-spin com 1 colher de água resolve.",
+  },
+  {
+    id: "nice-cream", name: "Nice cream de banana", emoji: "🍌", program: "sorbet", line: "fruta",
+    about: "Só banana madura com um pouco de água de coco: fica cremoso igual sorvete de massa, sem leite e sem nada.",
+    items: [
+      { ing: "banana", qty: 320 },
+      { ing: "agua-coco", qty: 60 },
+      { ing: "canela", qty: null, optional: true },
+    ],
+    mixins: ["pacoca", "nibs"], respin: "agua",
+    tip: "Banana muito madura (casca quase preta) é o segredo.",
+  },
+  {
+    id: "sorbet-tropical", name: "Tropical do Cloba", emoji: "🏝️", program: "sorbet", line: "fruta",
+    about: "Manga + abacaxi + maracujá + água de coco: um suco de praia em forma de sorvete.",
+    items: [
+      { ing: "manga", qty: 200 },
+      { ing: "abacaxi", qty: 150 },
+      { ing: "maracuja", qty: 50 },
+      { ing: "agua-coco", qty: 50 },
+      { ing: "adocante", qty: null, optional: true },
+    ],
+    mixins: [], respin: "agua",
+  },
+];
+
+function kitchenIceIng(id) {
+  return KITCHEN_ICE_INGS[id] || null;
+}
+
+function kitchenIceProgram(key) {
+  return KITCHEN_ICE_PROGRAMS.find((p) => p.key === key) || KITCHEN_ICE_PROGRAMS[0];
+}
+
+function kitchenIceSize(key) {
+  return KITCHEN_ICE_SIZES[key] || KITCHEN_ICE_SIZES.std;
+}
+
+function kitchenIceSizeOf(db) {
+  return kitchenIceSize(db && db.iceSize);
+}
+
+// Potes montados pelo usuário (db.ices)
+function kitchenIcesOf(db) {
+  return (db && Array.isArray(db.ices) ? db.ices : []).filter((r) => r && typeof r === "object" && Array.isArray(r.items));
+}
+
+// Receita pronta (pelo id) ou pote do usuário ("m-..."); pronta ganha fixed: true
+function kitchenIceRecipe(db, id) {
+  const key = String(id || "");
+  const fixed = KITCHEN_ICE_RECIPES.find((r) => r.id === key);
+  if (fixed) return { ...fixed, fixed: true };
+  return kitchenIcesOf(db).find((r) => String(r.id) === key) || null;
+}
+
+// Números de um ingrediente: rótulo do usuário (db.iceLabels) por cima do médio
+function kitchenIceIngMacros(db, id) {
+  const ing = kitchenIceIng(id);
+  if (!ing || ing.unit === "gosto") return null;
+  const base = { kcal: ing.kcal, p: ing.p, c: ing.c, f: ing.f };
+  const own = db && db.iceLabels && typeof db.iceLabels === "object" ? db.iceLabels[id] : null;
+  if (own && typeof own === "object") {
+    ["kcal", "p", "c", "f"].forEach((k) => {
+      const n = Number(own[k]);
+      if (own[k] !== "" && own[k] !== null && own[k] !== undefined && Number.isFinite(n) && n >= 0) base[k] = n;
+    });
+  }
+  return base;
+}
+
+/* Soma os macros de uma lista [{ ing, qty }] vezes `factor` (tamanho do pote).
+ * ml = volume aproximado da base (líquidos, frutas e iogurte; pó quase não
+ * conta), pra régua da linha MAX. Opcional entra (é o "até onde vai"). */
+function kitchenIceMacros(db, items, factor = 1) {
+  const out = { kcal: 0, p: 0, c: 0, f: 0, ml: 0 };
+  (Array.isArray(items) ? items : []).forEach((item) => {
+    const ing = item && kitchenIceIng(item.ing);
+    const qty = Number(item && item.qty);
+    if (!ing || ing.unit === "gosto" || !(qty > 0)) return;
+    const m = kitchenIceIngMacros(db, item.ing);
+    const ratio = (qty * factor) / ing.per;
+    out.kcal += m.kcal * ratio;
+    out.p += m.p * ratio;
+    out.c += m.c * ratio;
+    out.f += m.f * ratio;
+    if (ing.kind !== "mixin" && (ing.unit === "ml" || ing.unit === "g")) out.ml += qty * factor;
+    else if (ing.unit === "scoop") out.ml += 15 * qty * factor; // pó de whey ocupa um tiquinho
+  });
+  return out;
+}
+
+// Macros do pote inteiro de uma receita no tamanho escolhido
+function kitchenIcePintMacros(db, recipe, sizeKey) {
+  const size = kitchenIceSize(sizeKey || (db && db.iceSize));
+  return kitchenIceMacros(db, recipe && recipe.items, size.factor);
+}
+
+// Quantidade de um ingrediente no pote escolhido (g/ml de 5 em 5, resto em ¼)
+function kitchenIceScaledQty(qty, unit, factor) {
+  if (qty === null || qty === undefined) return null;
+  const n = Number(qty) * factor;
+  if (unit === "g" || unit === "ml") return Math.max(5, Math.round(n / 5) * 5);
+  if (unit === "un") return Math.max(1, Math.round(n));
+  return Math.max(0.25, Math.round(n * 4) / 4);
+}
+
+// "320 ml", "1 ½ scoop", "¼ colher de chá", "a gosto"
+function kitchenIceQtyText(qty, unit) {
+  if (qty === null || qty === undefined || unit === "gosto") return "a gosto";
+  if (unit === "g" || unit === "ml") return `${Math.round(qty)} ${unit}`;
+  return kitchenFormatAmount(qty, unit);
+}
+
+// Sorbet / só fruta (conquista "Só fruta, juro")
+function kitchenIceIsFruit(recipe) {
+  if (!recipe) return false;
+  if (recipe.line) return recipe.line === "fruta";
+  return recipe.program === "sorbet";
+}
+
+function kitchenIcePintsOf(db) {
+  return (db && Array.isArray(db.icePints) ? db.icePints : []).filter((p) => p && typeof p === "object" && p.iceId);
+}
+
+// Comidos de uma receita, mais novo primeiro
+function kitchenIceEatenOf(db, iceId) {
+  return kitchenIcePintsOf(db)
+    .filter((p) => Number(p.eatenAt) > 0 && (iceId === undefined || String(p.iceId) === String(iceId)))
+    .sort((a, b) => Number(b.eatenAt) - Number(a.eatenAt));
+}
+
+// No freezer (congelado e ainda não comido), mais antigo primeiro
+function kitchenIceFreezerOf(db) {
+  return kitchenIcePintsOf(db)
+    .filter((p) => !(Number(p.eatenAt) > 0) && Number(p.frozenAt) > 0)
+    .sort((a, b) => Number(a.frozenAt) - Number(b.frozenAt));
+}
+
+const KITCHEN_ICE_FREEZE_MS = 24 * 60 * 60 * 1000; // 24 h no freezer
+
+// Quanto falta pro pote ficar pronto (ms; 0 = pronto)
+function kitchenIceLeftMs(pint, now = Date.now()) {
+  const ready = Number(pint && pint.frozenAt) + KITCHEN_ICE_FREEZE_MS;
+  return Math.max(0, ready - now);
+}
+
+// Números do pote comido (proteína pra conquista do pote monstro), no tamanho em que foi feito
+function kitchenIcePintEatenMacros(db, pint) {
+  const recipe = kitchenIceRecipe(db, pint && pint.iceId);
+  return recipe ? kitchenIcePintMacros(db, recipe, pint.size) : null;
+}
+
+/* Conquistas dos sorvetes (entram no calcKitchenPlayer): cada pote comido
+ * é um passo da timeline. Devolve a lista ordenada de { date, doneAt, pint }. */
+function kitchenIceEatenEvents(db, today) {
+  return kitchenIcePintsOf(db)
+    .filter((p) => Number(p.eatenAt) > 0 && /^\d{4}-\d{2}-\d{2}$/.test(String(p.date || "")) && p.date <= today)
+    .map((p) => ({ date: p.date, doneAt: Number(p.eatenAt), pint: p }));
 }
