@@ -1702,3 +1702,110 @@
 }
 .wg.is-editing .wg-head-go,
 .wg.is-editing .wg-badge { visibility: hidden; }
+
+/* =====================================================================
+ * v2.19 · 🩻 Raio-X do dia e os widgets novos (portal-widgets.js)
+ * Anel triplo: fora = passos (verde-limão), meio = ativas (coral),
+ * dentro = sono (lilás). Cores fixas pra ler igual em qualquer app/escuro.
+ * ===================================================================== */
+.wg { --r1: hsl(96 85% 66%); --r2: hsl(14 95% 70%); --r3: hsl(262 90% 78%); }
+
+.wg-tri-row { display: flex; align-items: center; gap: 14px; flex: 1 1 auto; min-height: 0; }
+.wg.is-G .wg-tri-row { flex: 0 0 auto; }
+.wg-tri { position: relative; flex: 0 0 auto; width: 92px; height: 92px; }
+.wg.is-G .wg-tri { width: 100px; height: 100px; }
+.wg-tri svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.wg-tri circle { fill: none; stroke-width: 8; }
+.wg-tri-bg { opacity: 0.2; }
+.wg-tri-fg { stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.35)); }
+.wg-tri .is-r1 { stroke: var(--r1); }
+.wg-tri .is-r2 { stroke: var(--r2); }
+.wg-tri .is-r3 { stroke: var(--r3); }
+.wg-tri-in { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; }
+.wg-tri-in b { font-size: 1.25rem; font-weight: 900; letter-spacing: -0.03em; }
+.wg.is-G .wg-tri-in b { font-size: 1.6rem; }
+.wg-tri-in i { font-size: 0.56rem; font-style: normal; color: var(--sub); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+.wg-tri-row.is-good .wg-tri-in b { color: var(--acc); }
+.wg-tri-row.is-hot .wg-tri-in b { color: #ffc4b8; }
+.wg.is-escuro .wg-tri-row.is-hot .wg-tri-in b { color: var(--coral); }
+
+.wg-stats { gap: 7px; min-width: 0; }
+.wg-stat { display: block; font-size: 0.72rem; font-weight: 600; min-width: 0; }
+.wg-stat .wg-row > span { color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wg-stat .wg-row > b { font-size: 0.8rem; white-space: nowrap; }
+.wg-stat .wg-bar { height: 5px; margin: 3px 0 0; }
+.wg-stat.is-r1 .wg-bar b { background: var(--r1); }
+.wg-stat.is-r2 .wg-bar b { background: var(--r2); }
+.wg-stat.is-r3 .wg-bar b { background: var(--r3); }
+
+.wg-chips { display: flex; gap: 5px; margin-top: 4px; min-width: 0; overflow: hidden; }
+.wg-chips > span {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 3px 2px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.wg.is-escuro .wg-chips > span { background: var(--surface-3); }
+.wg-chips i { display: block; font-size: 0.56rem; font-style: normal; font-weight: 600; color: var(--sub); }
+
+.wg-nbars { display: flex; gap: 4px; margin-top: 4px; }
+.wg-nbar { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; min-width: 0; line-height: 1; }
+.wg-nbar b { font-size: 0.56rem; font-weight: 800; color: var(--sub); margin-bottom: 2px; }
+.wg-nbar-trk { display: flex; align-items: flex-end; justify-content: center; width: 100%; height: 24px; }
+.wg-nbar-trk i { display: block; width: 100%; max-width: 26px; border-radius: 5px 5px 2px 2px; background: rgba(255, 255, 255, 0.28); }
+.wg-nbar.is-good i { background: var(--acc); }
+.wg-nbar.is-ok i { background: rgba(255, 255, 255, 0.55); }
+.wg-nbar.is-hot i { background: #ffb3ab; }
+.wg.is-escuro .wg-nbar.is-hot i { background: var(--coral); }
+.wg-nbar em { font-size: 0.56rem; font-style: normal; color: var(--sub); margin-top: 2px; }
+.wg-nbar.is-today em, .wg-nbar.is-today b { color: #fff; }
+
+.wg-cloba {
+  margin-top: auto;
+  padding: 4px 9px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wg.is-escuro .wg-cloba { background: var(--surface-3); }
+
+.wg-nota .wg-ring-in { font-size: 1.05rem; font-weight: 900; }
+.wg-nota.is-good .wg-ring-fg { stroke: var(--acc); }
+.wg-nota.is-ok .wg-ring-fg { stroke: rgba(255, 255, 255, 0.75); }
+.wg-nota.is-hot .wg-ring-fg { stroke: #ffb3ab; }
+
+.wg-sbars { flex: 1 1 auto; display: flex; min-width: 0; padding-bottom: 14px; }
+.wg-sbars-in { position: relative; flex: 1 1 auto; display: flex; gap: 5px; align-items: stretch; min-width: 0; }
+.wg-goal { position: absolute; left: 0; right: 0; border-top: 1.5px dashed rgba(255, 255, 255, 0.6); pointer-events: none; }
+.wg-sbar { position: relative; flex: 1 1 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; min-width: 0; }
+.wg-sbar i { display: block; width: 100%; max-width: 22px; min-height: 3px; border-radius: 6px 6px 3px 3px; background: rgba(255, 255, 255, 0.32); }
+.wg-sbar.is-hit i { background: var(--acc); }
+.wg-sbar.is-today i { box-shadow: 0 0 0 1.5px #fff; }
+.wg-sbar em { position: absolute; bottom: -14px; font-size: 0.58rem; font-style: normal; color: var(--sub); }
+.wg-sbar.is-today em { color: #fff; font-weight: 800; }
+
+.wg-stages { display: flex; gap: 2px; height: 12px; border-radius: 6px; overflow: hidden; }
+.wg-stages i, .wg-stages-key i { display: block; }
+.wg-stages .is-deep, .wg-stages-key .is-deep { background: hsl(232 80% 66%); }
+.wg-stages .is-light, .wg-stages-key .is-light { background: hsl(200 85% 72%); }
+.wg-stages .is-rem, .wg-stages-key .is-rem { background: hsl(290 75% 74%); }
+.wg-stages .is-awake { background: hsl(30 95% 72%); }
+.wg-stages-key { display: flex; gap: 10px; margin-top: 4px; font-size: 0.64rem; color: var(--sub); white-space: nowrap; overflow: hidden; }
+.wg-stages-key span { display: inline-flex; align-items: center; gap: 4px; }
+.wg-stages-key i { width: 7px; height: 7px; border-radius: 50%; }
+
+.wg-mini.is-ready .wg-bar b { background: var(--acc); }
+
+.wg-cloba-big { display: flex; align-items: center; gap: 12px; flex: 1 1 auto; font-size: 0.92rem; font-weight: 700; line-height: 1.3; }
+.wg-cloba-big > span:last-child { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.wg-cloba-face { flex: 0 0 auto; font-size: 2.2rem; }

@@ -19,6 +19,8 @@
  *   open = chave de WG_OPENS (ou "nada")
  *   look = "cor" | "escuro"
  *   opts = escolhas do widget (ex.: { bar: false }, { app, key } no 🔢 Número)
+ * v2.19: 🩻 Raio-X do dia (anel triplo + nota), 🏅 Nota, ❤️ Coração, 📊 Passos
+ *   da semana, 🌙 Noite, 🧊 Freezer de sorvete e 🤡 Papo do Cloba.
  * Quem vem da v2.14 (quadradinhos) ganha os widgets equivalentes na 1ª vez
  * (wgFromSlots); os slots continuam gravados.
  *
@@ -64,6 +66,7 @@ const WG_OPENS = {
   compras: { app: "kitchen", label: "🛒 Lista de compras", href: "./TobaKitchen/TobaKitchen-Compras.html" },
   semana: { app: "kitchen", label: "📆 Semana", href: "./TobaKitchen/TobaKitchen-Semana.html" },
   receitas: { app: "kitchen", label: "📖 Receitas", href: "./TobaKitchen/TobaKitchen-Receitas.html" },
+  sorvetes: { app: "kitchen", label: "🍦 Sorvetes", href: "./TobaKitchen/TobaKitchen-Receitas.html?sorvetes=1" },
   kitchenmenu: { app: "kitchen", label: "🍳 Menu do Kitchen", href: "./TobaKitchen/TobaKitchen-Index.html" },
   drive: { app: "racing", label: "🧭 Toba Drive", href: "./TobaRacing/TobaDrive/TobaDrive.html" },
   combustivel: { app: "racing", label: "⛽ Combustível", href: "./TobaRacing/TobaRacing-Combustivel.html" },
@@ -93,12 +96,19 @@ const WG_KINDS = {
     opts: [{ k: "top", l: "Top apps (no médio)", d: true }] },
   ft_kcal: { app: "fit", title: "Calorias", desc: "Ativas de hoje no anel + dias de treino da semana", sizes: ["P", "M"], def: "P", open: "treinos", more: ["raiox"] },
   ft_semana: { app: "fit", title: "Treinos", desc: "Treinos da semana e do mês", sizes: ["P", "M"], def: "P", open: "treinos", more: ["raiox"] },
+  hl_raiox: { app: "health", title: "Raio-X do dia", desc: "O widget monstro: nota do dia no meio do anel triplo (passos, ativas, sono), coração, stress e a semana", sizes: ["M", "G"], def: "G", open: "raiox", more: ["treinos"],
+    opts: [{ k: "chips", l: "Coração, stress e cia (no grandão)", d: true }, { k: "week", l: "Notas da semana (no grandão)", d: true }, { k: "cloba", l: "Papo do Cloba (no grandão)", d: true }] },
+  hl_nota: { app: "health", title: "Nota do dia", desc: "A nota de 0 a 100 do Cloba (sono, passos, ativas, stress e treino)", sizes: ["P"], def: "P", open: "raiox" },
+  hl_coracao: { app: "health", title: "Coração", desc: "Batimento médio, repouso e o stress do dia", sizes: ["P"], def: "P", open: "raiox" },
+  hl_passos7: { app: "health", title: "Passos da semana", desc: "Barrinha dos últimos 7 dias com a linha da meta", sizes: ["M"], def: "M", open: "raiox" },
+  hl_noite: { app: "health", title: "A noite", desc: "Quanto dormiu, que horas deitou e acordou e as fases do sono", sizes: ["M"], def: "M", open: "raiox" },
   hl_passos: { app: "health", title: "Passos", desc: "Anel dos passos do relógio", sizes: ["P"], def: "P", open: "raiox" },
   hl_sono: { app: "health", title: "Sono", desc: "Quanto dormiu essa noite", sizes: ["P"], def: "P", open: "raiox" },
   hl_peso: { app: "health", title: "Peso", desc: "Última pesagem + como foi no mês + tendência", sizes: ["P", "M"], def: "M", open: "pesagem" },
   kt_compras: { app: "kitchen", title: "Lista de compras", desc: "Marca o que pegou no mercado ali mesmo", sizes: ["M", "G"], def: "M", open: "compras",
     opts: [{ k: "hide", l: "Esconder os pegos", d: true }] },
   kt_hoje: { app: "kitchen", title: "Cozinha hoje", desc: "O que tá programado pra hoje", sizes: ["P", "M"], def: "M", open: "semana" },
+  kt_sorvete: { app: "kitchen", title: "Freezer de sorvete", desc: "Potes da Ninja congelando e quando cada um fica pronto pra bater", sizes: ["P", "M"], def: "P", open: "sorvetes" },
   rc_km: { app: "racing", title: "Km no mês", desc: "Quanto rodou no Toba Drive no mês", sizes: ["P"], def: "P", open: "drive" },
   rc_kml: { app: "racing", title: "Consumo", desc: "km/l do último tanque e a média", sizes: ["P"], def: "P", open: "combustivel" },
   rc_ult: { app: "racing", title: "Última viagem", desc: "Pra onde foi, tempo, km e se chegou antes do previsto", sizes: ["M"], def: "M", open: "drive" },
@@ -106,6 +116,7 @@ const WG_KINDS = {
   tr_conta: { app: "tourism", title: "Lugares", desc: "Pra ir x já visitados", sizes: ["P"], def: "P", open: "places" },
   x_relogio: { app: "extras", title: "Relógio", desc: "Hora grandona e a data", sizes: ["P", "M"], def: "P", open: "nada" },
   x_atalho: { app: "extras", title: "Atalho de app", desc: "Ícone grandão que abre o app que tu escolher", sizes: ["P"], def: "P", open: "app" },
+  x_cloba: { app: "extras", title: "Papo do Cloba", desc: "Uma do Cloba por dia (muda à meia-noite)", sizes: ["M"], def: "M", open: "nada" },
   x_num: { app: "extras", title: "🔢 Número", desc: "Qualquer número de qualquer app (os do painel antigo)", sizes: ["P"], def: "P", open: "app" },
 };
 
@@ -271,6 +282,72 @@ function wgRing(pct, center) {
 }
 const wgEmpty = (t) => `<span class="wg-empty">${wgEsc(t)}</span>`;
 
+/* v2.19: pecinhas do 🩻 Raio-X */
+const WG_WEEK_LETTERS = ["D", "S", "T", "Q", "Q", "S", "S"];
+function wgWatch(ctx) {
+  const w = ctx.health && ctx.health.watch;
+  const days = w && w.days && typeof w.days === "object" ? w.days : {};
+  const g = (w && w.goals) || {};
+  return {
+    days,
+    d: days[ctx.today] || null,
+    goalSteps: Number(g.steps) > 0 ? Number(g.steps) : WATCH_NOTA_DEFAULT_GOALS.steps,
+    goalSleep: Number(g.sleepMin) > 0 ? Number(g.sleepMin) : WATCH_NOTA_DEFAULT_GOALS.sleepMin,
+  };
+}
+const wgNotaTone = (n) => (n === null || n === undefined ? "" : n >= 70 ? "good" : n >= 50 ? "ok" : "hot");
+function wgSleepMin(d) {
+  const s = d && d.sleep;
+  return s && Number(s.min) > 0 ? Number(s.min) + (Number(s.napMin) || 0) : 0;
+}
+// Anel triplo (de fora pra dentro: passos, ativas, sono) com a nota no meio
+function wgTriRing(rings, center, sub) {
+  const arc = (r, pct, cls) => {
+    const c = 2 * Math.PI * r;
+    const dash = ((Math.min(100, Math.max(0, pct)) / 100) * c).toFixed(1);
+    return `<circle cx="50" cy="50" r="${r}" class="wg-tri-bg ${cls}"></circle><circle cx="50" cy="50" r="${r}" class="wg-tri-fg ${cls}" stroke-dasharray="${dash} ${c.toFixed(1)}"></circle>`;
+  };
+  return `<span class="wg-tri"><svg viewBox="0 0 100 100" aria-hidden="true">${arc(44, rings[0], "is-r1")}${arc(34, rings[1], "is-r2")}${arc(24, rings[2], "is-r3")}</svg><span class="wg-tri-in"><b>${wgEsc(center)}</b>${sub ? `<i>${wgEsc(sub)}</i>` : ""}</span></span>`;
+}
+function wgStatRow(cls, icon, label, value, pct) {
+  return `<span class="wg-stat ${cls}"><span class="wg-row"><span>${icon} ${wgEsc(label)}</span><b>${wgEsc(value)}</b></span><span class="wg-bar"><b style="width:${wgPct(pct)}%"></b></span></span>`;
+}
+// A parte mais fraca da nota vira o conselho do Cloba
+function wgClobaTip(score, x) {
+  if (!score) return "🩻 Abre o Raio-X pra puxar o relógio ⌚";
+  if (score.score >= 85) return "🔥 Dia de monstro. Nunca foi sorte, Cloba.";
+  const weak = [...score.parts].sort((a, b) => a.f - b.f)[0];
+  if (!weak || weak.f >= 0.95) return "😎 Tudo em dia. Só manter o ritmo.";
+  if (weak.k === "steps") return `👟 Faltam ${formatPortalNumber(Math.max(0, x.goalSteps - weak.v), 0)} passos. Volta no quarteirão já!`;
+  if (weak.k === "sleep") return "😴 Noite curta. Hoje é cama cedo, sem choro.";
+  if (weak.k === "active") return "🔥 Ativas baixas: 15 min andando já mexe o ponteiro.";
+  if (weak.k === "stress") return "😤 Stress lá em cima. Respira 1 min no Raio-X.";
+  return "🏃 Ainda não se mexeu hoje. Um Saitama rapidinho?";
+}
+
+const WG_CLOBA_LINES = [
+  "Nunca foi sorte, Cloba. Nunca foi sorte. 🙏",
+  "Café coado na V60 primeiro, decisão importante depois. ☕",
+  "Killua e Gon dormem 16h por dia e ninguém julga. Tu pode dormir 7h30. 🐈",
+  "Gasto pequeno todo dia vira gasto grande no fim do mês. O Bank tá de olho. 👀",
+  "Treino ruim ainda é treino. Sofá não dá XP. 💪",
+  "Mais um dia, mais um loot. Bora farmar a vida igual RuneScape. ⚔️",
+  "Se o Diablo IV tem season, tu também tem: essa é a season do shape. 🔥",
+  "Bebe água, monstro. O Cloba não vai lembrar de novo (vai sim). 💧",
+  "Sorvete fit é sorvete. Sorvete de pote de padaria é pecado. 🍦",
+  "O trânsito de SP é teste de paciência nível hardcore. Respira. 🚗",
+  "Faz a task chata primeiro. Depois o resto é sobremesa. ✅",
+  "Passo é passo. 500 agora valem mais que 10 mil amanhã. 👟",
+  "Dinheiro guardado é dinheiro que não foi pro iFood. 💸",
+  "Celular na mão antes de dormir rouba sono. Larga esse trem. 📱",
+  "Se não tá no Toba, não aconteceu. 📝",
+  "Hoje é dia de bater recorde ou de bater meta. Escolhe um. 🏆",
+  "O Maracujeba já treinou hoje? Manda no grupo pra cobrar. 😂",
+  "Comida de verdade, sono de verdade, treino de verdade. Sem segredo. 🥗",
+  "Errou o dia? Acerta o próximo. Sequência quebrada não é fim de jogo. 🔁",
+  "Monstro não nasce pronto, monstro farma. 👊",
+];
+
 /* ---------------------------------------------------------------------
  * O corpo de cada widget
  * ------------------------------------------------------------------- */
@@ -385,6 +462,95 @@ const WG_BODY = {
     }
     return `${html}</span>`;
   },
+  hl_raiox(w, ctx, o) {
+    const x = wgWatch(ctx);
+    const d = x.d;
+    if (!Object.keys(x.days).length) return wgEmpty("Liga o ⌚ no 🩻 Raio-X (app Android)");
+    const score = d ? calcWatchDayScore(ctx.health, ctx.today) : null;
+    const steps = d ? Number(d.steps) || 0 : 0;
+    const kcal = d ? Number(d.activeKcal) || 0 : 0;
+    const kGoal = calcWatchKcalGoal(x.days, ctx.today).goal;
+    const sleep = wgSleepMin(d);
+    const tone = wgNotaTone(score && score.score);
+    if (score) w.badge = `nota ${score.score}${score.score >= 85 ? " 🔥" : ""}`;
+    const ring = wgTriRing([(steps / x.goalSteps) * 100, (kcal / kGoal) * 100, (sleep / x.goalSleep) * 100], score ? String(score.score) : "--", "nota");
+    const stats = `<span class="wg-col wg-grow wg-stats">${wgStatRow("is-r1", "👟", "Passos", formatPortalNumber(steps, 0), (steps / x.goalSteps) * 100)}${wgStatRow("is-r2", "🔥", "Ativas", `${formatPortalNumber(kcal, 0)} kcal`, (kcal / kGoal) * 100)}${wgStatRow("is-r3", "😴", "Sono", sleep ? wgMin(sleep) : "--", (sleep / x.goalSleep) * 100)}</span>`;
+    let html = `<span class="wg-tri-row is-${tone || "none"}">${ring}${stats}</span>`;
+    if (w.size !== "G") return html;
+    if (o.chips) {
+      const chips = [];
+      if (d && Number(d.hrAvg) > 0) chips.push(`❤️ ${Math.round(d.hrAvg)}<i>bpm</i>`);
+      if (d && Number(d.restHr) > 0) chips.push(`💤 ${Math.round(d.restHr)}<i>repouso</i>`);
+      if (d && Number.isFinite(Number(d.stress)) && d.stress !== null && d.stress !== undefined) chips.push(`😤 ${Math.round(d.stress)}<i>stress</i>`);
+      if (d && Number(d.energy) > 0) chips.push(`🔋 ${Math.round(d.energy)}<i>energy</i>`);
+      if (d && Number(d.spo2) > 0) chips.push(`🫁 ${Math.round(d.spo2)}%<i>O₂</i>`);
+      if (d && Number(d.distanceM) > 0 && chips.length < 5) chips.push(`📍 ${formatPortalNumber(Number(d.distanceM) / 1000, 1)}<i>km</i>`);
+      if (chips.length) html += `<span class="wg-chips">${chips.slice(0, 5).map((c) => `<span>${c}</span>`).join("")}</span>`;
+    }
+    if (o.week) {
+      const bars = [];
+      for (let i = 6; i >= 0; i--) {
+        const iso = watchMetricAddDays(ctx.today, -i);
+        const r = x.days[iso] ? calcWatchDayScore(ctx.health, iso) : null;
+        const n = r ? r.score : 0;
+        const dow = new Date(`${iso}T12:00:00`).getDay();
+        bars.push(`<span class="wg-nbar is-${wgNotaTone(r ? n : null) || "none"}${i === 0 ? " is-today" : ""}"><b>${r ? n : "·"}</b><span class="wg-nbar-trk"><i style="height:${r ? Math.max(10, Math.min(100, ((n - 25) / 75) * 100)) : 6}%"></i></span><em>${WG_WEEK_LETTERS[dow]}</em></span>`);
+      }
+      html += `<span class="wg-nbars" aria-label="Notas dos últimos 7 dias">${bars.join("")}</span>`;
+    }
+    if (o.cloba) html += `<span class="wg-cloba">${wgEsc(wgClobaTip(score, x))}</span>`;
+    return html;
+  },
+  hl_nota(w, ctx) {
+    const x = wgWatch(ctx);
+    const score = x.d ? calcWatchDayScore(ctx.health, ctx.today) : null;
+    if (!score) return `<span class="wg-push"></span>${wgBig("--")}${wgSub("sem nota ainda hoje")}`;
+    const n = score.score;
+    const word = n >= 85 ? "dia de monstro 🔥" : n >= 70 ? "dia bom 😎" : n >= 50 ? "dá pra subir 👊" : "bora reagir 💩";
+    const y = x.days[watchMetricAddDays(ctx.today, -1)] ? calcWatchDayScore(ctx.health, watchMetricAddDays(ctx.today, -1)) : null;
+    const diff = y ? n - y.score : null;
+    return `<span class="wg-ringrow wg-nota is-${wgNotaTone(n)}">${wgRing(n, String(n))}<span class="wg-col">${wgSub(word)}${diff !== null ? `<span class="wg-sub ${diff >= 0 ? "is-good" : "is-hot"}">${diff >= 0 ? "▲" : "▼"} ${Math.abs(diff)} x ontem</span>` : ""}</span></span>`;
+  },
+  hl_coracao(w, ctx) {
+    const d = wgWatch(ctx).d;
+    const hr = d && Number(d.hrAvg) > 0 ? Math.round(d.hrAvg) : 0;
+    if (!hr && !(d && Number(d.restHr) > 0)) return `<span class="wg-push"></span>${wgBig("❤️ --")}${wgSub("sem batimento hoje")}`;
+    const parts = [];
+    if (d.restHr > 0) parts.push(`repouso ${Math.round(d.restHr)}`);
+    if (d.hrMin > 0 && d.hrMax > 0) parts.push(`${Math.round(d.hrMin)}–${Math.round(d.hrMax)}`);
+    const stress = Number.isFinite(Number(d.stress)) && d.stress !== null && d.stress !== undefined ? Math.round(d.stress) : null;
+    return `<span class="wg-push"></span><span class="wg-row wg-base">${wgBig(`❤️ ${hr || "--"}`)}<span class="wg-sub">bpm</span></span>${wgSub(parts.join(" · ") || "média do dia")}${stress !== null ? `<span class="wg-sub ${stress >= 50 ? "is-hot" : "is-good"}">😤 stress ${stress}${stress >= 50 ? " · respira" : " · de boa"}</span>` : ""}`;
+  },
+  hl_passos7(w, ctx) {
+    const x = wgWatch(ctx);
+    const vals = [];
+    for (let i = 6; i >= 0; i--) {
+      const iso = watchMetricAddDays(ctx.today, -i);
+      vals.push({ iso, v: x.days[iso] ? Number(x.days[iso].steps) || 0 : 0 });
+    }
+    if (!vals.some((v) => v.v > 0)) return wgEmpty("Sem passos na semana 👟 (relógio no Raio-X)");
+    const max = Math.max(x.goalSteps * 1.15, ...vals.map((v) => v.v));
+    const hit = vals.filter((v) => v.v >= x.goalSteps).length;
+    const total = vals.reduce((a, v) => a + v.v, 0);
+    w.badge = `${hit}/7 na meta${hit >= 5 ? " 🔥" : ""}`;
+    const bars = vals.map((v, i) => `<span class="wg-sbar${v.v >= x.goalSteps ? " is-hit" : ""}${i === 6 ? " is-today" : ""}"><i style="height:${((v.v / max) * 100).toFixed(1)}%"></i><em>${WG_WEEK_LETTERS[new Date(`${v.iso}T12:00:00`).getDay()]}</em></span>`).join("");
+    return `<span class="wg-split"><span class="wg-col wg-end">${wgBig(formatPortalNumber(Math.round(total / 7), 0), "", " is-sm")}${wgSub("média/dia")}${wgSub(`${formatPortalNumber(total / 1000, 1)} mil na semana`)}</span><span class="wg-sbars"><span class="wg-sbars-in">${bars}<i class="wg-goal" style="bottom:${((x.goalSteps / max) * 100).toFixed(1)}%"></i></span></span></span>`;
+  },
+  hl_noite(w, ctx) {
+    const x = wgWatch(ctx);
+    const s = x.d && x.d.sleep;
+    const min = wgSleepMin(x.d);
+    if (!min) return wgEmpty("😴 Sem noite registrada hoje");
+    const hhmm = (ms) => (Number.isFinite(Number(ms)) && Number(ms) > 0 ? new Date(Number(ms)).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "");
+    const from = hhmm(s.start);
+    const to = hhmm(s.end);
+    const diff = min - x.goalSleep;
+    w.badge = Math.abs(diff) < 10 ? "na meta 😎" : diff > 0 ? `+${wgMin(diff)}` : `−${wgMin(-diff)}`;
+    const st = [["deep", "Profundo"], ["light", "Leve"], ["rem", "REM"], ["awake", "Acordado"]].map(([k, l]) => [k, l, Number(s[k]) || 0]).filter((p) => p[2] > 0);
+    const sum = st.reduce((a, p) => a + p[2], 0);
+    const stripe = sum ? `<span class="wg-stages">${st.map((p) => `<i class="is-${p[0]}" style="flex:${p[2]}"></i>`).join("")}</span><span class="wg-stages-key">${st.filter((p) => p[0] !== "awake").map((p) => `<span><i class="is-${p[0]}"></i>${p[1]} ${wgMin(p[2])}</span>`).join("")}</span>` : wgBar((min / x.goalSleep) * 100);
+    return `<span class="wg-row wg-base">${wgBig(`😴 ${wgMin(min)}`)}${from && to ? `<span class="wg-sub">${wgEsc(from)} → ${wgEsc(to)}</span>` : ""}</span>${wgSub(`meta ${wgMin(x.goalSleep)}${s.score ? ` · nota ${s.score} do Samsung` : ""}`)}<span class="wg-push"></span>${stripe}`;
+  },
   hl_passos(w, ctx) {
     const watch = ctx.health && ctx.health.watch;
     const d = watch && watch.days && watch.days[ctx.today];
@@ -452,6 +618,29 @@ const WG_BODY = {
     return `<span class="wg-list">${k.todayPlan.slice(0, 3).map((r) => `<span class="wg-line">${wgEsc(r.emoji)} ${wgEsc(r.name)}</span>`).join("")}</span>`;
   },
 
+  kt_sorvete(w, ctx) {
+    if (typeof kitchenIceFreezerOf !== "function") return wgEmpty("Kitchen não carregou");
+    const db = ctx.kitchenDb || {};
+    const now = Date.now();
+    const pints = kitchenIceFreezerOf(db).map((p) => ({ p, left: kitchenIceLeftMs(p, now), r: kitchenIceRecipe(db, p.iceId) }));
+    const leftTxt = (ms) => {
+      const h = Math.floor(ms / 3600000);
+      const m = Math.ceil((ms % 3600000) / 60000);
+      return h ? `${h}h${m === 60 ? "" : String(m).padStart(2, "0")}` : `${m} min`;
+    };
+    if (!pints.length) return `<span class="wg-push"></span>${wgBig("🍦 0")}${wgSub("freezer vazio · bate um pote!")}`;
+    const ready = pints.filter((x) => !x.left);
+    const next = pints.filter((x) => x.left).sort((a, b) => a.left - b.left)[0];
+    w.badge = ready.length && w.size !== "P" ? `${ready.length} pronto${ready.length === 1 ? "" : "s"} 🍦` : "";
+    if (w.size === "P") {
+      return `<span class="wg-push"></span>${wgBig(`🧊 ${pints.length}`)}${wgSub(`${pints.length === 1 ? "pote" : "potes"} no freezer`)}${ready.length ? `<span class="wg-sub is-good">🍦 ${ready.length} pronto${ready.length === 1 ? "" : "s"} pra bater</span>` : next ? `<span class="wg-sub">⏳ pronto em ${wgEsc(leftTxt(next.left))}</span>` : ""}`;
+    }
+    const rows = pints.slice(0, 3).map((x) => {
+      const pct = 100 - (x.left / KITCHEN_ICE_FREEZE_MS) * 100;
+      return `<span class="wg-mini${x.left ? "" : " is-ready"}"><span class="wg-row"><span>${wgEsc(x.r ? x.r.emoji : "🍦")} ${wgEsc(x.r ? x.r.name : "Pote")}</span><span>${x.left ? `⏳ ${wgEsc(leftTxt(x.left))}` : "✅ pronto"}</span></span>${wgBar(pct)}</span>`;
+    }).join("");
+    return `<span class="wg-col wg-grow">${rows}${pints.length > 3 ? `<span class="wg-sub">+${pints.length - 3} no freezer</span>` : ""}</span>`;
+  },
   rc_km(w, ctx) {
     const d = ctx.drive;
     if (!d || !d.monthKm) return `<span class="wg-push"></span>${wgBig("0 km")}${wgSub("no mês · bora rodar")}<span class="wg-flag"></span>`;
@@ -501,6 +690,10 @@ const WG_BODY = {
     const app = ctx.byId[o.app];
     if (!app) return wgEmpty("App escondido ou que não existe mais");
     return `<span class="wg-push"></span><span class="wg-emoji">${app.icon}</span><span class="wg-big is-sm">${wgEsc(app.short)}</span>`;
+  },
+  x_cloba(w, ctx) {
+    const day = Math.floor((ctx.now.getTime() - ctx.now.getTimezoneOffset() * 60000) / 86400000);
+    return `<span class="wg-cloba-big"><span class="wg-cloba-face" aria-hidden="true">🤡</span><span>${wgEsc(WG_CLOBA_LINES[day % WG_CLOBA_LINES.length])}</span></span>`;
   },
   x_num(w, ctx, o) {
     const def = PORTAL_APP_STATS[o.app];

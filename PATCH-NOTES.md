@@ -3138,3 +3138,39 @@ Rafa: "o Toba Health precisa passar por um revamp... health é saúde, mas dentr
 **Como testar:** Kitchen → card 🍦 Sorvetes Ninja CREAMi (ou Receitas → chip 🍦 Sorvetes). Abrir a Baunilha → ver kcal/proteína, tocar em ÷ 2 porções e num mix-in → 🧊 Congelei → voltar e ver no 🧊 No freezer → 🍦 Comi. Trocar pra Pote Deluxe e ver as contas subirem. 🍦 Montar meu pote → Base proteica + morango → Salvar. ✏️ Rótulos → mudar a proteína do whey → contas mudam. Perfil → 🍳 Cozinha → 🥶 Brain freeze. ⚙ mostra "Patch v2.18".
 
 **Commit sugerido:** `v2.18 - Sessao Sorvetes Ninja CREAMi no Kitchen: 18 receitas fit com kcal e proteina por pote, jeito certo de bater, freezer 24h, montar meu pote, rotulos, guia e 7 trofeus`
+
+## v2.19 — Commit com vários patches
+
+### 🚦 Toba Auto: trânsito da cidade só em volta da rota (o celular não esquenta)
+
+**Arquivos alterados:** `TobaRacing/TobaDrive/js/auto-map.js`, `assets/toba-common.js` (Patch v2.19), `sw.js` (toba-v74).
+
+1. **Pedido do Rafa:** "na tela de escolher a rota a cidade toda tá pintada com o trânsito… o celular fica quente". Na prévia o mapa do carro abre a cidade inteira e o Mapbox desenhava as listrinhas amarelas/vermelhas de TODA rua parada dela.
+2. **Agora o trânsito das ruas só aparece num corredor em volta dos caminhos** (uns 400 a 800 m pra cada lado): na tela de escolher a rota = a rota escolhida + os caminhos cinzas; navegando = só a rota ativa. O resto da cidade fica limpo e o Mapbox desenha bem menos linha.
+3. Como funciona: a rota marca quadradinhos de ~400 m (mais os vizinhos), que viram um polígono só no filtro `within` da camada `am-traffic` (`amUpdateTrafficArea` / `amCorridorRings`). Só recalcula quando o caminho muda (troca de rota, recálculo, abrir/fechar a prévia). Rota muito longa usa quadradinho maior sozinha.
+4. **Não mudou:** a cor da própria linha azul (TomTom + trânsito ao vivo casado na rota a cada 20 s, v2.07) segue igual, porque o casamento lê a fonte e não a camada. Andando sem rota, o trânsito em volta do carro segue como era. Celular (🧭 Toba Drive) não mexido.
+
+**APK:** nenhum APK novo (o mapa do carro é o site). Segue o APK 3.6.
+
+**Como testar:** no carro (ou DHU), buscar um destino → na tela de escolher a rota só as ruas perto dos caminhos têm listrinha de trânsito; o centro longe da rota fica sem cor. Tocar em Bora! → só em volta da rota escolhida. ⚙ mostra "Patch v2.19".
+
+---
+
+### 🩻 Widget MONSTRO do Raio-X + 6 widgets novos na home
+
+**Arquivos alterados:** `assets/portal-widgets.js`, `assets/portal.css`, `CLAUDE.md`. (Patch v2.19 e sw toba-v74 já subidos na seção do Auto acima.)
+
+1. **Pedido do Rafa:** "queria um widget foda do raio x" + "aproveita e coloca mais". Na ⭐ Meus widgets → ＋ Widget:
+2. **🫀 Raio-X do dia** (Médio ou Grandão, padrão Grandão): **anel triplo** estilo relógio (fora 👟 passos, meio 🔥 ativas, dentro 😴 sono) com a **Nota do dia do Cloba** no meio (verde 70+, vermelho abaixo de 50) e as 3 barras do lado. No Grandão ainda: ❤️ bpm médio, 💤 repouso, 😤 stress, 🔋 Energy e 🫁 oxigenação, **as notas dos últimos 7 dias** em barrinha e o **papo do Cloba** apontando a parte mais fraca do dia ("Faltam 1.800 passos. Volta no quarteirão já!"). Cada pedaço desliga no ⚙ do widget. A nota é a MESMA do Raio-X (`calcWatchDayScore`).
+3. **🫀 Nota do dia** (Pequeno): anel da nota + "dia bom 😎" e ▲▼ x ontem.
+4. **🫀 Coração** (Pequeno): bpm médio, repouso, mín–máx e o stress do dia.
+5. **🫀 Passos da semana** (Médio): barrinha dos últimos 7 dias com a **linha tracejada da meta**, média/dia e "4/7 na meta".
+6. **🫀 A noite** (Médio): quanto dormiu, que horas deitou → acordou, +/− da meta e a **faixa das fases** (profundo, leve, REM, acordado).
+7. **🍳 Freezer de sorvete** (Pequeno ou Médio): potes da Ninja no freezer, quantos já tão prontos pra bater e quanto falta pro próximo (Médio mostra até 3 potes com a barrinha das 24 h). Toque abre o 🍦 Sorvetes (destino novo `sorvetes` no "Ao tocar, abre").
+8. **✨ Papo do Cloba** (Médio): uma frase do Cloba por dia, muda à meia-noite.
+
+**Dados:** nada novo gravado. Widgets novos são só keys novas no `toba_portal_view.widgets` (`hl_raiox`, `hl_nota`, `hl_coracao`, `hl_passos7`, `hl_noite`, `kt_sorvete`, `x_cloba`); os widgets que tu já tem não mudam.
+
+**Como testar:** página inicial na ⭐ → ✏️ Montar → ＋ Widget → 🫀 Health → Raio-X do dia → Grandão → ＋ Botar na home. Conferir que a nota bate com a do 🩻 Raio-X. Tocar no widget → abre o Raio-X. ＋ Widget → 🍳 Kitchen → Freezer de sorvete (com um pote congelado aparece o tempo). ✨ Extras → Papo do Cloba.
+
+**Commit sugerido:** `v2.19 - Toba Auto pinta o transito so em volta das rotas (menos processamento) + widget monstro do Raio-X na home (anel triplo com a nota do dia) e 6 widgets novos (nota, coracao, passos da semana, noite, freezer de sorvete, papo do Cloba)`

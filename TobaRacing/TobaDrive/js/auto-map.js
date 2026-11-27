@@ -15,6 +15,8 @@
  *     hud({ nav, state, speed, limit, icon, dist, street, exit, eta, min, left, traffic, rerouting })
  * - A página avisa o Java: TobaAuto.ready() com o mapa pronto, TobaAuto.fail(motivo)
  *   se não der (aí o carro volta pro mapa de imagens, MapRenderer).
+ * - v2.19: as listrinhas de trânsito das ruas só aparecem num corredor em volta das rotas
+ *   (prévia = todos os caminhos, navegando = a rota ativa): o celular não esquenta pintando a cidade.
  * - Sem trânsito da cidade inteira (Rafa: "cidade toda verde"): só os trechos
  *   parados do TomTom em cima da própria rota (amarelo/vermelho/vinho, igual v1.72).
  * - Nada aqui grava no localStorage: 3D/2D e skin ficam no app (toba_auto).
@@ -409,11 +411,14 @@ function amAddLayers() {
   amAddTraffic();
 }
 
+const AM_TRAFFIC_BASE_FILTER = ["match", ["get", "congestion"], ["moderate", "heavy", "severe"], true, false];
+
 // v1.80: 🚦 trânsito das ruas em volta (Mapbox Traffic), SÓ amarelo / vermelho / vinho,
 // por baixo da rota (v2.05: mais grosso ainda; o da PRÓPRIA rota é a cor da linha azul, v2.06).
 // Rua livre (verde) não aparece.
 function amAddTraffic() {
   const map = am.map;
+  am.trafficSig = null; // v2.19: camada nova = corredor tem que ser aplicado de novo
   try {
     map.addSource("am-traffic", { type: "vector", url: "mapbox://mapbox.mapbox-traffic-v1" });
     map.addLayer({
@@ -421,7 +426,7 @@ function amAddTraffic() {
       type: "line",
       source: "am-traffic",
       "source-layer": "traffic",
-      filter: ["match", ["get", "congestion"], ["moderate", "heavy", "severe"], true, false],
+      filter: AM_TRAFFIC_BASE_FILTER,
       layout: { "line-cap": "round", "line-join": "round" },
       paint: {
         "line-color": ["match", ["get", "congestion"], "severe", AM_JAM_COLORS[3], "heavy", AM_JAM_COLORS[2], AM_JAM_COLORS[1]],
@@ -533,6 +538,7 @@ function amSetRouteData(r) {
     : amEmpty());
   amPaintRouteTraffic(r);
   amUpdateTrim();
+  amUpdateTrafficArea(); // v2.19: trânsito da cidade só em volta da rota
 }
 
 // v2.06: cor da linha ao longo da rota. Azul onde tá livre, amarelo/vermelho/vinho nos trechos
@@ -804,6 +810,119 @@ function amSetAlts(alts) {
     : amEmpty());
 }
 
+/* ---------- v2.19: 🚦 trânsito da cidade SÓ em volta das rotas ----------
+ * Rafa: "na tela de escolher a rota a cidade toda tá pintada com o trânsito… o celular fica quente".
+ * Na prévia o mapa abre a cidade inteira e o Mapbox desenhava TODA rua parada dela. Agora as
+ * listrinhas do am-traffic só aparecem num corredor em volta dos caminhos: na prévia = rota
+ * escolhida + os cinzas; navegando = só a rota ativa. Sem rota (andando livre) segue como era.
+ * Corredor = quadradinhos de ~400 m que a rota toca + os vizinhos (≈ 400–800 m pra cada lado),
+ * juntados num polígono só (filtro "within" do Mapbox; o contorno é por par/ímpar, então
+ * buraco e pedaço solto funcionam). Só recalcula quando o caminho muda.
+ * O casamento ao vivo na rota (amMatchLiveTraffic) não muda: ele lê a fonte, não a camada. */
+const AM_CORRIDOR_CELL_M = 400;
+const AM_CORRIDOR_MAX_CELLS = 6000;
+
+function amCorridorRings(lines, cellM) {
+  const lat0 = lines[0][0][0];
+  const dLat = cellM / 111320;
+  const dLng = cellM / (111320 * Math.max(0.2, Math.cos((lat0 * Math.PI) / 180)));
+  const touched = new Set();
+  const mark = (lat, lng) => touched.add(`${Math.floor(lng / dLng)}|${Math.floor(lat / dLat)}`);
+  lines.forEach((pts) => {
+    for (let i = 0; i < pts.length; i++) {
+      mark(pts[i][0], pts[i][1]);
+      if (!i) continue;
+      const d = amDist(pts[i - 1], pts[i]);
+      const k = Math.ceil(d / (cellM / 2));
+      for (let s = 1; s < k; s++) {
+        mark(pts[i - 1][0] + ((pts[i][0] - pts[i - 1][0]) * s) / k, pts[i - 1][1] + ((pts[i][1] - pts[i - 1][1]) * s) / k);
+      }
+    }
+  });
+  const cells = new Set();
+  touched.forEach((c) => {
+    const [x, y] = c.split("|").map(Number);
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) cells.add(`${x + dx}|${y + dy}`);
+  });
+  if (cells.size > AM_CORRIDOR_MAX_CELLS) return null;
+  // bordas dos quadradinhos que não têm vizinho do lado, sempre no mesmo giro
+  const edges = new Map();
+  const addEdge = (ax, ay, bx, by) => {
+    const k = `${ax}|${ay}`;
+    if (!edges.has(k)) edges.set(k, []);
+    edges.get(k).push([bx, by]);
+  };
+  cells.forEach((c) => {
+    const [x, y] = c.split("|").map(Number);
+    if (!cells.has(`${x}|${y - 1}`)) addEdge(x, y, x + 1, y);
+    if (!cells.has(`${x + 1}|${y}`)) addEdge(x + 1, y, x + 1, y + 1);
+    if (!cells.has(`${x}|${y + 1}`)) addEdge(x + 1, y + 1, x, y + 1);
+    if (!cells.has(`${x - 1}|${y}`)) addEdge(x, y + 1, x, y);
+  });
+  const rings = [];
+  edges.forEach((list, k0) => {
+    while (list.length) {
+      const [sx, sy] = k0.split("|").map(Number);
+      const ring = [[sx, sy]];
+      let cur = list.pop();
+      let guard = 0;
+      while (guard++ < 100000) {
+        ring.push(cur);
+        if (cur[0] === sx && cur[1] === sy) break;
+        const next = edges.get(`${cur[0]}|${cur[1]}`);
+        if (!next || !next.length) break;
+        cur = next.pop();
+      }
+      if (ring.length < 4) continue;
+      // tira os pontos do meio de lado reto (polígono menor = filtro mais leve)
+      const slim = [ring[0]];
+      for (let i = 1; i < ring.length - 1; i++) {
+        const a = slim[slim.length - 1];
+        const b = ring[i];
+        const c = ring[i + 1];
+        if ((b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]) !== 0) slim.push(b);
+      }
+      slim.push(ring[ring.length - 1]);
+      rings.push(slim.map(([x, y]) => [x * dLng, y * dLat]));
+    }
+  });
+  return rings.length ? rings : null;
+}
+
+function amTrafficLines() {
+  if (am.overview) {
+    const o = am.overview;
+    const alts = Array.isArray(o.alts) ? o.alts.filter((a) => Array.isArray(a) && a.length > 1) : [];
+    return [o.route.pts, ...alts];
+  }
+  return am.route ? [am.route.pts] : [];
+}
+
+function amUpdateTrafficArea() {
+  const map = am.map;
+  if (!map || !am.styleOk || !map.getLayer("am-traffic")) return;
+  const lines = amTrafficLines();
+  const sig = lines.map((l) => `${l.length}:${l[0]}:${l[l.length - 1]}`).join("/");
+  if (sig === am.trafficSig) return;
+  am.trafficSig = sig;
+  let filter = AM_TRAFFIC_BASE_FILTER;
+  if (lines.length) {
+    let rings = null;
+    for (let cell = AM_CORRIDOR_CELL_M; !rings && cell <= AM_CORRIDOR_CELL_M * 8; cell *= 2) rings = amCorridorRings(lines, cell);
+    if (rings) filter = ["all", AM_TRAFFIC_BASE_FILTER, ["within", { type: "Polygon", coordinates: rings }]];
+  }
+  try {
+    map.setFilter("am-traffic", filter);
+  } catch (err) {
+    console.warn("Corredor do trânsito não entrou:", err?.message || err);
+    try {
+      map.setFilter("am-traffic", AM_TRAFFIC_BASE_FILTER);
+    } catch (e) {
+      /* fica o que tinha */
+    }
+  }
+}
+
 function amShowOverview() {
   const o = am.overview;
   if (!o || !am.styleOk) return;
@@ -811,6 +930,7 @@ function amShowOverview() {
   amSetRouteData(r);
   const alts = Array.isArray(o.alts) ? o.alts.filter((a) => Array.isArray(a) && a.length > 1) : [];
   amSetAlts(alts);
+  amUpdateTrafficArea(); // v2.19: corredor = rota + caminhos cinzas
   const pts = r.pts.slice();
   alts.forEach((a) => a.forEach((pt) => pts.push(pt)));
   if (Array.isArray(o.origin)) pts.push(o.origin);
